@@ -1,4 +1,5 @@
 #include "page3.h"
+#include "page4.h"
 #include "disk_manager.h"
 #include "config.h"
 #include <stdio.h>
@@ -217,6 +218,8 @@ gboolean page3_go_to_next_page(Page3Data *data)
         GtkWidget *page4 = adw_carousel_get_nth_page(data->carousel, 3);
         if (page4) {
             adw_carousel_scroll_to(data->carousel, page4, TRUE);
+            // Actualizar información del disco en page4
+            page4_on_page_shown();
         } else {
             LOG_ERROR("No se pudo encontrar page4 en el carousel");
         }

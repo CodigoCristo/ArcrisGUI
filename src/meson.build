@@ -20,6 +20,7 @@ executable('arcris',
     'page1.c',
     'page2.c',
     'page3.c',
+    'page4.c',
     'config.c',
     'disk_manager.c'
   ],

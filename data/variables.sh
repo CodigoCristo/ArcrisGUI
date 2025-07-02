@@ -4,7 +4,7 @@
 
 KEYBOARD_LAYOUT="es"
 KEYMAP_TTY="es"
-TIMEZONE="America/Lima"
-LOCALE="es_PE.UTF-8"
+TIMEZONE="Europe/Madrid"
+LOCALE="es_MX.UTF-8"
 
-# Fin del archivo
+SELECTED_DISK="/dev/sdb"

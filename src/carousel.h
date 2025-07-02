@@ -22,6 +22,7 @@ typedef struct {
     Page1Data *page1_data;
     Page2Data *page2_data;
     Page3Data *page3_data;
+    Page4Data *page4_data;
     
     // Estado del carousel
     guint current_page;

@@ -50,8 +50,8 @@
                             <property name="spacing">12</property>
 
                             <child>
-                              <object class="GtkLabel">
-                                <property name="label" translatable="true">Disco duro 2,0 TB</property>
+                              <object class="GtkLabel" id="disk_label_page4">
+                                <property name="label" translatable="true">Disco /dev/sda</property>
                                 <property name="xalign">0</property>
                                 <style>
                                   <class name="title-1"/>
@@ -120,8 +120,8 @@
                         </child>
 
                         <child>
-                          <object class="GtkLabel">
-                            <property name="label" translatable="true">/dev/sda</property>
+                          <object class="GtkLabel" id="disk_size_label_page4">
+                            <property name="label" translatable="true">2000 GB</property>
                             <property name="xalign">0</property>
                             <style>
                               <class name="dim-label"/>

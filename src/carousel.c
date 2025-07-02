@@ -2,10 +2,14 @@
 #include "page1.h"
 #include "page2.h"
 #include "page3.h"
+#include "page4.h"
 
 #include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+// Forward declaration for page change callback
+static void on_carousel_page_changed_internal(AdwCarousel *carousel, guint page, gpointer user_data);
 
 // Variable global del manager del carousel
 static CarouselManager *g_carousel_manager = NULL;
@@ -27,6 +31,7 @@ CarouselManager* carousel_manager_new(void)
     manager->page1_data = NULL;
     manager->page2_data = NULL;
     manager->page3_data = NULL;
+    manager->page4_data = NULL;
     
     LOG_INFO("CarouselManager creado");
     return manager;
@@ -86,6 +91,9 @@ void carousel_init_all_pages(CarouselManager *manager, GtkBuilder *builder)
     // Inicializar página 3 (Configuración Adicional)
     page3_init(builder, manager->carousel, manager->revealer);
     
+    // Inicializar página 4 (Información del Disco)
+    page4_init(builder, manager->carousel, manager->revealer);
+    
     LOG_INFO("Todas las páginas han sido inicializadas");
 }
 
@@ -100,7 +108,7 @@ void carousel_setup_page_navigation(CarouselManager *manager)
     // Conectar señales de navegación
     g_signal_connect(manager->back_button, "clicked", G_CALLBACK(on_back_button_clicked), manager);
     g_signal_connect(manager->next_button, "clicked", G_CALLBACK(on_next_button_clicked), manager);
-    g_signal_connect(manager->carousel, "page-changed", G_CALLBACK(on_carousel_page_changed), manager);
+    g_signal_connect(manager->carousel, "page-changed", G_CALLBACK(on_carousel_page_changed_internal), manager);
     
     LOG_INFO("Navegación del carousel configurada");
 }
@@ -330,6 +338,10 @@ void carousel_manager_cleanup(CarouselManager *manager)
         page3_cleanup(manager->page3_data);
     }
     
+    if (manager->page4_data) {
+        page4_cleanup(manager->page4_data);
+    }
+    
     // Limpiar el manager
     g_free(manager);
     
@@ -339,6 +351,27 @@ void carousel_manager_cleanup(CarouselManager *manager)
     }
     
     LOG_INFO("CarouselManager limpiado correctamente");
+}
+
+// Callback interno para cambio de página del carousel
+static void on_carousel_page_changed_internal(AdwCarousel *carousel, guint page, gpointer user_data)
+{
+    CarouselManager *manager = (CarouselManager *)user_data;
+    if (!manager) return;
+    
+    LOG_INFO("Cambio de página del carousel: página %u", page);
+    
+    // Actualizar página actual en el manager
+    manager->current_page = page;
+    
+    // Si navegamos a page4 (índice 3), actualizar información del disco
+    if (page == 3) {
+        LOG_INFO("Navegando a página 4, actualizando información del disco");
+        page4_on_page_shown();
+    }
+    
+    // También llamar al callback original si existe
+    on_carousel_page_changed(carousel, page, user_data);
 }
 
 // Función pública para obtener el manager global (para compatibilidad)
