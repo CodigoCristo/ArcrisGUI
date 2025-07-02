@@ -1,0 +1,18 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ArcriS
+Name[es]=Arcris
+Name[en]=Arcris
+Comment=Instalación fácil de ArchLinux
+Comment[es]=Instalación fácil de ArchLinux
+Comment[en]=Install ArchLinux
+Exec=arcris
+Icon=org.gtk.arcris
+Terminal=false
+Categories=Utility;Development;
+Keywords=arcris;aplicacion;gtk;adwaita;
+Keywords[es]=arcris;aplicacion;gtk;adwaita;
+Keywords[en]=arcris;application;gtk;adwaita;
+StartupNotify=true
+StartupWMClass=org.gtk.arcris

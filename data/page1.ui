@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <object class="AdwBin" id="page1">
+    <property name="hexpand">true</property>
+    <property name="vexpand">true</property>
+    <child>
+      <object class="GtkBox">
+        <property name="hexpand">true</property>
+        <property name="vexpand">true</property>
+        <property name="valign">3</property>
+        <property name="orientation">1</property>
+        <child>
+          <object class="GtkImage" id="crystal-logo">
+            <property name="resource">/org/gtk/arcris/logo.png</property>
+            <property name="pixel-size">200</property>
+            <property name="margin-start">200</property>
+            <property name="margin-end">200</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwStatusPage">
+            <property name="title" translatable="true">Arcris</property>
+            <property name="description" translatable="true">Instalación fácil de ArchLinux</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">1</property>
+            <property name="halign">3</property>
+            <property name="valign">3</property>
+            <property name="hexpand">true</property>
+            <property name="spacing">5</property>
+
+
+<child>
+              <object class="GtkLabel" id="internet">
+                <property name="label">Probando Conexión a Internet...</property>
+                <property name="visible">true</property>
+                <style>
+                  <class name="warning"/>
+                </style>
+              </object>
+            </child>
+          <child>
+            <object class="AdwSpinner" id="spinner">
+            <property name="visible">true</property>
+            <property name="margin-top">10</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <property name="width-request">24</property>
+            <property name="height-request">24</property>
+            </object>
+          </child>
+
+            <child>
+              <object class="GtkLabel" id="no_internet">
+                <property name="label">¡Conéctese primero a Internet!</property>
+                <property name="visible">false</property>
+                <style>
+                  <class name="error"/>
+                </style>
+              </object>
+            </child>
+
+            <child>
+              <object class="GtkButton" id="start_button">
+              <property name="label">Iniciar</property>
+              <property name="visible">true</property>
+              <property name="sensitive">false</property>
+                <style>
+                  <class name="suggested-action"/>
+                  <class name="pill"/>
+                </style>
+              </object>
+            </child>
+
+
+
+            </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

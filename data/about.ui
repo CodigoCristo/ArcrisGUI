@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+<requires lib="gtk" version="4.0"/>
+  <object class="AdwAboutDialog" id="aboutWindow">
+    <property name="application-name">Arcris</property>
+    <property name="application-icon">org.gtk.arcris</property>
+
+
+    <property name="version">0.0.1</property>
+    <property name="copyright">© 2024 Código Cristo</property>
+    <property name="comments">Visítanos en Telegram:</property>
+    <property name="website">https://t.me/ArchLinuxEs</property>
+    <property name="license-type">gpl-3-0-only</property>
+    <property name="developer-name">Instalación fácil de ArchLinux</property>
+    <property name="developers">Codigo Cristo https://github.com/CodigoCristo/ArcrisGUI</property>
+    <property name="artists">Canal de Youtube https://www.youtube.com/@CodeCristo</property>
+  </object>
+</interface>

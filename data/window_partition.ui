@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adwaita" version="1.2"/>
+
+  <!-- Diálogo de Configuración de Partición -->
+  <object class="AdwWindow" id="page5">
+    <property name="title" translatable="true">/dev/sda1</property>
+    <property name="default-width">500</property>
+    <property name="default-height">400</property>
+    <property name="modal">true</property>
+    <property name="resizable">false</property>
+    <property name="deletable">false</property>
+
+    <child>
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="AdwWindowTitle">
+                <property name="title" translatable="true">/dev/sda1</property>
+              </object>
+            </property>
+
+            <child type="start">
+              <object class="GtkButton" id="cancel_button">
+                <property name="label" translatable="true">Cancelar</property>
+              </object>
+            </child>
+
+            <child type="end">
+              <object class="GtkButton" id="next_button">
+                <property name="label" translatable="true">Siguiente</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <property name="content">
+          <object class="AdwClamp">
+            <property name="maximum-size">450</property>
+            <property name="tightening-threshold">500</property>
+            <property name="margin-top">24</property>
+            <property name="margin-bottom">24</property>
+            <property name="margin-start">12</property>
+            <property name="margin-end">12</property>
+
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">24</property>
+
+                <!-- Partición SWAP -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title" translatable="true">Partición SWAP</property>
+                    <property name="description" translatable="true">Una partición swap es un área del disco duro que se utiliza como memoria virtual en sistemas operativos como Linux.</property>
+
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title" translatable="true">Habilitar SWAP</property>
+                        <property name="activatable-widget">swap_switch</property>
+
+                        <child type="suffix">
+                          <object class="GtkSwitch" id="swap_switch">
+                            <property name="valign">center</property>
+                            <property name="active">true</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+
+                <!-- Configuración de Partición -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title" translatable="true">Configuración</property>
+
+                    <!-- Punto de Montaje -->
+                    <child>
+                      <object class="AdwComboRow" id="mount_point_combo">
+                        <property name="title" translatable="true">Punto de montaje</property>
+                        <property name="model">
+                          <object class="GtkStringList" id="mount_point_list">
+                            <items>
+                              <item>/boot</item>
+                              <item>/</item>
+                              <item>/home</item>
+                              <item>/var</item>
+                              <item>/tmp</item>
+                              <item>/usr</item>
+                              <item>/opt</item>
+                            </items>
+                          </object>
+                        </property>
+                        <property name="selected">0</property>
+                      </object>
+                    </child>
+
+                    <!-- Formato -->
+                    <child>
+                      <object class="AdwComboRow" id="format_combo">
+                        <property name="title" translatable="true">Formato</property>
+                        <property name="model">
+                          <object class="GtkStringList" id="format_list">
+                            <items>
+                              <item>Ext4</item>
+                              <item>Ext3</item>
+                              <item>Ext2</item>
+                              <item>Btrfs</item>
+                              <item>XFS</item>
+                              <item>Fat32</item>
+                              <item>NTFS</item>
+                            </items>
+                          </object>
+                        </property>
+                        <property name="selected">0</property>
+                      </object>
+                    </child>
+
+
+
+
+
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </child>
+  </object>
+</interface>

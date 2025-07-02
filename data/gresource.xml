@@ -1,0 +1,19 @@
+<gresources>
+  <gresource prefix="/org/gtk/arcris">
+    <file alias="window.ui" compressed="true">window.ui</file>
+    <file alias="about.ui" compressed="true">about.ui</file>
+    <file alias="page1.ui" compressed="true">page1.ui</file>
+    <file alias="page2.ui" compressed="true">page2.ui</file>
+    <file alias="page3.ui" compressed="true">page3.ui</file>
+  <file alias="page4.ui" compressed="true">page4.ui</file>
+    <file alias="window_partition.ui" compressed="true">window_partition.ui</file>
+    <file alias="page5.ui" compressed="true">page5.ui</file>
+    <file alias="locale.gen">locale.gen</file>
+    <file alias="logo.png">img/logo.png</file>
+
+    <file alias="org.gtk.arcris.svg">icons/hicolor/scalable/apps/org.gtk.arcris.svg</file>
+    <file alias="org.gtk.arcris-symbolic.svg">icons/hicolor/symbolic/apps/org.gtk.arcris-symbolic.svg</file>
+    <file alias="org.gtk.arcris-clean.svg">icons/hicolor/scalable/apps/org.gtk.arcris-clean.svg</file>
+    <file alias="org.gtk.arcris-clean-symbolic.svg">icons/hicolor/symbolic/apps/org.gtk.arcris-clean-symbolic.svg</file>
+    </gresource>
+</gresources>

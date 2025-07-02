@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adwaita" version="1.2"/>
+
+  <!-- AdwStatusPage -->
+  <object class="AdwStatusPage" id="page2">
+
+    <property name="title" translatable="true">Sistema local</property>
+    <property name="description" translatable="true">Ingrese una distribución del teclado, Zona Horaria y Localidad.</property>
+
+    <!-- Contenido del AdwStatusPage -->
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="halign">center</property>
+        <property name="valign">center</property>
+
+
+        <!-- AdwClamp para Grupo de Teclado -->
+        <child>
+          <object class="AdwClamp" id="clamp_teclado">
+            <property name="margin-end">0</property>
+            <property name="maximum-size">500</property>
+            <property name="tightening-threshold">650</property>
+            <property name="margin-bottom">0</property>
+
+
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title" translatable="yes">Teclado</property>
+                <property name="header-suffix">
+                  <object class="GtkButton" id="tecla">
+                    <property
+                      name="tooltip-text"
+                      translatable="true">Prueba el teclado si es el correcto</property>
+
+                    <property name="margin-bottom">10</property>
+                    <property name="child">
+                      <object class="AdwButtonContent">
+                        <property name="icon-name">preferences-desktop-keyboard</property>
+                        <property name="label" translatable="yes">_Probar</property>
+                        <property name="use-underline">True</property>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+
+                <!-- Combo Row -->
+                <child>
+                  <object class="AdwComboRow" id="combo2_row1">
+                    <property name="title" translatable="yes">Idioma del teclado</property>
+                    <property name="subtitle" translatable="true"></property>
+                    <property name="enable-search">true</property>
+                    <property name="model">
+                      <object class="GtkStringList" id="main_keyboard">
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="AdwComboRow" id="combo2_row2">
+                    <property name="title" translatable="yes">Teclado en terminal</property>
+                    <property name="enable-search">true</property>
+                    <property name="model">
+                      <object class="GtkStringList" id="tty_keyboard">
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <!-- AdwClamp para Grupo de TimeZone -->
+        <child>
+          <object class="AdwClamp" id="clamp_timezone">
+            <property name="margin-top">0</property>
+            <property name="maximum-size">500</property>
+            <property name="tightening-threshold">450</property>
+            <property name="margin-bottom">0</property>
+
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title" translatable="yes">Zona Horaria</property>
+                <property name="margin-top">10</property>
+                <property name="header-suffix">
+                  <!-- Contenedor GtkBox para el ícono y el label -->
+                  <object class="GtkBox">
+                    <property name="orientation">horizontal</property>
+                    <property name="spacing">5</property>
+
+                    <!-- Ícono -->
+                    <child>
+                      <object class="GtkImage" id="locale_search_icon">
+                        <property name="icon-name">document-open-recent</property>
+                        <property name="pixel-size">16</property>
+                      </object>
+                    </child>
+
+                    <!-- Label -->
+                    <child>
+                      <object class="GtkLabel" id="locale_time_label">
+                        <property name="label" translatable="yes">08:23 AM</property>
+                        <property name="halign">center</property>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+
+
+
+                <!-- Combo Row -->
+                <child>
+                  <object class="AdwComboRow" id="combo2_row3">
+                    <property name="width-request">466</property>
+                    <property name="title" translatable="yes">Región</property>
+                    <property name="subtitle" translatable="true">Selecciona tu región para actualizar la hora</property>
+                    <property name="enable-search">true</property>
+                    <property name="model">
+                      <object class="GtkStringList" id="string_timezones">
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <!-- AdwClamp para Grupo de Ubicación -->
+        <child>
+          <object class="AdwClamp" id="clamp_ubicacion">
+            <property name="margin-top">0</property>
+            <property name="maximum-size">500</property>
+            <property name="tightening-threshold">450</property>
+            <property name="margin-bottom">0</property>
+
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title" translatable="yes">Ubicación</property>
+                <property name="margin-top">10</property>
+
+                <!-- Combo Row -->
+                <child>
+                  <object class="AdwComboRow" id="combo2_row4">
+                    <property name="title" translatable="yes">País</property>
+                    <property name="subtitle" translatable="true">Selecciona tu idioma y País</property>
+                    <property name="enable-search">true</property>
+                    <property name="model">
+                      <object class="GtkStringList" id="locale_list">
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
+
+
+<!--
+                  <child>
+                  <object class="AdwComboRow" id="combo2_row4">
+                    <property name="title" translatable="yes">País</property>
+                    <property name="subtitle" translatable="true">Selecciona tu idioma y País</property>
+                    <property name="enable-search">true</property>
+                    <property name="model">
+                      <object class="GtkStringList" id="locale_list">
+                        <items>
+                          <item translatable="yes">Option 1</item>
+                          <item translatable="yes">Option 2</item>
+                          <item translatable="yes">Option 3</item>
+                        </items>
+                      </object>
+                    </property>
+                  </object>
+</child>
+-->
