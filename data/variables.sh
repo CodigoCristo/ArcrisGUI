@@ -4,7 +4,7 @@
 
 KEYBOARD_LAYOUT="es"
 KEYMAP_TTY="es"
-TIMEZONE="Europe/Madrid"
-LOCALE="es_MX.UTF-8"
+TIMEZONE="America/Lima"
+LOCALE="es_PE.UTF-8"
 
-SELECTED_DISK="/dev/sdb"
+SELECTED_DISK="/dev/sdc"

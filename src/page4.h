@@ -3,7 +3,20 @@
 
 #include <gtk/gtk.h>
 #include <adwaita.h>
+#include <udisks/udisks.h>
 #include "disk_manager.h"
+
+// Estructura para información de partición
+typedef struct _PartitionInfo {
+    gchar *device_path;       // ej: /dev/sda1
+    gchar *filesystem;        // ej: ext4, ntfs, etc.
+    gchar *mount_point;       // ej: /, /home, etc.
+    guint64 size;            // tamaño en bytes
+    gchar *size_formatted;    // tamaño formateado: "100 GB"
+    gchar *label;            // etiqueta del volumen
+    gboolean is_mounted;      // si está montado
+    gchar *uuid;             // UUID de la partición
+} PartitionInfo;
 
 // Estructura para datos de la página 4
 typedef struct _Page4Data {
@@ -19,9 +32,21 @@ typedef struct _Page4Data {
     GtkButton *gparted_button;
     GtkButton *refresh_button;
     
+    // Grupo de particiones
+    AdwPreferencesGroup *partitions_group;
+    
     // Información del disco actual
     gchar *current_disk_path;
     gchar *current_disk_size;
+    
+    // Lista de particiones
+    GList *partitions;        // Lista de PartitionInfo*
+    
+    // Lista de filas de particiones (para poder eliminarlas correctamente)
+    GList *partition_rows;    // Lista de AdwActionRow*
+    
+    // Cliente UDisks2 para obtener información de particiones
+    UDisksClient *udisks_client;
     
 } Page4Data;
 
@@ -49,9 +74,20 @@ gchar* page4_get_disk_size(const gchar *disk_path);
 void page4_on_page_shown(void);
 void page4_test_update(void);
 
+// Funciones para manejo de particiones
+void page4_populate_partitions(Page4Data *data, const gchar *disk_path);
+void page4_clear_partitions(Page4Data *data);
+PartitionInfo* page4_create_partition_info(const gchar *device_path, UDisksPartition *partition, UDisksBlock *block, UDisksObject *object);
+void page4_free_partition_info(PartitionInfo *info);
+void page4_add_partition_row(Page4Data *data, PartitionInfo *partition);
+gboolean page4_is_partition_of_disk(const gchar *partition_path, const gchar *disk_path);
+gchar* page4_format_partition_size(guint64 size_bytes);
+const gchar* page4_get_filesystem_icon(const gchar *filesystem);
+
 // Callbacks para señales de widgets
 void on_page4_gparted_button_clicked(GtkButton *button, gpointer user_data);
 void on_page4_refresh_clicked(GtkButton *button, gpointer user_data);
+void on_page4_partition_configure_clicked(GtkButton *button, gpointer user_data);
 
 // Navigation callbacks
 void on_page4_next_button_clicked(GtkButton *button, gpointer user_data);

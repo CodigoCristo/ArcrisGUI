@@ -1,4 +1,5 @@
 #include "disk_manager.h"
+#include "page4.h"
 #include "config.h"
 #include <string.h>
 
@@ -215,6 +216,30 @@ disk_manager_populate_list(DiskManager *manager)
     g_list_free_full(objects, g_object_unref);
     
     LOG_INFO("Escaneo completo: %d discos encontrados", disk_count);
+    
+    // Seleccionar automáticamente el primer disco si hay discos disponibles
+    if (disk_count > 0) {
+        adw_combo_row_set_selected(manager->disk_combo, 0);
+        LOG_INFO("Primer disco seleccionado automáticamente (índice 0)");
+        
+        // Ejecutar manualmente la lógica de selección ya que la señal puede no dispararse
+        const gchar *first_disk_path = gtk_string_list_get_string(manager->disk_paths, 0);
+        if (first_disk_path) {
+            // Actualizar disco seleccionado
+            g_free(manager->selected_disk_path);
+            manager->selected_disk_path = g_strdup(first_disk_path);
+            
+            LOG_INFO("Disco seleccionado automáticamente: %s", first_disk_path);
+            
+            // Actualizar el subtitle del combo row
+            gchar *subtitle_text = g_strdup_printf("Seleccionado: %s", first_disk_path);
+            g_object_set(manager->disk_combo, "subtitle", subtitle_text, NULL);
+            g_free(subtitle_text);
+            
+            // Guardar la selección en variables.sh
+            disk_manager_save_to_variables(manager);
+        }
+    }
 }
 
 // Función para refrescar la lista
@@ -268,6 +293,9 @@ on_disk_manager_selection_changed(GObject *object, GParamSpec *pspec, gpointer u
             
             // Guardar la selección en variables.sh
             disk_manager_save_to_variables(manager);
+            
+            // Actualizar información del disco en page4
+            page4_refresh_disk_info();
         }
     } else {
         // Si no hay selección, limpiar
@@ -277,6 +305,9 @@ on_disk_manager_selection_changed(GObject *object, GParamSpec *pspec, gpointer u
         
         // Guardar el estado vacío en variables.sh
         disk_manager_save_to_variables(manager);
+        
+        // Actualizar información del disco en page4 (limpiar particiones)
+        page4_refresh_disk_info();
     }
 }
 

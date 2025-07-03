@@ -7,13 +7,13 @@
   <object class="AdwBin" id="page4">
     <child>
       <object class="AdwStatusPage">
-        <property name="title" translatable="true">Seleccionar Disco</property>
-        <property name="description" translatable="true">Configura las particiones del disco seleccionado</property>
+        <property name="title" translatable="true">Partición Manual</property>
+        <property name="description" translatable="true">Configura las particiones usando Gparted en el disco seleccionado</property>
 
         <child>
           <!-- AdwClamp para limitar el ancho del contenido -->
           <object class="AdwClamp">
-            <property name="maximum-size">650</property>
+            <property name="maximum-size">600</property>
             <property name="tightening-threshold">600</property>
             <child>
               <object class="GtkBox">
@@ -66,6 +66,20 @@
                                 <property name="hexpand">true</property>
 
                                 <child>
+                                  <object class="GtkButton" id="refresh_button">
+                                    <property name="tooltip-text" translatable="true">Actualizar lista</property>
+                                    <property name="child">
+                                          <object class="GtkImage">
+                                            <property name="icon-name">view-refresh-symbolic</property>
+                                          </object>
+                                    </property>
+                                    <style>
+                                      <class name="none"/>
+                                    </style>
+                                  </object>
+                                </child>
+
+                                <child>
                                   <object class="GtkButton" id="gparted_button">
                                     <property name="tooltip-text" translatable="true">Abrir Gparted para edición avanzada</property>
                                     <property name="child">
@@ -88,31 +102,9 @@
                                       <class name="suggested-action"/>
                                     </style>
                                   </object>
-                                </child>
 
-                                <child>
-                                  <object class="GtkButton" id="refresh_button">
-                                  <property name="tooltip-text" translatable="true">Actualizar lista</property>
-                                    <property name="child">
-                                      <object class="GtkBox">
-                                        <property name="orientation">horizontal</property>
-                                        <property name="spacing">6</property>
-                                        <child>
-                                          <object class="GtkImage">
-                                            <property name="icon-name">view-refresh-symbolic</property>
-                                          </object>
-                                        </child>
-                                        <child>
-                                          <object class="GtkLabel">
-                                            <property name="label" translatable="true"> Actualizar lista</property>
-                                          </object>
-                                        </child>
-                                      </object>
-                                    </property>
-                                    <style>
-                                      <class name="none"/>
-                                    </style>
-                                  </object>
+
+
                                 </child>
                               </object>
                             </child>
@@ -135,87 +127,10 @@
 
                 <!-- Volúmenes con AdwPreferencesGroup -->
                 <child>
-                  <object class="AdwPreferencesGroup">
+                  <object class="AdwPreferencesGroup" id="partitions_group">
                     <property name="title" translatable="true">Particiones del disco</property>
                     <property name="description" translatable="true">Presiona + para seleccionar los puntos de montaje</property>
-
-                    <!-- /dev/sda1 -->
-                    <child>
-                      <object class="AdwActionRow">
-                        <property name="title" translatable="true">/dev/sda1</property>
-                        <property name="activatable">true</property>
-
-                        <child type="prefix">
-                          <object class="GtkImage">
-                            <property name="icon-name">drive-harddisk-symbolic</property>
-                          </object>
-                        </child>
-
-                        <child type="suffix">
-                          <object class="GtkButton" id="add_partition_1">
-                            <property name="icon-name">list-add-symbolic</property>
-                            <property name="valign">center</property>
-                            <property name="tooltip-text" translatable="true">Configurar partición</property>
-                            <style>
-                              <class name="flat"/>
-                              <class name="circular"/>
-                            </style>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-
-                    <!-- /dev/sda2 -->
-                    <child>
-                      <object class="AdwActionRow">
-                        <property name="title" translatable="true">/dev/sda2</property>
-                        <property name="activatable">true</property>
-
-                        <child type="prefix">
-                          <object class="GtkImage">
-                            <property name="icon-name">drive-harddisk-symbolic</property>
-                          </object>
-                        </child>
-
-                        <child type="suffix">
-                          <object class="GtkButton" id="add_partition_2">
-                            <property name="icon-name">list-add-symbolic</property>
-                            <property name="valign">center</property>
-                            <property name="tooltip-text" translatable="true">Configurar partición</property>
-                            <style>
-                              <class name="flat"/>
-                              <class name="circular"/>
-                            </style>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-
-                    <!-- /dev/sda3 -->
-                    <child>
-                      <object class="AdwActionRow">
-                        <property name="title" translatable="true">/dev/sda3</property>
-                        <property name="activatable">true</property>
-
-                        <child type="prefix">
-                          <object class="GtkImage">
-                            <property name="icon-name">drive-harddisk-symbolic</property>
-                          </object>
-                        </child>
-
-                        <child type="suffix">
-                          <object class="GtkButton" id="add_partition_3">
-                            <property name="icon-name">list-add-symbolic</property>
-                            <property name="valign">center</property>
-                            <property name="tooltip-text" translatable="true">Configurar partición</property>
-                            <style>
-                              <class name="flat"/>
-                              <class name="circular"/>
-                            </style>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
+                    <!-- Las particiones se añadirán dinámicamente desde page4.c -->
                   </object>
                 </child>
               </object>
