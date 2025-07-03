@@ -7,4 +7,4 @@ KEYMAP_TTY="es"
 TIMEZONE="America/Lima"
 LOCALE="es_PE.UTF-8"
 
-SELECTED_DISK="/dev/sdc"
+# Fin del archivo
