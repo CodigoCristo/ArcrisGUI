@@ -36,6 +36,19 @@ static void cleanup_application(void)
     LOG_INFO("Recursos limpiados correctamente");
 }
 
+// Función para cerrar la aplicación con Ctrl+Q
+static void quit_action(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    GtkApplication *app = GTK_APPLICATION(user_data);
+    LOG_INFO("Cerrando aplicación con Ctrl+Q...");
+    
+    // Ejecutar limpieza antes de cerrar
+    cleanup_application();
+    
+    // Cerrar todas las ventanas y salir de la aplicación
+    g_application_quit(G_APPLICATION(app));
+}
+
 // Función principal de activación
 static void activate_cb(GtkApplication *app)
 {
@@ -107,6 +120,7 @@ int main(int argc, char *argv[])
     // Definir las acciones de la aplicación
     const GActionEntry app_entries[] = {
         { "about", about_action, NULL, NULL, NULL },
+        { "quit", quit_action, NULL, NULL, NULL },
     };
 
     // Crear la aplicación
@@ -120,6 +134,10 @@ int main(int argc, char *argv[])
     
     // Agregar las acciones de la aplicación
     g_action_map_add_action_entries(G_ACTION_MAP(app), app_entries, G_N_ELEMENTS(app_entries), app);
+    
+    // Configurar el atajo de teclado Ctrl+Q para cerrar la aplicación
+    const char* quit_accels[] = {"<Primary>q", NULL};
+    gtk_application_set_accels_for_action(GTK_APPLICATION(app), "app.quit", quit_accels);
     
     // Conectar la señal de activación
     g_signal_connect(app, "activate", G_CALLBACK(activate_cb), NULL);

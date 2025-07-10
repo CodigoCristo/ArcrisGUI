@@ -5,9 +5,9 @@
 
   <object class="AdwApplicationWindow" id="main_window">
     <property name="title">Arcris</property>
-    <property name="default-width">950</property>
-    <property name="default-height">659</property>
-      
+    <property name="default-width">850</property>
+    <property name="default-height">650</property>
+
     <child>
       <object class="AdwToolbarView" id="toolbar_view">
         <!-- Definir el encabezado -->
@@ -24,9 +24,9 @@
                 <property name="menu-model">menu_app</property>
                 <property name="icon-name">open-menu-symbolic</property>
                 <property name="primary">true</property>
-              </object>             
+              </object>
             </child>
-          </object> 
+          </object>
         </child>
 
         <!-- Definir el contenido -->
@@ -37,7 +37,7 @@
               <property name="hexpand">true</property>
               <property name="valign">fill</property>
               <property name="spacing">10</property>
-              
+
               <!-- AdwCarousel -->
               <child>
                 <object class="AdwCarousel" id="carousel">
@@ -100,6 +100,13 @@
       <item>
         <attribute name="label" translatable="true">About Arcris</attribute>
         <attribute name="action">app.about</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="true">Salir</attribute>
+        <attribute name="action">app.quit</attribute>
+        <attribute name="accel">&lt;Primary&gt;q</attribute>
       </item>
     </section>
   </menu>

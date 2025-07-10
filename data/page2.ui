@@ -51,6 +51,7 @@
                   <object class="AdwComboRow" id="combo2_row1">
                     <property name="title" translatable="yes">Idioma del teclado</property>
                     <property name="subtitle" translatable="true"></property>
+                    <property name="activatable">false</property>
                     <property name="enable-search">true</property>
                     <property name="model">
                       <object class="GtkStringList" id="main_keyboard">
@@ -62,6 +63,7 @@
                 <child>
                   <object class="AdwComboRow" id="combo2_row2">
                     <property name="title" translatable="yes">Teclado en terminal</property>
+                    <property name="activatable">false</property>
                     <property name="enable-search">true</property>
                     <property name="model">
                       <object class="GtkStringList" id="tty_keyboard">
@@ -119,6 +121,7 @@
                     <property name="title" translatable="yes">Región</property>
                     <property name="subtitle" translatable="true">Selecciona tu región para actualizar la hora</property>
                     <property name="enable-search">true</property>
+                    <property name="activatable">false</property>
                     <property name="model">
                       <object class="GtkStringList" id="string_timezones">
                       </object>
@@ -137,7 +140,6 @@
             <property name="maximum-size">500</property>
             <property name="tightening-threshold">450</property>
             <property name="margin-bottom">0</property>
-
             <child>
               <object class="AdwPreferencesGroup">
                 <property name="title" translatable="yes">Ubicación</property>
@@ -149,6 +151,7 @@
                     <property name="title" translatable="yes">País</property>
                     <property name="subtitle" translatable="true">Selecciona tu idioma y País</property>
                     <property name="enable-search">true</property>
+                    <property name="activatable">false</property>
                     <property name="model">
                       <object class="GtkStringList" id="locale_list">
                       </object>

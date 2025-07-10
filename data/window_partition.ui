@@ -11,26 +11,27 @@
     <property name="modal">true</property>
     <property name="resizable">false</property>
     <property name="deletable">false</property>
+    <property name="hide-on-close">true</property>
 
     <child>
       <object class="AdwToolbarView">
         <child type="top">
           <object class="AdwHeaderBar">
             <property name="title-widget">
-              <object class="AdwWindowTitle">
+              <object class="AdwWindowTitle" id="window_title">
                 <property name="title" translatable="true">/dev/sda1</property>
               </object>
             </property>
 
             <child type="start">
               <object class="GtkButton" id="cancel_button">
-                <property name="label" translatable="true">Cancelar</property>
+                <property name="label" translatable="true">Cerrar</property>
               </object>
             </child>
 
             <child type="end">
               <object class="GtkButton" id="next_button">
-                <property name="label" translatable="true">Siguiente</property>
+                <property name="label" translatable="true">Guardar</property>
                 <style>
                   <class name="suggested-action"/>
                 </style>
@@ -57,7 +58,7 @@
                 <child>
                   <object class="AdwPreferencesGroup">
                     <property name="title" translatable="true">Partición SWAP</property>
-                    <property name="description" translatable="true">Una partición swap es un área del disco duro que se utiliza como memoria virtual en sistemas operativos como Linux.</property>
+                    <property name="description" translatable="true">Una partición swap es un área del disco duro que se utiliza como memoria virtual. Recomendado para sistemas con menos de 8GB de RAM.</property>
 
                     <child>
                       <object class="AdwActionRow">
@@ -67,14 +68,13 @@
                         <child type="suffix">
                           <object class="GtkSwitch" id="swap_switch">
                             <property name="valign">center</property>
-                            <property name="active">true</property>
+                            <property name="active">false</property>
                           </object>
                         </child>
                       </object>
                     </child>
                   </object>
                 </child>
-
 
                 <!-- Configuración de Partición -->
                 <child>
@@ -89,6 +89,7 @@
                           <object class="GtkStringList" id="mount_point_list">
                             <items>
                               <item>/boot</item>
+                              <item>/efi</item>
                               <item>/</item>
                               <item>/home</item>
                               <item>/var</item>
@@ -105,32 +106,32 @@
                     <!-- Formato -->
                     <child>
                       <object class="AdwComboRow" id="format_combo">
-                        <property name="title" translatable="true">Formato</property>
+                        <property name="title" translatable="true">Formatear en</property>
                         <property name="model">
                           <object class="GtkStringList" id="format_list">
                             <items>
+                              <item>Sin Formatear</item>
                               <item>Ext4</item>
                               <item>Ext3</item>
                               <item>Ext2</item>
                               <item>Btrfs</item>
                               <item>XFS</item>
+                              <item>F2FS</item>
                               <item>Fat32</item>
+                              <item>Fat16</item>
                               <item>NTFS</item>
+                              <item>ReiserFS</item>
+                              <item>JFS</item>
                             </items>
                           </object>
                         </property>
                         <property name="selected">0</property>
                       </object>
                     </child>
-
-
-
-
-
-                      </object>
-                    </child>
                   </object>
                 </child>
+
+
               </object>
             </child>
           </object>

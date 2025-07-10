@@ -6,7 +6,7 @@ const char* CAROUSEL_PAGE_NAMES[] = {
     "Verificación de Internet",
     "Configuración del Sistema", 
     "Configuración Adicional",
-    "Instalación/Finalización"
+    "Instalación"
 };
 
 // Función para obtener el nombre de una página por su índice

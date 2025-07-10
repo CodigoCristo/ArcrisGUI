@@ -21,8 +21,14 @@ executable('arcris',
     'page2.c',
     'page3.c',
     'page4.c',
+    'page5.c',
+    'page6.c',
+    'partitionmanual.c',
+
+
     'config.c',
-    'disk_manager.c'
+    'disk_manager.c',
+    'partition_manager.c'
   ],
   dependencies : [gtkdep, glib_dep, gio_dep, adwaita, libsoup, udisks2, arcris_resources_dep],
   install : true,

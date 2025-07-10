@@ -10,6 +10,9 @@ typedef struct _Page1Data Page1Data;
 typedef struct _Page2Data Page2Data;
 typedef struct _Page3Data Page3Data;
 typedef struct _Page4Data Page4Data;
+typedef struct _Page5Data Page5Data;
+
+
 
 // Estructura principal del manager del carousel
 typedef struct {
@@ -23,6 +26,9 @@ typedef struct {
     Page2Data *page2_data;
     Page3Data *page3_data;
     Page4Data *page4_data;
+    Page5Data *page5_data;
+
+
     
     // Estado del carousel
     guint current_page;

@@ -11,7 +11,7 @@
 
 // Configuraciones del Carousel
 #define CAROUSEL_ANIMATION_DURATION 300  // milisegundos
-#define CAROUSEL_TOTAL_PAGES 5
+#define CAROUSEL_TOTAL_PAGES 6
 #define CAROUSEL_FIRST_PAGE 0
 #define CAROUSEL_LAST_PAGE (CAROUSEL_TOTAL_PAGES - 1)
 
@@ -85,7 +85,8 @@ typedef enum {
     PAGE_INTERNET_CHECK = 0,
     PAGE_SYSTEM_CONFIG = 1,
     PAGE_ADDITIONAL_CONFIG = 2,
-    PAGE_INSTALLATION = 3
+    PAGE_INSTALLATION = 3,
+    PAGE_TEST = 4
 } CarouselPageType;
 
 // Nombres de las páginas (para debugging y logs)

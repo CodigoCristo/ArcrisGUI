@@ -1,40 +1,291 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
-  <object class="AdwBin" id="page5">
-    <property name="hexpand">true</property>
+  <requires lib="Adw" version="1.0"/>
+
+  <!-- Página principal de personalización -->
+  <object class="AdwStatusPage" id="page5">
+    <property name="title">Personalización</property>
+    <property name="description">Selecciona un escritorio o un gestor de ventanas o una terminal virtual</property>
     <property name="vexpand">true</property>
+    <property name="hexpand">true</property>
+
     <child>
       <object class="GtkBox">
-        <property name="hexpand">true</property>
-        <property name="vexpand">true</property>
-        <property name="valign">3</property>
-        <property name="orientation">1</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">12</property>
+        <property name="margin-top">24</property>
+        <property name="margin-bottom">24</property>
+        <property name="margin-start">24</property>
+        <property name="margin-end">24</property>
+        <property name="halign">center</property>
+        <property name="valign">center</property>
+
         <child>
-          <object class="GtkImage" id="crystal-logo">
-            <property name="resource">/org/gtk/arcris/logo.png</property>
-            <property name="pixel-size">200</property>
-            <property name="margin-start">200</property>
-            <property name="margin-end">200</property>
-          </object>
-        </child>
-        <child>
-          <object class="AdwStatusPage">
-            <property name="title" translatable="true">Arcris</property>
-            <property name="description" translatable="true">Instalación fácil de ArchLinux</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="orientation">1</property>
-            <property name="halign">3</property>
-            <property name="valign">3</property>
-            <property name="hexpand">true</property>
-            <property name="spacing">5</property>
+          <object class="AdwPreferencesGroup" id="options_group">
+            <property name="title">Elige una opción</property>
+            <property name="width-request">400</property>
+
+            <child>
+              <object class="AdwActionRow" id="terminal_row">
+                <property name="title">Terminal Virtual - TTY</property>
+                <property name="subtitle">Sin gráficos</property>
+                <property name="activatable">false</property>
+                <child type="prefix">
+                  <object class="GtkCheckButton" id="terminal_check">
+                    <property name="active">true</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <child>
+              <object class="AdwActionRow" id="desktop_row">
+                <property name="title">Entorno de Escritorio - DE</property>
+                <property name="subtitle">Entorno gráfico completo</property>
+                <property name="activatable">false</property>
+                <child type="prefix">
+                  <object class="GtkCheckButton" id="desktop_check">
+                    <property name="group">terminal_check</property>
+                  </object>
+                </child>
+                <child type="suffix">
+                  <object class="GtkButton" id="desktop_next_button">
+                    <property name="icon-name">go-next-symbolic</property>
+                    <property name="sensitive">false</property>
+                    <property name="has-frame">false</property>
+                    <style>
+                      <class name="flat"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <child>
+              <object class="AdwActionRow" id="wm_row">
+                <property name="title">Gestor de ventanas - WM</property>
+                <property name="subtitle">Entorno gráfico minimalista</property>
+                <property name="activatable">false</property>
+                <child type="prefix">
+                  <object class="GtkCheckButton" id="wm_check">
+                    <property name="group">terminal_check</property>
+                  </object>
+                </child>
+                <child type="suffix">
+                  <object class="GtkButton" id="wm_next_button">
+                    <property name="icon-name">go-next-symbolic</property>
+                    <property name="sensitive">false</property>
+                    <property name="has-frame">false</property>
+                    <style>
+                      <class name="flat"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
 
           </object>
         </child>
       </object>
     </child>
   </object>
+
+  <!-- Página de selección de DE -->
+  <object class="AdwClamp" id="de_page">
+    <property name="vexpand">true</property>
+    <property name="hexpand">true</property>
+    <property name="maximum-size">600</property>
+    <property name="tightening-threshold">600</property>
+
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="spacing">15</property>
+        <property name="margin-top">25</property>
+        <property name="halign">fill</property>
+        <property name="valign">start</property>
+
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">horizontal</property>
+            <property name="spacing">12</property>
+            <property name="halign">start</property>
+
+            <child>
+              <object class="GtkButton" id="de_back_to_main_button">
+                <property name="icon-name">go-previous-symbolic</property>
+                <property name="has-frame">false</property>
+                <property name="tooltip-text">Regresar a Personalización</property>
+                <style>
+                  <class name="flat"/>
+                </style>
+              </object>
+            </child>
+
+            <child>
+              <object class="GtkLabel" id="de_title_label">
+                <property name="label">Selecciona tu DE</property>
+                <property name="halign">center</property>
+                <style>
+                  <class name="title-1"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwPreferencesGroup" id="de_group">
+            <property name="width-request">400</property>
+
+            <child>
+              <object class="AdwComboRow" id="de_combo">
+                <property name="title">Entorno de Escritorio</property>
+                <property name="model">
+                  <object class="GtkStringList">
+                    <items>
+                      <item>GNOME</item>
+                      <item>KDE</item>
+                      <item>XFCE4</item>
+                      <item>Deepin</item>
+                    </items>
+                  </object>
+                </property>
+                <property name="selected">0</property>
+              </object>
+            </child>
+
+          </object>
+        </child>
+
+        <child>
+          <object class="GtkBox" id="de_preview_box">
+            <property name="orientation">vertical</property>
+            <property name="spacing">6</property>
+            <property name="halign">fill</property>
+            <property name="valign">start</property>
+            <property name="hexpand">true</property>
+            <property name="margin-top">6</property>
+            <child>
+              <object class="GtkPicture" id="de_preview_picture">
+                <property name="file">/org/gtk/arcris/GNOME.png</property>
+                <property name="halign">fill</property>
+                <property name="valign">fill</property>
+                <property name="hexpand">true</property>
+                <property name="vexpand">true</property>
+                <property name="can-shrink">true</property>
+                <property name="content-fit">2</property>
+                <style>
+                  <class name="card"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+      </object>
+    </child>
+  </object>
+
+  <!-- Página de selección de WM -->
+  <object class="AdwClamp" id="wm_page">
+    <property name="vexpand">true</property>
+    <property name="hexpand">true</property>
+    <property name="maximum-size">600</property>
+    <property name="tightening-threshold">600</property>
+
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="spacing">12</property>
+        <property name="margin-top">12</property>
+        <property name="margin-bottom">12</property>
+        <property name="margin-start">24</property>
+        <property name="margin-end">24</property>
+        <property name="halign">fill</property>
+        <property name="valign">start</property>
+
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">horizontal</property>
+            <property name="spacing">12</property>
+            <property name="halign">start</property>
+
+            <child>
+              <object class="GtkButton" id="wm_back_to_main_button">
+                <property name="icon-name">go-previous-symbolic</property>
+                <property name="has-frame">false</property>
+                <property name="tooltip-text">Regresar a Personalización</property>
+                <style>
+                  <class name="flat"/>
+                </style>
+              </object>
+            </child>
+
+            <child>
+              <object class="GtkLabel" id="wm_title_label">
+                <property name="label">Selecciona tu WM</property>
+                <property name="halign">center</property>
+                <style>
+                  <class name="title-1"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="AdwPreferencesGroup" id="wm_group">
+            <property name="width-request">400</property>
+
+            <child>
+              <object class="AdwComboRow" id="wm_combo">
+                <property name="title">Gestor de Ventanas</property>
+                <property name="model">
+                  <object class="GtkStringList">
+                    <items>
+                      <item>i3</item>
+                      <item>Bspwm</item>
+                      <item>dwm</item>
+                      <item>Qtile</item>
+                    </items>
+                  </object>
+                </property>
+                <property name="selected">0</property>
+              </object>
+            </child>
+
+          </object>
+        </child>
+
+        <child>
+          <object class="GtkBox" id="wm_preview_box">
+            <property name="orientation">vertical</property>
+            <property name="spacing">6</property>
+            <property name="halign">fill</property>
+            <property name="valign">start</property>
+            <property name="hexpand">true</property>
+            <property name="margin-top">6</property>
+            <child>
+              <object class="GtkPicture" id="wm_preview_picture">
+                <property name="file">/org/gtk/arcris/i3wm.png</property>
+                <property name="halign">fill</property>
+                <property name="valign">fill</property>
+                <property name="hexpand">true</property>
+                <property name="vexpand">true</property>
+                <property name="can-shrink">true</property>
+                <property name="content-fit">2</property>
+                <style>
+                  <class name="card"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+      </object>
+    </child>
+  </object>
+
 </interface>

@@ -407,12 +407,61 @@ void save_combo_selections_to_file(void)
 {
     if (!g_page2_data) return;
     
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
-    FILE *file = fopen(bash_file_path, "w");
+    LOG_INFO("=== save_combo_selections_to_file INICIADO ===");
     
+    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    
+    // Leer el archivo existente para preservar SELECTED_DISK y PARTITION_MODE
+    gchar *selected_disk_value = NULL;
+    gchar *partition_mode_value = NULL;
+    FILE *read_file = fopen(bash_file_path, "r");
+    if (read_file) {
+        char line[1024];
+        while (fgets(line, sizeof(line), read_file)) {
+            // Buscar la variable SELECTED_DISK
+            if (g_str_has_prefix(line, "SELECTED_DISK=")) {
+                char *value = line + 14; // Saltar "SELECTED_DISK="
+                
+                // Remover salto de línea
+                line[strcspn(line, "\n")] = 0;
+                value = line + 14;
+                
+                // Remover comillas si existen
+                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                    value[strlen(value)-1] = 0;
+                    value++;
+                }
+                
+                selected_disk_value = g_strdup(value);
+            }
+            // Buscar la variable PARTITION_MODE
+            else if (g_str_has_prefix(line, "PARTITION_MODE=")) {
+                char *value = line + 15; // Saltar "PARTITION_MODE="
+                
+                // Remover salto de línea
+                line[strcspn(line, "\n")] = 0;
+                value = line + 15;
+                
+                // Remover comillas si existen
+                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                    value[strlen(value)-1] = 0;
+                    value++;
+                }
+                
+                partition_mode_value = g_strdup(value);
+                LOG_INFO("PARTITION_MODE preservado desde variables.sh: %s", partition_mode_value);
+            }
+        }
+        fclose(read_file);
+    }
+    
+    // Escribir el archivo actualizado
+    FILE *file = fopen(bash_file_path, "w");
     if (!file) {
         g_print("❌ Error: No se pudo crear el archivo %s\n", bash_file_path);
         g_free(bash_file_path);
+        g_free(selected_disk_value);
+        g_free(partition_mode_value);
         return;
     }
     
@@ -449,11 +498,28 @@ void save_combo_selections_to_file(void)
         fprintf(file, "LOCALE=\"%s\"\n", locale);
     }
     
-    fprintf(file, "\n# Fin del archivo\n");
+    // Preservar la variable SELECTED_DISK
+    if (selected_disk_value) {
+        fprintf(file, "SELECTED_DISK=\"%s\"\n", selected_disk_value);
+    } else {
+        fprintf(file, "SELECTED_DISK=\"\"\n");
+    }
+    
+    // Preservar la variable PARTITION_MODE
+    if (partition_mode_value) {
+        fprintf(file, "PARTITION_MODE=\"%s\"\n", partition_mode_value);
+        LOG_INFO("PARTITION_MODE reescrito en variables.sh: %s", partition_mode_value);
+    } else {
+        LOG_INFO("No se encontró PARTITION_MODE para preservar en page2");
+    }
+    
     fclose(file);
     
     g_print("✅ Variables guardadas en: %s\n", bash_file_path);
+    LOG_INFO("=== save_combo_selections_to_file FINALIZADO ===");
     g_free(bash_file_path);
+    g_free(selected_disk_value);
+    g_free(partition_mode_value);
 }
 
 gboolean update_time_display(gpointer user_data)

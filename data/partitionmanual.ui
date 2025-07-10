@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adwaita" version="1.2"/>
+
+  <!-- AdwBin principal -->
+  <object class="AdwBin" id="partitionmanual">
+    <child>
+      <object class="AdwStatusPage">
+        <property name="title" translatable="true">Configuración de Particiones</property>
+        <property name="description" translatable="true">Configura el disco y las particiones para la instalación</property>
+
+        <child>
+          <!-- AdwClamp para limitar el ancho del contenido -->
+          <object class="AdwClamp">
+            <property name="maximum-size">700</property>
+            <property name="tightening-threshold">700</property>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">24</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+
+                <!-- GtkStack para las dos vistas -->
+                <child>
+                  <object class="GtkStack" id="partition_stack">
+                    <property name="transition-type">slide-left-right</property>
+                    <property name="transition-duration">300</property>
+                    <property name="hexpand">true</property>
+                    <property name="vexpand">true</property>
+
+                    <!-- Página 1: Selección de disco + radiobuttons -->
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">disk_selection</property>
+                        <property name="title" translatable="true">Selección de Disco</property>
+                        <property name="child">
+                          <object class="GtkBox" id="disk_selection_page">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">24</property>
+                            <property name="hexpand">true</property>
+
+                            <!-- Grupo de Disco -->
+                            <child>
+                              <object class="AdwPreferencesGroup">
+                                <property name="title" translatable="yes">Disco</property>
+                                <property name="header-suffix">
+                                  <object class="GtkButton" id="refresh_button">
+                                    <property name="tooltip-text" translatable="true">Actualizar lista de discos</property>
+                                    <property name="margin-bottom">10</property>
+                                    <property name="child">
+                                      <object class="AdwButtonContent">
+                                        <property name="icon-name">view-refresh-symbolic</property>
+                                        <property name="use-underline">True</property>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </property>
+
+                                <child>
+                                  <object class="AdwComboRow" id="disk_combo">
+                                    <property name="title" translatable="yes">Dispositivo</property>
+                                    <property name="subtitle" translatable="yes">Selecciona un dispositivo</property>
+                                    <property name="model">
+                                      <object class="GtkStringList" id="disk_list">
+                                        <items>
+                                          <item>/dev/sda - 960 GB</item>
+                                          <item>/dev/sdb - 1 TB</item>
+                                          <item>/dev/nvme0n1 - 512 GB</item>
+                                        </items>
+                                      </object>
+                                    </property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <!-- Información del disco seleccionado -->
+                            <child>
+                              <object class="GtkBox">
+                                <property name="orientation">horizontal</property>
+                                <property name="spacing">12</property>
+                                <property name="margin-top">12</property>
+
+                                <!-- Icono del disco -->
+                                <child>
+                                  <object class="GtkImage">
+                                    <property name="icon-name">drive-harddisk-symbolic</property>
+                                    <property name="icon-size">large</property>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <property name="spacing">6</property>
+                                    <property name="hexpand">true</property>
+
+                                    <child>
+                                      <object class="GtkLabel" id="disk_label">
+                                        <property name="label" translatable="true">Disco /dev/sda</property>
+                                        <property name="xalign">0</property>
+                                        <style>
+                                          <class name="title-2"/>
+                                        </style>
+                                      </object>
+                                    </child>
+
+                                    <child>
+                                      <object class="GtkLabel" id="disk_size_label">
+                                        <property name="label" translatable="true">2000 GB</property>
+                                        <property name="xalign">0</property>
+                                        <style>
+                                          <class name="dim-label"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <!-- Grupo de Opciones de Particionado -->
+                            <child>
+                              <object class="AdwPreferencesGroup">
+                                <property name="title" translatable="yes">Tipo de Particionado</property>
+                                <property name="description" translatable="yes">Elige cómo quieres configurar las particiones</property>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title" translatable="yes">Particionado Automático</property>
+                                    <property name="subtitle" translatable="yes">Esto eliminará todos los datos existentes en el disco</property>
+                                    <property name="activatable-widget">auto_partition_radio</property>
+
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="auto_partition_radio">
+                                        <property name="active">true</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title" translatable="yes">Particionado Automático en Btrfs</property>
+                                    <property name="subtitle" translatable="yes">Esto eliminará todos los datos existentes en el disco</property>
+                                    <property name="activatable-widget">auto_btrfs_radio</property>
+
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="auto_btrfs_radio">
+                                        <property name="group">auto_partition_radio</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title" translatable="yes">Particionado Manual</property>
+                                    <property name="subtitle" translatable="yes">Configura manualmente las particiones y puntos de montaje</property>
+                                    <property name="activatable-widget">manual_partition_radio</property>
+
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="manual_partition_radio">
+                                        <property name="group">auto_partition_radio</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+
+                    <!-- Página 2: Configuración de puntos de montaje -->
+                    <child>
+                      <object class="GtkStackPage">
+                        <property name="name">mount_points</property>
+                        <property name="title" translatable="true">Puntos de Montaje</property>
+                        <property name="child">
+                          <object class="GtkBox" id="mount_points_page">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">24</property>
+                            <property name="hexpand">true</property>
+
+                            <!-- Información del Disco -->
+                            <child>
+                              <object class="GtkBox">
+                                <property name="orientation">horizontal</property>
+                                <property name="spacing">12</property>
+
+                                <!-- Icono del disco -->
+                                <child>
+                                  <object class="GtkImage">
+                                    <property name="icon-name">drive-harddisk-symbolic</property>
+                                    <property name="icon-size">large</property>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <property name="spacing">8</property>
+                                    <property name="hexpand">true</property>
+
+                                    <child>
+                                      <object class="GtkBox">
+                                        <property name="orientation">horizontal</property>
+                                        <property name="spacing">12</property>
+
+                                        <child>
+                                          <object class="GtkLabel" id="disk_label_mount">
+                                            <property name="label" translatable="true">Disco /dev/sda</property>
+                                            <property name="xalign">0</property>
+                                            <style>
+                                              <class name="title-1"/>
+                                            </style>
+                                          </object>
+                                        </child>
+
+                                        <child>
+                                          <object class="GtkBox">
+                                            <property name="spacing">6</property>
+                                            <property name="halign">end</property>
+                                            <property name="hexpand">true</property>
+
+                                            <child>
+                                              <object class="GtkButton" id="refresh_button_mount">
+                                                <property name="tooltip-text" translatable="true">Actualizar lista</property>
+                                                <property name="child">
+                                                  <object class="GtkImage">
+                                                    <property name="icon-name">view-refresh-symbolic</property>
+                                                  </object>
+                                                </property>
+                                                <style>
+                                                  <class name="flat"/>
+                                                </style>
+                                              </object>
+                                            </child>
+
+                                            <child>
+                                              <object class="GtkButton" id="gparted_button">
+                                                <property name="tooltip-text" translatable="true">Abrir Gparted para edición avanzada</property>
+                                                <property name="child">
+                                                  <object class="GtkBox">
+                                                    <property name="orientation">horizontal</property>
+                                                    <property name="spacing">6</property>
+                                                    <child>
+                                                      <object class="GtkImage">
+                                                        <property name="icon-name">preferences-system</property>
+                                                      </object>
+                                                    </child>
+                                                    <child>
+                                                      <object class="GtkLabel">
+                                                        <property name="label" translatable="true">Abrir Gparted</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </property>
+                                                <style>
+                                                  <class name="suggested-action"/>
+                                                </style>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+
+                                    <child>
+                                      <object class="GtkLabel" id="disk_size_label_mount">
+                                        <property name="label" translatable="true">2000 GB</property>
+                                        <property name="xalign">0</property>
+                                        <style>
+                                          <class name="dim-label"/>
+                                        </style>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <!-- Volúmenes con AdwPreferencesGroup -->
+                            <child>
+                              <object class="AdwPreferencesGroup" id="partitions_group">
+                                <property name="title" translatable="true">Particiones del disco</property>
+                                <property name="description" translatable="true">Presiona + para seleccionar los puntos de montaje</property>
+                                <!-- Las particiones se añadirán dinámicamente desde partitionmanual.c -->
+                              </object>
+                            </child>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

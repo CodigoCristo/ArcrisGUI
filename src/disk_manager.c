@@ -1,5 +1,6 @@
 #include "disk_manager.h"
-#include "page4.h"
+#include "partitionmanual.h"
+#include "page3.h"
 #include "config.h"
 #include <string.h>
 
@@ -141,11 +142,11 @@ disk_manager_init(DiskManager *manager, GtkBuilder *builder)
         LOG_WARNING("UDisks2 no disponible, funcionalidad limitada");
     }
     
+    // Cargar configuración guardada primero
+    disk_manager_load_from_variables(manager);
+    
     // Poblar lista inicial
     disk_manager_populate_list(manager);
-    
-    // Cargar configuración guardada
-    disk_manager_load_from_variables(manager);
     
     LOG_INFO("DiskManager inicializado correctamente");
     return TRUE;
@@ -217,27 +218,51 @@ disk_manager_populate_list(DiskManager *manager)
     
     LOG_INFO("Escaneo completo: %d discos encontrados", disk_count);
     
-    // Seleccionar automáticamente el primer disco si hay discos disponibles
+    // Seleccionar automáticamente el primer disco si hay discos disponibles y no hay uno previamente seleccionado
     if (disk_count > 0) {
-        adw_combo_row_set_selected(manager->disk_combo, 0);
-        LOG_INFO("Primer disco seleccionado automáticamente (índice 0)");
+        gboolean disk_found = FALSE;
         
-        // Ejecutar manualmente la lógica de selección ya que la señal puede no dispararse
-        const gchar *first_disk_path = gtk_string_list_get_string(manager->disk_paths, 0);
-        if (first_disk_path) {
-            // Actualizar disco seleccionado
-            g_free(manager->selected_disk_path);
-            manager->selected_disk_path = g_strdup(first_disk_path);
+        // Si hay un disco previamente seleccionado, intentar encontrarlo en la lista
+        if (manager->selected_disk_path) {
+            for (guint i = 0; i < disk_count; i++) {
+                const gchar *disk_path = gtk_string_list_get_string(manager->disk_paths, i);
+                if (disk_path && g_strcmp0(disk_path, manager->selected_disk_path) == 0) {
+                    adw_combo_row_set_selected(manager->disk_combo, i);
+                    LOG_INFO("Disco previamente seleccionado encontrado: %s (índice %u)", disk_path, i);
+                    
+                    // Actualizar el subtitle del combo row
+                    gchar *subtitle_text = g_strdup_printf("Seleccionado: %s", disk_path);
+                    g_object_set(manager->disk_combo, "subtitle", subtitle_text, NULL);
+                    g_free(subtitle_text);
+                    
+                    disk_found = TRUE;
+                    break;
+                }
+            }
+        }
+        
+        // Si no se encontró un disco previamente seleccionado, seleccionar el primero
+        if (!disk_found) {
+            adw_combo_row_set_selected(manager->disk_combo, 0);
+            LOG_INFO("Primer disco seleccionado automáticamente (índice 0)");
             
-            LOG_INFO("Disco seleccionado automáticamente: %s", first_disk_path);
-            
-            // Actualizar el subtitle del combo row
-            gchar *subtitle_text = g_strdup_printf("Seleccionado: %s", first_disk_path);
-            g_object_set(manager->disk_combo, "subtitle", subtitle_text, NULL);
-            g_free(subtitle_text);
-            
-            // Guardar la selección en variables.sh
-            disk_manager_save_to_variables(manager);
+            // Ejecutar manualmente la lógica de selección ya que la señal puede no dispararse
+            const gchar *first_disk_path = gtk_string_list_get_string(manager->disk_paths, 0);
+            if (first_disk_path) {
+                // Actualizar disco seleccionado
+                g_free(manager->selected_disk_path);
+                manager->selected_disk_path = g_strdup(first_disk_path);
+                
+                LOG_INFO("Disco seleccionado automáticamente: %s", first_disk_path);
+                
+                // Actualizar el subtitle del combo row
+                gchar *subtitle_text = g_strdup_printf("Seleccionado: %s", first_disk_path);
+                g_object_set(manager->disk_combo, "subtitle", subtitle_text, NULL);
+                g_free(subtitle_text);
+                
+                // Guardar la selección en variables.sh
+                disk_manager_save_to_variables(manager);
+            }
         }
     }
 }
@@ -256,6 +281,10 @@ disk_manager_refresh(DiskManager *manager)
     
     // Actualizar la lista
     disk_manager_populate_list(manager);
+    
+    // Notificar actualización a partitionmanual y page3
+    partitionmanual_refresh_partitions();
+    page3_refresh_partitions();
 }
 
 // Obtener disco seleccionado
@@ -294,8 +323,9 @@ on_disk_manager_selection_changed(GObject *object, GParamSpec *pspec, gpointer u
             // Guardar la selección en variables.sh
             disk_manager_save_to_variables(manager);
             
-            // Actualizar información del disco en page4
-            page4_refresh_disk_info();
+            // Notificar cambio de disco a partitionmanual y page3
+            partitionmanual_on_disk_changed(device_path);
+            page3_on_disk_changed(device_path);
         }
     } else {
         // Si no hay selección, limpiar
@@ -306,8 +336,9 @@ on_disk_manager_selection_changed(GObject *object, GParamSpec *pspec, gpointer u
         // Guardar el estado vacío en variables.sh
         disk_manager_save_to_variables(manager);
         
-        // Actualizar información del disco en page4 (limpiar particiones)
-        page4_refresh_disk_info();
+        // Notificar limpieza de disco a partitionmanual y page3
+        partitionmanual_on_disk_changed(NULL);
+        page3_on_disk_changed(NULL);
     }
 }
 
@@ -334,6 +365,7 @@ disk_manager_save_to_variables(DiskManager *manager)
     
     // Leer el archivo existente para preservar otras variables
     GString *existing_content = g_string_new("");
+    gchar *current_partition_mode = NULL;
     FILE *read_file = fopen(bash_file_path, "r");
 
     
@@ -342,6 +374,23 @@ disk_manager_save_to_variables(DiskManager *manager)
         while (fgets(line, sizeof(line), read_file)) {
             // Skip la línea de SELECTED_DISK si existe
             if (g_str_has_prefix(line, "SELECTED_DISK=")) {
+                continue;
+            }
+            // Preservar PARTITION_MODE para reescribirlo después
+            if (g_str_has_prefix(line, "PARTITION_MODE=")) {
+                // Extraer el valor de PARTITION_MODE
+                gchar *mode_value = strchr(line, '=');
+                if (mode_value) {
+                    mode_value++; // Saltar el '='
+                    mode_value = g_strstrip(mode_value);
+                    // Remover comillas si existen
+                    if (mode_value[0] == '"' && mode_value[strlen(mode_value)-1] == '"') {
+                        mode_value[strlen(mode_value)-1] = '\0';
+                        mode_value++;
+                    }
+                    current_partition_mode = g_strdup(mode_value);
+                    LOG_INFO("PARTITION_MODE preservado desde variables.sh: %s", current_partition_mode);
+                }
                 continue;
             }
             // Skip líneas de fin de archivo
@@ -377,6 +426,15 @@ disk_manager_save_to_variables(DiskManager *manager)
         fprintf(file, "SELECTED_DISK=\"%s\"\n", manager->selected_disk_path);
     } else {
         fprintf(file, "SELECTED_DISK=\"\"\n");
+    }
+    
+    // Reescribir PARTITION_MODE si existía
+    if (current_partition_mode) {
+        fprintf(file, "PARTITION_MODE=\"%s\"\n", current_partition_mode);
+        LOG_INFO("PARTITION_MODE reescrito en variables.sh: %s", current_partition_mode);
+        g_free(current_partition_mode);
+    } else {
+        LOG_INFO("No se encontró PARTITION_MODE para preservar");
     }
     
     // No agregar línea final duplicada
@@ -424,6 +482,9 @@ disk_manager_load_from_variables(DiskManager *manager)
                 g_free(manager->selected_disk_path);
                 manager->selected_disk_path = g_strdup(value);
                 LOG_INFO("Disco cargado desde variables: %s", value);
+                
+                // Nota: La sincronización con el ComboRow se hace en disk_manager_populate_list()
+                // ya que necesitamos que la lista esté poblada primero
             }
             break;
         }

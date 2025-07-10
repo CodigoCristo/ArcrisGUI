@@ -3,6 +3,9 @@
 #include "page2.h"
 #include "page3.h"
 #include "page4.h"
+#include "page5.h"
+#include "page6.h"
+
 
 #include "config.h"
 #include <stdio.h>
@@ -32,6 +35,8 @@ CarouselManager* carousel_manager_new(void)
     manager->page2_data = NULL;
     manager->page3_data = NULL;
     manager->page4_data = NULL;
+    manager->page5_data = NULL;
+
     
     LOG_INFO("CarouselManager creado");
     return manager;
@@ -91,8 +96,15 @@ void carousel_init_all_pages(CarouselManager *manager, GtkBuilder *builder)
     // Inicializar página 3 (Configuración Adicional)
     page3_init(builder, manager->carousel, manager->revealer);
     
-    // Inicializar página 4 (Información del Disco)
+    // Inicializar página 4 (Registro de Usuario)
     page4_init(builder, manager->carousel, manager->revealer);
+    
+    // Inicializar página 5 (Personalización)
+    page5_init(builder, manager->carousel, manager->revealer);
+    
+    // Inicializar página 6 (Logo Final)
+    page6_init(builder, manager->carousel, manager->revealer);
+
     
     LOG_INFO("Todas las páginas han sido inicializadas");
 }
@@ -342,6 +354,11 @@ void carousel_manager_cleanup(CarouselManager *manager)
         page4_cleanup(manager->page4_data);
     }
     
+    if (manager->page5_data) {
+        page5_cleanup(manager->page5_data);
+    }
+
+    
     // Limpiar el manager
     g_free(manager);
     
@@ -364,11 +381,12 @@ static void on_carousel_page_changed_internal(AdwCarousel *carousel, guint page,
     // Actualizar página actual en el manager
     manager->current_page = page;
     
-    // Si navegamos a page4 (índice 3), actualizar información del disco
+    // Llamar a la función específica de page4 cuando se entra en ella (índice 3)
     if (page == 3) {
-        LOG_INFO("Navegando a página 4, actualizando información del disco");
-        page4_on_page_shown();
+        page4_on_enter();
     }
+    
+    // Las páginas ahora manejan su propia lógica de actualización
     
     // También llamar al callback original si existe
     on_carousel_page_changed(carousel, page, user_data);

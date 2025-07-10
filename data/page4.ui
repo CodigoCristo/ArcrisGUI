@@ -1,143 +1,104 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <requires lib="gtk" version="4.0"/>
-  <requires lib="adwaita" version="1.2"/>
-
-  <!-- AdwBin con AdwStatusPage -->
-  <object class="AdwBin" id="page4">
-    <child>
+  <object class="AdwBin" id="main_bin">
+    <property name="child">
       <object class="AdwStatusPage">
-        <property name="title" translatable="true">Partición Manual</property>
-        <property name="description" translatable="true">Configura las particiones usando Gparted en el disco seleccionado</property>
-
-        <child>
-          <!-- AdwClamp para limitar el ancho del contenido -->
+        <property name="title">Crear usuario</property>
+        <property name="description">Configure su nueva cuenta de usuario</property>
+        <property name="child">
           <object class="AdwClamp">
             <property name="maximum-size">600</property>
-            <property name="tightening-threshold">600</property>
-            <child>
+            <property name="tightening-threshold">400</property>
+            <property name="child">
               <object class="GtkBox">
                 <property name="orientation">vertical</property>
                 <property name="spacing">24</property>
-                <property name="margin-top">12</property>
-                <property name="margin-bottom">12</property>
-                <property name="margin-start">12</property>
-                <property name="margin-end">12</property>
+                <property name="margin-top">24</property>
+                <property name="margin-bottom">24</property>
+                <property name="margin-start">24</property>
+                <property name="margin-end">24</property>
 
-                <!-- Información del Disco -->
+                <!-- Grupo de campos de usuario -->
                 <child>
-                  <object class="GtkBox">
-                    <property name="orientation">horizontal</property>
-                    <property name="spacing">12</property>
-
-                    <!-- Icono del disco -->
+                  <object class="AdwPreferencesGroup">
                     <child>
-                      <object class="GtkImage">
-                        <property name="icon-name">drive-harddisk-symbolic</property>
-                        <property name="icon-size">large</property>
+                      <object class="AdwEntryRow" id="username_entry">
+                        <property name="title">Elija un nombre de usuario</property>
                       </object>
                     </child>
 
                     <child>
-                      <object class="GtkBox">
-                        <property name="orientation">vertical</property>
-                        <property name="spacing">8</property>
-                        <property name="hexpand">true</property>
+                      <object class="AdwPasswordEntryRow" id="password_entry">
+                        <property name="title">Elija una contraseña</property>
+                      </object>
+                    </child>
 
-                        <child>
-                          <object class="GtkBox">
-                            <property name="orientation">horizontal</property>
-                            <property name="spacing">12</property>
+                    <child>
+                      <object class="AdwPasswordEntryRow" id="password_confirm_entry">
+                        <property name="title">Confirme su contraseña</property>
+                      </object>
+                    </child>
 
-                            <child>
-                              <object class="GtkLabel" id="disk_label_page4">
-                                <property name="label" translatable="true">Disco /dev/sda</property>
-                                <property name="xalign">0</property>
-                                <style>
-                                  <class name="title-1"/>
-                                </style>
-                              </object>
-                            </child>
-
-                            <child>
-                              <object class="GtkBox">
-                                <property name="spacing">6</property>
-                                <property name="halign">end</property>
-                                <property name="hexpand">true</property>
-
-                                <child>
-                                  <object class="GtkButton" id="refresh_button">
-                                    <property name="tooltip-text" translatable="true">Actualizar lista</property>
-                                    <property name="child">
-                                          <object class="GtkImage">
-                                            <property name="icon-name">view-refresh-symbolic</property>
-                                          </object>
-                                    </property>
-                                    <style>
-                                      <class name="none"/>
-                                    </style>
-                                  </object>
-                                </child>
-
-                                <child>
-                                  <object class="GtkButton" id="gparted_button">
-                                    <property name="tooltip-text" translatable="true">Abrir Gparted para edición avanzada</property>
-                                    <property name="child">
-                                      <object class="GtkBox">
-                                        <property name="orientation">horizontal</property>
-                                        <property name="spacing">6</property>
-                                        <child>
-                                          <object class="GtkImage">
-                                            <property name="icon-name">preferences-system</property>
-                                          </object>
-                                        </child>
-                                        <child>
-                                          <object class="GtkLabel">
-                                            <property name="label" translatable="true"> Abrir Gparted</property>
-                                          </object>
-                                        </child>
-                                      </object>
-                                    </property>
-                                    <style>
-                                      <class name="suggested-action"/>
-                                    </style>
-                                  </object>
-
-
-
-                                </child>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-
-                        <child>
-                          <object class="GtkLabel" id="disk_size_label_page4">
-                            <property name="label" translatable="true">2000 GB</property>
-                            <property name="xalign">0</property>
-                            <style>
-                              <class name="dim-label"/>
-                            </style>
-                          </object>
-                        </child>
+                    <!-- Mensaje de error para contraseñas que no coinciden -->
+                    <child>
+                      <object class="GtkLabel" id="password_error_label">
+                        <property name="label">Las contraseñas no coinciden</property>
+                        <property name="halign">start</property>
+                        <property name="visible">false</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-top">4</property>
+                        <style>
+                          <class name="error"/>
+                        </style>
                       </object>
                     </child>
                   </object>
                 </child>
 
-                <!-- Volúmenes con AdwPreferencesGroup -->
+
+
+                <!-- Sección Hostname -->
                 <child>
-                  <object class="AdwPreferencesGroup" id="partitions_group">
-                    <property name="title" translatable="true">Particiones del disco</property>
-                    <property name="description" translatable="true">Presiona + para seleccionar los puntos de montaje</property>
-                    <!-- Las particiones se añadirán dinámicamente desde page4.c -->
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">12</property>
+
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label">Hostname</property>
+                        <property name="halign">start</property>
+                        <style>
+                          <class name="title-4"/>
+                        </style>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label">El nombre que utiliza al comunicarse con otros equipos.</property>
+                        <property name="halign">start</property>
+                        <property name="wrap">true</property>
+                        <style>
+                          <class name="dim-label"/>
+                        </style>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwPreferencesGroup">
+                        <child>
+                          <object class="AdwEntryRow" id="hostname_entry">
+                            <property name="title">El nombre del equipo</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>
-            </child>
+            </property>
           </object>
-        </child>
+        </property>
       </object>
-    </child>
+    </property>
   </object>
 </interface>

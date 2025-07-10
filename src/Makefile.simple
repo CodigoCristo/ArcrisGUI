@@ -1,0 +1,51 @@
+# Makefile simple para pruebas de validación básicas
+CC = gcc
+CFLAGS = -Wall -Wextra -g -std=c99
+PKGCONFIG = pkg-config
+
+# Paquetes necesarios (solo glib para las pruebas simples)
+PACKAGES = glib-2.0
+
+# Flags de compilación y enlazado
+CFLAGS += $(shell $(PKGCONFIG) --cflags $(PACKAGES))
+LDFLAGS += $(shell $(PKGCONFIG) --libs $(PACKAGES))
+
+# Archivos fuente y ejecutable
+TEST_SOURCE = test_validation_simple.c
+TEST_EXECUTABLE = test_validation_simple
+
+# Regla por defecto
+all: $(TEST_EXECUTABLE)
+
+# Regla para compilar las pruebas
+$(TEST_EXECUTABLE): $(TEST_SOURCE)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+# Regla para ejecutar las pruebas
+test: $(TEST_EXECUTABLE)
+	@echo "Ejecutando pruebas de validación..."
+	@./$(TEST_EXECUTABLE)
+
+# Regla para limpiar archivos generados
+clean:
+	rm -f $(TEST_EXECUTABLE)
+
+# Regla para verificar dependencias
+check-deps:
+	@echo "Verificando dependencias..."
+	@$(PKGCONFIG) --exists $(PACKAGES) && echo "✓ Todas las dependencias están disponibles" || echo "✗ Faltan dependencias"
+
+# Regla para mostrar información de debug
+debug:
+	@echo "CC: $(CC)"
+	@echo "CFLAGS: $(CFLAGS)"
+	@echo "LDFLAGS: $(LDFLAGS)"
+	@echo "PACKAGES: $(PACKAGES)"
+
+# Regla para instalar dependencias en Ubuntu/Debian
+install-deps:
+	@echo "Instalando dependencias..."
+	sudo apt-get update
+	sudo apt-get install -y libglib2.0-dev build-essential pkg-config
+
+.PHONY: all test clean check-deps debug install-deps
