@@ -198,11 +198,8 @@
     <child>
       <object class="GtkBox">
         <property name="orientation">vertical</property>
-        <property name="spacing">12</property>
-        <property name="margin-top">12</property>
-        <property name="margin-bottom">12</property>
-        <property name="margin-start">24</property>
-        <property name="margin-end">24</property>
+        <property name="spacing">15</property>
+        <property name="margin-top">25</property>
         <property name="halign">fill</property>
         <property name="valign">start</property>
 
@@ -211,7 +208,6 @@
             <property name="orientation">horizontal</property>
             <property name="spacing">12</property>
             <property name="halign">start</property>
-
             <child>
               <object class="GtkButton" id="wm_back_to_main_button">
                 <property name="icon-name">go-previous-symbolic</property>
@@ -283,6 +279,7 @@
             </child>
           </object>
         </child>
+
 
       </object>
     </child>

@@ -42,7 +42,7 @@ static const char* WM_IMAGE_RESOURCES[] = {
 static void page5_debug_check_image_resources(void)
 {
     LOG_INFO("Verificando recursos de imágenes...");
-    
+
     // Verificar recursos DE
     for (int i = 0; i < G_N_ELEMENTS(DE_IMAGE_RESOURCES); i++) {
         GBytes *resource = g_resources_lookup_data(DE_IMAGE_RESOURCES[i], G_RESOURCE_LOOKUP_FLAGS_NONE, NULL);
@@ -53,7 +53,7 @@ static void page5_debug_check_image_resources(void)
             LOG_ERROR("✗ Recurso DE no encontrado: %s", DE_IMAGE_RESOURCES[i]);
         }
     }
-    
+
     // Verificar recursos WM
     for (int i = 0; i < G_N_ELEMENTS(WM_IMAGE_RESOURCES); i++) {
         GBytes *resource = g_resources_lookup_data(WM_IMAGE_RESOURCES[i], G_RESOURCE_LOOKUP_FLAGS_NONE, NULL);
@@ -70,7 +70,7 @@ static void page5_debug_check_image_resources(void)
 static void page5_force_image_refresh(Page5Data *data)
 {
     if (!data) return;
-    
+
     // Forzar actualización de imagen DE si está visible
     if (data->de_preview_image && GTK_IS_PICTURE(data->de_preview_image)) {
         const char *resource = page5_get_de_image_resource(data->current_de);
@@ -82,7 +82,7 @@ static void page5_force_image_refresh(Page5Data *data)
             LOG_INFO("Imagen DE forzada a actualizar: %s", resource);
         }
     }
-    
+
     // Forzar actualización de imagen WM si está visible
     if (data->wm_preview_image && GTK_IS_PICTURE(data->wm_preview_image)) {
         const char *resource = page5_get_wm_image_resource(data->current_wm);
@@ -101,9 +101,9 @@ static gboolean page5_test_images_loaded(gpointer user_data)
 {
     Page5Data *data = (Page5Data *)user_data;
     if (!data) return G_SOURCE_REMOVE;
-    
+
     LOG_INFO("Ejecutando prueba de carga de imágenes...");
-    
+
     // Verificar que las imágenes DE estén cargadas
     if (data->de_preview_image && GTK_IS_PICTURE(data->de_preview_image)) {
         GdkPaintable *paintable = gtk_picture_get_paintable(data->de_preview_image);
@@ -114,7 +114,7 @@ static gboolean page5_test_images_loaded(gpointer user_data)
             page5_update_de_preview(data);
         }
     }
-    
+
     // Verificar que las imágenes WM estén cargadas
     if (data->wm_preview_image && GTK_IS_PICTURE(data->wm_preview_image)) {
         GdkPaintable *paintable = gtk_picture_get_paintable(data->wm_preview_image);
@@ -125,7 +125,7 @@ static gboolean page5_test_images_loaded(gpointer user_data)
             page5_update_wm_preview(data);
         }
     }
-    
+
     return G_SOURCE_REMOVE;
 }
 
@@ -134,7 +134,7 @@ void page5_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
 {
     // Verificar que los recursos de imágenes estén disponibles
     page5_debug_check_image_resources();
-    
+
     // Allocar memoria para los datos de la página
     g_page5_data = g_malloc0(sizeof(Page5Data));
 
@@ -230,14 +230,14 @@ void page5_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     // Realizar configuraciones iniciales
     page5_setup_widgets(g_page5_data);
     page5_load_data(g_page5_data);
-    
+
     // Inicializar las imágenes de preview inmediatamente
     if (g_page5_data->de_preview_image) {
         gtk_picture_set_resource(g_page5_data->de_preview_image, page5_get_de_image_resource(g_page5_data->current_de));
         gtk_widget_set_visible(GTK_WIDGET(g_page5_data->de_preview_image), TRUE);
         LOG_INFO("Imagen DE inicializada con: %s", page5_get_de_image_resource(g_page5_data->current_de));
     }
-    
+
     if (g_page5_data->wm_preview_image) {
         gtk_picture_set_resource(g_page5_data->wm_preview_image, page5_get_wm_image_resource(g_page5_data->current_wm));
         gtk_widget_set_visible(GTK_WIDGET(g_page5_data->wm_preview_image), TRUE);
@@ -357,10 +357,10 @@ void page5_show_de_page(Page5Data *data)
 
     gtk_stack_set_visible_child_name(data->pages_stack, "de");
     page5_update_de_preview(data);
-    
+
     // Forzar actualización de imagen después de mostrar la página
     g_idle_add((GSourceFunc)page5_force_image_refresh, data);
-    
+
     LOG_INFO("Mostrando página de selección de entorno de escritorio");
 }
 
@@ -371,10 +371,10 @@ void page5_show_wm_page(Page5Data *data)
 
     gtk_stack_set_visible_child_name(data->pages_stack, "wm");
     page5_update_wm_preview(data);
-    
+
     // Forzar actualización de imagen después de mostrar la página
     g_idle_add((GSourceFunc)page5_force_image_refresh, data);
-    
+
     LOG_INFO("Mostrando página de selección de gestor de ventanas");
 }
 
@@ -422,14 +422,14 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
     GError *error = NULL;
     gchar *config_content = NULL;
     const gchar *config_path = "Arcris2/data/variables.sh";
-    
+
     // Leer el archivo actual
     if (!g_file_get_contents(config_path, &config_content, NULL, &error)) {
         LOG_ERROR("Error al leer archivo de configuración: %s", error ? error->message : "Unknown error");
         if (error) g_error_free(error);
         return FALSE;
     }
-    
+
     // Obtener el nombre del DE
     gchar *de_name = NULL;
     switch (de) {
@@ -449,14 +449,14 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
             de_name = g_strdup("GNOME");
             break;
     }
-    
+
     // Crear el nuevo contenido
-    gchar *new_content = g_strdup_printf("%s\n# Variable DE seleccionada\nDESKTOP_ENVIRONMENT=\"%s\"\n", 
+    gchar *new_content = g_strdup_printf("%s\n# Variable DE seleccionada\nDESKTOP_ENVIRONMENT=\"%s\"\n",
                                        config_content, de_name);
-    
+
     // Escribir el nuevo contenido
     gboolean success = g_file_set_contents(config_path, new_content, -1, &error);
-    
+
     if (error) {
         LOG_ERROR("Error al guardar variable DE: %s", error->message);
         g_error_free(error);
@@ -464,11 +464,11 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
     } else {
         LOG_INFO("Variable DE guardada: %s", de_name);
     }
-    
+
     g_free(config_content);
     g_free(new_content);
     g_free(de_name);
-    
+
     return success;
 }
 
@@ -478,14 +478,14 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
     GError *error = NULL;
     gchar *config_content = NULL;
     const gchar *config_path = "Arcris2/data/variables.sh";
-    
+
     // Leer el archivo actual
     if (!g_file_get_contents(config_path, &config_content, NULL, &error)) {
         LOG_ERROR("Error al leer archivo de configuración: %s", error ? error->message : "Unknown error");
         if (error) g_error_free(error);
         return FALSE;
     }
-    
+
     // Obtener el nombre del WM
     gchar *wm_name = NULL;
     switch (wm) {
@@ -505,14 +505,14 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
             wm_name = g_strdup("I3");
             break;
     }
-    
+
     // Crear el nuevo contenido
-    gchar *new_content = g_strdup_printf("%s\n# Variable WM seleccionada\nWINDOW_MANAGER=\"%s\"\n", 
+    gchar *new_content = g_strdup_printf("%s\n# Variable WM seleccionada\nWINDOW_MANAGER=\"%s\"\n",
                                        config_content, wm_name);
-    
+
     // Escribir el nuevo contenido
     gboolean success = g_file_set_contents(config_path, new_content, -1, &error);
-    
+
     if (error) {
         LOG_ERROR("Error al guardar variable WM: %s", error->message);
         g_error_free(error);
@@ -520,11 +520,11 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
     } else {
         LOG_INFO("Variable WM guardada: %s", wm_name);
     }
-    
+
     g_free(config_content);
     g_free(new_content);
     g_free(wm_name);
-    
+
     return success;
 }
 
@@ -586,14 +586,14 @@ void page5_update_de_preview(Page5Data *data)
             LOG_ERROR("Widget de preview DE no es un GtkPicture válido");
             return;
         }
-        
+
         gtk_picture_set_resource(data->de_preview_image, resource);
-        
+
         // Asegurar que el widget sea visible y se redibuje
         gtk_widget_set_visible(GTK_WIDGET(data->de_preview_image), TRUE);
         gtk_widget_queue_draw(GTK_WIDGET(data->de_preview_image));
         gtk_widget_queue_resize(GTK_WIDGET(data->de_preview_image));
-        
+
         LOG_INFO("Preview DE actualizado: %s para %s", resource, page5_get_de_name(data->current_de));
     } else {
         LOG_ERROR("No se pudo obtener el recurso de imagen para DE: %d", data->current_de);
@@ -637,14 +637,14 @@ void page5_update_wm_preview(Page5Data *data)
             LOG_ERROR("Widget de preview WM no es un GtkPicture válido");
             return;
         }
-        
+
         gtk_picture_set_resource(data->wm_preview_image, resource);
-        
+
         // Asegurar que el widget sea visible y se redibuje
         gtk_widget_set_visible(GTK_WIDGET(data->wm_preview_image), TRUE);
         gtk_widget_queue_draw(GTK_WIDGET(data->wm_preview_image));
         gtk_widget_queue_resize(GTK_WIDGET(data->wm_preview_image));
-        
+
         LOG_INFO("Preview WM actualizado: %s para %s", resource, page5_get_wm_name(data->current_wm));
     } else {
         LOG_ERROR("No se pudo obtener el recurso de imagen para WM: %d", data->current_wm);
@@ -674,14 +674,14 @@ void on_page5_terminal_check_toggled(GtkCheckButton *check, gpointer user_data)
 
     if (gtk_check_button_get_active(check)) {
         page5_set_installation_type(data, INSTALL_TYPE_TERMINAL);
-        
+
         // Activar el botón siguiente del GtkRevealer
         GtkWidget *next_button = page5_get_next_button(data);
         if (next_button) {
             gtk_widget_set_sensitive(next_button, TRUE);
             LOG_INFO("Botón siguiente activado al presionar terminal_check");
         }
-        
+
         page5_show_main_page(data);
     }
 }
@@ -693,14 +693,14 @@ void on_page5_desktop_check_toggled(GtkCheckButton *check, gpointer user_data)
 
     if (gtk_check_button_get_active(check)) {
         page5_set_installation_type(data, INSTALL_TYPE_DESKTOP);
-        
+
         // Desactivar el botón siguiente del GtkRevealer
         GtkWidget *next_button = page5_get_next_button(data);
         if (next_button) {
             gtk_widget_set_sensitive(next_button, FALSE);
             LOG_INFO("Botón siguiente desactivado al presionar desktop_check");
         }
-        
+
         // No navegar automáticamente, esperar a que se active el row
     }
 }
@@ -712,14 +712,14 @@ void on_page5_wm_check_toggled(GtkCheckButton *check, gpointer user_data)
 
     if (gtk_check_button_get_active(check)) {
         page5_set_installation_type(data, INSTALL_TYPE_WINDOW_MANAGER);
-        
+
         // Desactivar el botón siguiente del GtkRevealer
         GtkWidget *next_button = page5_get_next_button(data);
         if (next_button) {
             gtk_widget_set_sensitive(next_button, FALSE);
             LOG_INFO("Botón siguiente desactivado al presionar wm_check");
         }
-        
+
         // No navegar automáticamente, esperar a que se active el row
     }
 }
@@ -804,6 +804,13 @@ void on_page5_de_back_to_main_button_clicked(GtkButton *button, gpointer user_da
     Page5Data *data = (Page5Data *)user_data;
     if (!data) return;
 
+    // Desactivar el botón siguiente
+    GtkWidget *next_button = page5_get_next_button(data);
+    if (next_button) {
+        gtk_widget_set_sensitive(next_button, FALSE);
+        LOG_INFO("Botón siguiente desactivado al presionar de_back_to_main_button");
+    }
+
     page5_show_main_page(data);
     LOG_INFO("Regresando a página principal desde DE con botón go-previous");
 }
@@ -813,11 +820,34 @@ void on_page5_wm_back_to_main_button_clicked(GtkButton *button, gpointer user_da
     Page5Data *data = (Page5Data *)user_data;
     if (!data) return;
 
+    // Desactivar el botón siguiente
+    GtkWidget *next_button = page5_get_next_button(data);
+    if (next_button) {
+        gtk_widget_set_sensitive(next_button, FALSE);
+        LOG_INFO("Botón siguiente desactivado al presionar wm_back_to_main_button");
+    }
+
     page5_show_main_page(data);
     LOG_INFO("Regresando a página principal desde WM con botón go-previous");
 }
 
 // Callbacks para botones go-next-symbolic
+// Función de callback para el timeout del desktop_next_button
+static gboolean on_desktop_next_button_timeout(gpointer user_data)
+{
+    Page5Data *data = (Page5Data *)user_data;
+    if (!data) return FALSE;
+
+    // Habilitar el botón next_button
+    GtkWidget *next_button = page5_get_next_button(data);
+    if (next_button) {
+        gtk_widget_set_sensitive(next_button, TRUE);
+        LOG_INFO("Botón next_button habilitado desde desktop_next_button con timeout");
+    }
+
+    return FALSE; // No repetir el timeout
+}
+
 void on_page5_desktop_next_button_clicked(GtkButton *button, gpointer user_data)
 {
     Page5Data *data = (Page5Data *)user_data;
@@ -827,7 +857,7 @@ void on_page5_desktop_next_button_clicked(GtkButton *button, gpointer user_data)
     if (data->de_combo) {
         guint selected = adw_combo_row_get_selected(data->de_combo);
         DesktopEnvironmentType de = page5_index_to_de_type(selected);
-        
+
         // Guardar la variable usando la función auxiliar
         page5_save_de_variable(de);
     }
@@ -836,6 +866,31 @@ void on_page5_desktop_next_button_clicked(GtkButton *button, gpointer user_data)
         page5_show_de_page(data);
         LOG_INFO("Navegando a página DE con botón go-next");
     }
+
+    if (data->current_type == INSTALL_TYPE_DESKTOP) {
+        page5_show_de_page(data);
+        LOG_INFO("Navegando a página DE con botón go-next");
+    }
+
+    // Programar activación del botón next_button con timeout
+    g_timeout_add(100, on_desktop_next_button_timeout, data);
+    LOG_INFO("Timeout programado para habilitar next_button desde desktop_next_button en 2 segundos");
+}
+
+// Función de callback para el timeout del wm_next_button
+static gboolean on_wm_next_button_timeout(gpointer user_data)
+{
+    Page5Data *data = (Page5Data *)user_data;
+    if (!data) return FALSE;
+
+    // Habilitar el botón next_button
+    GtkWidget *next_button = page5_get_next_button(data);
+    if (next_button) {
+        gtk_widget_set_sensitive(next_button, TRUE);
+        LOG_INFO("Botón next_button habilitado desde wm_next_button con timeout");
+    }
+
+    return FALSE; // No repetir el timeout
 }
 
 void on_page5_wm_next_button_clicked(GtkButton *button, gpointer user_data)
@@ -847,15 +902,20 @@ void on_page5_wm_next_button_clicked(GtkButton *button, gpointer user_data)
     if (data->wm_combo) {
         guint selected = adw_combo_row_get_selected(data->wm_combo);
         WindowManagerType wm = page5_index_to_wm_type(selected);
-        
+
         // Guardar la variable usando la función auxiliar
         page5_save_wm_variable(wm);
     }
 
+    // Mostrar la página WM
     if (data->current_type == INSTALL_TYPE_WINDOW_MANAGER) {
         page5_show_wm_page(data);
         LOG_INFO("Navegando a página WM con botón go-next");
     }
+
+    // Programar activación del botón next_button con timeout
+    g_timeout_add(100, on_wm_next_button_timeout, data);
+    LOG_INFO("Timeout programado para habilitar next_button desde wm_next_button en 2 segundos");
 }
 
 // Función para ir a la página siguiente
@@ -986,7 +1046,7 @@ gboolean page5_apply_configuration(Page5Data *data)
 void page5_on_page_shown(void)
 {
     LOG_INFO("Página 5 mostrada - Personalización del sistema");
-    
+
     // Actualizar las imágenes cuando se muestra la página
     if (g_page5_data) {
         page5_update_de_preview(g_page5_data);

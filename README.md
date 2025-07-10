@@ -229,7 +229,7 @@ Este proyecto está licenciado bajo la Licencia GPL v3 - ver el archivo [LICENSE
 
 - 🐛 **Issues**: [GitHub Issues](https://github.com/tu-usuario/Arcris2/issues)
 - 💬 **Discusiones**: [GitHub Discussions](https://github.com/tu-usuario/Arcris2/discussions)
-- 📧 **Email**: enproceso@github.com
+- 📧 **Email**: tu-email@ejemplo.com
 
 ---
 
