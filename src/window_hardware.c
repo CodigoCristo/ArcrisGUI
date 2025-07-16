@@ -211,7 +211,7 @@ char* window_hardware_get_graphics_card_info(void)
     char buffer[512];
 
     // Intentar obtener información con lspci
-    fp = popen("lspci | grep -i 'vga' | sed -E 's/.*\\[([^][]+)\\].*/\\1/'", "r");
+    fp = popen("lspci | grep -i 'vga' | sed -E 's/.*\\[([^][]+)\\].*/\\1/' | cut -d':' -f3 | sed -e 's/^ //' -e 's/ (rev.*)//'", "r");
     if (fp) {
         if (fgets(buffer, sizeof(buffer), fp)) {
             // Remover el salto de línea
@@ -338,12 +338,24 @@ void window_hardware_update_hardware_descriptions(WindowHardwareData *data)
     // Actualizar subtítulo de WiFi
     if (data->hardware_info->wifi_card_name && data->driver_wifi_combo) {
         g_object_set(data->driver_wifi_combo, "subtitle", data->hardware_info->wifi_card_name, NULL);
+        // Verificar si WiFi no está disponible y deshabilitar
+        if (strstr(data->hardware_info->wifi_card_name, "No se detectó") != NULL) {
+            gtk_widget_set_sensitive(GTK_WIDGET(data->driver_wifi_combo), FALSE);
+        } else {
+            gtk_widget_set_sensitive(GTK_WIDGET(data->driver_wifi_combo), TRUE);
+        }
         LOG_INFO("Subtítulo WiFi actualizado: %s", data->hardware_info->wifi_card_name);
     }
     
     // Actualizar subtítulo de Bluetooth
     if (data->hardware_info->bluetooth_card_name && data->driver_bluetooth_combo) {
         g_object_set(data->driver_bluetooth_combo, "subtitle", data->hardware_info->bluetooth_card_name, NULL);
+        // Verificar si Bluetooth no está disponible y deshabilitar
+        if (strstr(data->hardware_info->bluetooth_card_name, "No se detectó") != NULL) {
+            gtk_widget_set_sensitive(GTK_WIDGET(data->driver_bluetooth_combo), FALSE);
+        } else {
+            gtk_widget_set_sensitive(GTK_WIDGET(data->driver_bluetooth_combo), TRUE);
+        }
         LOG_INFO("Subtítulo Bluetooth actualizado: %s", data->hardware_info->bluetooth_card_name);
     }
     
@@ -363,7 +375,7 @@ void window_hardware_update_video_description(WindowHardwareData *data, const ch
 
     // Crear el texto con formato y color verde negrita con salto de línea
     char *description_markup = g_strdup_printf(
-        "Tu tarjeta Gráfica es:\n<span color='#00AA00' weight='bold'>%s</span>",
+        "Tu tarjeta Gráfica es:\n<span color='#FF0000' weight='bold'>%s</span>",
         graphics_card
     );
 
@@ -387,7 +399,7 @@ void window_hardware_update_audio_description(WindowHardwareData *data, const ch
 
     // Crear el texto con formato con salto de línea
     char *description_markup = g_strdup_printf(
-        "Tu tarjeta Audio es:\n<span color='#00AA00' weight='bold'>%s</span>",
+        "Tu tarjeta Audio es:\n<span color='#FF0000' weight='bold'>%s</span>",
         audio_card
     );
 
