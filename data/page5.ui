@@ -95,7 +95,7 @@
   <object class="AdwClamp" id="de_page">
     <property name="vexpand">true</property>
     <property name="hexpand">true</property>
-    <property name="maximum-size">600</property>
+    <property name="maximum-size">800</property>
     <property name="tightening-threshold">600</property>
 
     <child>
@@ -105,6 +105,10 @@
         <property name="margin-top">25</property>
         <property name="halign">fill</property>
         <property name="valign">start</property>
+        <property name="halign">center</property>
+        <property name="valign">center</property>
+        <property name="vexpand">true</property>
+        <property name="hexpand">true</property>
 
         <child>
           <object class="GtkBox">
@@ -175,7 +179,7 @@
                 <property name="hexpand">true</property>
                 <property name="vexpand">true</property>
                 <property name="can-shrink">true</property>
-                <property name="content-fit">2</property>
+                <property name="content-fit">4</property>
                 <style>
                   <class name="card"/>
                 </style>
@@ -192,7 +196,7 @@
   <object class="AdwClamp" id="wm_page">
     <property name="vexpand">true</property>
     <property name="hexpand">true</property>
-    <property name="maximum-size">600</property>
+    <property name="maximum-size">800</property>
     <property name="tightening-threshold">600</property>
 
     <child>
@@ -202,6 +206,10 @@
         <property name="margin-top">25</property>
         <property name="halign">fill</property>
         <property name="valign">start</property>
+        <property name="halign">center</property>
+        <property name="valign">center</property>
+        <property name="vexpand">true</property>
+        <property name="hexpand">true</property>
 
         <child>
           <object class="GtkBox">
@@ -271,7 +279,7 @@
                 <property name="hexpand">true</property>
                 <property name="vexpand">true</property>
                 <property name="can-shrink">true</property>
-                <property name="content-fit">2</property>
+                <property name="content-fit">4</property>
                 <style>
                   <class name="card"/>
                 </style>

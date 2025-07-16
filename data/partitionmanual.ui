@@ -63,7 +63,7 @@
                                 <child>
                                   <object class="AdwComboRow" id="disk_combo">
                                     <property name="title" translatable="yes">Dispositivo</property>
-                                    <property name="subtitle" translatable="yes">Selecciona un dispositivo</property>
+
                                     <property name="model">
                                       <object class="GtkStringList" id="disk_list">
                                         <items>

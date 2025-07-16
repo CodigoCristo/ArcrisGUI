@@ -22,21 +22,21 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
 {
     // Allocar memoria para los datos de la página
     g_page3_data = g_malloc0(sizeof(Page3Data));
-    
+
     // Guardar referencias importantes
     g_page3_data->carousel = carousel;
     g_page3_data->revealer = revealer;
-    
+
     // Cargar la página 3 desde el archivo UI
     GtkBuilder *page_builder = gtk_builder_new_from_resource("/org/gtk/arcris/page3.ui");
     GtkWidget *page3 = GTK_WIDGET(gtk_builder_get_object(page_builder, "navigation_view"));
-    
+
     if (!page3) {
         LOG_ERROR("No se pudo cargar la página 3 desde el archivo UI");
         g_object_unref(page_builder);
         return;
     }
-    
+
     // Obtener widgets específicos de la página
     g_page3_data->main_content = page3;
     g_page3_data->navigation_view = ADW_NAVIGATION_VIEW(gtk_builder_get_object(page_builder, "navigation_view"));
@@ -48,7 +48,7 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page3_data->refresh_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "refresh_button"));
     g_page3_data->configure_partitions_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "configure_partitions_button"));
     g_page3_data->save_key_disk_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "save_key_disk_button"));
-    
+
     // Obtener widgets de la página de particiones manuales
     g_page3_data->disk_label_page4 = GTK_LABEL(gtk_builder_get_object(page_builder, "disk_label_page4"));
     g_page3_data->disk_size_label_page4 = GTK_LABEL(gtk_builder_get_object(page_builder, "disk_size_label_page4"));
@@ -57,28 +57,28 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page3_data->return_disks = GTK_BUTTON(gtk_builder_get_object(page_builder, "return_disks"));
     g_page3_data->return_disks_encryption = ADW_BUTTON_ROW(gtk_builder_get_object(page_builder, "return_disks_encryption"));
     g_page3_data->partitions_group = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "partitions_group"));
-    
+
     // Obtener widgets para particionado cifrado
     g_page3_data->password_entry = ADW_PASSWORD_ENTRY_ROW(gtk_builder_get_object(page_builder, "password_entry"));
     g_page3_data->password_confirm_entry = ADW_PASSWORD_ENTRY_ROW(gtk_builder_get_object(page_builder, "password_confirm_entry"));
     g_page3_data->password_error_label = GTK_LABEL(gtk_builder_get_object(page_builder, "password_error_label"));
-    
+
     // Verificar que todos los widgets se obtuvieron correctamente
-    if (!g_page3_data->navigation_view || !g_page3_data->disk_combo || !g_page3_data->auto_partition_radio || 
+    if (!g_page3_data->navigation_view || !g_page3_data->disk_combo || !g_page3_data->auto_partition_radio ||
         !g_page3_data->auto_btrfs_radio || !g_page3_data->cifrado_partition_button || !g_page3_data->manual_partition_radio ||
         !g_page3_data->refresh_button || !g_page3_data->configure_partitions_button || !g_page3_data->save_key_disk_button ||
         !g_page3_data->disk_label_page4 || !g_page3_data->disk_size_label_page4 ||
-        !g_page3_data->gparted_button || !g_page3_data->return_disks || !g_page3_data->return_disks_encryption || 
-        !g_page3_data->partitions_group || !g_page3_data->password_entry || !g_page3_data->password_confirm_entry || 
+        !g_page3_data->gparted_button || !g_page3_data->return_disks || !g_page3_data->return_disks_encryption ||
+        !g_page3_data->partitions_group || !g_page3_data->password_entry || !g_page3_data->password_confirm_entry ||
         !g_page3_data->password_error_label) {
         LOG_ERROR("No se pudieron obtener todos los widgets necesarios de la página 3");
         g_object_unref(page_builder);
         return;
     }
-    
+
     // Configurar administrador de discos
     page3_setup_disk_manager(g_page3_data, page_builder);
-    
+
     // Inicializar cliente UDisks2 para obtener información de particiones
     GError *error = NULL;
     g_page3_data->udisks_client = udisks_client_new_sync(NULL, &error);
@@ -88,71 +88,71 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     } else {
         LOG_INFO("Cliente UDisks2 inicializado para page3");
     }
-    
+
     // Inicializar listas de particiones
     g_page3_data->partitions = NULL;
     g_page3_data->partition_rows = NULL;
-    
+
     // Inicializar estado del cifrado
     g_page3_data->encryption_enabled = FALSE;
     g_page3_data->passwords_match = FALSE;
     g_page3_data->password_length_valid = FALSE;
-    
+
     // Realizar configuraciones iniciales específicas de la página 3
     page3_setup_widgets(g_page3_data);
     page3_load_data(g_page3_data);
-    
+
     // Conectar señales para navegación interna
-    g_signal_connect(g_page3_data->configure_partitions_button, "clicked", 
+    g_signal_connect(g_page3_data->configure_partitions_button, "clicked",
                      G_CALLBACK(on_page3_configure_partitions_clicked), g_page3_data);
-    g_signal_connect(g_page3_data->manual_partition_radio, "toggled", 
+    g_signal_connect(g_page3_data->manual_partition_radio, "toggled",
                      G_CALLBACK(on_page3_partition_mode_changed), g_page3_data);
-    g_signal_connect(g_page3_data->auto_partition_radio, "toggled", 
+    g_signal_connect(g_page3_data->auto_partition_radio, "toggled",
                      G_CALLBACK(on_page3_partition_mode_changed), g_page3_data);
-    g_signal_connect(g_page3_data->auto_btrfs_radio, "toggled", 
+    g_signal_connect(g_page3_data->auto_btrfs_radio, "toggled",
                      G_CALLBACK(on_page3_partition_mode_changed), g_page3_data);
-    g_signal_connect(g_page3_data->cifrado_partition_button, "toggled", 
+    g_signal_connect(g_page3_data->cifrado_partition_button, "toggled",
                      G_CALLBACK(on_page3_partition_mode_changed), g_page3_data);
-    g_signal_connect(g_page3_data->save_key_disk_button, "clicked", 
+    g_signal_connect(g_page3_data->save_key_disk_button, "clicked",
                      G_CALLBACK(on_page3_save_key_disk_clicked), g_page3_data);
-                     
+
     // Conectar señales de los campos de contraseña
     if (g_page3_data->password_entry) {
         g_signal_connect(g_page3_data->password_entry, "changed",
                          G_CALLBACK(on_page3_password_changed), g_page3_data);
     }
-    
+
     if (g_page3_data->password_confirm_entry) {
         g_signal_connect(g_page3_data->password_confirm_entry, "changed",
                          G_CALLBACK(on_page3_password_confirm_changed), g_page3_data);
     }
-    g_signal_connect(g_page3_data->gparted_button, "clicked", 
+    g_signal_connect(g_page3_data->gparted_button, "clicked",
                      G_CALLBACK(on_page3_gparted_button_clicked), g_page3_data);
-    g_signal_connect(g_page3_data->refresh_partitions_button, "clicked", 
+    g_signal_connect(g_page3_data->refresh_partitions_button, "clicked",
                      G_CALLBACK(on_page3_refresh_partitions_clicked), g_page3_data);
-    g_signal_connect(g_page3_data->return_disks, "clicked", 
+    g_signal_connect(g_page3_data->return_disks, "clicked",
                      G_CALLBACK(on_page3_return_disks_clicked), g_page3_data);
-    g_signal_connect(g_page3_data->return_disks_encryption, "activated", 
+    g_signal_connect(g_page3_data->return_disks_encryption, "activated",
                      G_CALLBACK(on_page3_return_disks_encryption_clicked), g_page3_data);
-    
+
     // Crear botones de navegación
     page3_create_navigation_buttons(g_page3_data);
-    
+
     // Añadir la página al carousel
     adw_carousel_append(carousel, page3);
-    
+
     // Liberar el builder de la página
     g_object_unref(page_builder);
-    
+
     // Inicializar el manejador de particiones
     page3_init_partition_manager(g_page3_data);
-    
+
     // Establecer modo por defecto automáticamente
     page3_save_partition_mode("auto");
-    
+
     // Cargar modo de particionado desde variables.sh
     page3_load_partition_mode(g_page3_data);
-    
+
     LOG_INFO("Página 3 (Selección de Disco) inicializada correctamente");
 }
 
@@ -162,31 +162,31 @@ void page3_cleanup(Page3Data *data)
     if (g_page3_data) {
         // Limpiar lista de particiones
         page3_clear_partitions(g_page3_data);
-        
+
         // Limpiar lista de filas de particiones
         if (g_page3_data->partition_rows) {
             g_list_free(g_page3_data->partition_rows);
             g_page3_data->partition_rows = NULL;
         }
-        
+
         // Limpiar cliente UDisks2
         if (g_page3_data->udisks_client) {
             g_object_unref(g_page3_data->udisks_client);
             g_page3_data->udisks_client = NULL;
         }
-        
+
         // Liberar el administrador de discos
         if (g_disk_manager) {
             disk_manager_free(g_disk_manager);
             g_disk_manager = NULL;
         }
-        
+
         // Liberar el manejador de particiones
         if (g_page3_data->partition_manager) {
             partition_manager_free(g_page3_data->partition_manager);
             g_page3_data->partition_manager = NULL;
         }
-        
+
         g_free(g_page3_data);
         g_page3_data = NULL;
         LOG_INFO("Página 3 limpiada correctamente");
@@ -197,14 +197,14 @@ void page3_cleanup(Page3Data *data)
 static void page3_setup_disk_manager(Page3Data *data, GtkBuilder *page_builder)
 {
     if (!data) return;
-    
+
     // Crear el administrador de discos
     g_disk_manager = disk_manager_new();
     if (!g_disk_manager) {
         LOG_ERROR("No se pudo crear el DiskManager");
         return;
     }
-    
+
     // Inicializar widgets del administrador de discos
     if (!disk_manager_init(g_disk_manager, page_builder)) {
         LOG_ERROR("No se pudieron inicializar los widgets del DiskManager");
@@ -212,7 +212,7 @@ static void page3_setup_disk_manager(Page3Data *data, GtkBuilder *page_builder)
         g_disk_manager = NULL;
         return;
     }
-    
+
     LOG_INFO("DiskManager configurado correctamente para la página 3");
 }
 
@@ -220,18 +220,18 @@ static void page3_setup_disk_manager(Page3Data *data, GtkBuilder *page_builder)
 void page3_setup_widgets(Page3Data *data)
 {
     if (!data) return;
-    
+
     // Configurar estado inicial de los radio buttons
     gtk_check_button_set_active(data->auto_partition_radio, TRUE);
-    
+
     // Configurar estado inicial del botón de configurar particiones
     if (data->configure_partitions_button) {
         gtk_widget_set_sensitive(GTK_WIDGET(data->configure_partitions_button), FALSE);
     }
-    
+
     // Conectar señales adicionales si es necesario
     // Los callbacks principales ya están conectados en disk_manager_init_widgets
-    
+
     LOG_INFO("Widgets de la página 3 configurados");
 }
 
@@ -239,21 +239,21 @@ void page3_setup_widgets(Page3Data *data)
 void page3_load_data(Page3Data *data)
 {
     if (!data || !g_disk_manager) return;
-    
+
     // Cargar configuración guardada desde variables.sh
     disk_manager_load_from_variables(g_disk_manager);
-    
+
     // Actualizar UI según la configuración cargada
     const char *selected_disk = disk_manager_get_selected_disk(g_disk_manager);
     if (selected_disk) {
         LOG_INFO("Disco previamente seleccionado: %s", selected_disk);
     }
-    
+
     // Configurar modo de particionado por defecto
     if (data->auto_partition_radio) {
         gtk_check_button_set_active(data->auto_partition_radio, TRUE);
     }
-    
+
     LOG_INFO("Datos de la página 3 cargados");
 }
 
@@ -261,25 +261,25 @@ void page3_load_data(Page3Data *data)
 static gboolean page3_validate_selection(Page3Data *data)
 {
     if (!data || !g_disk_manager) return FALSE;
-    
+
     // Verificar que se haya seleccionado un disco
     const char *selected_disk = disk_manager_get_selected_disk(g_disk_manager);
     if (!selected_disk) {
         LOG_WARNING("No se ha seleccionado ningún disco");
-        
+
         // Mostrar mensaje de error al usuario
         AdwDialog *dialog = adw_alert_dialog_new(
             "Disco no seleccionado",
             "Por favor selecciona un disco para continuar"
         );
-        
+
         adw_alert_dialog_add_response(ADW_ALERT_DIALOG(dialog), "ok", "Aceptar");
         adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "ok");
         adw_dialog_present(dialog, NULL);
-        
+
         return FALSE;
     }
-    
+
     // Verificar que se haya seleccionado un modo de particionado
     if (data->auto_partition_radio && gtk_check_button_get_active(data->auto_partition_radio)) {
         LOG_INFO("Modo de particionado seleccionado: Auto Partition");
@@ -288,7 +288,7 @@ static gboolean page3_validate_selection(Page3Data *data)
     } else if (data->manual_partition_radio && gtk_check_button_get_active(data->manual_partition_radio)) {
         LOG_INFO("Modo de particionado seleccionado: Manual Partition");
     }
-    
+
     return TRUE;
 }
 
@@ -296,7 +296,7 @@ static gboolean page3_validate_selection(Page3Data *data)
 static void page3_save_configuration(Page3Data *data)
 {
     if (!data || !g_disk_manager) return;
-    
+
     // Guardar configuración en variables.sh
     if (disk_manager_save_to_variables(g_disk_manager)) {
         const char *selected_disk = disk_manager_get_selected_disk(g_disk_manager);
@@ -312,19 +312,19 @@ static void page3_save_configuration(Page3Data *data)
 gboolean page3_go_to_next_page(Page3Data *data)
 {
     if (!data || !g_disk_manager) return FALSE;
-    
+
     // Validar selección
     if (!page3_validate_selection(data)) {
         return FALSE;
     }
-    
+
     // Guardar configuración
     page3_save_configuration(data);
-    
+
     // Ir siempre a page4 (la siguiente página en secuencia)
     const char *selected_disk = disk_manager_get_selected_disk(g_disk_manager);
     LOG_INFO("Dirigiendo a página 4 para disco: %s", selected_disk);
-    
+
     // Ir a page4 (índice 3 en el carousel)
     if (data->carousel) {
         GtkWidget *page4 = adw_carousel_get_nth_page(data->carousel, 3);
@@ -335,7 +335,7 @@ gboolean page3_go_to_next_page(Page3Data *data)
             LOG_ERROR("No se pudo encontrar page4 en el carousel");
         }
     }
-    
+
     return TRUE;
 }
 
@@ -350,39 +350,39 @@ const char* page3_get_selected_disk(void)
 void page3_create_navigation_buttons(Page3Data *data)
 {
     if (!data || !data->main_content) return;
-    
+
     // Crear el contenedor de navegación
     GtkWidget *navigation_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
     gtk_widget_set_margin_top(navigation_box, 24);
     gtk_widget_set_halign(navigation_box, GTK_ALIGN_FILL);
     gtk_widget_set_hexpand(navigation_box, TRUE);
-    
+
     // Crear botón atrás
     GtkButton *back_button = GTK_BUTTON(gtk_button_new_with_label("Atrás"));
     gtk_widget_set_halign(GTK_WIDGET(back_button), GTK_ALIGN_START);
     gtk_widget_add_css_class(GTK_WIDGET(back_button), "pill");
-    
+
     // Crear espaciador
     GtkWidget *spacer = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_set_hexpand(spacer, TRUE);
-    
+
     // Crear botón siguiente
     GtkButton *next_button = GTK_BUTTON(gtk_button_new_with_label("Siguiente"));
     gtk_widget_set_halign(GTK_WIDGET(next_button), GTK_ALIGN_END);
     gtk_widget_add_css_class(GTK_WIDGET(next_button), "pill");
     gtk_widget_add_css_class(GTK_WIDGET(next_button), "suggested-action");
-    
+
     // Agregar widgets al contenedor
     gtk_box_append(GTK_BOX(navigation_box), GTK_WIDGET(back_button));
     gtk_box_append(GTK_BOX(navigation_box), spacer);
     gtk_box_append(GTK_BOX(navigation_box), GTK_WIDGET(next_button));
-    
+
     // Conectar señales
-    g_signal_connect(back_button, "clicked", 
+    g_signal_connect(back_button, "clicked",
                      G_CALLBACK(on_page3_back_button_clicked), data);
-    g_signal_connect(next_button, "clicked", 
+    g_signal_connect(next_button, "clicked",
                      G_CALLBACK(on_page3_next_button_clicked), data);
-    
+
     // Buscar el contenedor principal de page3 y agregar navegación
     GtkWidget *status_page = gtk_widget_get_first_child(data->main_content);
     if (status_page) {
@@ -391,7 +391,7 @@ void page3_create_navigation_buttons(Page3Data *data)
             gtk_box_append(GTK_BOX(status_child), navigation_box);
         }
     }
-    
+
     LOG_INFO("Botones de navegación creados para página 3");
 }
 
@@ -399,9 +399,9 @@ void page3_create_navigation_buttons(Page3Data *data)
 gboolean page3_go_to_previous_page(Page3Data *data)
 {
     if (!data) return FALSE;
-    
+
     LOG_INFO("Regresando a página anterior desde página 3");
-    
+
     // Ir a la página anterior en el carousel (page2, índice 1)
     if (data->carousel) {
         GtkWidget *page2 = adw_carousel_get_nth_page(data->carousel, 1);
@@ -411,7 +411,7 @@ gboolean page3_go_to_previous_page(Page3Data *data)
             LOG_ERROR("No se pudo encontrar page2 en el carousel");
         }
     }
-    
+
     return TRUE;
 }
 
@@ -419,7 +419,7 @@ gboolean page3_go_to_previous_page(Page3Data *data)
 DiskMode page3_get_partition_mode(void)
 {
     if (!g_page3_data) return DISK_MODE_AUTO_PARTITION;
-    
+
     if (g_page3_data->auto_btrfs_radio && gtk_check_button_get_active(g_page3_data->auto_btrfs_radio)) {
         return DISK_MODE_AUTO_BTRFS;
     } else if (g_page3_data->cifrado_partition_button && gtk_check_button_get_active(g_page3_data->cifrado_partition_button)) {
@@ -427,7 +427,7 @@ DiskMode page3_get_partition_mode(void)
     } else if (g_page3_data->manual_partition_radio && gtk_check_button_get_active(g_page3_data->manual_partition_radio)) {
         return DISK_MODE_MANUAL_PARTITION;
     }
-    
+
     return DISK_MODE_AUTO_PARTITION;
 }
 
@@ -449,13 +449,13 @@ gboolean page3_is_configuration_valid(void)
 // static void on_page3_next_button_clicked(GtkButton *button, gpointer user_data)
 // {
 //     Page3Data *data = (Page3Data *)user_data;
-//     
+//
 //     if (page3_go_to_next_page(data)) {
 //         LOG_INFO("Avanzando desde página 3");
-//         
+//
 //         // Aquí se podría emitir una señal o llamar a una función del carousel
 //         // para avanzar a la siguiente página
-//         
+//
 //         // Por ejemplo:
 //         // carousel_manager_go_to_next_page();
 //     }
@@ -467,17 +467,17 @@ void on_page3_disk_selection_changed(AdwComboRow *combo, GParamSpec *param, gpoi
 {
     // Este callback ya se maneja en disk_manager.c
     // Se incluye aquí por compatibilidad si se necesita lógica adicional
-    
+
     Page3Data *data = (Page3Data *)user_data;
     if (!data || !g_disk_manager) return;
-    
+
     const char *selected_disk = disk_manager_get_selected_disk(g_disk_manager);
     if (selected_disk) {
         LOG_INFO("Disco seleccionado en página 3: %s", selected_disk);
-        
+
         // Limpiar configuraciones del disco anterior
         page3_clear_previous_disk_configs(data, selected_disk);
-        
+
         // Refrescar vista con particiones del nuevo disco
         page3_update_manual_partitions_info(data);
         page3_update_all_partition_subtitles(data);
@@ -487,30 +487,30 @@ void on_page3_disk_selection_changed(AdwComboRow *combo, GParamSpec *param, gpoi
 void on_page3_partition_mode_changed(GtkCheckButton *button, gpointer user_data)
 {
     LOG_INFO("=== on_page3_partition_mode_changed INICIADO ===");
-    
+
     Page3Data *data = (Page3Data *)user_data;
     if (!data) {
         LOG_ERROR("on_page3_partition_mode_changed: data es NULL");
         return;
     }
-    
+
     if (!g_disk_manager) {
         LOG_ERROR("on_page3_partition_mode_changed: g_disk_manager es NULL");
         return;
     }
-    
+
     // Determinar el modo de particionado actual
     gboolean is_manual = gtk_check_button_get_active(data->manual_partition_radio);
     gboolean is_auto = gtk_check_button_get_active(data->auto_partition_radio);
     gboolean is_auto_btrfs = gtk_check_button_get_active(data->auto_btrfs_radio);
     gboolean is_cifrado = gtk_check_button_get_active(data->cifrado_partition_button);
-    
+
     LOG_INFO("Estados de radio buttons: manual=%s, auto=%s, auto_btrfs=%s, cifrado=%s",
              is_manual ? "TRUE" : "FALSE",
-             is_auto ? "TRUE" : "FALSE", 
+             is_auto ? "TRUE" : "FALSE",
              is_auto_btrfs ? "TRUE" : "FALSE",
              is_cifrado ? "TRUE" : "FALSE");
-    
+
     // Guardar modo en variables.sh
     const gchar *partition_mode = "auto";
     if (is_manual) {
@@ -522,13 +522,13 @@ void on_page3_partition_mode_changed(GtkCheckButton *button, gpointer user_data)
     } else if (is_auto) {
         partition_mode = "auto";
     }
-    
+
     LOG_INFO("Modo de particionado determinado: %s", partition_mode);
-    
+
     // Guardar en variables.sh
     LOG_INFO("Guardando modo de particionado en variables.sh...");
     page3_save_partition_mode(partition_mode);
-    
+
     // Habilitar/deshabilitar botón de configurar particiones según el modo
     if (data->configure_partitions_button) {
         gtk_widget_set_sensitive(GTK_WIDGET(data->configure_partitions_button), is_manual);
@@ -536,15 +536,15 @@ void on_page3_partition_mode_changed(GtkCheckButton *button, gpointer user_data)
     } else {
         LOG_WARNING("configure_partitions_button es NULL");
     }
-    
+
     // Actualizar estado del botón de cifrado
     page3_update_encryption_button_state(data);
-    
+
     // Habilitar/deshabilitar botón siguiente según el modo
     // En modo manual y cifrado, el botón siguiente se desactiva hasta que se configure
     LOG_INFO("Actualizando sensibilidad del botón siguiente...");
     page3_update_next_button_sensitivity(data, is_manual || is_cifrado);
-    
+
     LOG_INFO("Modo de particionado cambiado a: %s", partition_mode);
     LOG_INFO("=== on_page3_partition_mode_changed FINALIZADO ===");
 }
@@ -559,7 +559,7 @@ void on_page3_refresh_clicked(GtkButton *button, gpointer user_data)
 void on_page3_next_button_clicked(GtkButton *button, gpointer user_data)
 {
     Page3Data *data = (Page3Data *)user_data;
-    
+
     if (page3_go_to_next_page(data)) {
         LOG_INFO("Navegación exitosa desde página 3");
     } else {
@@ -571,7 +571,7 @@ void on_page3_next_button_clicked(GtkButton *button, gpointer user_data)
 void on_page3_back_button_clicked(GtkButton *button, gpointer user_data)
 {
     Page3Data *data = (Page3Data *)user_data;
-    
+
     if (page3_go_to_previous_page(data)) {
         LOG_INFO("Navegación hacia atrás exitosa desde página 3");
     } else {
@@ -584,7 +584,7 @@ void on_page3_configure_partitions_clicked(GtkButton *button, gpointer user_data
 {
     Page3Data *data = (Page3Data *)user_data;
     if (!data || !data->navigation_view) return;
-    
+
     LOG_INFO("Navegando a configuración de particiones manuales");
     page3_navigate_to_manual_partitions(data);
 }
@@ -594,26 +594,26 @@ void on_page3_gparted_button_clicked(GtkButton *button, gpointer user_data)
 {
     Page3Data *data = (Page3Data *)user_data;
     if (!data) return;
-    
+
     const char *selected_disk = page3_get_selected_disk();
     if (!selected_disk) {
         LOG_WARNING("No hay disco seleccionado para abrir Gparted");
         return;
     }
-    
+
     LOG_INFO("Abriendo Gparted para disco: %s", selected_disk);
-    
+
     // Construir comando para abrir Gparted
     gchar *command = g_strdup_printf("pkexec gparted %s", selected_disk);
-    
+
     GError *error = NULL;
     gboolean success = g_spawn_command_line_async(command, &error);
-    
+
     if (!success) {
         LOG_ERROR("Error al abrir Gparted: %s", error ? error->message : "Error desconocido");
         if (error) g_error_free(error);
     }
-    
+
     g_free(command);
 }
 
@@ -622,7 +622,7 @@ void on_page3_refresh_partitions_clicked(GtkButton *button, gpointer user_data)
 {
     Page3Data *data = (Page3Data *)user_data;
     if (!data) return;
-    
+
     LOG_INFO("Actualizando información de particiones");
     page3_update_manual_partitions_info(data);
 }
@@ -631,10 +631,10 @@ void on_page3_refresh_partitions_clicked(GtkButton *button, gpointer user_data)
 void page3_navigate_to_manual_partitions(Page3Data *data)
 {
     if (!data || !data->navigation_view) return;
-    
+
     // Actualizar información antes de navegar
     page3_update_manual_partitions_info(data);
-    
+
     // Navegar a la página de particiones manuales
     AdwNavigationPage *manual_page = adw_navigation_view_find_page(data->navigation_view, "manual_partitions");
     if (manual_page) {
@@ -649,11 +649,11 @@ void page3_navigate_to_manual_partitions(Page3Data *data)
 void page3_navigate_back_to_disk_selection(Page3Data *data)
 {
     if (!data || !data->navigation_view) return;
-    
+
     // Regresar a la página principal
     adw_navigation_view_pop(data->navigation_view);
     LOG_INFO("Navegación de regreso a selección de disco");
-    
+
     // Verificar el estado del botón siguiente al regresar
     if (data->manual_partition_radio && gtk_check_button_get_active(data->manual_partition_radio)) {
         LOG_INFO("Verificando estado del botón siguiente al regresar de configuración manual");
@@ -665,41 +665,69 @@ void page3_navigate_back_to_disk_selection(Page3Data *data)
 void page3_update_manual_partitions_info(Page3Data *data)
 {
     if (!data) return;
-    
+
+    LOG_INFO("=== INICIANDO page3_update_manual_partitions_info ===");
+
     const char *selected_disk = page3_get_selected_disk();
     if (!selected_disk) {
         LOG_WARNING("No hay disco seleccionado para mostrar información");
         return;
     }
-    
+
+    LOG_INFO("Disco seleccionado: %s", selected_disk);
+
+    // Verificar que los widgets existan
+    if (!data->disk_label_page4) {
+        LOG_ERROR("disk_label_page4 es NULL");
+        return;
+    }
+    if (!data->disk_size_label_page4) {
+        LOG_ERROR("disk_size_label_page4 es NULL");
+        return;
+    }
+
     // Actualizar etiquetas de disco
     gchar *disk_text = g_strdup_printf("Disco %s", selected_disk);
     gtk_label_set_text(data->disk_label_page4, disk_text);
+    LOG_INFO("Label de disco actualizado: %s", disk_text);
     g_free(disk_text);
-    
+
     // Obtener información completa del disco
+    LOG_INFO("Obteniendo tamaño del disco...");
     gchar *disk_size = page3_get_disk_size(selected_disk);
+    LOG_INFO("Tamaño obtenido: %s", disk_size ? disk_size : "NULL");
+
+    LOG_INFO("Obteniendo tipo de tabla de particiones...");
     gchar *partition_table = page3_get_partition_table_type(selected_disk);
+    LOG_INFO("Tabla de particiones obtenida: %s", partition_table ? partition_table : "NULL");
+
+    LOG_INFO("Obteniendo tipo de firmware...");
     gchar *firmware_type = page3_get_firmware_type();
-    
+    LOG_INFO("Firmware obtenido: %s", firmware_type ? firmware_type : "NULL");
+
     if (disk_size && partition_table && firmware_type) {
         gchar *complete_info = g_strdup_printf("%s - %s - %s", disk_size, partition_table, firmware_type);
+        LOG_INFO("Información completa generada: %s", complete_info);
         gtk_label_set_text(data->disk_size_label_page4, complete_info);
+        LOG_INFO("Label disk_size_label_page4 actualizado exitosamente");
         g_free(complete_info);
     } else {
+        LOG_WARNING("Información incompleta, usando texto por defecto");
         gtk_label_set_text(data->disk_size_label_page4, "Información desconocida");
     }
-    
+
     g_free(disk_size);
     g_free(partition_table);
     g_free(firmware_type);
-    
+
+    LOG_INFO("=== FINALIZANDO page3_update_manual_partitions_info ===");
+
     // Limpiar particiones anteriores
     page3_clear_partitions(data);
-    
+
     // Poblar con nuevas particiones
     page3_populate_partitions(data, selected_disk);
-    
+
     LOG_INFO("Información de particiones actualizada para disco: %s", selected_disk);
 }
 
@@ -708,7 +736,7 @@ void on_page3_return_disks_clicked(GtkButton *button, gpointer user_data)
 {
     Page3Data *data = (Page3Data *)user_data;
     if (!data || !data->navigation_view) return;
-    
+
     LOG_INFO("Regresando a selección de discos");
     page3_navigate_back_to_disk_selection(data);
 }
@@ -717,9 +745,9 @@ void on_page3_return_disks_encryption_clicked(AdwButtonRow *button, gpointer use
 {
     Page3Data *data = (Page3Data *)user_data;
     if (!data || !data->navigation_view) return;
-    
+
     LOG_INFO("Regresando a selección de discos desde página de encriptación");
-    
+
     // Desactivar el botón siguiente al regresar de la página de encriptación
     GtkWidget *next_button = NULL;
     if (data->revealer) {
@@ -728,14 +756,14 @@ void on_page3_return_disks_encryption_clicked(AdwButtonRow *button, gpointer use
             next_button = page3_find_next_button_recursive(revealer_child);
         }
     }
-    
+
     if (next_button) {
         gtk_widget_set_sensitive(next_button, FALSE);
         LOG_INFO("Botón siguiente desactivado al regresar de página de encriptación");
     } else {
         LOG_WARNING("No se pudo encontrar el botón siguiente para desactivar");
     }
-    
+
     page3_navigate_back_to_disk_selection(data);
 }
 
@@ -743,31 +771,31 @@ void on_page3_return_disks_encryption_clicked(AdwButtonRow *button, gpointer use
 gchar* page3_get_disk_size(const gchar *disk_path)
 {
     if (!disk_path) return NULL;
-    
+
     // Usar udisks2 para obtener información del disco
-    gchar *command = g_strdup_printf("lsblk -b -d -n -o SIZE %s 2>/dev/null", disk_path);
-    
+    gchar *command = g_strdup_printf("lsblk -b -d -n -o SIZE %s", disk_path);
+
     gchar *output = NULL;
     GError *error = NULL;
-    
+
     if (g_spawn_command_line_sync(command, &output, NULL, NULL, &error)) {
         if (output) {
             g_strstrip(output);
             guint64 size_bytes = g_ascii_strtoull(output, NULL, 10);
             g_free(output);
             g_free(command);
-            
+
             if (size_bytes > 0) {
                 return page3_format_disk_size(size_bytes);
             }
         }
     }
-    
+
     if (error) {
         LOG_ERROR("Error obteniendo tamaño del disco: %s", error->message);
         g_error_free(error);
     }
-    
+
     g_free(command);
     g_free(output);
     return NULL;
@@ -795,18 +823,18 @@ static gint page3_partition_compare_func(gconstpointer a, gconstpointer b)
 {
     const Page3PartitionInfo *info_a = (const Page3PartitionInfo*)a;
     const Page3PartitionInfo *info_b = (const Page3PartitionInfo*)b;
-    
+
     if (!info_a || !info_b || !info_a->device_path || !info_b->device_path) {
         return 0;
     }
-    
+
     // Extraer el nombre base del dispositivo (ej: sda1 -> sda1, nvme0n1p1 -> nvme0n1p1)
     gchar *basename_a = g_path_get_basename(info_a->device_path);
     gchar *basename_b = g_path_get_basename(info_b->device_path);
-    
+
     gchar *num_start_a = NULL;
     gchar *num_start_b = NULL;
-    
+
     // Para dispositivos nvme (formato: nvme0n1p1, nvme0n1p2, etc.)
     if (g_str_has_prefix(basename_a, "nvme") && strstr(basename_a, "p")) {
         num_start_a = strrchr(basename_a, 'p');
@@ -819,7 +847,7 @@ static gint page3_partition_compare_func(gconstpointer a, gconstpointer b)
             num_start_a++;
         }
     }
-    
+
     // Mismo proceso para el segundo dispositivo
     if (g_str_has_prefix(basename_b, "nvme") && strstr(basename_b, "p")) {
         num_start_b = strrchr(basename_b, 'p');
@@ -831,7 +859,7 @@ static gint page3_partition_compare_func(gconstpointer a, gconstpointer b)
             num_start_b++;
         }
     }
-    
+
     // Si ambos tienen números, compararlos numéricamente
     gint result = 0;
     if (num_start_a && num_start_b && g_ascii_isdigit(*num_start_a) && g_ascii_isdigit(*num_start_b)) {
@@ -842,10 +870,10 @@ static gint page3_partition_compare_func(gconstpointer a, gconstpointer b)
         // Si no tienen números, comparar alfabéticamente
         result = g_strcmp0(basename_a, basename_b);
     }
-    
+
     g_free(basename_a);
     g_free(basename_b);
-    
+
     return result;
 }
 
@@ -853,13 +881,13 @@ static gint page3_partition_compare_func(gconstpointer a, gconstpointer b)
 void page3_clear_partitions(Page3Data *data)
 {
     if (!data) return;
-    
+
     LOG_INFO("Iniciando limpieza de particiones...");
-    
+
     // Primero limpiar las filas de particiones usando las referencias almacenadas
     if (data->partition_rows && data->partitions_group) {
         LOG_INFO("Eliminando %d filas de particiones", g_list_length(data->partition_rows));
-        
+
         GList *current_row = data->partition_rows;
         while (current_row) {
             AdwActionRow *row = ADW_ACTION_ROW(current_row->data);
@@ -870,12 +898,12 @@ void page3_clear_partitions(Page3Data *data)
             }
             current_row = current_row->next;
         }
-        
+
         // Limpiar la lista de referencias a filas
         g_list_free(data->partition_rows);
         data->partition_rows = NULL;
     }
-    
+
     // Limpiar lista de información de particiones
     if (data->partitions) {
         GList *current = data->partitions;
@@ -887,7 +915,7 @@ void page3_clear_partitions(Page3Data *data)
         g_list_free(data->partitions);
         data->partitions = NULL;
     }
-    
+
     LOG_INFO("Particiones y filas de interfaz limpiadas");
 }
 
@@ -898,30 +926,30 @@ void page3_populate_partitions(Page3Data *data, const gchar *disk_path)
         LOG_WARNING("page3_populate_partitions: parámetros inválidos");
         return;
     }
-    
+
     LOG_INFO("Obteniendo particiones del disco: %s", disk_path);
-    
+
     // Limpiar particiones anteriores
     page3_clear_partitions(data);
-    
+
     LOG_INFO("Particiones anteriores limpiadas, iniciando búsqueda...");
-    
+
     // Obtener todos los objetos de UDisks2
     GList *objects = g_dbus_object_manager_get_objects(udisks_client_get_object_manager(data->udisks_client));
-    
+
     int partition_count = 0;
     for (GList *l = objects; l != NULL; l = l->next) {
         UDisksObject *object = UDISKS_OBJECT(l->data);
         UDisksPartition *partition = udisks_object_peek_partition(object);
         UDisksBlock *block = udisks_object_peek_block(object);
-        
+
         if (partition && block) {
             const gchar *partition_device = udisks_block_get_device(block);
-            
+
             // Verificar si esta partición pertenece al disco seleccionado
             if (partition_device && page3_is_partition_of_disk(partition_device, disk_path)) {
                 LOG_INFO("Partición encontrada: %s", partition_device);
-                
+
                 // Crear información de la partición
                 Page3PartitionInfo *info = page3_create_partition_info(partition_device, partition, block, object);
                 if (info) {
@@ -932,14 +960,14 @@ void page3_populate_partitions(Page3Data *data, const gchar *disk_path)
             }
         }
     }
-    
+
     g_list_free_full(objects, g_object_unref);
-    
+
     // Ordenar la lista de particiones por número
     if (data->partitions) {
         data->partitions = g_list_sort(data->partitions, page3_partition_compare_func);
         LOG_INFO("Particiones ordenadas por número");
-        
+
         // Añadir particiones ordenadas a la interfaz
         GList *current = data->partitions;
         while (current) {
@@ -947,26 +975,26 @@ void page3_populate_partitions(Page3Data *data, const gchar *disk_path)
             page3_add_partition_row(data, info);
             current = current->next;
         }
-        
+
         // Actualizar subtítulos con configuraciones guardadas del disco actual
         page3_update_all_partition_subtitles(data);
     }
-    
+
     if (partition_count == 0) {
         // Si no hay particiones, mostrar mensaje
         AdwActionRow *empty_row = ADW_ACTION_ROW(adw_action_row_new());
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(empty_row), "No hay particiones");
         adw_action_row_set_subtitle(empty_row, "El disco no tiene particiones o no se pudieron detectar");
-        
+
         GtkImage *icon = GTK_IMAGE(gtk_image_new_from_icon_name("dialog-information-symbolic"));
         adw_action_row_add_prefix(empty_row, GTK_WIDGET(icon));
-        
+
         adw_preferences_group_add(data->partitions_group, GTK_WIDGET(empty_row));
-        
+
         // Guardar referencia a la fila vacía también
         data->partition_rows = g_list_append(data->partition_rows, empty_row);
     }
-    
+
     LOG_INFO("Particiones encontradas: %d", partition_count);
 }
 
@@ -974,30 +1002,30 @@ void page3_populate_partitions(Page3Data *data, const gchar *disk_path)
 void page3_add_partition_row(Page3Data *data, Page3PartitionInfo *partition)
 {
     if (!data || !partition) return;
-    
+
     // Crear AdwActionRow
     AdwActionRow *row = ADW_ACTION_ROW(adw_action_row_new());
-    
+
     // Configurar título y subtítulo
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(row), partition->device_path);
-    
+
     // Obtener configuración guardada para esta partición del disco actual
     PartitionConfig *config = NULL;
     const char *current_disk = page3_get_selected_disk();
-    if (data->partition_manager && current_disk && 
+    if (data->partition_manager && current_disk &&
         page3_is_partition_of_disk(partition->device_path, current_disk)) {
         config = partition_manager_find_config(data->partition_manager, partition->device_path);
     }
-    
+
     gchar *subtitle;
     if (config) {
         // Mostrar configuración programada
         GString *subtitle_str = g_string_new(partition->size_formatted);
-        
+
         // Mostrar filesystem actual vs configurado
         if (config->format_needed || g_strcmp0(partition->filesystem, config->filesystem) != 0) {
-            g_string_append_printf(subtitle_str, " • %s → %s", 
-                                   partition->filesystem, 
+            g_string_append_printf(subtitle_str, " • %s → %s",
+                                   partition->filesystem,
                                    config->filesystem);
             if (config->format_needed) {
                 g_string_append(subtitle_str, " (formatear)");
@@ -1005,7 +1033,7 @@ void page3_add_partition_row(Page3Data *data, Page3PartitionInfo *partition)
         } else {
             g_string_append_printf(subtitle_str, " • %s", partition->filesystem);
         }
-        
+
         // Mostrar punto de montaje configurado
         if (config->mount_point) {
             if (config->is_swap) {
@@ -1016,44 +1044,44 @@ void page3_add_partition_row(Page3Data *data, Page3PartitionInfo *partition)
         } else if (partition->mount_point) {
             g_string_append_printf(subtitle_str, " • %s (actual)", partition->mount_point);
         }
-        
+
         subtitle = g_string_free(subtitle_str, FALSE);
     } else {
         // Mostrar información actual sin configuración
-        subtitle = g_strdup_printf("%s • %s%s%s", 
+        subtitle = g_strdup_printf("%s • %s%s%s",
                                    partition->size_formatted,
                                    partition->filesystem,
                                    partition->mount_point ? " • " : "",
                                    partition->mount_point ? partition->mount_point : "");
     }
-    
+
     adw_action_row_set_subtitle(row, subtitle);
     g_free(subtitle);
-    
+
     // Añadir icono según el tipo de filesystem
     GtkImage *icon = GTK_IMAGE(gtk_image_new_from_icon_name(page3_get_filesystem_icon(partition->filesystem)));
     adw_action_row_add_prefix(row, GTK_WIDGET(icon));
-    
+
     // Añadir botón de configuración
     GtkButton *config_button = GTK_BUTTON(gtk_button_new_from_icon_name("list-add-symbolic"));
     gtk_widget_set_valign(GTK_WIDGET(config_button), GTK_ALIGN_CENTER);
     gtk_widget_set_tooltip_text(GTK_WIDGET(config_button), "Configurar partición");
-    
+
     // Añadir clases CSS
     gtk_widget_add_css_class(GTK_WIDGET(config_button), "flat");
     gtk_widget_add_css_class(GTK_WIDGET(config_button), "circular");
-    
+
     // Conectar señal
     g_signal_connect(config_button, "clicked", G_CALLBACK(on_page3_partition_configure_clicked), partition);
-    
+
     adw_action_row_add_suffix(row, GTK_WIDGET(config_button));
-    
+
     // Añadir al grupo
     adw_preferences_group_add(data->partitions_group, GTK_WIDGET(row));
-    
+
     // Guardar referencia a la fila para poder eliminarla después
     data->partition_rows = g_list_append(data->partition_rows, row);
-    
+
     LOG_INFO("Fila de partición añadida: %s", partition->device_path);
 }
 
@@ -1061,19 +1089,19 @@ void page3_add_partition_row(Page3Data *data, Page3PartitionInfo *partition)
 Page3PartitionInfo* page3_create_partition_info(const gchar *device_path, UDisksPartition *partition, UDisksBlock *block, UDisksObject *object)
 {
     if (!device_path || !block) return NULL;
-    
+
     Page3PartitionInfo *info = g_malloc0(sizeof(Page3PartitionInfo));
-    
+
     // Información básica
     info->device_path = g_strdup(device_path);
     info->size = udisks_block_get_size(block);
     info->size_formatted = page3_format_partition_size(info->size);
-    
+
     // Obtener filesystem
     UDisksFilesystem *filesystem = udisks_object_peek_filesystem(object);
     if (filesystem) {
         info->filesystem = g_strdup(udisks_block_get_id_type(block));
-        
+
         // Obtener puntos de montaje
         const gchar *const *mount_points = udisks_filesystem_get_mount_points(filesystem);
         if (mount_points && mount_points[0]) {
@@ -1084,17 +1112,17 @@ Page3PartitionInfo* page3_create_partition_info(const gchar *device_path, UDisks
         info->filesystem = g_strdup("Sin formato");
         info->is_mounted = FALSE;
     }
-    
+
     // Obtener label y UUID
     info->label = g_strdup(udisks_block_get_id_label(block));
     info->uuid = g_strdup(udisks_block_get_id_uuid(block));
-    
+
     // Si no hay label, usar un nombre genérico
     if (!info->label || strlen(info->label) == 0) {
         g_free(info->label);
         info->label = g_strdup(g_path_get_basename(device_path));
     }
-    
+
     return info;
 }
 
@@ -1102,7 +1130,7 @@ Page3PartitionInfo* page3_create_partition_info(const gchar *device_path, UDisks
 void page3_free_partition_info(Page3PartitionInfo *info)
 {
     if (!info) return;
-    
+
     g_free(info->device_path);
     g_free(info->filesystem);
     g_free(info->mount_point);
@@ -1116,17 +1144,17 @@ void page3_free_partition_info(Page3PartitionInfo *info)
 gboolean page3_is_partition_of_disk(const gchar *partition_path, const gchar *disk_path)
 {
     if (!partition_path || !disk_path) return FALSE;
-    
+
     // Extraer el nombre base del disco (ej: /dev/sda -> sda)
     gchar *disk_name = g_path_get_basename(disk_path);
-    
+
     // Verificar si la partición comienza con el nombre del disco
     gchar *partition_name = g_path_get_basename(partition_path);
     gboolean is_partition = g_str_has_prefix(partition_name, disk_name);
-    
+
     g_free(disk_name);
     g_free(partition_name);
-    
+
     return is_partition;
 }
 
@@ -1151,7 +1179,7 @@ gchar* page3_format_partition_size(guint64 size_bytes)
 const gchar* page3_get_filesystem_icon(const gchar *filesystem)
 {
     if (!filesystem) return "drive-harddisk-symbolic";
-    
+
     if (g_str_has_prefix(filesystem, "ext")) {
         return "drive-harddisk-symbolic";
     } else if (g_str_equal(filesystem, "ntfs")) {
@@ -1173,7 +1201,7 @@ const gchar* page3_get_filesystem_icon(const gchar *filesystem)
 void page3_refresh_partitions(void)
 {
     if (!g_page3_data) return;
-    
+
     const char *selected_disk = page3_get_selected_disk();
     if (selected_disk) {
         LOG_INFO("Refrescando particiones para disco: %s", selected_disk);
@@ -1205,28 +1233,28 @@ void page3_on_disk_changed(const gchar *disk_path)
 void page3_clear_previous_disk_configs(Page3Data *data, const gchar *current_disk_path)
 {
     if (!data || !data->partition_manager || !current_disk_path) return;
-    
+
     LOG_INFO("Limpiando configuraciones de particiones no pertenecientes al disco: %s", current_disk_path);
-    
+
     // Obtener todas las configuraciones actuales
     GList *configs = partition_manager_get_configs(data->partition_manager);
     GList *configs_to_remove = NULL;
-    
+
     // Encontrar configuraciones que no pertenecen al disco actual
     GList *current = configs;
     while (current) {
         PartitionConfig *config = (PartitionConfig*)current->data;
-        
+
         // Verificar si la partición pertenece al disco actual
         if (!page3_is_partition_of_disk(config->device_path, current_disk_path)) {
             configs_to_remove = g_list_prepend(configs_to_remove, g_strdup(config->device_path));
-            LOG_INFO("Marcando para eliminar configuración: %s (no pertenece a %s)", 
+            LOG_INFO("Marcando para eliminar configuración: %s (no pertenece a %s)",
                      config->device_path, current_disk_path);
         }
-        
+
         current = current->next;
     }
-    
+
     // Eliminar las configuraciones que no pertenecen al disco actual
     current = configs_to_remove;
     while (current) {
@@ -1236,9 +1264,9 @@ void page3_clear_previous_disk_configs(Page3Data *data, const gchar *current_dis
         g_free(device_path);
         current = current->next;
     }
-    
+
     g_list_free(configs_to_remove);
-    
+
     LOG_INFO("Limpieza de configuraciones completada para disco: %s", current_disk_path);
 }
 
@@ -1246,7 +1274,7 @@ void page3_clear_previous_disk_configs(Page3Data *data, const gchar *current_dis
 gchar* page3_get_current_selected_disk(Page3Data *data)
 {
     if (!data || !data->disk_combo) return NULL;
-    
+
     // Obtener el disco seleccionado del combo
     const gchar *selected_disk = page3_get_selected_disk();
     return selected_disk ? g_strdup(selected_disk) : NULL;
@@ -1256,13 +1284,13 @@ gchar* page3_get_current_selected_disk(Page3Data *data)
 gboolean page3_config_belongs_to_current_disk(Page3Data *data, const gchar *device_path)
 {
     if (!data || !device_path) return FALSE;
-    
+
     gchar *current_disk = page3_get_current_selected_disk(data);
     if (!current_disk) return FALSE;
-    
+
     gboolean belongs = page3_is_partition_of_disk(device_path, current_disk);
     g_free(current_disk);
-    
+
     return belongs;
 }
 
@@ -1270,11 +1298,11 @@ gboolean page3_config_belongs_to_current_disk(Page3Data *data, const gchar *devi
 void on_page3_partition_configure_clicked(GtkButton *button, gpointer user_data)
 {
     Page3PartitionInfo *partition = (Page3PartitionInfo*)user_data;
-    
+
     if (!partition || !g_page3_data || !g_page3_data->partition_manager) return;
-    
+
     LOG_INFO("Configurando partición: %s", partition->device_path);
-    
+
     // Mostrar diálogo de configuración de partición
     partition_manager_show_dialog(g_page3_data->partition_manager,
                                  partition->device_path,
@@ -1287,33 +1315,33 @@ void on_page3_partition_configure_clicked(GtkButton *button, gpointer user_data)
 void page3_update_partition_row_subtitle(Page3Data *data, const gchar *device_path)
 {
     if (!data || !device_path) return;
-    
+
     // Buscar la fila correspondiente al device_path
     GList *row_item = data->partition_rows;
     GList *partition_item = data->partitions;
-    
+
     while (row_item && partition_item) {
         AdwActionRow *row = ADW_ACTION_ROW(row_item->data);
         Page3PartitionInfo *partition = (Page3PartitionInfo*)partition_item->data;
-        
+
         if (g_strcmp0(partition->device_path, device_path) == 0) {
             // Encontramos la fila, actualizar su subtítulo
             PartitionConfig *config = NULL;
             const char *current_disk = page3_get_selected_disk();
-            if (data->partition_manager && current_disk && 
+            if (data->partition_manager && current_disk &&
                 page3_is_partition_of_disk(device_path, current_disk)) {
                 config = partition_manager_find_config(data->partition_manager, device_path);
             }
-            
+
             gchar *subtitle;
             if (config) {
                 // Mostrar configuración programada
                 GString *subtitle_str = g_string_new(partition->size_formatted);
-                
+
                 // Mostrar filesystem actual vs configurado
                 if (config->format_needed || g_strcmp0(partition->filesystem, config->filesystem) != 0) {
-                    g_string_append_printf(subtitle_str, " • %s → %s", 
-                                           partition->filesystem, 
+                    g_string_append_printf(subtitle_str, " • %s → %s",
+                                           partition->filesystem,
                                            config->filesystem);
                     if (config->format_needed) {
                         g_string_append(subtitle_str, " (formatear)");
@@ -1321,7 +1349,7 @@ void page3_update_partition_row_subtitle(Page3Data *data, const gchar *device_pa
                 } else {
                     g_string_append_printf(subtitle_str, " • %s", partition->filesystem);
                 }
-                
+
                 // Mostrar punto de montaje configurado
                 if (config->mount_point) {
                     if (config->is_swap) {
@@ -1332,24 +1360,24 @@ void page3_update_partition_row_subtitle(Page3Data *data, const gchar *device_pa
                 } else if (partition->mount_point) {
                     g_string_append_printf(subtitle_str, " • %s (actual)", partition->mount_point);
                 }
-                
+
                 subtitle = g_string_free(subtitle_str, FALSE);
             } else {
                 // Mostrar información actual sin configuración
-                subtitle = g_strdup_printf("%s • %s%s%s", 
+                subtitle = g_strdup_printf("%s • %s%s%s",
                                            partition->size_formatted,
                                            partition->filesystem,
                                            partition->mount_point ? " • " : "",
                                            partition->mount_point ? partition->mount_point : "");
             }
-            
+
             adw_action_row_set_subtitle(row, subtitle);
             g_free(subtitle);
-            
+
             LOG_INFO("Subtítulo actualizado para partición: %s", device_path);
             break;
         }
-        
+
         row_item = row_item->next;
         partition_item = partition_item->next;
     }
@@ -1359,31 +1387,31 @@ void page3_update_partition_row_subtitle(Page3Data *data, const gchar *device_pa
 void page3_update_all_partition_subtitles(Page3Data *data)
 {
     if (!data) return;
-    
+
     GList *row_item = data->partition_rows;
     GList *partition_item = data->partitions;
-    
+
     while (row_item && partition_item) {
         AdwActionRow *row = ADW_ACTION_ROW(row_item->data);
         Page3PartitionInfo *partition = (Page3PartitionInfo*)partition_item->data;
-        
+
         // Obtener configuración guardada para esta partición del disco actual
         PartitionConfig *config = NULL;
         const char *current_disk = page3_get_selected_disk();
-        if (data->partition_manager && current_disk && 
+        if (data->partition_manager && current_disk &&
             page3_is_partition_of_disk(partition->device_path, current_disk)) {
             config = partition_manager_find_config(data->partition_manager, partition->device_path);
         }
-        
+
         gchar *subtitle;
         if (config) {
             // Mostrar configuración programada
             GString *subtitle_str = g_string_new(partition->size_formatted);
-            
+
             // Mostrar filesystem actual vs configurado
             if (config->format_needed || g_strcmp0(partition->filesystem, config->filesystem) != 0) {
-                g_string_append_printf(subtitle_str, " • %s → %s", 
-                                       partition->filesystem, 
+                g_string_append_printf(subtitle_str, " • %s → %s",
+                                       partition->filesystem,
                                        config->filesystem);
                 if (config->format_needed) {
                     g_string_append(subtitle_str, " (formatear)");
@@ -1391,7 +1419,7 @@ void page3_update_all_partition_subtitles(Page3Data *data)
             } else {
                 g_string_append_printf(subtitle_str, " • %s", partition->filesystem);
             }
-            
+
             // Mostrar punto de montaje configurado
             if (config->mount_point) {
                 if (config->is_swap) {
@@ -1402,24 +1430,24 @@ void page3_update_all_partition_subtitles(Page3Data *data)
             } else if (partition->mount_point) {
                 g_string_append_printf(subtitle_str, " • %s (actual)", partition->mount_point);
             }
-            
+
             subtitle = g_string_free(subtitle_str, FALSE);
         } else {
             // Mostrar información actual sin configuración
-            subtitle = g_strdup_printf("%s • %s%s%s", 
+            subtitle = g_strdup_printf("%s • %s%s%s",
                                        partition->size_formatted,
                                        partition->filesystem,
                                        partition->mount_point ? " • " : "",
                                        partition->mount_point ? partition->mount_point : "");
         }
-        
+
         adw_action_row_set_subtitle(row, subtitle);
         g_free(subtitle);
-        
+
         row_item = row_item->next;
         partition_item = partition_item->next;
     }
-    
+
     LOG_INFO("Subtítulos actualizados para todas las particiones");
 }
 
@@ -1427,19 +1455,19 @@ void page3_update_all_partition_subtitles(Page3Data *data)
 void on_partition_config_saved(PartitionConfig *config, gpointer user_data)
 {
     Page3Data *data = (Page3Data*)user_data;
-    
+
     if (!data || !config) return;
-    
-    LOG_INFO("Configuración de partición guardada: %s -> %s", 
-             config->device_path, 
+
+    LOG_INFO("Configuración de partición guardada: %s -> %s",
+             config->device_path,
              config->mount_point ? config->mount_point : "Sin punto de montaje");
-    
+
     // Actualizar el subtítulo de la fila correspondiente solo si pertenece al disco actual
     const char *current_disk = page3_get_selected_disk();
     if (current_disk && page3_is_partition_of_disk(config->device_path, current_disk)) {
         page3_update_partition_row_subtitle(data, config->device_path);
     }
-    
+
     // Si estamos en modo manual, actualizar sensibilidad del botón siguiente
     if (data->manual_partition_radio && gtk_check_button_get_active(data->manual_partition_radio)) {
         page3_update_next_button_sensitivity(data, TRUE);
@@ -1453,16 +1481,16 @@ void on_partition_config_saved(PartitionConfig *config, gpointer user_data)
 void page3_save_partition_mode(const gchar *partition_mode)
 {
     if (!partition_mode) return;
-    
+
     LOG_INFO("Guardando PARTITION_MODE: %s", partition_mode);
-    
+
     gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
-    
+
     // Leer el archivo existente para preservar otras variables
     GString *existing_content = g_string_new("");
     gchar *current_selected_disk = NULL;
     FILE *read_file = fopen(bash_file_path, "r");
-    
+
     if (read_file) {
         char line[1024];
         while (fgets(line, sizeof(line), read_file)) {
@@ -1493,7 +1521,7 @@ void page3_save_partition_mode(const gchar *partition_mode)
         }
         fclose(read_file);
     }
-    
+
     // Escribir el archivo actualizado
     FILE *file = fopen(bash_file_path, "w");
     if (!file) {
@@ -1503,7 +1531,7 @@ void page3_save_partition_mode(const gchar *partition_mode)
         if (current_selected_disk) g_free(current_selected_disk);
         return;
     }
-    
+
     // Si no había contenido previo, agregar header
     if (existing_content->len == 0) {
         fprintf(file, "#!/bin/bash\n");
@@ -1513,20 +1541,20 @@ void page3_save_partition_mode(const gchar *partition_mode)
         // Escribir contenido existente
         fprintf(file, "%s", existing_content->str);
     }
-    
+
     // Reescribir SELECTED_DISK si existía
     if (current_selected_disk) {
         fprintf(file, "SELECTED_DISK=\"%s\"\n", current_selected_disk);
         LOG_INFO("SELECTED_DISK preservado: %s", current_selected_disk);
         g_free(current_selected_disk);
     }
-    
+
     // Agregar la variable del modo de particionado
     fprintf(file, "PARTITION_MODE=\"%s\"\n", partition_mode);
-    
+
     fclose(file);
     g_string_free(existing_content, TRUE);
-    
+
     LOG_INFO("Variable PARTITION_MODE guardada exitosamente: %s", partition_mode);
     g_free(bash_file_path);
 }
@@ -1538,17 +1566,17 @@ void page3_update_next_button_sensitivity(Page3Data *data, gboolean is_manual_mo
         LOG_ERROR("page3_update_next_button_sensitivity: data es NULL");
         return;
     }
-    
+
     if (!data->revealer) {
         LOG_ERROR("page3_update_next_button_sensitivity: revealer es NULL");
         return;
     }
-    
+
     LOG_INFO("Buscando botón siguiente en revealer para modo: %s", is_manual_mode ? "manual/cifrado" : "automático");
-    
+
     // Buscar el botón siguiente en el revealer
     GtkWidget *next_button = NULL;
-    
+
     // El botón siguiente debería estar en el revealer
     GtkWidget *revealer_child = gtk_revealer_get_child(data->revealer);
     if (revealer_child) {
@@ -1558,13 +1586,13 @@ void page3_update_next_button_sensitivity(Page3Data *data, gboolean is_manual_mo
     } else {
         LOG_WARNING("El revealer no tiene hijo");
     }
-    
+
     if (next_button) {
         LOG_INFO("Botón siguiente encontrado exitosamente");
         // Verificar si estamos en modo cifrado
-        gboolean is_encryption_mode = data->cifrado_partition_button && 
+        gboolean is_encryption_mode = data->cifrado_partition_button &&
                                      gtk_check_button_get_active(data->cifrado_partition_button);
-        
+
         if (is_manual_mode) {
             // En modo manual, desactivar el botón hasta que se configure al menos una partición
             gboolean has_root_partition = FALSE;
@@ -1572,14 +1600,14 @@ void page3_update_next_button_sensitivity(Page3Data *data, gboolean is_manual_mo
                 has_root_partition = partition_manager_has_root_partition(data->partition_manager);
             }
             gtk_widget_set_sensitive(next_button, has_root_partition);
-            LOG_INFO("Botón siguiente %s (modo manual, partición root: %s)", 
+            LOG_INFO("Botón siguiente %s (modo manual, partición root: %s)",
                      has_root_partition ? "activado" : "desactivado",
                      has_root_partition ? "sí" : "no");
         } else if (is_encryption_mode) {
             // En modo cifrado, desactivar el botón hasta que las contraseñas sean válidas
             gboolean passwords_valid = data->passwords_match && data->password_length_valid;
             gtk_widget_set_sensitive(next_button, passwords_valid);
-            LOG_INFO("Botón siguiente %s (modo cifrado, contraseñas válidas: %s)", 
+            LOG_INFO("Botón siguiente %s (modo cifrado, contraseñas válidas: %s)",
                      passwords_valid ? "activado" : "desactivado",
                      passwords_valid ? "sí" : "no");
         } else {
@@ -1589,7 +1617,7 @@ void page3_update_next_button_sensitivity(Page3Data *data, gboolean is_manual_mo
         }
     } else {
         LOG_WARNING("No se pudo encontrar el botón siguiente en el revealer");
-        
+
         // Como alternativa, intentar buscar en el carousel
         if (data->carousel) {
             GtkWidget *carousel_parent = gtk_widget_get_parent(GTK_WIDGET(data->carousel));
@@ -1609,29 +1637,29 @@ void page3_update_next_button_sensitivity(Page3Data *data, gboolean is_manual_mo
 GtkWidget* page3_find_next_button_recursive(GtkWidget *widget)
 {
     if (!widget) return NULL;
-    
+
     // Si es un botón, verificar si es el botón siguiente
     if (GTK_IS_BUTTON(widget)) {
         const gchar *label = gtk_button_get_label(GTK_BUTTON(widget));
         const gchar *widget_name = gtk_widget_get_name(widget);
-        
-        LOG_INFO("Botón encontrado - Label: '%s', Name: '%s'", 
-                 label ? label : "NULL", 
+
+        LOG_INFO("Botón encontrado - Label: '%s', Name: '%s'",
+                 label ? label : "NULL",
                  widget_name ? widget_name : "NULL");
-        
-        if (label && (g_str_has_suffix(label, "Siguiente") || g_str_has_suffix(label, "Next") || 
+
+        if (label && (g_str_has_suffix(label, "Siguiente") || g_str_has_suffix(label, "Next") ||
                       g_strrstr(label, "siguiente") || g_strrstr(label, "next"))) {
             LOG_INFO("¡Botón siguiente encontrado! Label: '%s'", label);
             return widget;
         }
-        
+
         // También verificar por nombre del widget
         if (widget_name && (g_strrstr(widget_name, "next") || g_strrstr(widget_name, "siguiente"))) {
             LOG_INFO("¡Botón siguiente encontrado por nombre! Name: '%s'", widget_name);
             return widget;
         }
     }
-    
+
     // Buscar en los hijos
     GtkWidget *child = gtk_widget_get_first_child(widget);
     while (child) {
@@ -1639,7 +1667,7 @@ GtkWidget* page3_find_next_button_recursive(GtkWidget *widget)
         if (result) return result;
         child = gtk_widget_get_next_sibling(child);
     }
-    
+
     return NULL;
 }
 
@@ -1650,49 +1678,49 @@ void page3_load_partition_mode(Page3Data *data)
         LOG_ERROR("page3_load_partition_mode: data es NULL");
         return;
     }
-    
+
     LOG_INFO("=== page3_load_partition_mode INICIADO ===");
-    
+
     // Leer el archivo variables.sh
     gchar *variables_content = NULL;
     GError *error = NULL;
-    
+
     gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
     LOG_INFO("Intentando cargar archivo: %s", bash_file_path);
-    
+
     if (g_file_get_contents(bash_file_path, &variables_content, NULL, &error)) {
         LOG_INFO("Archivo variables.sh leído exitosamente");
         LOG_INFO("Contenido del archivo:\n%s", variables_content);
-        
+
         // Buscar la línea PARTITION_MODE
         gchar **lines = g_strsplit(variables_content, "\n", -1);
         gboolean partition_mode_found = FALSE;
-        
+
         LOG_INFO("Buscando línea PARTITION_MODE en %d líneas...", g_strv_length(lines));
-        
+
         for (int i = 0; lines[i]; i++) {
             gchar *line = g_strstrip(lines[i]);
             LOG_INFO("Línea %d: '%s'", i, line);
-            
+
             if (g_str_has_prefix(line, "PARTITION_MODE=")) {
                 LOG_INFO("¡Línea PARTITION_MODE encontrada!");
                 partition_mode_found = TRUE;
-                
+
                 gchar *mode_value = strchr(line, '=');
                 if (mode_value) {
                     mode_value++; // Saltar el '='
                     LOG_INFO("Valor inicial después del '=': '%s'", mode_value);
-                    
+
                     // Remover comillas si existen
                     mode_value = g_strstrip(mode_value);
                     LOG_INFO("Valor después de strstrip: '%s'", mode_value);
-                    
+
                     if (mode_value[0] == '"' && mode_value[strlen(mode_value)-1] == '"') {
                         mode_value[strlen(mode_value)-1] = '\0';
                         mode_value++;
                         LOG_INFO("Valor después de remover comillas: '%s'", mode_value);
                     }
-                    
+
                     // Establecer el radio button correspondiente
                     if (g_strcmp0(mode_value, "manual") == 0) {
                         LOG_INFO("Estableciendo modo manual");
@@ -1707,35 +1735,35 @@ void page3_load_partition_mode(Page3Data *data)
                         gtk_check_button_set_active(data->auto_partition_radio, TRUE);
                         LOG_INFO("Radio button auto activado");
                     }
-                    
+
                     // Actualizar sensibilidad del botón siguiente
                     gboolean is_manual = g_strcmp0(mode_value, "manual") == 0;
                     LOG_INFO("Actualizando sensibilidad del botón siguiente (manual: %s)", is_manual ? "TRUE" : "FALSE");
                     page3_update_next_button_sensitivity(data, is_manual);
-                    
+
                     break;
                 } else {
                     LOG_WARNING("No se encontró '=' en la línea PARTITION_MODE");
                 }
             }
         }
-        
+
         if (!partition_mode_found) {
             LOG_WARNING("No se encontró la línea PARTITION_MODE en el archivo");
         }
-        
+
         g_strfreev(lines);
         g_free(variables_content);
     } else {
         LOG_WARNING("No se pudo cargar variables.sh: %s", error ? error->message : "Error desconocido");
         if (error) g_error_free(error);
-        
+
         // Establecer modo por defecto
         LOG_INFO("Estableciendo modo por defecto: auto");
         gtk_check_button_set_active(data->auto_partition_radio, TRUE);
         LOG_INFO("Radio button auto activado por defecto");
     }
-    
+
     g_free(bash_file_path);
     LOG_INFO("=== page3_load_partition_mode FINALIZADO ===");
 }
@@ -1744,14 +1772,14 @@ void page3_load_partition_mode(Page3Data *data)
 void page3_init_partition_manager(Page3Data *data)
 {
     if (!data) return;
-    
+
     // Crear manejador de particiones
     data->partition_manager = partition_manager_new();
     if (!data->partition_manager) {
         LOG_ERROR("No se pudo crear el PartitionManager");
         return;
     }
-    
+
     // Cargar diálogo de partición
     GtkBuilder *partition_builder = gtk_builder_new_from_resource("/org/gtk/arcris/window_partition.ui");
     if (!partition_builder) {
@@ -1760,7 +1788,7 @@ void page3_init_partition_manager(Page3Data *data)
         data->partition_manager = NULL;
         return;
     }
-    
+
     // Inicializar widgets del manejador de particiones
     if (!partition_manager_init(data->partition_manager, partition_builder)) {
         LOG_ERROR("No se pudieron inicializar los widgets del PartitionManager");
@@ -1769,14 +1797,14 @@ void page3_init_partition_manager(Page3Data *data)
         g_object_unref(partition_builder);
         return;
     }
-    
+
     // Configurar callback para cuando se guarda la configuración
-    partition_manager_set_save_callback(data->partition_manager, 
-                                       on_partition_config_saved, 
+    partition_manager_set_save_callback(data->partition_manager,
+                                       on_partition_config_saved,
                                        data);
-    
+
     g_object_unref(partition_builder);
-    
+
     LOG_INFO("PartitionManager inicializado correctamente para page3");
 }
 
@@ -1788,7 +1816,7 @@ void page3_init_partition_manager(Page3Data *data)
 void page3_navigate_to_encryption_key(Page3Data *data)
 {
     if (!data || !data->navigation_view) return;
-    
+
     AdwNavigationPage *encryption_page = adw_navigation_view_find_page(data->navigation_view, "encryption_key");
     if (encryption_page) {
         adw_navigation_view_push(data->navigation_view, encryption_page);
@@ -1802,7 +1830,7 @@ void page3_navigate_to_encryption_key(Page3Data *data)
 void page3_navigate_back_from_encryption(Page3Data *data)
 {
     if (!data || !data->navigation_view) return;
-    
+
     adw_navigation_view_pop(data->navigation_view);
     LOG_INFO("Regresando desde página de clave de cifrado");
 }
@@ -1820,7 +1848,7 @@ void page3_check_password_match(Page3Data *data)
                             strlen(password) > 0 &&
                             strlen(confirm_password) > 0 &&
                             strcmp(password, confirm_password) == 0);
-    
+
 
 
     // Mostrar/ocultar mensaje de error y aplicar estilos
@@ -1855,10 +1883,10 @@ void page3_check_password_match(Page3Data *data)
 
     // Actualizar estado del botón y revealer
     page3_update_encryption_button_state(data);
-    
+
     // Verificar si ambos campos están en success y activar
     page3_check_success_and_activate(data);
-    
+
     // Actualizar variables.sh si estamos en modo cifrado y las contraseñas son válidas
     gboolean encryption_mode = data->cifrado_partition_button && gtk_check_button_get_active(data->cifrado_partition_button);
 
@@ -1883,7 +1911,7 @@ void page3_validate_password_length(Page3Data *data)
         data->password_length_valid = (strlen(password) >= 8);
         LOG_INFO("password >= 8 chars: %s", data->password_length_valid ? "TRUE" : "FALSE");
 
-        
+
         if (!data->password_length_valid) {
             gtk_widget_add_css_class(GTK_WIDGET(data->password_entry), "error");
             gtk_widget_remove_css_class(GTK_WIDGET(data->password_entry), "success");
@@ -1903,7 +1931,7 @@ void page3_validate_password_length(Page3Data *data)
 
     // Actualizar estado del botón y revealer
     page3_update_encryption_button_state(data);
-    
+
     // Verificar si ambos campos están en success y activar
     page3_check_success_and_activate(data);
 }
@@ -1914,9 +1942,9 @@ void page3_update_encryption_button_state(Page3Data *data)
     if (!data || !data->save_key_disk_button) return;
 
     // Habilitar botón solo si el cifrado está seleccionado
-    gboolean encryption_selected = data->cifrado_partition_button && 
+    gboolean encryption_selected = data->cifrado_partition_button &&
                                   gtk_check_button_get_active(data->cifrado_partition_button);
-    
+
     gtk_widget_set_sensitive(GTK_WIDGET(data->save_key_disk_button), encryption_selected);
 }
 
@@ -1941,7 +1969,7 @@ void page3_check_success_and_activate(Page3Data *data)
 
     if (password_has_success && confirm_has_success) {
         LOG_INFO("*** AMBOS CAMPOS EN SUCCESS - ACTIVANDO SISTEMA ***");
-        
+
         // Buscar el botón siguiente
         GtkWidget *next_button = NULL;
         if (data->revealer) {
@@ -1965,7 +1993,7 @@ void page3_check_success_and_activate(Page3Data *data)
         }
     } else {
         LOG_INFO("Campos no están en success, no activando");
-        
+
         // Desactivar el botón si no están en success
         GtkWidget *next_button = NULL;
         if (data->revealer) {
@@ -1974,7 +2002,7 @@ void page3_check_success_and_activate(Page3Data *data)
                 next_button = page3_find_next_button_recursive(revealer_child);
             }
         }
-        
+
         if (next_button) {
             gtk_widget_set_sensitive(next_button, FALSE);
             LOG_INFO("Botón siguiente desactivado");
@@ -1986,24 +2014,24 @@ void page3_check_success_and_activate(Page3Data *data)
 void page3_update_encryption_variables(Page3Data *data)
 {
     if (!data) return;
-    
+
     LOG_INFO("=== DEBUG page3_update_encryption_variables ===");
-    
+
     const gchar *password = gtk_editable_get_text(GTK_EDITABLE(data->password_entry));
     LOG_INFO("Password obtenida: %s", password ? "SÍ" : "NULL");
     LOG_INFO("Password length: %zu", password ? strlen(password) : 0);
-    
+
     if (!password || strlen(password) == 0) {
         LOG_ERROR("Password está vacía, no se puede guardar");
         return;
     }
-    
+
     LOG_INFO("*** INICIANDO GUARDADO DE CONTRASEÑA ***");
     LOG_INFO("Actualizando contraseña de cifrado en variables.sh");
-    
+
     // Actualizar archivo variables.sh con la contraseña
     gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
-    
+
     // Leer archivo existente
     GString *existing_content = g_string_new("");
     FILE *read_file = fopen(bash_file_path, "r");
@@ -2021,14 +2049,14 @@ void page3_update_encryption_variables(Page3Data *data)
         }
         fclose(read_file);
     }
-    
+
     // Escribir archivo actualizado
     FILE *file = fopen(bash_file_path, "w");
     if (file) {
         fprintf(file, "%s", existing_content->str);
         fclose(file);
         LOG_INFO("*** CONTRASEÑA GUARDADA EXITOSAMENTE EN VARIABLES.SH ***");
-        
+
         // Verificar que se guardó correctamente
         if (strstr(existing_content->str, "ENCRYPTION_PASSWORD=") != NULL) {
             LOG_INFO("Verificación: ENCRYPTION_PASSWORD encontrada en el contenido");
@@ -2039,7 +2067,7 @@ void page3_update_encryption_variables(Page3Data *data)
         LOG_ERROR("*** ERROR: No se pudo abrir variables.sh para escritura ***");
         LOG_ERROR("Ruta del archivo: %s", bash_file_path);
     }
-    
+
     g_free(bash_file_path);
     g_string_free(existing_content, TRUE);
 }
@@ -2060,9 +2088,9 @@ void page3_save_encryption_config(Page3Data *data)
     if (!password) return;
 
     LOG_INFO("Guardando configuración de cifrado");
-    
+
     gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
-    
+
     // Leer el archivo existente para preservar otras variables
     GString *existing_content = g_string_new("");
     gchar *current_selected_disk = NULL;
@@ -2071,7 +2099,7 @@ void page3_save_encryption_config(Page3Data *data)
     gchar *current_keymap_tty = NULL;
     gchar *current_timezone = NULL;
     gchar *current_locale = NULL;
-    
+
     FILE *read_file = fopen(bash_file_path, "r");
     if (read_file) {
         gchar line[1024];
@@ -2153,61 +2181,61 @@ void page3_save_encryption_config(Page3Data *data)
         }
         fclose(read_file);
     }
-    
+
     // Escribir el archivo completo
     FILE *file = fopen(bash_file_path, "w");
     if (file) {
         fprintf(file, "#!/bin/bash\n");
         fprintf(file, "# Variables de configuración generadas por Arcris\n");
         fprintf(file, "# Archivo generado automáticamente - No editar manualmente\n\n");
-        
+
         // Escribir variables preservadas
         if (current_keyboard_layout) {
             fprintf(file, "KEYBOARD_LAYOUT=\"%s\"\n", current_keyboard_layout);
         } else {
             fprintf(file, "KEYBOARD_LAYOUT=\"es\"\n");
         }
-        
+
         if (current_keymap_tty) {
             fprintf(file, "KEYMAP_TTY=\"%s\"\n", current_keymap_tty);
         } else {
             fprintf(file, "KEYMAP_TTY=\"es\"\n");
         }
-        
+
         if (current_timezone) {
             fprintf(file, "TIMEZONE=\"%s\"\n", current_timezone);
         } else {
             fprintf(file, "TIMEZONE=\"America/Lima\"\n");
         }
-        
+
         if (current_locale) {
             fprintf(file, "LOCALE=\"%s\"\n", current_locale);
         } else {
             fprintf(file, "LOCALE=\"es_PE.UTF-8\"\n");
         }
-        
+
         if (current_selected_disk) {
             fprintf(file, "SELECTED_DISK=\"%s\"\n", current_selected_disk);
         } else {
             fprintf(file, "SELECTED_DISK=\"/dev/sda\"\n");
         }
-        
+
         if (current_partition_mode) {
             fprintf(file, "PARTITION_MODE=\"%s\"\n", current_partition_mode);
         } else {
             fprintf(file, "PARTITION_MODE=\"auto\"\n");
         }
-        
+
         // Escribir variables de cifrado
         fprintf(file, "ENCRYPTION_ENABLED=\"true\"\n");
         fprintf(file, "ENCRYPTION_PASSWORD=\"%s\"\n", password);
-        
+
         fclose(file);
         LOG_INFO("Configuración de cifrado guardada exitosamente");
     } else {
         LOG_ERROR("No se pudo escribir el archivo de configuración de cifrado");
     }
-    
+
     // Limpiar memoria
     g_free(current_selected_disk);
     g_free(current_partition_mode);
@@ -2223,9 +2251,9 @@ void page3_save_encryption_config(Page3Data *data)
 void page3_create_encryption_variables(void)
 {
     LOG_INFO("Creando variables de cifrado iniciales");
-    
+
     gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
-    
+
     // Leer el archivo existente
     GString *existing_content = g_string_new("");
     FILE *read_file = fopen(bash_file_path, "r");
@@ -2233,14 +2261,14 @@ void page3_create_encryption_variables(void)
         gchar line[1024];
         while (fgets(line, sizeof(line), read_file)) {
             // Evitar duplicar líneas de cifrado
-            if (strncmp(line, "ENCRYPTION_ENABLED=", 19) != 0 && 
+            if (strncmp(line, "ENCRYPTION_ENABLED=", 19) != 0 &&
                 strncmp(line, "ENCRYPTION_PASSWORD=", 20) != 0) {
                 g_string_append(existing_content, line);
             }
         }
         fclose(read_file);
     }
-    
+
     // Escribir el archivo con las variables de cifrado
     FILE *file = fopen(bash_file_path, "w");
     if (file) {
@@ -2252,7 +2280,7 @@ void page3_create_encryption_variables(void)
     } else {
         LOG_ERROR("No se pudo crear las variables de cifrado");
     }
-    
+
     g_free(bash_file_path);
     g_string_free(existing_content, TRUE);
 }
@@ -2272,7 +2300,7 @@ void on_page3_password_changed(AdwPasswordEntryRow *entry, gpointer user_data)
 
     // Verificar coincidencia cuando cambia la contraseña principal
     page3_check_password_match(data);
-    
+
     // Verificar si ambos campos están en success y activar
     page3_check_success_and_activate(data);
 }
@@ -2285,7 +2313,7 @@ void on_page3_password_confirm_changed(AdwPasswordEntryRow *entry, gpointer user
 
     // Verificar coincidencia de contraseñas
     page3_check_password_match(data);
-    
+
     // Verificar si ambos campos están en success y activar
     page3_check_success_and_activate(data);
 }
@@ -2297,21 +2325,21 @@ void on_page3_save_key_disk_clicked(GtkButton *button, gpointer user_data)
     if (!data) return;
 
     LOG_INFO("Configurando clave de cifrado de disco");
-    
+
     // Limpiar los campos de contraseña antes de navegar
     if (data->password_entry) {
         gtk_editable_set_text(GTK_EDITABLE(data->password_entry), "");
         LOG_INFO("Campo de contraseña limpiado");
     }
-    
+
     if (data->password_confirm_entry) {
         gtk_editable_set_text(GTK_EDITABLE(data->password_confirm_entry), "");
         LOG_INFO("Campo de confirmación de contraseña limpiado");
     }
-    
+
     // Crear variables de cifrado iniciales en variables.sh
     page3_create_encryption_variables();
-    
+
     // Navegar a la página de configuración de clave
     page3_navigate_to_encryption_key(data);
 }
@@ -2324,74 +2352,105 @@ void on_page3_save_key_disk_clicked(GtkButton *button, gpointer user_data)
 gchar* page3_get_partition_table_type(const gchar *disk_path)
 {
     if (!disk_path) return g_strdup("Desconocido");
-    
-    // Usar parted para obtener información de la tabla de particiones
-    gchar *command = g_strdup_printf("parted -s %s print 2>/dev/null | grep 'Partition Table:' | awk '{print $3}'", disk_path);
-    
+
+    // Usar lsblk para obtener tipo de tabla de particiones
+    gchar *command = g_strdup_printf("/bin/sh -c \"lsblk -o PTTYPE %s | tail -1\"", disk_path);
+    LOG_INFO("=== DEBUG: Ejecutando comando: %s ===", command);
+
     gchar *output = NULL;
+    gchar *error_output = NULL;
     GError *error = NULL;
-    
+    gint exit_status = 0;
+
+    // Usar g_spawn_command_line_sync con captura de stderr
+    if (g_spawn_command_line_sync(command, &output, &error_output, &exit_status, &error)) {
+        LOG_INFO("=== DEBUG: Comando ejecutado exitosamente ===");
+        LOG_INFO("=== DEBUG: Exit status: %d ===", exit_status);
+        LOG_INFO("=== DEBUG: Output crudo: '%s' ===", output ? output : "NULL");
+        LOG_INFO("=== DEBUG: Error output: '%s' ===", error_output ? error_output : "NULL");
+
+        if (exit_status == 0 && output) {
+            g_strstrip(output);
+            LOG_INFO("=== DEBUG: Output después de strip: '%s' ===", output);
+            LOG_INFO("=== DEBUG: Longitud del output: %zu ===", strlen(output));
+
+            if (strlen(output) > 0 && !g_str_equal(output, "")) {
+                LOG_INFO("=== DEBUG: Comparando output con tipos conocidos ===");
+
+                // Convertir la salida de lsblk a formato estándar
+                if (g_strcmp0(output, "gpt") == 0 || g_strcmp0(output, "GPT") == 0) {
+                    LOG_INFO("=== DEBUG: MATCH ENCONTRADO: '%s' -> Devolviendo GPT ===", output);
+                    g_free(output);
+                    g_free(error_output);
+                    g_free(command);
+                    return g_strdup("GPT");
+                } else if (g_strcmp0(output, "dos") == 0 || g_strcmp0(output, "mbr") == 0 || g_strcmp0(output, "MBR") == 0) {
+                    LOG_INFO("=== DEBUG: MATCH ENCONTRADO: '%s' -> Devolviendo MBR ===", output);
+                    g_free(output);
+                    g_free(error_output);
+                    g_free(command);
+                    return g_strdup("MBR");
+                } else if (strlen(output) > 0) {
+                    // Para otros tipos específicos, mapear apropiadamente
+                    LOG_INFO("=== DEBUG: Tipo desconocido '%s' -> Devolviendo MBR por defecto ===", output);
+                    g_free(output);
+                    g_free(error_output);
+                    g_free(command);
+                    return g_strdup("Sin Etiqueta");
+                }
+            } else {
+                LOG_WARNING("=== DEBUG: Output vacío o nulo ===");
+            }
+        } else {
+            LOG_WARNING("lsblk falló con código de salida: %d", exit_status);
+            if (error_output && strlen(error_output) > 0) {
+                LOG_WARNING("Error de lsblk: %s", error_output);
+            }
+        }
+
+        g_free(output);
+        g_free(error_output);
+    } else {
+        LOG_ERROR("=== DEBUG: Error al ejecutar comando lsblk ===");
+    }
+
+    if (error) {
+        LOG_WARNING("Error ejecutando lsblk: %s", error->message);
+        g_error_free(error);
+    }
+
+    g_free(command);
+
+    // Como fallback, intentar detectar con otro método
+    // Método alternativo usando file
+    command = g_strdup_printf("file -s %s", disk_path);
+    output = NULL;
+    error = NULL;
+
     if (g_spawn_command_line_sync(command, &output, NULL, NULL, &error)) {
         if (output) {
             g_strstrip(output);
-            if (strlen(output) > 0) {
-                // Convertir a mayúsculas
-                gchar *result = g_ascii_strup(output, -1);
+            if (strstr(output, "GPT") != NULL || strstr(output, "GUID") != NULL) {
                 g_free(output);
                 g_free(command);
-                
-                // Verificar si es un tipo conocido
-                if (g_strcmp0(result, "GPT") == 0 || g_strcmp0(result, "MBR") == 0 || 
-                    g_strcmp0(result, "MSDOS") == 0) {
-                    if (g_strcmp0(result, "MSDOS") == 0) {
-                        g_free(result);
-                        return g_strdup("MBR");
-                    }
-                    return result;
-                }
-                g_free(result);
+                return g_strdup("GPT");
+            } else if (strstr(output, "DOS") != NULL || strstr(output, "MBR") != NULL) {
+                g_free(output);
+                g_free(command);
+                return g_strdup("MBR");
             }
             g_free(output);
         }
     }
-    
-    if (error) {
-        LOG_ERROR("Error obteniendo tipo de tabla de particiones: %s", error->message);
-        g_error_free(error);
-    }
-    
-    g_free(command);
-    
-    // Método alternativo usando fdisk
-    command = g_strdup_printf("fdisk -l %s 2>/dev/null | grep 'Disklabel type:' | awk '{print $3}'", disk_path);
-    
-    if (g_spawn_command_line_sync(command, &output, NULL, NULL, &error)) {
-        if (output) {
-            g_strstrip(output);
-            if (strlen(output) > 0) {
-                gchar *result = g_ascii_strup(output, -1);
-                g_free(output);
-                g_free(command);
-                
-                if (g_strcmp0(result, "GPT") == 0 || g_strcmp0(result, "DOS") == 0) {
-                    if (g_strcmp0(result, "DOS") == 0) {
-                        g_free(result);
-                        return g_strdup("MBR");
-                    }
-                    return result;
-                }
-                g_free(result);
-            }
-            g_free(output);
-        }
-    }
-    
+
     if (error) {
         g_error_free(error);
     }
-    
+
     g_free(command);
-    return g_strdup("Desconocido");
+
+    // Si todo falla, asumir MBR como predeterminado
+    return g_strdup("MBR");
 }
 
 // Función para obtener el tipo de firmware (UEFI/BIOS Legacy)
@@ -2401,28 +2460,28 @@ gchar* page3_get_firmware_type(void)
     if (g_file_test("/sys/firmware/efi", G_FILE_TEST_IS_DIR)) {
         return g_strdup("UEFI");
     }
-    
+
     // Método alternativo: verificar si existe /sys/firmware/efi/efivars
     if (g_file_test("/sys/firmware/efi/efivars", G_FILE_TEST_IS_DIR)) {
         return g_strdup("UEFI");
     }
-    
+
     // Método alternativo: usar efibootmgr para verificar UEFI
     gchar *output = NULL;
     GError *error = NULL;
-    
-    if (g_spawn_command_line_sync("efibootmgr -v 2>/dev/null", &output, NULL, NULL, &error)) {
+
+    if (g_spawn_command_line_sync("efibootmgr -v", &output, NULL, NULL, &error)) {
         if (output && strlen(output) > 0) {
             g_free(output);
             return g_strdup("UEFI");
         }
         g_free(output);
     }
-    
+
     if (error) {
         g_error_free(error);
     }
-    
+
     // Si no se puede determinar que es UEFI, asumir BIOS Legacy
     return g_strdup("BIOS Legacy");
 }

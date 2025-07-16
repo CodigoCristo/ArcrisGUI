@@ -8,7 +8,7 @@ TIMEZONE="America/Lima"
 LOCALE="es_PE.UTF-8"
 
 # Variables de configuración del usuario
-export USER="uuu"
+export USER="qwe"
 export PASSWORD_USER="123"
 export HOSTNAME="arcris"
 # La contraseña del usuario también será la contraseña de root
@@ -19,5 +19,5 @@ INSTALLATION_TYPE="TERMINAL"
 
 # Kernel seleccionado
 SELECTED_KERNEL="linux"
-SELECTED_DISK="/dev/sdb"
+SELECTED_DISK="/dev/nvme0n1"
 PARTITION_MODE="manual"

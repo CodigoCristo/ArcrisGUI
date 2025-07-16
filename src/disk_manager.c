@@ -165,8 +165,7 @@ disk_manager_init(DiskManager *manager, GtkBuilder *builder)
 
     // Configurar propiedades del combo
     g_object_set(manager->disk_combo,
-                 "title", "Disco de instalación",
-                 "subtitle", "Selecciona un dispositivo de almacenamiento",
+                 "title", "Disco seleccionado",
                  NULL);
 
     // Conectar señales
@@ -271,10 +270,7 @@ disk_manager_populate_list(DiskManager *manager)
                     adw_combo_row_set_selected(manager->disk_combo, i);
                     LOG_INFO("Disco previamente seleccionado encontrado: %s (índice %u)", disk_path, i);
 
-                    // Actualizar el subtitle del combo row
-                    gchar *subtitle_text = g_strdup_printf("Seleccionado: %s", disk_path);
-                    g_object_set(manager->disk_combo, "subtitle", subtitle_text, NULL);
-                    g_free(subtitle_text);
+
 
                     disk_found = TRUE;
                     break;
@@ -296,10 +292,7 @@ disk_manager_populate_list(DiskManager *manager)
 
                 LOG_INFO("Disco seleccionado automáticamente: %s", first_disk_path);
 
-                // Actualizar el subtitle del combo row
-                gchar *subtitle_text = g_strdup_printf("Seleccionado: %s", first_disk_path);
-                g_object_set(manager->disk_combo, "subtitle", subtitle_text, NULL);
-                g_free(subtitle_text);
+
 
                 // Guardar la selección en variables.sh
                 disk_manager_save_to_variables(manager);
@@ -318,7 +311,7 @@ disk_manager_refresh(DiskManager *manager)
 
     // Limpiar selección actual
     adw_combo_row_set_selected(manager->disk_combo, GTK_INVALID_LIST_POSITION);
-    g_object_set(manager->disk_combo, "subtitle", "Selecciona un dispositivo de almacenamiento", NULL);
+
 
     // Actualizar la lista
     disk_manager_populate_list(manager);
@@ -356,10 +349,7 @@ on_disk_manager_selection_changed(GObject *object, GParamSpec *pspec, gpointer u
 
             LOG_INFO("Disco seleccionado: %s", device_path);
 
-            // Actualizar el subtitle del combo row
-            gchar *subtitle_text = g_strdup_printf("Seleccionado: %s", device_path);
-            g_object_set(manager->disk_combo, "subtitle", subtitle_text, NULL);
-            g_free(subtitle_text);
+
 
             // Guardar la selección en variables.sh
             disk_manager_save_to_variables(manager);
@@ -372,7 +362,7 @@ on_disk_manager_selection_changed(GObject *object, GParamSpec *pspec, gpointer u
         // Si no hay selección, limpiar
         g_free(manager->selected_disk_path);
         manager->selected_disk_path = NULL;
-        g_object_set(manager->disk_combo, "subtitle", "Selecciona un dispositivo de almacenamiento", NULL);
+
 
         // Guardar el estado vacío en variables.sh
         disk_manager_save_to_variables(manager);
