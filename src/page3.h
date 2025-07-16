@@ -169,4 +169,8 @@ gboolean page3_is_partition_of_disk(const gchar *partition_path, const gchar *di
 gchar* page3_format_partition_size(guint64 size_bytes);
 const gchar* page3_get_filesystem_icon(const gchar *filesystem);
 
+// Funciones para detectar información del disco
+gchar* page3_get_partition_table_type(const gchar *disk_path);
+gchar* page3_get_firmware_type(void);
+
 #endif /* PAGE3_H */

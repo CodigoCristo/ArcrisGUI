@@ -6,8 +6,6 @@ KEYBOARD_LAYOUT="es"
 KEYMAP_TTY="es"
 TIMEZONE="America/Lima"
 LOCALE="es_PE.UTF-8"
-SELECTED_DISK="/dev/sdb"
-PARTITION_MODE="auto"
 
 # Variables de configuración del usuario
 export USER="uuu"
@@ -21,3 +19,5 @@ INSTALLATION_TYPE="TERMINAL"
 
 # Kernel seleccionado
 SELECTED_KERNEL="linux"
+SELECTED_DISK="/dev/sdb"
+PARTITION_MODE="manual"

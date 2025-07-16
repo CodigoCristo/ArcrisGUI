@@ -50,12 +50,12 @@ disk_manager_is_main_device(const gchar *device_name)
     if (len >= 3 && g_str_has_prefix(device_name, "sd") && g_ascii_isdigit(device_name[len-1])) {
         return FALSE;
     }
-    
+
     // Para dispositivos VirtIO particiones (vda1, vdb2, etc.)
     if (len >= 4 && g_str_has_prefix(device_name, "vd") && g_ascii_isdigit(device_name[len-1])) {
         return FALSE;
     }
-    
+
     // Para dispositivos IDE particiones (hda1, hdb2, etc.)
     if (len >= 4 && g_str_has_prefix(device_name, "hd") && g_ascii_isdigit(device_name[len-1])) {
         return FALSE;
@@ -239,9 +239,9 @@ disk_manager_populate_list(DiskManager *manager)
 
                 if (disk_manager_is_main_device(device_name)) {
                     // Crear descripción para mostrar: /dev/sda - XX.X GB
-                    gchar *display_text = g_strdup_printf("%s - %.0f GB",
+                    gchar *display_text = g_strdup_printf("%s - %.0f GiB",
                                                         device_path,
-                                                        size / 1000000000.0);
+                                                        size / 1073741824.0);
 
                     gtk_string_list_append(manager->disk_store, display_text);
                     gtk_string_list_append(manager->disk_paths, device_path);

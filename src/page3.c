@@ -677,14 +677,22 @@ void page3_update_manual_partitions_info(Page3Data *data)
     gtk_label_set_text(data->disk_label_page4, disk_text);
     g_free(disk_text);
     
-    // Obtener y mostrar tamaño del disco
+    // Obtener información completa del disco
     gchar *disk_size = page3_get_disk_size(selected_disk);
-    if (disk_size) {
-        gtk_label_set_text(data->disk_size_label_page4, disk_size);
-        g_free(disk_size);
+    gchar *partition_table = page3_get_partition_table_type(selected_disk);
+    gchar *firmware_type = page3_get_firmware_type();
+    
+    if (disk_size && partition_table && firmware_type) {
+        gchar *complete_info = g_strdup_printf("%s - %s - %s", disk_size, partition_table, firmware_type);
+        gtk_label_set_text(data->disk_size_label_page4, complete_info);
+        g_free(complete_info);
     } else {
-        gtk_label_set_text(data->disk_size_label_page4, "Tamaño desconocido");
+        gtk_label_set_text(data->disk_size_label_page4, "Información desconocida");
     }
+    
+    g_free(disk_size);
+    g_free(partition_table);
+    g_free(firmware_type);
     
     // Limpiar particiones anteriores
     page3_clear_partitions(data);
@@ -768,15 +776,15 @@ gchar* page3_get_disk_size(const gchar *disk_path)
 // Función para formatear el tamaño del disco
 gchar* page3_format_disk_size(guint64 size_bytes)
 {
-    // Usar el mismo método que DiskManager: size / 1000000000.0 para GB
-    if (size_bytes >= 1000000000000ULL) {
-        return g_strdup_printf("%.0f TB", size_bytes / 1000000000000.0);
-    } else if (size_bytes >= 1000000000ULL) {
-        return g_strdup_printf("%.0f GB", size_bytes / 1000000000.0);
-    } else if (size_bytes >= 1000000ULL) {
-        return g_strdup_printf("%.0f MB", size_bytes / 1000000.0);
-    } else if (size_bytes >= 1000ULL) {
-        return g_strdup_printf("%.0f KB", size_bytes / 1000.0);
+    // Usar estándar binario: size / 1073741824.0 para GiB
+    if (size_bytes >= 1099511627776ULL) {
+        return g_strdup_printf("%.2f TiB", size_bytes / 1099511627776.0);
+    } else if (size_bytes >= 1073741824ULL) {
+        return g_strdup_printf("%.2f GiB", size_bytes / 1073741824.0);
+    } else if (size_bytes >= 1048576ULL) {
+        return g_strdup_printf("%.2f MiB", size_bytes / 1048576.0);
+    } else if (size_bytes >= 1024ULL) {
+        return g_strdup_printf("%.2f KiB", size_bytes / 1024.0);
     } else {
         return g_strdup_printf("%lu bytes", size_bytes);
     }
@@ -1125,15 +1133,15 @@ gboolean page3_is_partition_of_disk(const gchar *partition_path, const gchar *di
 // Función para formatear tamaño de partición (usando mismo método que DiskManager)
 gchar* page3_format_partition_size(guint64 size_bytes)
 {
-    // Usar el mismo método que DiskManager: size / 1000000000.0 para GB
-    if (size_bytes >= 1000000000000ULL) {
-        return g_strdup_printf("%.0f TB", size_bytes / 1000000000000.0);
-    } else if (size_bytes >= 1000000000ULL) {
-        return g_strdup_printf("%.0f GB", size_bytes / 1000000000.0);
-    } else if (size_bytes >= 1000000ULL) {
-        return g_strdup_printf("%.0f MB", size_bytes / 1000000.0);
-    } else if (size_bytes >= 1000ULL) {
-        return g_strdup_printf("%.0f KB", size_bytes / 1000.0);
+    // Usar estándar binario: size / 1073741824.0 para GiB
+    if (size_bytes >= 1099511627776ULL) {
+        return g_strdup_printf("%.2f TiB", size_bytes / 1099511627776.0);
+    } else if (size_bytes >= 1073741824ULL) {
+        return g_strdup_printf("%.2f GiB", size_bytes / 1073741824.0);
+    } else if (size_bytes >= 1048576ULL) {
+        return g_strdup_printf("%.2f MiB", size_bytes / 1048576.0);
+    } else if (size_bytes >= 1024ULL) {
+        return g_strdup_printf("%.2f KiB", size_bytes / 1024.0);
     } else {
         return g_strdup_printf("%lu bytes", size_bytes);
     }
@@ -2306,4 +2314,115 @@ void on_page3_save_key_disk_clicked(GtkButton *button, gpointer user_data)
     
     // Navegar a la página de configuración de clave
     page3_navigate_to_encryption_key(data);
+}
+
+// ============================================================================
+// FUNCIONES PARA DETECTAR INFORMACIÓN DEL DISCO
+// ============================================================================
+
+// Función para obtener el tipo de tabla de particiones (GPT/MBR)
+gchar* page3_get_partition_table_type(const gchar *disk_path)
+{
+    if (!disk_path) return g_strdup("Desconocido");
+    
+    // Usar parted para obtener información de la tabla de particiones
+    gchar *command = g_strdup_printf("parted -s %s print 2>/dev/null | grep 'Partition Table:' | awk '{print $3}'", disk_path);
+    
+    gchar *output = NULL;
+    GError *error = NULL;
+    
+    if (g_spawn_command_line_sync(command, &output, NULL, NULL, &error)) {
+        if (output) {
+            g_strstrip(output);
+            if (strlen(output) > 0) {
+                // Convertir a mayúsculas
+                gchar *result = g_ascii_strup(output, -1);
+                g_free(output);
+                g_free(command);
+                
+                // Verificar si es un tipo conocido
+                if (g_strcmp0(result, "GPT") == 0 || g_strcmp0(result, "MBR") == 0 || 
+                    g_strcmp0(result, "MSDOS") == 0) {
+                    if (g_strcmp0(result, "MSDOS") == 0) {
+                        g_free(result);
+                        return g_strdup("MBR");
+                    }
+                    return result;
+                }
+                g_free(result);
+            }
+            g_free(output);
+        }
+    }
+    
+    if (error) {
+        LOG_ERROR("Error obteniendo tipo de tabla de particiones: %s", error->message);
+        g_error_free(error);
+    }
+    
+    g_free(command);
+    
+    // Método alternativo usando fdisk
+    command = g_strdup_printf("fdisk -l %s 2>/dev/null | grep 'Disklabel type:' | awk '{print $3}'", disk_path);
+    
+    if (g_spawn_command_line_sync(command, &output, NULL, NULL, &error)) {
+        if (output) {
+            g_strstrip(output);
+            if (strlen(output) > 0) {
+                gchar *result = g_ascii_strup(output, -1);
+                g_free(output);
+                g_free(command);
+                
+                if (g_strcmp0(result, "GPT") == 0 || g_strcmp0(result, "DOS") == 0) {
+                    if (g_strcmp0(result, "DOS") == 0) {
+                        g_free(result);
+                        return g_strdup("MBR");
+                    }
+                    return result;
+                }
+                g_free(result);
+            }
+            g_free(output);
+        }
+    }
+    
+    if (error) {
+        g_error_free(error);
+    }
+    
+    g_free(command);
+    return g_strdup("Desconocido");
+}
+
+// Función para obtener el tipo de firmware (UEFI/BIOS Legacy)
+gchar* page3_get_firmware_type(void)
+{
+    // Verificar si existe el directorio /sys/firmware/efi
+    if (g_file_test("/sys/firmware/efi", G_FILE_TEST_IS_DIR)) {
+        return g_strdup("UEFI");
+    }
+    
+    // Método alternativo: verificar si existe /sys/firmware/efi/efivars
+    if (g_file_test("/sys/firmware/efi/efivars", G_FILE_TEST_IS_DIR)) {
+        return g_strdup("UEFI");
+    }
+    
+    // Método alternativo: usar efibootmgr para verificar UEFI
+    gchar *output = NULL;
+    GError *error = NULL;
+    
+    if (g_spawn_command_line_sync("efibootmgr -v 2>/dev/null", &output, NULL, NULL, &error)) {
+        if (output && strlen(output) > 0) {
+            g_free(output);
+            return g_strdup("UEFI");
+        }
+        g_free(output);
+    }
+    
+    if (error) {
+        g_error_free(error);
+    }
+    
+    // Si no se puede determinar que es UEFI, asumir BIOS Legacy
+    return g_strdup("BIOS Legacy");
 }

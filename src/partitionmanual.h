@@ -46,6 +46,10 @@ typedef struct _PartitionManualData {
     GtkButton *refresh_button;
     AdwComboRow *disk_combo;
     
+    // Vista 2: Labels de mount points
+    GtkLabel *disk_label_mount;
+    GtkLabel *disk_size_label_mount;
+    
     // Radiobuttons para tipo de particionado
     GtkCheckButton *auto_partition_radio;
     GtkCheckButton *auto_btrfs_radio;

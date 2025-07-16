@@ -46,6 +46,8 @@ void partitionmanual_init(GtkBuilder *builder, AdwCarousel *carousel, GtkReveale
     g_partitionmanual_data->disk_selection_page = GTK_WIDGET(gtk_builder_get_object(page_builder, "disk_selection_page"));
     g_partitionmanual_data->disk_label = GTK_LABEL(gtk_builder_get_object(page_builder, "disk_label"));
     g_partitionmanual_data->disk_size_label = GTK_LABEL(gtk_builder_get_object(page_builder, "disk_size_label"));
+    g_partitionmanual_data->disk_label_mount = GTK_LABEL(gtk_builder_get_object(page_builder, "disk_label_mount"));
+    g_partitionmanual_data->disk_size_label_mount = GTK_LABEL(gtk_builder_get_object(page_builder, "disk_size_label_mount"));
     g_partitionmanual_data->refresh_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "refresh_button"));
     g_partitionmanual_data->disk_combo = ADW_COMBO_ROW(gtk_builder_get_object(page_builder, "disk_combo"));
     
@@ -216,14 +218,33 @@ void partitionmanual_update_disk_info(PartitionManualData *data)
         // Actualizar título: "Disco - XXX GB"
         gchar *disk_title = g_strdup_printf("Disco - %s", disk_size);
         gtk_label_set_text(data->disk_label, disk_title);
+        
+        // También actualizar los labels de mount points si existen
+        if (data->disk_label_mount) {
+            gtk_label_set_text(data->disk_label_mount, disk_title);
+        }
+        
         g_free(disk_title);
         g_free(disk_size);
         
         // Actualizar subtítulo: ruta del disco
         gtk_label_set_text(data->disk_size_label, selected_disk);
+        
+        // También actualizar el label de mount points si existe
+        if (data->disk_size_label_mount) {
+            gtk_label_set_text(data->disk_size_label_mount, selected_disk);
+        }
     } else {
         gtk_label_set_text(data->disk_label, "Disco - Tamaño desconocido");
         gtk_label_set_text(data->disk_size_label, selected_disk);
+        
+        // También actualizar los labels de mount points si existen
+        if (data->disk_label_mount) {
+            gtk_label_set_text(data->disk_label_mount, "Disco - Tamaño desconocido");
+        }
+        if (data->disk_size_label_mount) {
+            gtk_label_set_text(data->disk_size_label_mount, selected_disk);
+        }
     }
     
     // Si estamos en la página de puntos de montaje, actualizar particiones
@@ -529,48 +550,45 @@ void on_partitionmanual_back_button_clicked(GtkButton *button, gpointer user_dat
 // Funciones de utilidad del disco
 gchar* partitionmanual_get_disk_size(const gchar *disk_path)
 {
-    if (!disk_path) return NULL;
-    
-    // Implementación básica - en producción usaría UDisks2
-    FILE *proc_partitions = fopen("/proc/partitions", "r");
-    if (!proc_partitions) return NULL;
-    
-    char line[256];
-    char device_name[64];
-    unsigned long long size_kb;
-    
-    // Extraer solo el nombre del dispositivo (sin /dev/)
-    const char *device_only = strrchr(disk_path, '/');
-    if (device_only) {
-        device_only++; // Saltar el '/'
-    } else {
-        device_only = disk_path;
+    if (!disk_path || !g_partitionmanual_data || !g_partitionmanual_data->udisks_client) {
+        return g_strdup("Tamaño desconocido");
     }
     
-    while (fgets(line, sizeof(line), proc_partitions)) {
-        if (sscanf(line, "%*d %*d %llu %s", &size_kb, device_name) == 2) {
-            if (strcmp(device_name, device_only) == 0) {
-                fclose(proc_partitions);
-                return partitionmanual_format_disk_size(size_kb * 1024);
+    // Usar UDisks2 para obtener información precisa del disco
+    GList *objects = g_dbus_object_manager_get_objects(udisks_client_get_object_manager(g_partitionmanual_data->udisks_client));
+    GList *l;
+    
+    for (l = objects; l != NULL; l = l->next) {
+        UDisksObject *object = UDISKS_OBJECT(l->data);
+        UDisksBlock *block = udisks_object_peek_block(object);
+        
+        if (block != NULL) {
+            const gchar *device_path = udisks_block_get_device(block);
+            
+            if (device_path && g_strcmp0(device_path, disk_path) == 0) {
+                // Encontramos el disco, obtener su tamaño
+                guint64 size_bytes = udisks_block_get_size(block);
+                g_list_free_full(objects, g_object_unref);
+                return partitionmanual_format_disk_size(size_bytes);
             }
         }
     }
     
-    fclose(proc_partitions);
+    g_list_free_full(objects, g_object_unref);
     return g_strdup("Tamaño desconocido");
 }
 
 static gchar* partitionmanual_format_disk_size(guint64 size_bytes)
 {
-    // Usar el mismo método que DiskManager: size / 1000000000.0 para GB
-    if (size_bytes >= 1000000000000ULL) {
-        return g_strdup_printf("%.0f TB", size_bytes / 1000000000000.0);
-    } else if (size_bytes >= 1000000000ULL) {
-        return g_strdup_printf("%.0f GB", size_bytes / 1000000000.0);
-    } else if (size_bytes >= 1000000ULL) {
-        return g_strdup_printf("%.0f MB", size_bytes / 1000000.0);
-    } else if (size_bytes >= 1000ULL) {
-        return g_strdup_printf("%.0f KB", size_bytes / 1000.0);
+    // Usar estándar binario: size / 1073741824.0 para GiB
+    if (size_bytes >= 1099511627776ULL) {
+        return g_strdup_printf("%.2f TiB", size_bytes / 1099511627776.0);
+    } else if (size_bytes >= 1073741824ULL) {
+        return g_strdup_printf("%.2f GiB", size_bytes / 1073741824.0);
+    } else if (size_bytes >= 1048576ULL) {
+        return g_strdup_printf("%.2f MiB", size_bytes / 1048576.0);
+    } else if (size_bytes >= 1024ULL) {
+        return g_strdup_printf("%.2f KiB", size_bytes / 1024.0);
     } else {
         return g_strdup_printf("%lu bytes", size_bytes);
     }
@@ -955,15 +973,15 @@ gboolean partitionmanual_is_partition_of_disk(const gchar *partition_path, const
 
 gchar* partitionmanual_format_partition_size(guint64 size_bytes)
 {
-    // Usar el mismo método que DiskManager: size / 1000000000.0 para GB
-    if (size_bytes >= 1000000000000ULL) {
-        return g_strdup_printf("%.0f TB", size_bytes / 1000000000000.0);
-    } else if (size_bytes >= 1000000000ULL) {
-        return g_strdup_printf("%.0f GB", size_bytes / 1000000000.0);
-    } else if (size_bytes >= 1000000ULL) {
-        return g_strdup_printf("%.0f MB", size_bytes / 1000000.0);
-    } else if (size_bytes >= 1000ULL) {
-        return g_strdup_printf("%.0f KB", size_bytes / 1000.0);
+    // Usar estándar binario: size / 1073741824.0 para GiB
+    if (size_bytes >= 1099511627776ULL) {
+        return g_strdup_printf("%.2f TiB", size_bytes / 1099511627776.0);
+    } else if (size_bytes >= 1073741824ULL) {
+        return g_strdup_printf("%.2f GiB", size_bytes / 1073741824.0);
+    } else if (size_bytes >= 1048576ULL) {
+        return g_strdup_printf("%.2f MiB", size_bytes / 1048576.0);
+    } else if (size_bytes >= 1024ULL) {
+        return g_strdup_printf("%.2f KiB", size_bytes / 1024.0);
     } else {
         return g_strdup_printf("%lu bytes", size_bytes);
     }
