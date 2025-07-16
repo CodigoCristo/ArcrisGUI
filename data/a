@@ -1,0 +1,7 @@
+Ahora pongamos funciones para window_kernel lo mismo que pasaba con
+INSTALLATION_TYPE en variables.sh al iniciar la app quiero que obtengas
+el string del title del GtkCheckButton activo del AdwActionRow del window_kernel.ui
+y los botones de cerrar y guardar que funcionen al guardar debe guardar la variable al archivo variables.sh
+
+
+No muevas tab-new me gusta ese icono que este ahi

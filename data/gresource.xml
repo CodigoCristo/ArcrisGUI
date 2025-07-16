@@ -8,7 +8,10 @@
     <file alias="page4.ui" compressed="true">page4.ui</file>
     <file alias="page5.ui" compressed="true">page5.ui</file>
     <file alias="page6.ui" compressed="true">page6.ui</file>
+    <file alias="page7.ui" compressed="true">page7.ui</file>
+    <file alias="window_kernel.ui" compressed="true">window_kernel.ui</file>
     <file alias="window_partition.ui" compressed="true">window_partition.ui</file>
+    <file alias="window_hardware.ui" compressed="true">window_hardware.ui</file>
 
 
     <file alias="locale.gen">locale.gen</file>

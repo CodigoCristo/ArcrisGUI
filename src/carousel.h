@@ -11,6 +11,8 @@ typedef struct _Page2Data Page2Data;
 typedef struct _Page3Data Page3Data;
 typedef struct _Page4Data Page4Data;
 typedef struct _Page5Data Page5Data;
+typedef struct _Page6Data Page6Data;
+typedef struct _Page7Data Page7Data;
 
 
 
@@ -27,6 +29,8 @@ typedef struct {
     Page3Data *page3_data;
     Page4Data *page4_data;
     Page5Data *page5_data;
+    Page6Data *page6_data;
+    Page7Data *page7_data;
 
 
     

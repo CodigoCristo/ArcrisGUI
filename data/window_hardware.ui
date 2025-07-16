@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwApplicationWindow" id="KernelListWindow">
+    <property name="title">Lista de Kernels</property>
+    <property name="default-width">550</property>
+    <property name="default-height">520</property>
+    <property name="modal">true</property>
+    <property name="resizable">false</property>
+    <property name="deletable">false</property>
+    <property name="hide-on-close">true</property>
+
+    <child>
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="AdwWindowTitle">
+                <property name="title">Hardware</property>
+              </object>
+            </property>
+            <child type="start">
+              <object class="GtkButton" id="close_button">
+                <property name="label">Cerrar</property>
+                <property name="valign">center</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="save_button">
+                <property name="label">Guardar</property>
+                <property name="valign">center</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <property name="content">
+          <object class="AdwClamp">
+            <property name="maximum-size">420</property>
+            <property name="tightening-threshold">500</property>
+            <property name="margin-top">24</property>
+            <property name="margin-bottom">24</property>
+            <property name="margin-start">12</property>
+            <property name="margin-end">12</property>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">24</property>
+
+                <!-- Grupo Video -->
+                <child>
+                  <object class="AdwPreferencesGroup" id="video_group">
+                    <property name="title">Video</property>
+                    <property name="description">Tu tarjeta Gráfica es: ...</property>
+                    <child>
+                      <object class="AdwComboRow" id="driver_video_combo">
+                        <property name="title">Driver de Video:</property>
+                        <property name="subtitle">Open Source</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item>Open Source</item>
+                              <item>Nvidia Private</item>
+                              <item>AMD Private</item>
+                              <item>Intel Private</item>
+                              <item>Máquina Virtual</item>
+                            </items>
+                          </object>
+                        </property>
+                        <property name="selected">0</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Grupo Audio -->
+                <child>
+                  <object class="AdwPreferencesGroup" id="audio_group">
+                    <property name="title">Audio</property>
+                    <property name="description">Tu tarjeta Audio es: ...</property>
+                    <child>
+                      <object class="AdwComboRow" id="driver_sonido_combo">
+                        <property name="title">Driver de Audio:</property>
+                        <property name="subtitle">Por defecto: alsa</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item>Alsa Audio</item>
+                              <item>pipewire</item>
+                              <item>pulseaudio</item>
+                              <item>Jack2</item>
+                            </items>
+                          </object>
+                        </property>
+                        <property name="selected">0</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Grupo Red -->
+                <child>
+                  <object class="AdwPreferencesGroup" id="network_group">
+                    <property name="title">Red</property>
+                    <child>
+                      <object class="AdwComboRow" id="driver_wifi_combo">
+                        <property name="title">Wifi</property>
+                        <property name="subtitle">No disponible</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item>Ninguno</item>
+                              <item>Open Source</item>
+                              <item>broadcom-wl</item>
+                              <item>Realtek</item>
+                            </items>
+                          </object>
+                        </property>
+                        <property name="selected">0</property>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwComboRow" id="driver_bluetooth_combo">
+                        <property name="title">Bluetooth:</property>
+                        <property name="subtitle">No disponible</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item>Ninguno</item>
+                              <item>bluetoothctl (terminal)</item>
+                              <item>blueman (Graphical)</item>
+                            </items>
+                          </object>
+                        </property>
+                        <property name="selected">0</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </child>
+  </object>
+</interface>

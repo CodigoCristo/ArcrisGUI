@@ -3,7 +3,7 @@
   <requires lib="gtk" version="4.0"/>
   <requires lib="libadwaita" version="1.0"/>
 
-  <object class="AdwClamp" id="main_clamp">
+  <object class="AdwClamp">
     <property name="maximum-size">500</property>
     <property name="tightening-threshold">400</property>
     <property name="margin-top">5</property>
@@ -14,13 +14,6 @@
     <child>
       <object class="GtkBox">
         <property name="orientation">vertical</property>
-        <property name="spacing">12</property>
-        <property name="margin-top">24</property>
-        <property name="margin-bottom">24</property>
-        <property name="margin-start">24</property>
-        <property name="margin-end">24</property>
-        <property name="halign">center</property>
-        <property name="valign">center</property>
 
 
         <!-- Status Page Header -->
@@ -37,14 +30,14 @@
 
 
            <child>
-              <object class="AdwActionRow" id="kernel_row">
+              <object class="AdwActionRow">
                 <property name="title">Kernel</property>
-                <property name="subtitle">Kernel: linux</property>
+                <property name="subtitle">Elige el kernel por defecto: Linux Stable</property>
                 <property name="activatable">false</property>
                 <child type="suffix">
-                  <object class="GtkButton" id="kernel_button">
+                  <object class="GtkButton">
                   <property name="margin-end">30</property>
-                    <property name="icon-name">tab-new</property>
+                    <property name="icon-name">go-next-symbolic</property>
                     <property name="valign">center</property>
                     <style>
                       <class name="flat"/>
@@ -60,8 +53,8 @@
                 <property name="subtitle">Módulos de video, sonido, wifi, Bluetooth</property>
                 <property name="activatable">false</property>
                 <child type="suffix">
-                  <object class="GtkButton" id="driver_hardware_button">
-                    <property name="icon-name">tab-new</property>
+                  <object class="GtkButton">
+                    <property name="icon-name">go-next-symbolic</property>
                     <property name="valign">center</property>
                     <property name="margin-end">30</property>
                     <style>
@@ -76,16 +69,15 @@
 
 
             <child>
-              <object class="AdwSwitchRow" id="essential_apps_switch">
+              <object class="AdwSwitchRow">
                 <property name="title">Aplicaciones esenciales</property>
                 <property name="subtitle">Sistemas de archivos, compresión de archivos, shell, códecs</property>
                 <property name="active">true</property>
                 <property name="activatable">false</property>
                 <child type="suffix">
-                  <object class="GtkButton" id="essential_apps_button">
+                  <object class="GtkButton">
                     <property name="icon-name">go-next-symbolic</property>
                     <property name="valign">center</property>
-                    <property name="sensitive">true</property>
                     <style>
                       <class name="flat"/>
                     </style>
@@ -95,16 +87,15 @@
             </child>
 
             <child>
-              <object class="AdwSwitchRow" id="office_switch">
+              <object class="AdwSwitchRow">
                 <property name="title">Office</property>
                 <property name="subtitle">Selecciona tu suites de ofimáticas</property>
                 <property name="active">false</property>
                 <property name="activatable">false</property>
                 <child type="suffix">
-                  <object class="GtkButton" id="office_button">
+                  <object class="GtkButton">
                     <property name="icon-name">go-next-symbolic</property>
                     <property name="valign">center</property>
-                    <property name="sensitive">false</property>
                     <style>
                       <class name="flat"/>
                     </style>
@@ -114,16 +105,15 @@
             </child>
 
             <child>
-              <object class="AdwSwitchRow" id="utilities_switch">
-                <property name="title">Utilidades</property>
-                <property name="subtitle">Como navegadores, IDEs, Office, Vlc, Gamming, etc.</property>
+              <object class="AdwSwitchRow">
+                <property name="title">Utilidades útiles</property>
+                <property name="subtitle">Como navegadores, Ide's, Multimedia, Vlc, Gamming, etc.</property>
                 <property name="active">false</property>
                 <property name="activatable">false</property>
                 <child type="suffix">
-                  <object class="GtkButton" id="utilities_button">
+                  <object class="GtkButton">
                     <property name="icon-name">go-next-symbolic</property>
                     <property name="valign">center</property>
-                    <property name="sensitive">false</property>
                     <style>
                       <class name="flat"/>
                     </style>

@@ -147,6 +147,15 @@ void page4_setup_widgets(Page4Data *data)
         }
     }
 
+    // Desactivar apply buttons inicialmente
+    if (data->username_entry) {
+        adw_entry_row_set_show_apply_button(data->username_entry, FALSE);
+    }
+    
+    if (data->hostname_entry) {
+        adw_entry_row_set_show_apply_button(data->hostname_entry, FALSE);
+    }
+
     LOG_INFO("Widgets de la página 4 configurados");
 
     // No ejecutamos page4_update_next_button_state aquí porque los widgets
@@ -781,6 +790,9 @@ gboolean page4_is_username_valid(const gchar *username, Page4Data *data)
 {
     if (!username || strlen(username) == 0) return FALSE;
 
+    // Máximo 22 caracteres
+    if (strlen(username) > 22) return FALSE;
+
     // No puede empezar con mayúscula
     if (g_ascii_isupper(username[0])) return FALSE;
 
@@ -806,6 +818,9 @@ gboolean page4_is_username_valid(const gchar *username, Page4Data *data)
 gboolean page4_is_hostname_valid(const gchar *hostname, Page4Data *data)
 {
     if (!hostname || strlen(hostname) == 0) return FALSE;
+
+    // Máximo 22 caracteres
+    if (strlen(hostname) > 22) return FALSE;
 
     // No puede empezar con mayúscula
     if (g_ascii_isupper(hostname[0])) return FALSE;
@@ -845,16 +860,16 @@ void page4_validate_username(Page4Data *data)
         data->username_valid = page4_is_username_valid(username, data);
         if (!data->username_valid) {
             gtk_widget_add_css_class(GTK_WIDGET(data->username_entry), "error");
-            gtk_widget_remove_css_class(GTK_WIDGET(data->username_entry), "accent");
+            adw_entry_row_set_show_apply_button(data->username_entry, FALSE);
         } else {
-            gtk_widget_add_css_class(GTK_WIDGET(data->username_entry), "accent");
+            adw_entry_row_set_show_apply_button(data->username_entry, TRUE);
             gtk_widget_remove_css_class(GTK_WIDGET(data->username_entry), "error");
         }
     } else {
         // Campo vacío = inválido
         data->username_valid = FALSE;
         gtk_widget_remove_css_class(GTK_WIDGET(data->username_entry), "error");
-        gtk_widget_remove_css_class(GTK_WIDGET(data->username_entry), "accent");
+        adw_entry_row_set_show_apply_button(data->username_entry, FALSE);
     }
 
     // Actualizar estado del botón siguiente
@@ -872,16 +887,16 @@ void page4_validate_hostname(Page4Data *data)
         data->hostname_valid = page4_is_hostname_valid(hostname, data);
         if (!data->hostname_valid) {
             gtk_widget_add_css_class(GTK_WIDGET(data->hostname_entry), "error");
-            gtk_widget_remove_css_class(GTK_WIDGET(data->hostname_entry), "accent");
+            adw_entry_row_set_show_apply_button(data->hostname_entry, FALSE);
         } else {
-            gtk_widget_add_css_class(GTK_WIDGET(data->hostname_entry), "accent");
+            adw_entry_row_set_show_apply_button(data->hostname_entry, TRUE);
             gtk_widget_remove_css_class(GTK_WIDGET(data->hostname_entry), "error");
         }
     } else {
         // Campo vacío = inválido
         data->hostname_valid = FALSE;
         gtk_widget_remove_css_class(GTK_WIDGET(data->hostname_entry), "error");
-        gtk_widget_remove_css_class(GTK_WIDGET(data->hostname_entry), "accent");
+        adw_entry_row_set_show_apply_button(data->hostname_entry, FALSE);
     }
 
     // Actualizar estado del botón siguiente

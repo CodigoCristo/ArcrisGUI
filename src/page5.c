@@ -1,4 +1,5 @@
 #include "page5.h"
+#include "window_kernel.h"
 #include "config.h"
 #include <stdio.h>
 
@@ -37,6 +38,10 @@ static const char* WM_IMAGE_RESOURCES[] = {
     "/org/gtk/arcris/dwm.png",
     "/org/gtk/arcris/Qtile.png"
 };
+
+// Declaración forward de funciones
+static gboolean page5_save_installation_type_variable(InstallationType type);
+static gboolean page5_remove_variable_from_config(const char* variable_name);
 
 // Función de debugging para verificar que las imágenes se carguen correctamente
 static void page5_debug_check_image_resources(void)
@@ -250,6 +255,13 @@ void page5_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     // Programar prueba de imágenes para después de que la UI esté completamente cargada
     g_timeout_add(500, page5_test_images_loaded, g_page5_data);
 
+    // Guardar el tipo de instalación por defecto (TERMINAL) al iniciar
+    page5_save_installation_type_variable(INSTALL_TYPE_TERMINAL);
+
+    // Limpiar variables DE y WM al iniciar en modo TERMINAL (son mutuamente excluyentes)
+    page5_remove_variable_from_config("DESKTOP_ENVIRONMENT");
+    page5_remove_variable_from_config("WINDOW_MANAGER");
+
     // Liberar el builder de la página
     g_object_unref(page_builder);
 
@@ -421,7 +433,7 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
 {
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "Arcris2/data/variables.sh";
+    const gchar *config_path = "data/variables.sh";
 
     // Leer el archivo actual
     if (!g_file_get_contents(config_path, &config_content, NULL, &error)) {
@@ -450,12 +462,42 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
             break;
     }
 
-    // Crear el nuevo contenido
-    gchar *new_content = g_strdup_printf("%s\n# Variable DE seleccionada\nDESKTOP_ENVIRONMENT=\"%s\"\n",
-                                       config_content, de_name);
+    // Buscar si ya existe la variable DESKTOP_ENVIRONMENT
+    gchar **lines = g_strsplit(config_content, "\n", -1);
+    GString *new_content = g_string_new("");
+    gboolean found = FALSE;
+    int total_lines = 0;
+
+    // Contar líneas totales
+    while (lines[total_lines] != NULL) total_lines++;
+
+    for (int i = 0; lines[i] != NULL; i++) {
+        if (g_str_has_prefix(lines[i], "DESKTOP_ENVIRONMENT=")) {
+            // Reemplazar la línea existente
+            g_string_append_printf(new_content, "DESKTOP_ENVIRONMENT=\"%s\"\n", de_name);
+            found = TRUE;
+        } else if (g_str_has_prefix(lines[i], "# Variable DE seleccionada")) {
+            // Omitir comentarios duplicados
+            continue;
+        } else {
+            // Mantener la línea original
+            g_string_append(new_content, lines[i]);
+            if (lines[i + 1] != NULL) {
+                g_string_append_c(new_content, '\n');
+            }
+        }
+    }
+
+    // Si no se encontró, agregar al final
+    if (!found) {
+        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
+            g_string_append_c(new_content, '\n');
+        }
+        g_string_append_printf(new_content, "# Variable DE seleccionada\nDESKTOP_ENVIRONMENT=\"%s\"\n", de_name);
+    }
 
     // Escribir el nuevo contenido
-    gboolean success = g_file_set_contents(config_path, new_content, -1, &error);
+    gboolean success = g_file_set_contents(config_path, new_content->str, -1, &error);
 
     if (error) {
         LOG_ERROR("Error al guardar variable DE: %s", error->message);
@@ -465,8 +507,9 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
         LOG_INFO("Variable DE guardada: %s", de_name);
     }
 
+    g_strfreev(lines);
+    g_string_free(new_content, TRUE);
     g_free(config_content);
-    g_free(new_content);
     g_free(de_name);
 
     return success;
@@ -477,7 +520,7 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
 {
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "Arcris2/data/variables.sh";
+    const gchar *config_path = "data/variables.sh";
 
     // Leer el archivo actual
     if (!g_file_get_contents(config_path, &config_content, NULL, &error)) {
@@ -506,12 +549,42 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
             break;
     }
 
-    // Crear el nuevo contenido
-    gchar *new_content = g_strdup_printf("%s\n# Variable WM seleccionada\nWINDOW_MANAGER=\"%s\"\n",
-                                       config_content, wm_name);
+    // Buscar si ya existe la variable WINDOW_MANAGER
+    gchar **lines = g_strsplit(config_content, "\n", -1);
+    GString *new_content = g_string_new("");
+    gboolean found = FALSE;
+    int total_lines = 0;
+
+    // Contar líneas totales
+    while (lines[total_lines] != NULL) total_lines++;
+
+    for (int i = 0; lines[i] != NULL; i++) {
+        if (g_str_has_prefix(lines[i], "WINDOW_MANAGER=")) {
+            // Reemplazar la línea existente
+            g_string_append_printf(new_content, "WINDOW_MANAGER=\"%s\"\n", wm_name);
+            found = TRUE;
+        } else if (g_str_has_prefix(lines[i], "# Variable WM seleccionada")) {
+            // Omitir comentarios duplicados
+            continue;
+        } else {
+            // Mantener la línea original
+            g_string_append(new_content, lines[i]);
+            if (lines[i + 1] != NULL) {
+                g_string_append_c(new_content, '\n');
+            }
+        }
+    }
+
+    // Si no se encontró, agregar al final
+    if (!found) {
+        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
+            g_string_append_c(new_content, '\n');
+        }
+        g_string_append_printf(new_content, "\n# Variable WM seleccionada\nWINDOW_MANAGER=\"%s\"\n", wm_name);
+    }
 
     // Escribir el nuevo contenido
-    gboolean success = g_file_set_contents(config_path, new_content, -1, &error);
+    gboolean success = g_file_set_contents(config_path, new_content->str, -1, &error);
 
     if (error) {
         LOG_ERROR("Error al guardar variable WM: %s", error->message);
@@ -521,10 +594,181 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
         LOG_INFO("Variable WM guardada: %s", wm_name);
     }
 
+    g_strfreev(lines);
+    g_string_free(new_content, TRUE);
     g_free(config_content);
-    g_free(new_content);
     g_free(wm_name);
 
+    return success;
+}
+
+// Función auxiliar para guardar el tipo de instalación en el archivo de configuración
+static gboolean page5_save_installation_type_variable(InstallationType type)
+{
+    GError *error = NULL;
+    gchar *config_content = NULL;
+    const gchar *config_path = "data/variables.sh";
+
+
+
+    // Leer el archivo actual
+    if (!g_file_get_contents(config_path, &config_content, NULL, &error)) {
+        LOG_ERROR("Error al leer archivo de configuración: %s", error ? error->message : "Unknown error");
+        if (error) g_error_free(error);
+        return FALSE;
+    }
+
+
+
+    // Obtener el nombre del tipo de instalación
+    gchar *type_name = NULL;
+    switch (type) {
+        case INSTALL_TYPE_TERMINAL:
+            type_name = g_strdup("TERMINAL");
+            break;
+        case INSTALL_TYPE_DESKTOP:
+            type_name = g_strdup("DESKTOP");
+            break;
+        case INSTALL_TYPE_WINDOW_MANAGER:
+            type_name = g_strdup("WINDOW_MANAGER");
+            break;
+        default:
+            type_name = g_strdup("TERMINAL");
+            break;
+    }
+
+    // Buscar si ya existe la variable INSTALLATION_TYPE
+    gchar **lines = g_strsplit(config_content, "\n", -1);
+    GString *new_content = g_string_new("");
+    gboolean found = FALSE;
+    int total_lines = 0;
+
+    // Contar líneas totales
+    while (lines[total_lines] != NULL) total_lines++;
+
+    for (int i = 0; lines[i] != NULL; i++) {
+        if (g_str_has_prefix(lines[i], "INSTALLATION_TYPE=")) {
+            // Reemplazar la línea existente
+            g_string_append_printf(new_content, "INSTALLATION_TYPE=\"%s\"\n", type_name);
+            found = TRUE;
+        } else if (g_str_has_prefix(lines[i], "# Tipo de instalación seleccionado")) {
+            // Omitir comentarios duplicados
+            continue;
+        } else {
+            // Mantener la línea original
+            g_string_append(new_content, lines[i]);
+            if (lines[i + 1] != NULL) {
+                g_string_append_c(new_content, '\n');
+            }
+        }
+    }
+
+    // Si no se encontró, agregar al final
+    if (!found) {
+        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
+            g_string_append_c(new_content, '\n');
+        }
+        g_string_append_printf(new_content, "\n# Tipo de instalación seleccionado\nINSTALLATION_TYPE=\"%s\"\n", type_name);
+    }
+
+    // Escribir el nuevo contenido
+    gboolean success = g_file_set_contents(config_path, new_content->str, -1, &error);
+
+    if (error) {
+        LOG_ERROR("Error al guardar tipo de instalación: %s", error->message);
+        g_error_free(error);
+        success = FALSE;
+    } else {
+        LOG_INFO("Tipo de instalación guardado: %s", type_name);
+    }
+
+    g_strfreev(lines);
+    g_string_free(new_content, TRUE);
+    g_free(config_content);
+    g_free(type_name);
+
+    return success;
+}
+
+// Función auxiliar para eliminar una variable específica del archivo de configuración
+static gboolean page5_remove_variable_from_config(const char* variable_name)
+{
+    GError *error = NULL;
+    gchar *config_content = NULL;
+    const gchar *config_path = "data/variables.sh";
+
+    LOG_INFO("=== Iniciando eliminación de variable: %s ===", variable_name);
+
+    // Leer el archivo actual
+    if (!g_file_get_contents(config_path, &config_content, NULL, &error)) {
+        LOG_ERROR("Error al leer archivo de configuración: %s", error ? error->message : "Unknown error");
+        if (error) g_error_free(error);
+        return FALSE;
+    }
+
+    LOG_INFO("Archivo leído exitosamente, tamaño: %lu caracteres", strlen(config_content));
+
+    // Buscar y eliminar la variable especificada
+    gchar **lines = g_strsplit(config_content, "\n", -1);
+    GString *new_content = g_string_new("");
+    gboolean found = FALSE;
+    int total_lines = 0;
+
+    // Contar líneas totales
+    while (lines[total_lines] != NULL) total_lines++;
+
+    // Crear el patrón a buscar
+    gchar *variable_pattern = g_strdup_printf("%s=", variable_name);
+    gchar *comment_pattern = g_strdup_printf("# Variable %s seleccionada",
+                                            g_str_has_prefix(variable_name, "DESKTOP") ? "DE" :
+                                            g_str_has_prefix(variable_name, "WINDOW") ? "WM" : "");
+
+    LOG_INFO("Buscando patrón: '%s'", variable_pattern);
+    LOG_INFO("Buscando comentario: '%s'", comment_pattern);
+
+    for (int i = 0; lines[i] != NULL; i++) {
+        if (g_str_has_prefix(lines[i], variable_pattern)) {
+            // Omitir la línea de la variable
+            found = TRUE;
+            LOG_INFO("¡Variable %s encontrada en línea %d y eliminada! Contenido: '%s'", variable_name, i, lines[i]);
+            continue;
+        } else if (strlen(comment_pattern) > 0 && g_str_has_prefix(lines[i], comment_pattern)) {
+            // Omitir el comentario asociado
+            LOG_INFO("Comentario asociado eliminado en línea %d: '%s'", i, lines[i]);
+            continue;
+        } else {
+            // Mantener la línea original
+            g_string_append(new_content, lines[i]);
+            if (lines[i + 1] != NULL) {
+                g_string_append_c(new_content, '\n');
+            }
+        }
+    }
+
+    // Escribir el nuevo contenido solo si se encontró la variable
+    gboolean success = TRUE;
+    if (found) {
+        LOG_INFO("Escribiendo archivo actualizado sin la variable %s", variable_name);
+        success = g_file_set_contents(config_path, new_content->str, -1, &error);
+
+        if (error) {
+            LOG_ERROR("Error al eliminar variable %s: %s", variable_name, error->message);
+            g_error_free(error);
+            success = FALSE;
+        } else {
+            LOG_INFO("✅ Variable %s eliminada exitosamente del archivo", variable_name);
+        }
+    } else {
+        LOG_INFO("⚠️ Variable %s no encontrada en el archivo (puede que ya no exista)", variable_name);
+    }
+
+    g_strfreev(lines);
+    g_string_free(new_content, TRUE);
+    g_free(config_content);
+    g_free(variable_pattern);
+    g_free(comment_pattern);
+
+    LOG_INFO("=== Finalizada eliminación de variable: %s (éxito: %s) ===", variable_name, success ? "SÍ" : "NO");
     return success;
 }
 
@@ -675,6 +919,13 @@ void on_page5_terminal_check_toggled(GtkCheckButton *check, gpointer user_data)
     if (gtk_check_button_get_active(check)) {
         page5_set_installation_type(data, INSTALL_TYPE_TERMINAL);
 
+        // Guardar el tipo de instalación en variables.sh
+        page5_save_installation_type_variable(INSTALL_TYPE_TERMINAL);
+
+        // Limpiar variables DE y WM en modo TERMINAL (son mutuamente excluyentes)
+        page5_remove_variable_from_config("DESKTOP_ENVIRONMENT");
+        page5_remove_variable_from_config("WINDOW_MANAGER");
+
         // Activar el botón siguiente del GtkRevealer
         GtkWidget *next_button = page5_get_next_button(data);
         if (next_button) {
@@ -694,6 +945,12 @@ void on_page5_desktop_check_toggled(GtkCheckButton *check, gpointer user_data)
     if (gtk_check_button_get_active(check)) {
         page5_set_installation_type(data, INSTALL_TYPE_DESKTOP);
 
+        // Guardar el tipo de instalación en variables.sh
+        page5_save_installation_type_variable(INSTALL_TYPE_DESKTOP);
+
+        // Eliminar variable WINDOW_MANAGER si existe (son mutuamente excluyentes)
+        page5_remove_variable_from_config("WINDOW_MANAGER");
+
         // Desactivar el botón siguiente del GtkRevealer
         GtkWidget *next_button = page5_get_next_button(data);
         if (next_button) {
@@ -712,6 +969,12 @@ void on_page5_wm_check_toggled(GtkCheckButton *check, gpointer user_data)
 
     if (gtk_check_button_get_active(check)) {
         page5_set_installation_type(data, INSTALL_TYPE_WINDOW_MANAGER);
+
+        // Guardar el tipo de instalación en variables.sh
+        page5_save_installation_type_variable(INSTALL_TYPE_WINDOW_MANAGER);
+
+        // Eliminar variable DESKTOP_ENVIRONMENT si existe (son mutuamente excluyentes)
+        page5_remove_variable_from_config("DESKTOP_ENVIRONMENT");
 
         // Desactivar el botón siguiente del GtkRevealer
         GtkWidget *next_button = page5_get_next_button(data);
@@ -737,6 +1000,9 @@ void on_page5_de_combo_changed(AdwComboRow *combo, GParamSpec *pspec, gpointer u
     page5_update_de_preview(data);
     page5_force_image_refresh(data);
 
+    // Guardar automáticamente la variable DE cuando cambia la selección
+    page5_save_de_variable(de);
+
     LOG_INFO("Entorno de escritorio cambiado a: %s", page5_get_de_name(de));
 }
 
@@ -751,6 +1017,9 @@ void on_page5_wm_combo_changed(AdwComboRow *combo, GParamSpec *pspec, gpointer u
     data->current_wm = wm;
     page5_update_wm_preview(data);
     page5_force_image_refresh(data);
+
+    // Guardar automáticamente la variable WM cuando cambia la selección
+    page5_save_wm_variable(wm);
 
     LOG_INFO("Gestor de ventanas cambiado a: %s", page5_get_wm_name(wm));
 }

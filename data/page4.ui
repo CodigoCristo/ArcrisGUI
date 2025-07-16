@@ -23,6 +23,8 @@
                     <child>
                       <object class="AdwEntryRow" id="username_entry">
                         <property name="title">Elija un nombre de usuario</property>
+                        <property name="enable-emoji-completion">true</property>
+                        <property name="show-apply-button">true</property>
                       </object>
                     </child>
 
@@ -88,6 +90,7 @@
                         <child>
                           <object class="AdwEntryRow" id="hostname_entry">
                             <property name="title">El nombre del equipo</property>
+                            <property name="show-apply-button">true</property>
                           </object>
                         </child>
                       </object>

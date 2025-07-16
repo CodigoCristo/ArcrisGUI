@@ -5,6 +5,7 @@
 #include "page4.h"
 #include "page5.h"
 #include "page6.h"
+#include "page7.h"
 
 
 #include "config.h"
@@ -102,8 +103,11 @@ void carousel_init_all_pages(CarouselManager *manager, GtkBuilder *builder)
     // Inicializar página 5 (Personalización)
     page5_init(builder, manager->carousel, manager->revealer);
     
-    // Inicializar página 6 (Logo Final)
+    // Inicializar página 6 (Sistema)
     page6_init(builder, manager->carousel, manager->revealer);
+    
+    // Inicializar página 7 (Logo Final)
+    page7_init(builder, manager->carousel, manager->revealer);
 
     
     LOG_INFO("Todas las páginas han sido inicializadas");
@@ -357,6 +361,14 @@ void carousel_manager_cleanup(CarouselManager *manager)
     if (manager->page5_data) {
         page5_cleanup(manager->page5_data);
     }
+    
+    if (manager->page6_data) {
+        page6_cleanup(manager->page6_data);
+    }
+    
+    if (manager->page7_data) {
+        page7_cleanup(manager->page7_data);
+    }
 
     
     // Limpiar el manager
@@ -384,6 +396,16 @@ static void on_carousel_page_changed_internal(AdwCarousel *carousel, guint page,
     // Llamar a la función específica de page4 cuando se entra en ella (índice 3)
     if (page == 3) {
         page4_on_enter();
+    }
+    
+    // Llamar a la función específica de page6 cuando se entra en ella (índice 5)
+    if (page == 5) {
+        page6_on_page_shown();
+    }
+    
+    // Llamar a la función específica de page7 cuando se entra en ella (índice 6)
+    if (page == 6) {
+        page7_on_page_shown();
     }
     
     // Las páginas ahora manejan su propia lógica de actualización

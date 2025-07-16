@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwApplicationWindow" id="KernelListWindow">
+    <property name="title">Lista de Kernels</property>
+    <property name="default-width">650</property>
+    <property name="default-height">520</property>
+    <property name="modal">true</property>
+    <property name="resizable">false</property>
+    <property name="deletable">false</property>
+    <property name="hide-on-close">true</property>
+
+    <child>
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="AdwWindowTitle">
+                <property name="title">Lista de Kernels</property>
+              </object>
+            </property>
+            <child type="start">
+              <object class="GtkButton" id="close_button">
+                <property name="label">Cerrar</property>
+                <property name="valign">center</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="save_button">
+                <property name="label">Guardar</property>
+                <property name="valign">center</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <property name="content">
+          <object class="AdwClamp">
+            <property name="maximum-size">520</property>
+            <property name="tightening-threshold">500</property>
+            <property name="margin-top">24</property>
+            <property name="margin-bottom">24</property>
+            <property name="margin-start">12</property>
+            <property name="margin-end">12</property>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">24</property>
+
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title">Kernels oficialmente soportados</property>
+                    <property name="description">Existen varios kernels de Linux alternativos para Arch Linux, además del kernel estable más reciente.</property>
+
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title">linux</property>
+                        <property name="subtitle">Versión principal y más reciente del kernel de Linux</property>
+                        <property name="activatable">false</property>
+                        <child type="prefix">
+                          <object class="GtkCheckButton" id="kernel_linux_radio">
+                            <property name="active">true</property>
+                            <property name="valign">center</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title">linux-hardened</property>
+                        <property name="subtitle">Linux con parches de seguridad adicionales para reforzar la protección contra exploits. Ideal para sistemas enfocados en seguridad.</property>
+                        <property name="activatable">false</property>
+                        <child type="prefix">
+                          <object class="GtkCheckButton" id="hardened_radio">
+                            <property name="group">kernel_linux_radio</property>
+                            <property name="valign">center</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title">linux-lts</property>
+                        <property name="subtitle">soporte a largo plazo, enfocada en estabilidad y seguridad con menos cambios frecuentes. Ideal para sistemas en producción.</property>
+                        <property name="activatable">false</property>
+                        <child type="prefix">
+                          <object class="GtkCheckButton" id="lts_radio">
+                            <property name="group">kernel_linux_radio</property>
+                            <property name="valign">center</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title">linux-rt-lts</property>
+                        <property name="subtitle">optimizado para minimizar la latencia y garantizar tiempos de respuesta predecibles en tiempo real. Ideal para audio, robótica e industria.</property>
+                        <property name="activatable">false</property>
+                        <child type="prefix">
+                          <object class="GtkCheckButton" id="rt_lts_radio">
+                            <property name="group">kernel_linux_radio</property>
+                            <property name="valign">center</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title">linux-zen</property>
+                        <property name="subtitle">Linux optimizado para el rendimiento y la experiencia del usuario, con parches que mejoran la interactividad, velocidad y respuesta del sistema.</property>
+                        <property name="activatable">false</property>
+                        <child type="prefix">
+                          <object class="GtkCheckButton" id="zen_radio">
+                            <property name="group">kernel_linux_radio</property>
+                            <property name="valign">center</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </child>
+  </object>
+</interface>

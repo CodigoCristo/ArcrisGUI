@@ -6,7 +6,10 @@ const char* CAROUSEL_PAGE_NAMES[] = {
     "Verificación de Internet",
     "Configuración del Sistema", 
     "Configuración Adicional",
-    "Instalación"
+    "Instalación",
+    "Personalización",
+    "Sistema",
+    "Logo Final"
 };
 
 // Función para obtener el nombre de una página por su índice
@@ -59,6 +62,12 @@ const char* arcris_page_type_to_string(CarouselPageType page_type)
             return "Configuración Adicional";
         case PAGE_INSTALLATION:
             return "Instalación";
+        case PAGE_TEST:
+            return "Personalización";
+        case PAGE_SYSTEM:
+            return "Sistema";
+        case PAGE_LOGO_FINAL:
+            return "Logo Final";
         default:
             return "Página Desconocida";
     }
@@ -76,6 +85,12 @@ const char* arcris_get_page_resource_path(CarouselPageType page_type)
             return RESOURCE_PATH_PAGE3;
         case PAGE_INSTALLATION:
             return RESOURCE_PATH_PAGE4;
+        case PAGE_TEST:
+            return "/org/gtk/arcris/page5.ui";
+        case PAGE_SYSTEM:
+            return "/org/gtk/arcris/page6.ui";
+        case PAGE_LOGO_FINAL:
+            return "/org/gtk/arcris/page7.ui";
         default:
             return NULL;
     }
