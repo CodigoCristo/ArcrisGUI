@@ -50,6 +50,16 @@ disk_manager_is_main_device(const gchar *device_name)
     if (len >= 3 && g_str_has_prefix(device_name, "sd") && g_ascii_isdigit(device_name[len-1])) {
         return FALSE;
     }
+    
+    // Para dispositivos VirtIO particiones (vda1, vdb2, etc.)
+    if (len >= 4 && g_str_has_prefix(device_name, "vd") && g_ascii_isdigit(device_name[len-1])) {
+        return FALSE;
+    }
+    
+    // Para dispositivos IDE particiones (hda1, hdb2, etc.)
+    if (len >= 4 && g_str_has_prefix(device_name, "hd") && g_ascii_isdigit(device_name[len-1])) {
+        return FALSE;
+    }
 
     // Para dispositivos NVMe particiones (nvme0n1p1, etc.)
     if (strstr(device_name, "p") && g_ascii_isdigit(device_name[len-1])) {
