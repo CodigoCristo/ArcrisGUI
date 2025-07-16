@@ -54,11 +54,7 @@
                                 <property name="subtitle" translatable="yes">Selecciona un dispositivo</property>
                                 <property name="model">
                                   <object class="GtkStringList" id="disk_list">
-                                    <items>
-                                      <item>/dev/sda - 960 GB</item>
-                                      <item>/dev/sdb - 1 TB</item>
-                                      <item>/dev/nvme0n1 - 512 GB</item>
-                                    </items>
+
                                   </object>
                                 </property>
                               </object>

@@ -10,7 +10,7 @@ SELECTED_DISK="/dev/sdb"
 PARTITION_MODE="auto"
 
 # Variables de configuración del usuario
-export USER="qwe"
+export USER="uuu"
 export PASSWORD_USER="123"
 export HOSTNAME="arcris"
 # La contraseña del usuario también será la contraseña de root
@@ -21,4 +21,3 @@ INSTALLATION_TYPE="TERMINAL"
 
 # Kernel seleccionado
 SELECTED_KERNEL="linux"
-

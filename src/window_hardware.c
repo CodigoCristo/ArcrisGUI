@@ -270,7 +270,7 @@ char* window_hardware_get_wifi_card_info(void)
     char *result = NULL;
     FILE *fp;
     char buffer[512];
-    
+
     fp = popen("lspci | grep -i 'network controller' | sed -E 's/^[0-9a-f:.]+ Network controller: //; s/ \\(rev [^)]+\\)//'", "r");
     if (fp) {
         if (fgets(buffer, sizeof(buffer), fp)) {
@@ -284,12 +284,12 @@ char* window_hardware_get_wifi_card_info(void)
         }
         pclose(fp);
     }
-    
+
     if (!result || strlen(result) == 0) {
         if (result) g_free(result);
         result = g_strdup("No se detectó tarjeta WiFi");
     }
-    
+
     return result;
 }
 
@@ -298,7 +298,7 @@ char* window_hardware_get_bluetooth_card_info(void)
     char *result = NULL;
     FILE *fp;
     char buffer[512];
-    
+
     fp = popen("lsusb | grep -i bluetooth | sed -E 's/^.*ID [0-9a-f]+:[0-9a-f]+ //'", "r");
     if (fp) {
         if (fgets(buffer, sizeof(buffer), fp)) {
@@ -312,29 +312,29 @@ char* window_hardware_get_bluetooth_card_info(void)
         }
         pclose(fp);
     }
-    
+
     if (!result || strlen(result) == 0) {
         if (result) g_free(result);
         result = g_strdup("No se detectó dispositivo Bluetooth");
     }
-    
+
     return result;
 }
 
 void window_hardware_update_hardware_descriptions(WindowHardwareData *data)
 {
     if (!data || !data->hardware_info) return;
-    
+
     // Actualizar descripción de video
     if (data->hardware_info->graphics_card_name) {
         window_hardware_update_video_description(data, data->hardware_info->graphics_card_name);
     }
-    
+
     // Actualizar descripción de audio
     if (data->hardware_info->audio_card_name) {
         window_hardware_update_audio_description(data, data->hardware_info->audio_card_name);
     }
-    
+
     // Actualizar subtítulo de WiFi
     if (data->hardware_info->wifi_card_name && data->driver_wifi_combo) {
         g_object_set(data->driver_wifi_combo, "subtitle", data->hardware_info->wifi_card_name, NULL);
@@ -346,7 +346,7 @@ void window_hardware_update_hardware_descriptions(WindowHardwareData *data)
         }
         LOG_INFO("Subtítulo WiFi actualizado: %s", data->hardware_info->wifi_card_name);
     }
-    
+
     // Actualizar subtítulo de Bluetooth
     if (data->hardware_info->bluetooth_card_name && data->driver_bluetooth_combo) {
         g_object_set(data->driver_bluetooth_combo, "subtitle", data->hardware_info->bluetooth_card_name, NULL);
@@ -358,7 +358,7 @@ void window_hardware_update_hardware_descriptions(WindowHardwareData *data)
         }
         LOG_INFO("Subtítulo Bluetooth actualizado: %s", data->hardware_info->bluetooth_card_name);
     }
-    
+
     LOG_INFO("Descripciones de hardware actualizadas");
 }
 
@@ -375,7 +375,7 @@ void window_hardware_update_video_description(WindowHardwareData *data, const ch
 
     // Crear el texto con formato y color verde negrita con salto de línea
     char *description_markup = g_strdup_printf(
-        "Tu tarjeta Gráfica es:\n<span color='#FF0000' weight='bold'>%s</span>",
+        "Tu tarjeta Gráfica es:\n<span color='#28b463' weight='bold'>%s</span>",
         graphics_card
     );
 
@@ -399,7 +399,7 @@ void window_hardware_update_audio_description(WindowHardwareData *data, const ch
 
     // Crear el texto con formato con salto de línea
     char *description_markup = g_strdup_printf(
-        "Tu tarjeta Audio es:\n<span color='#FF0000' weight='bold'>%s</span>",
+        "Tu tarjeta Audio es:\n<span color='#28b463' weight='bold'>%s</span>",
         audio_card
     );
 
