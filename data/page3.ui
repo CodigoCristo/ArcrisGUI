@@ -205,7 +205,7 @@
                       <!-- Icono del disco -->
                       <child>
                         <object class="GtkImage">
-                          <property name="icon-name">drive-harddisk-symbolic</property>
+                          <property name="icon-name">harddisk-inverted-symbolic</property>
                           <property name="icon-size">large</property>
                         </object>
                       </child>
@@ -275,7 +275,7 @@
                                           <property name="spacing">6</property>
                                           <child>
                                             <object class="GtkImage">
-                                              <property name="icon-name">preferences-system</property>
+                                              <property name="icon-name">org.gnome.DiskUtility-symbolic</property>
                                             </object>
                                           </child>
                                           <child>

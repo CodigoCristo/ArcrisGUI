@@ -151,7 +151,7 @@ void page4_setup_widgets(Page4Data *data)
     if (data->username_entry) {
         adw_entry_row_set_show_apply_button(data->username_entry, FALSE);
     }
-    
+
     if (data->hostname_entry) {
         adw_entry_row_set_show_apply_button(data->hostname_entry, FALSE);
     }
@@ -319,12 +319,12 @@ void on_page4_username_changed(AdwEntryRow *entry, gpointer user_data)
 
     // Obtener texto actual
     const gchar *current_text = gtk_editable_get_text(GTK_EDITABLE(entry));
-    
+
     // Filtrar espacios automáticamente
     if (current_text && strchr(current_text, ' ') != NULL) {
         gchar *filtered_text = g_strdup(current_text);
         gchar *write_pos = filtered_text;
-        
+
         // Remover todos los espacios
         for (const gchar *read_pos = current_text; *read_pos; read_pos++) {
             if (*read_pos != ' ') {
@@ -332,18 +332,18 @@ void on_page4_username_changed(AdwEntryRow *entry, gpointer user_data)
             }
         }
         *write_pos = '\0';
-        
+
         // Actualizar el entry sin espacios
         g_signal_handlers_block_by_func(entry, on_page4_username_changed, user_data);
         gtk_editable_set_text(GTK_EDITABLE(entry), filtered_text);
         g_signal_handlers_unblock_by_func(entry, on_page4_username_changed, user_data);
-        
+
         g_free(filtered_text);
         LOG_INFO("Espacios removidos automáticamente del campo usuario");
     }
 
     page4_validate_username(data);
-    
+
     // Actualizar archivo variables.sh si el formulario es válido
     if (page4_is_form_valid(data)) {
         if (page4_save_user_data(data)) {
@@ -360,12 +360,12 @@ void on_page4_hostname_changed(AdwEntryRow *entry, gpointer user_data)
 
     // Obtener texto actual
     const gchar *current_text = gtk_editable_get_text(GTK_EDITABLE(entry));
-    
+
     // Filtrar espacios automáticamente
     if (current_text && strchr(current_text, ' ') != NULL) {
         gchar *filtered_text = g_strdup(current_text);
         gchar *write_pos = filtered_text;
-        
+
         // Remover todos los espacios
         for (const gchar *read_pos = current_text; *read_pos; read_pos++) {
             if (*read_pos != ' ') {
@@ -373,18 +373,18 @@ void on_page4_hostname_changed(AdwEntryRow *entry, gpointer user_data)
             }
         }
         *write_pos = '\0';
-        
+
         // Actualizar el entry sin espacios
         g_signal_handlers_block_by_func(entry, on_page4_hostname_changed, user_data);
         gtk_editable_set_text(GTK_EDITABLE(entry), filtered_text);
         g_signal_handlers_unblock_by_func(entry, on_page4_hostname_changed, user_data);
-        
+
         g_free(filtered_text);
         LOG_INFO("Espacios removidos automáticamente del campo hostname");
     }
 
     page4_validate_hostname(data);
-    
+
     // Actualizar archivo variables.sh si el formulario es válido
     if (page4_is_form_valid(data)) {
         if (page4_save_user_data(data)) {
@@ -414,7 +414,7 @@ void page4_update_next_button_state(Page4Data *data)
 
         // Variable estática para rastrear el estado anterior del botón
         static gboolean previous_button_state = FALSE;
-        
+
         if (form_valid) {
             LOG_INFO("Botón siguiente activado - formulario válido");
             // Guardar variables solo cuando el botón pase de desactivado a activado
@@ -428,7 +428,7 @@ void page4_update_next_button_state(Page4Data *data)
         } else {
             LOG_INFO("Botón siguiente desactivado - formulario inválido");
         }
-        
+
         // Actualizar el estado anterior
         previous_button_state = form_valid;
     } else {
@@ -641,7 +641,7 @@ gboolean page4_save_user_data(Page4Data *data)
     gchar *file_content = NULL;
     gsize file_size = 0;
     GError *error = NULL;
-    
+
     if (!g_file_get_contents("data/variables.sh", &file_content, &file_size, &error)) {
         LOG_WARNING("No se pudo leer variables.sh existente: %s", error ? error->message : "Error desconocido");
         g_clear_error(&error);
@@ -658,15 +658,21 @@ gboolean page4_save_user_data(Page4Data *data)
     gboolean password_root_found = FALSE;
     gboolean hostname_found = FALSE;
 
+    // Variables para preservar drivers de hardware
+    gchar *driver_video_value = NULL;
+    gchar *driver_audio_value = NULL;
+    gchar *driver_wifi_value = NULL;
+    gchar *driver_bluetooth_value = NULL;
+
     // Crear nuevo contenido
     GString *new_content = g_string_new("");
-    
+
     // Procesar líneas existentes y actualizar variables si existen
     gboolean last_line_empty = FALSE;
-    
+
     for (int i = 0; lines[i] != NULL; i++) {
         gchar *line = g_strstrip(g_strdup(lines[i]));
-        
+
         if (g_str_has_prefix(line, "export USER=") || g_str_has_prefix(line, "USER=")) {
             g_string_append_printf(new_content, "export USER=\"%s\"\n", username);
             user_found = TRUE;
@@ -693,7 +699,7 @@ gboolean page4_save_user_data(Page4Data *data)
             g_string_append_printf(new_content, "%s\n", lines[i]);
             last_line_empty = FALSE;
         }
-        
+
         g_free(line);
     }
 
@@ -703,7 +709,7 @@ gboolean page4_save_user_data(Page4Data *data)
             g_string_append_c(new_content, '\n');
         }
         g_string_append(new_content, "# Variables de configuración del usuario\n");
-        
+
         if (!user_found) {
             g_string_append_printf(new_content, "export USER=\"%s\"\n", username);
         }
@@ -719,6 +725,27 @@ gboolean page4_save_user_data(Page4Data *data)
         }
     }
 
+    // Añadir variables de drivers preservadas si existen
+    if (driver_video_value || driver_audio_value || driver_wifi_value || driver_bluetooth_value) {
+        // Si tenemos variables de drivers preservadas, agregarlas
+        if (!last_line_empty) {
+            g_string_append_c(new_content, '\n');
+        }
+
+        if (driver_video_value) {
+            g_string_append_printf(new_content, "%s\n", driver_video_value);
+        }
+        if (driver_audio_value) {
+            g_string_append_printf(new_content, "%s\n", driver_audio_value);
+        }
+        if (driver_wifi_value) {
+            g_string_append_printf(new_content, "%s\n", driver_wifi_value);
+        }
+        if (driver_bluetooth_value) {
+            g_string_append_printf(new_content, "%s\n", driver_bluetooth_value);
+        }
+    }
+
     // Escribir el archivo actualizado
     if (!g_file_set_contents("data/variables.sh", new_content->str, -1, &error)) {
         LOG_ERROR("Error al escribir variables.sh: %s", error ? error->message : "Error desconocido");
@@ -731,6 +758,10 @@ gboolean page4_save_user_data(Page4Data *data)
     // Limpiar memoria
     g_strfreev(lines);
     g_string_free(new_content, TRUE);
+    g_free(driver_video_value);
+    g_free(driver_audio_value);
+    g_free(driver_wifi_value);
+    g_free(driver_bluetooth_value);
 
     LOG_INFO("Datos del usuario guardados correctamente en data/variables.sh");
     LOG_INFO("Usuario: %s", username);

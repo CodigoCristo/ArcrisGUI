@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwApplicationWindow" id="appBaseListWindow">
+    <property name="title">Aplicaciones Base</property>
+    <property name="default-width">550</property>
+    <property name="default-height">370</property>
+    <property name="modal">true</property>
+    <property name="resizable">false</property>
+    <property name="deletable">false</property>
+    <property name="hide-on-close">true</property>
+
+    <child>
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="AdwWindowTitle">
+                <property name="title">Aplicaciones Base</property>
+              </object>
+            </property>
+            <child type="start">
+              <object class="GtkButton" id="close_button">
+                <property name="label">Cerrar</property>
+                <property name="valign">center</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="save_button">
+                <property name="label">Guardar</property>
+                <property name="valign">center</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <property name="content">
+          <object class="AdwClamp">
+            <property name="maximum-size">420</property>
+            <property name="tightening-threshold">500</property>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">24</property>
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+
+                <!-- Grupo -->
+                <child>
+                  <object class="AdwPreferencesGroup" id="shell_group">
+
+                    <child>
+                      <object class="AdwComboRow" id="shell_combo">
+                        <property name="title">Shell del sistema</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item>bash</item>
+                              <item>dash</item>
+                              <item>ksh</item>
+                              <item>fish</item>
+                              <item>zsh</item>
+                            </items>
+                          </object>
+                        </property>
+                        <property name="selected">0</property>
+                      </object>
+                    </child>
+
+                    <child>
+                    <object class="AdwSwitchRow" id="filesystems_switch">
+                      <property name="title">Sistemas de archivos</property>
+                      <property name="subtitle">Lectura y formateo de todo tipo de discos                Android, Btrfs, VFAT, ReiserFS, exFat, etc</property>
+                      <property name="active">false</property>
+                      <property name="activatable">false</property>
+                    </object>
+                  </child>
+
+                  <child>
+                    <object class="AdwSwitchRow" id="compression_switch">
+                      <property name="title">Compresión y Descompresión de archivos</property>
+                      <property name="subtitle">7zip, tar, unrar, zip, unarchiver</property>
+                      <property name="active">false</property>
+                      <property name="activatable">false</property>
+                    </object>
+                  </child>
+
+                  <child>
+                    <object class="AdwSwitchRow" id="video_codecs_switch">
+                      <property name="title">Códecs de video</property>
+                      <property name="subtitle">Lectura de todos los formatos de vídeo</property>
+                      <property name="active">false</property>
+                      <property name="activatable">false</property>
+                    </object>
+                  </child>
+
+                  </object>
+                </child>
+
+
+
+
+
+
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </child>
+  </object>
+</interface>

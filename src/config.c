@@ -239,6 +239,8 @@ gboolean arcris_config_init(void)
         DEBUG_PRINT("Timeout de internet: %us", INTERNET_CHECK_TIMEOUT);
     }
     
+
+    
     LOG_INFO("Configuración inicializada correctamente");
     return TRUE;
 }

@@ -71,7 +71,7 @@ void window_hardware_load_widgets_from_builder(WindowHardwareData *data)
     if (!data || !data->builder) return;
 
     // Obtener la ventana principal
-    data->window = GTK_WINDOW(gtk_builder_get_object(data->builder, "KernelListWindow"));
+    data->window = GTK_WINDOW(gtk_builder_get_object(data->builder, "HardwareListWindow"));
     if (!data->window) {
         LOG_WARNING("No se pudo obtener la ventana principal");
     }
@@ -450,6 +450,9 @@ void on_video_driver_combo_changed(AdwComboRow *combo, GParamSpec *pspec, gpoint
     const char *new_name = window_hardware_get_video_driver_name(data->current_video_driver);
 
     window_hardware_log_driver_change("Video", old_name, new_name);
+
+    // Guardar automáticamente en variables.sh
+    window_hardware_save_driver_variables(data);
 }
 
 void on_audio_driver_combo_changed(AdwComboRow *combo, GParamSpec *pspec, gpointer user_data)
@@ -465,6 +468,9 @@ void on_audio_driver_combo_changed(AdwComboRow *combo, GParamSpec *pspec, gpoint
     const char *new_name = window_hardware_get_audio_driver_name(data->current_audio_driver);
 
     window_hardware_log_driver_change("Audio", old_name, new_name);
+
+    // Guardar automáticamente en variables.sh
+    window_hardware_save_driver_variables(data);
 }
 
 void on_wifi_driver_combo_changed(AdwComboRow *combo, GParamSpec *pspec, gpointer user_data)
@@ -480,6 +486,9 @@ void on_wifi_driver_combo_changed(AdwComboRow *combo, GParamSpec *pspec, gpointe
     const char *new_name = window_hardware_get_wifi_driver_name(data->current_wifi_driver);
 
     window_hardware_log_driver_change("WiFi", old_name, new_name);
+
+    // Guardar automáticamente en variables.sh
+    window_hardware_save_driver_variables(data);
 }
 
 void on_bluetooth_driver_combo_changed(AdwComboRow *combo, GParamSpec *pspec, gpointer user_data)
@@ -495,6 +504,9 @@ void on_bluetooth_driver_combo_changed(AdwComboRow *combo, GParamSpec *pspec, gp
     const char *new_name = window_hardware_get_bluetooth_driver_name(data->current_bluetooth_driver);
 
     window_hardware_log_driver_change("Bluetooth", old_name, new_name);
+
+    // Guardar automáticamente en variables.sh
+    window_hardware_save_driver_variables(data);
 }
 
 // Funciones de nombres de drivers
@@ -547,27 +559,137 @@ gboolean window_hardware_load_from_variables(WindowHardwareData *data)
 {
     if (!data) return FALSE;
 
-    // Aquí se cargarían los valores desde variables.sh
-    // Por ahora usamos valores por defecto
+    // Cargar configuración desde variables.sh
+    const char *variables_path = "data/variables.sh";
+    gchar *config_content = NULL;
+    GError *error = NULL;
 
-    // Establecer selecciones por defecto en los combos
+    if (!g_file_get_contents(variables_path, &config_content, NULL, &error)) {
+        if (error) {
+            LOG_WARNING("No se pudo cargar variables.sh: %s", error->message);
+            g_error_free(error);
+        }
+
+        // Establecer valores por defecto si no se puede cargar el archivo
+        if (data->driver_video_combo) {
+            adw_combo_row_set_selected(data->driver_video_combo, data->current_video_driver);
+        }
+        if (data->driver_sonido_combo) {
+            adw_combo_row_set_selected(data->driver_sonido_combo, data->current_audio_driver);
+        }
+        if (data->driver_wifi_combo) {
+            adw_combo_row_set_selected(data->driver_wifi_combo, data->current_wifi_driver);
+        }
+        if (data->driver_bluetooth_combo) {
+            adw_combo_row_set_selected(data->driver_bluetooth_combo, data->current_bluetooth_driver);
+        }
+
+        return FALSE;
+    }
+
+    // Parsear las variables del archivo
+    gchar **lines = g_strsplit(config_content, "\n", -1);
+
+    for (int i = 0; lines[i] != NULL; i++) {
+        char *line = lines[i];
+
+        // Driver de Video
+        if (g_str_has_prefix(line, "DRIVER_VIDEO=")) {
+            char *value = line + 13; // Saltar "DRIVER_VIDEO="
+            if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                value[strlen(value)-1] = 0;
+                value++;
+            }
+
+            // Convertir string a enum
+            if (g_strcmp0(value, "Open Source") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_OPEN_SOURCE;
+            } else if (g_strcmp0(value, "Nvidia Private") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_PRIVATE;
+            } else if (g_strcmp0(value, "AMD Private") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_AMD_PRIVATE;
+            } else if (g_strcmp0(value, "Intel Private") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_INTEL_PRIVATE;
+            } else if (g_strcmp0(value, "Máquina Virtual") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_VIRTUAL_MACHINE;
+            }
+            LOG_INFO("DRIVER_VIDEO cargado: %s", value);
+        }
+        // Driver de Audio
+        else if (g_str_has_prefix(line, "DRIVER_AUDIO=")) {
+            char *value = line + 13; // Saltar "DRIVER_AUDIO="
+            if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                value[strlen(value)-1] = 0;
+                value++;
+            }
+
+            if (g_strcmp0(value, "Alsa Audio") == 0) {
+                data->current_audio_driver = AUDIO_DRIVER_ALSA;
+            } else if (g_strcmp0(value, "pipewire") == 0) {
+                data->current_audio_driver = AUDIO_DRIVER_PIPEWIRE;
+            } else if (g_strcmp0(value, "pulseaudio") == 0) {
+                data->current_audio_driver = AUDIO_DRIVER_PULSEAUDIO;
+            } else if (g_strcmp0(value, "Jack2") == 0) {
+                data->current_audio_driver = AUDIO_DRIVER_JACK2;
+            }
+            LOG_INFO("DRIVER_AUDIO cargado: %s", value);
+        }
+        // Driver de WiFi
+        else if (g_str_has_prefix(line, "DRIVER_WIFI=")) {
+            char *value = line + 12; // Saltar "DRIVER_WIFI="
+            if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                value[strlen(value)-1] = 0;
+                value++;
+            }
+
+            if (g_strcmp0(value, "Ninguno") == 0) {
+                data->current_wifi_driver = WIFI_DRIVER_NONE;
+            } else if (g_strcmp0(value, "Open Source") == 0) {
+                data->current_wifi_driver = WIFI_DRIVER_OPEN_SOURCE;
+            } else if (g_strcmp0(value, "broadcom-wl") == 0) {
+                data->current_wifi_driver = WIFI_DRIVER_BROADCOM_WL;
+            } else if (g_strcmp0(value, "Realtek") == 0) {
+                data->current_wifi_driver = WIFI_DRIVER_REALTEK;
+            }
+            LOG_INFO("DRIVER_WIFI cargado: %s", value);
+        }
+        // Driver de Bluetooth
+        else if (g_str_has_prefix(line, "DRIVER_BLUETOOTH=")) {
+            char *value = line + 17; // Saltar "DRIVER_BLUETOOTH="
+            if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                value[strlen(value)-1] = 0;
+                value++;
+            }
+
+            if (g_strcmp0(value, "Ninguno") == 0) {
+                data->current_bluetooth_driver = BLUETOOTH_DRIVER_NONE;
+            } else if (g_strcmp0(value, "bluetoothctl (terminal)") == 0) {
+                data->current_bluetooth_driver = BLUETOOTH_DRIVER_BLUETOOTHCTL;
+            } else if (g_strcmp0(value, "blueman (Graphical)") == 0) {
+                data->current_bluetooth_driver = BLUETOOTH_DRIVER_BLUEMAN;
+            }
+            LOG_INFO("DRIVER_BLUETOOTH cargado: %s", value);
+        }
+    }
+
+    // Actualizar la UI con los valores cargados
     if (data->driver_video_combo) {
         adw_combo_row_set_selected(data->driver_video_combo, data->current_video_driver);
     }
-
     if (data->driver_sonido_combo) {
         adw_combo_row_set_selected(data->driver_sonido_combo, data->current_audio_driver);
     }
-
     if (data->driver_wifi_combo) {
         adw_combo_row_set_selected(data->driver_wifi_combo, data->current_wifi_driver);
     }
-
     if (data->driver_bluetooth_combo) {
         adw_combo_row_set_selected(data->driver_bluetooth_combo, data->current_bluetooth_driver);
     }
 
-    LOG_INFO("Configuración cargada desde variables");
+    g_strfreev(lines);
+    g_free(config_content);
+
+    LOG_INFO("Configuración de drivers cargada desde variables.sh");
     return TRUE;
 }
 
@@ -582,14 +704,102 @@ gboolean window_hardware_save_driver_variables(WindowHardwareData *data)
 {
     if (!data) return FALSE;
 
-    // Aquí se guardarían los valores en variables.sh
-    // Por ahora solo logeamos los valores
+    const char *variables_path = "data/variables.sh";
+    gchar *config_content = NULL;
+    GError *error = NULL;
 
-    LOG_INFO("Guardando configuración de drivers:");
+    // Leer el archivo actual
+    if (!g_file_get_contents(variables_path, &config_content, NULL, &error)) {
+        if (error) {
+            LOG_ERROR("No se pudo leer variables.sh: %s", error->message);
+            g_error_free(error);
+        }
+        return FALSE;
+    }
+
+    // Buscar y actualizar/agregar las variables de drivers
+    gchar **lines = g_strsplit(config_content, "\n", -1);
+    GString *new_content = g_string_new("");
+
+    gboolean video_found = FALSE, audio_found = FALSE, wifi_found = FALSE, bluetooth_found = FALSE;
+
+    for (int i = 0; lines[i] != NULL; i++) {
+        if (g_str_has_prefix(lines[i], "DRIVER_VIDEO=")) {
+            g_string_append_printf(new_content, "DRIVER_VIDEO=\"%s\"\n",
+                                 window_hardware_get_video_driver_name(data->current_video_driver));
+            video_found = TRUE;
+        } else if (g_str_has_prefix(lines[i], "DRIVER_AUDIO=")) {
+            g_string_append_printf(new_content, "DRIVER_AUDIO=\"%s\"\n",
+                                 window_hardware_get_audio_driver_name(data->current_audio_driver));
+            audio_found = TRUE;
+        } else if (g_str_has_prefix(lines[i], "DRIVER_WIFI=")) {
+            g_string_append_printf(new_content, "DRIVER_WIFI=\"%s\"\n",
+                                 window_hardware_get_wifi_driver_name(data->current_wifi_driver));
+            wifi_found = TRUE;
+        } else if (g_str_has_prefix(lines[i], "DRIVER_BLUETOOTH=")) {
+            g_string_append_printf(new_content, "DRIVER_BLUETOOTH=\"%s\"\n",
+                                 window_hardware_get_bluetooth_driver_name(data->current_bluetooth_driver));
+            bluetooth_found = TRUE;
+        } else {
+            // Mantener otras líneas tal como están, controlando saltos de línea
+            g_string_append(new_content, lines[i]);
+            if (lines[i + 1] != NULL) {
+                g_string_append_c(new_content, '\n');
+            }
+        }
+    }
+
+    // Agregar variables que no existían
+    if (!video_found) {
+        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
+            g_string_append_c(new_content, '\n');
+        }
+        g_string_append_printf(new_content, "\n# Driver de Video\nDRIVER_VIDEO=\"%s\"",
+                             window_hardware_get_video_driver_name(data->current_video_driver));
+    }
+    if (!audio_found) {
+        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
+            g_string_append_c(new_content, '\n');
+        }
+        g_string_append_printf(new_content, "\n# Driver de Audio\nDRIVER_AUDIO=\"%s\"",
+                             window_hardware_get_audio_driver_name(data->current_audio_driver));
+    }
+    if (!wifi_found) {
+        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
+            g_string_append_c(new_content, '\n');
+        }
+        g_string_append_printf(new_content, "\n# Driver de WiFi\nDRIVER_WIFI=\"%s\"",
+                             window_hardware_get_wifi_driver_name(data->current_wifi_driver));
+    }
+    if (!bluetooth_found) {
+        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
+            g_string_append_c(new_content, '\n');
+        }
+        g_string_append_printf(new_content, "\n# Driver de Bluetooth\nDRIVER_BLUETOOTH=\"%s\"",
+                             window_hardware_get_bluetooth_driver_name(data->current_bluetooth_driver));
+    }
+
+    // Escribir el archivo actualizado
+    if (!g_file_set_contents(variables_path, new_content->str, -1, &error)) {
+        if (error) {
+            LOG_ERROR("No se pudo escribir variables.sh: %s", error->message);
+            g_error_free(error);
+        }
+        g_string_free(new_content, TRUE);
+        g_strfreev(lines);
+        g_free(config_content);
+        return FALSE;
+    }
+
+    LOG_INFO("Drivers guardados en variables.sh:");
     LOG_INFO("  Video: %s", window_hardware_get_video_driver_name(data->current_video_driver));
     LOG_INFO("  Audio: %s", window_hardware_get_audio_driver_name(data->current_audio_driver));
     LOG_INFO("  WiFi: %s", window_hardware_get_wifi_driver_name(data->current_wifi_driver));
     LOG_INFO("  Bluetooth: %s", window_hardware_get_bluetooth_driver_name(data->current_bluetooth_driver));
+
+    g_string_free(new_content, TRUE);
+    g_strfreev(lines);
+    g_free(config_content);
 
     return TRUE;
 }
@@ -640,4 +850,182 @@ WindowHardwareData* window_hardware_get_instance(void)
         }
     }
     return g_hardware_instance;
+}
+
+// Función para inicializar las variables de drivers por defecto al inicio de la aplicación
+gboolean window_hardware_init_default_variables(void)
+{
+    const char *variables_path = "data/variables.sh";
+    gchar *config_content = NULL;
+    GError *error = NULL;
+
+    // Leer el archivo actual
+    if (!g_file_get_contents(variables_path, &config_content, NULL, &error)) {
+        if (error) {
+            LOG_ERROR("No se pudo leer variables.sh: %s", error->message);
+            g_error_free(error);
+        }
+        return FALSE;
+    }
+
+    // Verificar si las variables ya existen
+    gchar **lines = g_strsplit(config_content, "\n", -1);
+    GString *new_content = g_string_new("");
+
+    gboolean video_found = FALSE, audio_found = FALSE, wifi_found = FALSE, bluetooth_found = FALSE;
+
+    for (int i = 0; lines[i] != NULL; i++) {
+        if (g_str_has_prefix(lines[i], "DRIVER_VIDEO=")) {
+            video_found = TRUE;
+        } else if (g_str_has_prefix(lines[i], "DRIVER_AUDIO=")) {
+            audio_found = TRUE;
+        } else if (g_str_has_prefix(lines[i], "DRIVER_WIFI=")) {
+            wifi_found = TRUE;
+        } else if (g_str_has_prefix(lines[i], "DRIVER_BLUETOOTH=")) {
+            bluetooth_found = TRUE;
+        }
+
+        // Mantener todas las líneas existentes
+        g_string_append_printf(new_content, "%s\n", lines[i]);
+    }
+
+    // Agregar variables que no existen con valores por defecto
+    if (!video_found) {
+        g_string_append_printf(new_content, "\n# Driver de Video\nDRIVER_VIDEO=\"Open Source\"\n");
+        LOG_INFO("Variable DRIVER_VIDEO inicializada con valor por defecto: Open Source");
+    }
+    if (!audio_found) {
+        g_string_append_printf(new_content, "\n# Driver de Audio\nDRIVER_AUDIO=\"Alsa Audio\"\n");
+        LOG_INFO("Variable DRIVER_AUDIO inicializada con valor por defecto: Alsa Audio");
+    }
+    if (!wifi_found) {
+        g_string_append_printf(new_content, "\n# Driver de WiFi\nDRIVER_WIFI=\"Ninguno\"\n");
+        LOG_INFO("Variable DRIVER_WIFI inicializada con valor por defecto: Ninguno");
+    }
+    if (!bluetooth_found) {
+        g_string_append_printf(new_content, "\n# Driver de Bluetooth\nDRIVER_BLUETOOTH=\"Ninguno\"\n");
+        LOG_INFO("Variable DRIVER_BLUETOOTH inicializada con valor por defecto: Ninguno");
+    }
+
+    // Escribir el archivo actualizado solo si se agregaron variables nuevas
+    if (!video_found || !audio_found || !wifi_found || !bluetooth_found) {
+        if (!g_file_set_contents(variables_path, new_content->str, -1, &error)) {
+            if (error) {
+                LOG_ERROR("No se pudo escribir variables.sh: %s", error->message);
+                g_error_free(error);
+            }
+            g_string_free(new_content, TRUE);
+            g_strfreev(lines);
+            g_free(config_content);
+            return FALSE;
+        }
+        LOG_INFO("Variables de drivers de hardware inicializadas en variables.sh");
+    } else {
+        LOG_INFO("Variables de drivers ya existen en variables.sh");
+    }
+
+    g_string_free(new_content, TRUE);
+    g_strfreev(lines);
+    g_free(config_content);
+
+    return TRUE;
+}
+
+// Función para inicialización automática al inicio de la aplicación
+gboolean window_hardware_init_auto_variables(void)
+{
+    const char *variables_path = "data/variables.sh";
+    gchar *config_content = NULL;
+    GError *error = NULL;
+
+    // Leer el archivo actual
+    if (!g_file_get_contents(variables_path, &config_content, NULL, &error)) {
+        if (error) {
+            LOG_ERROR("No se pudo leer variables.sh: %s", error->message);
+            g_error_free(error);
+        }
+        return FALSE;
+    }
+
+    // Verificar si las variables ya existen
+    gchar **lines = g_strsplit(config_content, "\n", -1);
+    GString *new_content = g_string_new("");
+
+    gboolean video_found = FALSE, audio_found = FALSE, wifi_found = FALSE, bluetooth_found = FALSE;
+    gboolean needs_update = FALSE;
+
+    for (int i = 0; lines[i] != NULL; i++) {
+        if (g_str_has_prefix(lines[i], "DRIVER_VIDEO=")) {
+            video_found = TRUE;
+        } else if (g_str_has_prefix(lines[i], "DRIVER_AUDIO=")) {
+            audio_found = TRUE;
+        } else if (g_str_has_prefix(lines[i], "DRIVER_WIFI=")) {
+            wifi_found = TRUE;
+        } else if (g_str_has_prefix(lines[i], "DRIVER_BLUETOOTH=")) {
+            bluetooth_found = TRUE;
+        }
+
+        // Mantener todas las líneas existentes
+        g_string_append(new_content, lines[i]);
+        if (lines[i + 1] != NULL) {
+            g_string_append_c(new_content, '\n');
+        }
+    }
+
+    // Agregar variables que no existen con valores por defecto
+    if (!video_found) {
+        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
+            g_string_append_c(new_content, '\n');
+        }
+        g_string_append(new_content, "\n# Driver de Video\nDRIVER_VIDEO=\"Open Source\"\n");
+        LOG_INFO("Variable DRIVER_VIDEO inicializada automáticamente: Open Source");
+        needs_update = TRUE;
+    }
+    if (!audio_found) {
+        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
+            g_string_append_c(new_content, '\n');
+        }
+        g_string_append(new_content, "\n# Driver de Audio\nDRIVER_AUDIO=\"Alsa Audio\"\n");
+        LOG_INFO("Variable DRIVER_AUDIO inicializada automáticamente: Alsa Audio");
+        needs_update = TRUE;
+    }
+    if (!wifi_found) {
+        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
+            g_string_append_c(new_content, '\n');
+        }
+        g_string_append(new_content, "\n# Driver de WiFi\nDRIVER_WIFI=\"Ninguno\"\n");
+        LOG_INFO("Variable DRIVER_WIFI inicializada automáticamente: Ninguno");
+        needs_update = TRUE;
+    }
+    if (!bluetooth_found) {
+        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
+            g_string_append_c(new_content, '\n');
+        }
+        g_string_append(new_content, "\n# Driver de Bluetooth\nDRIVER_BLUETOOTH=\"Ninguno\"\n");
+        LOG_INFO("Variable DRIVER_BLUETOOTH inicializada automáticamente: Ninguno");
+        needs_update = TRUE;
+    }
+
+    // Escribir el archivo actualizado solo si se agregaron variables nuevas
+    if (needs_update) {
+        if (!g_file_set_contents(variables_path, new_content->str, -1, &error)) {
+            if (error) {
+                LOG_ERROR("No se pudo escribir variables.sh: %s", error->message);
+                g_error_free(error);
+            }
+            g_string_free(new_content, TRUE);
+            g_strfreev(lines);
+            g_free(config_content);
+            return FALSE;
+        }
+        LOG_INFO("Variables de drivers inicializadas automáticamente al inicio de la aplicación");
+    } else {
+        LOG_INFO("Variables de drivers ya están presentes - no se requiere inicialización");
+    }
+
+    g_string_free(new_content, TRUE);
+    g_strfreev(lines);
+    g_free(config_content);
+
+    return TRUE;
 }

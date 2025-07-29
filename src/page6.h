@@ -23,6 +23,7 @@ typedef struct _Page6Data {
     GtkButton *essential_apps_button;
     GtkButton *office_button;
     GtkButton *utilities_button;
+    AdwButtonRow *program_extra_button;
     
     // Estados de configuración
     gboolean essential_apps_enabled;
@@ -56,6 +57,8 @@ void page6_setup_switches(Page6Data *data);
 void page6_load_system_config(Page6Data *data);
 void page6_save_configuration(Page6Data *data);
 gboolean page6_validate_configuration(Page6Data *data);
+void load_page6_switches_from_file(void);
+void save_page6_switches_to_file(void);
 
 // Funciones de manejo de eventos
 void page6_on_kernel_selection(Page6Data *data);
@@ -83,6 +86,17 @@ void page6_update_kernel_subtitle(const char* kernel_name);
 void on_driver_hardware_button_clicked(GtkButton *button, gpointer user_data);
 void page6_open_hardware_window(Page6Data *data);
 
+// Funciones para manejo del sistema
+void on_essential_apps_button_clicked(GtkButton *button, gpointer user_data);
+void page6_open_system_window(Page6Data *data);
+
+// Funciones para manejo de utilities
+void on_utilities_button_clicked(GtkButton *button, gpointer user_data);
+void page6_open_utilities_window(Page6Data *data);
+
+// Funciones para manejo de programas extra
+void on_program_extra_button_clicked(AdwButtonRow *button, gpointer user_data);
+void page6_open_program_extra_window(Page6Data *data);
 
 // Callbacks para switches
 void on_essential_apps_switch_toggled(GObject *object, GParamSpec *pspec, gpointer user_data);

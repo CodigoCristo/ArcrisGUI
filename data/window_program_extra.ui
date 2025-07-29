@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwApplicationWindow" id="ProgramExtraWindow">
+    <property name="title">Programas Extras</property>
+    <property name="default-width">550</property>
+    <property name="default-height">500</property>
+    <property name="modal">true</property>
+    <property name="resizable">false</property>
+    <property name="deletable">false</property>
+    <property name="hide-on-close">true</property>
+
+    <child>
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="AdwWindowTitle">
+                <property name="title">Programas Extras</property>
+              </object>
+            </property>
+            <child type="start">
+              <object class="GtkButton" id="close_button">
+                <property name="label">Cerrar</property>
+                <property name="valign">center</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="save_button">
+                <property name="label">Guardar</property>
+                <property name="valign">center</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <property name="content">
+          <object class="AdwClamp">
+            <property name="maximum-size">500</property>
+            <property name="tightening-threshold">600</property>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">16</property>
+                <property name="halign">fill</property>
+                <property name="valign">start</property>
+                <property name="margin-top">24</property>
+                <property name="margin-bottom">24</property>
+                <property name="margin-start">24</property>
+                <property name="margin-end">24</property>
+
+                <!-- Título principal -->
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Agrega tus programas aquí</property>
+                    <property name="halign">start</property>
+                    <style>
+                      <class name="title-2"/>
+                    </style>
+                  </object>
+                </child>
+
+                <!-- Subtítulo -->
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Sea en lista o con espacios:</property>
+                    <property name="halign">start</property>
+                    <property name="margin-top">1</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+
+                <!-- Panel de ejemplos dividido -->
+                <child>
+                  <object class="GtkFrame">
+                    <property name="margin-top">1</property>
+                    <style>
+                      <class name="card"/>
+                    </style>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">horizontal</property>
+                        <property name="spacing">0</property>
+
+                        <!-- Panel izquierdo - Lista vertical -->
+                        <child>
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">1</property>
+                            <property name="margin-top">16</property>
+                            <property name="margin-bottom">16</property>
+                            <property name="margin-start">16</property>
+                            <property name="margin-end">16</property>
+                            <property name="hexpand">true</property>
+
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">gparted</property>
+                                <property name="halign">start</property>
+                                <style>
+                                  <class name="body"/>
+                                </style>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">gedit</property>
+                                <property name="halign">start</property>
+                                <style>
+                                  <class name="body"/>
+                                </style>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">gufw</property>
+                                <property name="halign">start</property>
+                                <style>
+                                  <class name="body"/>
+                                </style>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">hardinfo</property>
+                                <property name="halign">start</property>
+                                <style>
+                                  <class name="body"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <!-- Separador vertical -->
+                        <child>
+                          <object class="GtkSeparator">
+                            <property name="orientation">vertical</property>
+                            <property name="margin-top">8</property>
+                            <property name="margin-bottom">8</property>
+                          </object>
+                        </child>
+
+                        <!-- Panel derecho - Texto en línea -->
+                        <child>
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <property name="margin-top">40</property>
+                            <property name="margin-bottom">16</property>
+                            <property name="margin-start">20</property>
+                            <property name="margin-end">1</property>
+                            <property name="hexpand">true</property>
+                            <property name="valign">start</property>
+
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">gparted gedit gufw hardinfo ...</property>
+                                <property name="halign">start</property>
+                                <property name="wrap">true</property>
+                                <property name="wrap-mode">word</property>
+                                <style>
+                                  <class name="body"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- TextView principal -->
+                <child>
+                  <object class="GtkFrame">
+                    <property name="margin-top">16</property>
+                    <style>
+                      <class name="card"/>
+                    </style>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <property name="hscrollbar-policy">never</property>
+                        <property name="vscrollbar-policy">automatic</property>
+                        <property name="min-content-height">300</property>
+                        <property name="propagate-natural-height">true</property>
+                        <child>
+                          <object class="GtkTextView" id="programextra_textview">
+                            <property name="wrap-mode">char</property>
+                            <property name="editable">true</property>
+                            <property name="cursor-visible">true</property>
+                            <property name="left-margin">16</property>
+                            <property name="right-margin">16</property>
+                            <property name="top-margin">16</property>
+                            <property name="bottom-margin">16</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </child>
+  </object>
+</interface>

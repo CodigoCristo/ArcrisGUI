@@ -422,6 +422,12 @@ void save_combo_selections_to_file(void)
     gchar *password_user_value = NULL;
     gchar *hostname_value = NULL;
     gchar *password_root_value = NULL;
+    gchar *driver_video_value = NULL;
+    gchar *driver_audio_value = NULL;
+    gchar *driver_wifi_value = NULL;
+    gchar *driver_bluetooth_value = NULL;
+    gchar *essential_apps_enabled_value = NULL;
+    gchar *utilities_enabled_value = NULL;
     FILE *read_file = fopen(bash_file_path, "r");
     if (read_file) {
         char line[1024];
@@ -492,6 +498,74 @@ void save_combo_selections_to_file(void)
 
                 selected_kernel_value = g_strdup(value);
                 LOG_INFO("SELECTED_KERNEL preservado desde variables.sh: %s", selected_kernel_value);
+            }
+            // Buscar la variable DRIVER_VIDEO
+            else if (g_str_has_prefix(line, "DRIVER_VIDEO=")) {
+                char *value = line + 13; // Saltar "DRIVER_VIDEO="
+
+                // Remover salto de línea
+                line[strcspn(line, "\n")] = 0;
+                value = line + 13;
+
+                // Remover comillas si existen
+                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                    value[strlen(value)-1] = 0;
+                    value++;
+                }
+
+                driver_video_value = g_strdup(value);
+                LOG_INFO("DRIVER_VIDEO preservado desde variables.sh: %s", driver_video_value);
+            }
+            // Buscar la variable DRIVER_AUDIO
+            else if (g_str_has_prefix(line, "DRIVER_AUDIO=")) {
+                char *value = line + 13; // Saltar "DRIVER_AUDIO="
+
+                // Remover salto de línea
+                line[strcspn(line, "\n")] = 0;
+                value = line + 13;
+
+                // Remover comillas si existen
+                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                    value[strlen(value)-1] = 0;
+                    value++;
+                }
+
+                driver_audio_value = g_strdup(value);
+                LOG_INFO("DRIVER_AUDIO preservado desde variables.sh: %s", driver_audio_value);
+            }
+            // Buscar la variable DRIVER_WIFI
+            else if (g_str_has_prefix(line, "DRIVER_WIFI=")) {
+                char *value = line + 12; // Saltar "DRIVER_WIFI="
+
+                // Remover salto de línea
+                line[strcspn(line, "\n")] = 0;
+                value = line + 12;
+
+                // Remover comillas si existen
+                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                    value[strlen(value)-1] = 0;
+                    value++;
+                }
+
+                driver_wifi_value = g_strdup(value);
+                LOG_INFO("DRIVER_WIFI preservado desde variables.sh: %s", driver_wifi_value);
+            }
+            // Buscar la variable DRIVER_BLUETOOTH
+            else if (g_str_has_prefix(line, "DRIVER_BLUETOOTH=")) {
+                char *value = line + 17; // Saltar "DRIVER_BLUETOOTH="
+
+                // Remover salto de línea
+                line[strcspn(line, "\n")] = 0;
+                value = line + 17;
+
+                // Remover comillas si existen
+                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                    value[strlen(value)-1] = 0;
+                    value++;
+                }
+
+                driver_bluetooth_value = g_strdup(value);
+                LOG_INFO("DRIVER_BLUETOOTH preservado desde variables.sh: %s", driver_bluetooth_value);
             }
             // Buscar la variable USER
             else if (g_str_has_prefix(line, "export USER=") || g_str_has_prefix(line, "USER=")) {
@@ -591,6 +665,40 @@ void save_combo_selections_to_file(void)
                 window_manager_value = g_strdup(value);
                 LOG_INFO("WINDOW_MANAGER preservado desde variables.sh: %s", window_manager_value);
             }
+            // Buscar la variable ESSENTIAL_APPS_ENABLED (solo preservar)
+            else if (g_str_has_prefix(line, "ESSENTIAL_APPS_ENABLED=")) {
+                char *value = line + 23; // Saltar "ESSENTIAL_APPS_ENABLED="
+
+                // Remover salto de línea
+                line[strcspn(line, "\n")] = 0;
+                value = line + 23;
+
+                // Remover comillas si existen
+                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                    value[strlen(value)-1] = 0;
+                    value++;
+                }
+
+                essential_apps_enabled_value = g_strdup(value);
+                LOG_INFO("ESSENTIAL_APPS_ENABLED preservado desde variables.sh: %s", essential_apps_enabled_value);
+            }
+            // Buscar la variable UTILITIES_ENABLED (solo preservar)
+            else if (g_str_has_prefix(line, "UTILITIES_ENABLED=")) {
+                char *value = line + 18; // Saltar "UTILITIES_ENABLED="
+
+                // Remover salto de línea
+                line[strcspn(line, "\n")] = 0;
+                value = line + 18;
+
+                // Remover comillas si existen
+                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                    value[strlen(value)-1] = 0;
+                    value++;
+                }
+
+                utilities_enabled_value = g_strdup(value);
+                LOG_INFO("UTILITIES_ENABLED preservado desde variables.sh: %s", utilities_enabled_value);
+            }
         }
         fclose(read_file);
     }
@@ -606,6 +714,10 @@ void save_combo_selections_to_file(void)
         g_free(selected_kernel_value);
         g_free(desktop_environment_value);
         g_free(window_manager_value);
+        g_free(driver_video_value);
+        g_free(driver_audio_value);
+        g_free(driver_wifi_value);
+        g_free(driver_bluetooth_value);
         g_free(user_value);
         g_free(password_user_value);
         g_free(hostname_value);
@@ -694,6 +806,31 @@ void save_combo_selections_to_file(void)
         LOG_INFO("SELECTED_KERNEL reescrito en variables.sh: %s", selected_kernel_value);
     }
 
+    // Preservar las variables de drivers de hardware
+    if (driver_video_value) {
+        fprintf(file, "\n# Driver de Video\n");
+        fprintf(file, "DRIVER_VIDEO=\"%s\"\n", driver_video_value);
+        LOG_INFO("DRIVER_VIDEO reescrito en variables.sh: %s", driver_video_value);
+    }
+
+    if (driver_audio_value) {
+        fprintf(file, "\n# Driver de Audio\n");
+        fprintf(file, "DRIVER_AUDIO=\"%s\"\n", driver_audio_value);
+        LOG_INFO("DRIVER_AUDIO reescrito en variables.sh: %s", driver_audio_value);
+    }
+
+    if (driver_wifi_value) {
+        fprintf(file, "\n# Driver de WiFi\n");
+        fprintf(file, "DRIVER_WIFI=\"%s\"\n", driver_wifi_value);
+        LOG_INFO("DRIVER_WIFI reescrito en variables.sh: %s", driver_wifi_value);
+    }
+
+    if (driver_bluetooth_value) {
+        fprintf(file, "\n# Driver de Bluetooth\n");
+        fprintf(file, "DRIVER_BLUETOOTH=\"%s\"\n", driver_bluetooth_value);
+        LOG_INFO("DRIVER_BLUETOOTH reescrito en variables.sh: %s", driver_bluetooth_value);
+    }
+
     // Preservar la variable DESKTOP_ENVIRONMENT
     if (desktop_environment_value) {
         fprintf(file, "# Variable DE seleccionada\n");
@@ -708,6 +845,21 @@ void save_combo_selections_to_file(void)
         LOG_INFO("WINDOW_MANAGER reescrito en variables.sh: %s", window_manager_value);
     }
 
+    // Preservar variables de página 6 (solo si ya existen)
+    if (essential_apps_enabled_value || utilities_enabled_value) {
+        fprintf(file, "\n# Configuración de aplicaciones - Página 6\n");
+        if (essential_apps_enabled_value) {
+            fprintf(file, "ESSENTIAL_APPS_ENABLED=\"%s\"\n", essential_apps_enabled_value);
+            LOG_INFO("ESSENTIAL_APPS_ENABLED preservado en variables.sh: %s", essential_apps_enabled_value);
+        }
+        if (utilities_enabled_value) {
+            fprintf(file, "UTILITIES_ENABLED=\"%s\"\n", utilities_enabled_value);
+            LOG_INFO("UTILITIES_ENABLED preservado en variables.sh: %s", utilities_enabled_value);
+        }
+    }
+
+
+
     fclose(file);
 
     g_print("✅ Variables guardadas en: %s\n", bash_file_path);
@@ -719,6 +871,12 @@ void save_combo_selections_to_file(void)
     g_free(selected_kernel_value);
     g_free(desktop_environment_value);
     g_free(window_manager_value);
+    g_free(essential_apps_enabled_value);
+    g_free(utilities_enabled_value);
+    g_free(driver_video_value);
+    g_free(driver_audio_value);
+    g_free(driver_wifi_value);
+    g_free(driver_bluetooth_value);
     g_free(user_value);
     g_free(password_user_value);
     g_free(hostname_value);

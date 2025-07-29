@@ -121,6 +121,10 @@ const char* window_hardware_get_bluetooth_driver_name(BluetoothDriverType driver
 gboolean window_hardware_load_from_variables(WindowHardwareData *data);
 gboolean window_hardware_save_to_variables(WindowHardwareData *data);
 gboolean window_hardware_save_driver_variables(WindowHardwareData *data);
+gboolean window_hardware_init_default_variables(void);
+
+// Función para inicialización automática al inicio de la aplicación
+gboolean window_hardware_init_auto_variables(void);
 
 // Callbacks de botones
 void on_hardware_close_button_clicked(GtkButton *button, gpointer user_data);

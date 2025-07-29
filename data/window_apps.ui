@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwApplicationWindow" id="ProgramExtraWindow">
+    <property name="title">Utilidades</property>
+    <property name="default-width">900</property>
+    <property name="default-height">630</property>
+    <property name="modal">true</property>
+    <property name="resizable">false</property>
+    <property name="deletable">false</property>
+    <property name="hide-on-close">true</property>
+
+    <child>
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="AdwWindowTitle">
+                <property name="title">Utilidades</property>
+              </object>
+            </property>
+            <child type="start">
+              <object class="GtkButton" id="close_button">
+                <property name="label">Cerrar</property>
+                <property name="valign">center</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="save_button">
+                <property name="label">Guardar</property>
+                <property name="valign">center</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <property name="content">
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="spacing">0</property>
+
+
+
+            <!-- Main Content -->
+            <child>
+              <object class="GtkScrolledWindow">
+                <property name="hexpand">true</property>
+                <property name="vexpand">true</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">1000</property>
+                    <property name="tightening-threshold">600</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">8</property>
+                        <property name="margin-top">12</property>
+                        <property name="margin-bottom">12</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+
+                        <!-- Categories Group -->
+                        <child>
+                          <object class="AdwPreferencesGroup">
+                            <property name="title">Categorías de Paquetes</property>
+                            <property name="header-suffix">
+                              <object class="GtkSearchEntry" id="searchApp">
+                                <property name="margin-bottom">10</property>
+                                <property name="placeholder-text">Busca tu aplicación</property>
+                               </object>
+                            </property>
+
+
+                            <!-- Games Category -->
+                            <child>
+                              <object class="AdwExpanderRow" id="browsers_expander">
+                                <property name="title">Browsers</property>
+                                <property name="subtitle">Web browsing and communication</property>
+                                <property name="icon-name">web-browser-symbolic</property>
+                              </object>
+                            </child>
+
+                            <!-- Graphics Category -->
+                            <child>
+                              <object class="AdwExpanderRow" id="graphics_expander">
+                                <property name="title">Gráficos</property>
+                                <property name="subtitle">Herramientas de diseño y edición</property>
+                                <property name="icon-name">applications-graphics-symbolic</property>
+                              </object>
+                            </child>
+
+                            <!-- Video Category (Expanded) -->
+                            <child>
+                              <object class="AdwExpanderRow" id="video_expander">
+                                <property name="title">Video</property>
+                                <property name="subtitle">Editores y reproductores de video</property>
+                                <property name="icon-name">applications-multimedia-symbolic</property>
+                                <property name="expanded">false</property>
+
+                                <!-- Video packages -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">baka-mplayer</property>
+                                    <property name="subtitle">Un reproductor multimedia libre, multiplataforma, basado en libmpv</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="baka_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="baka_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">dragon</property>
+                                    <property name="subtitle">Un reproductor multimedia donde el foco está en la simplicidad, en lugar de características</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="dragon_check">
+                                        <property name="active">true</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="dragon_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">kdenlive</property>
+                                    <property name="subtitle">Un editor de video no lineal para Linux usando el framework de video MLT</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="kdenlive_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="kdenlive_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">obs-studio</property>
+                                    <property name="subtitle">Software libre y de código abierto para streaming en vivo y grabación</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="obs_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="obs_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">openshot</property>
+                                    <property name="subtitle">Un galardonado editor de video libre y de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="openshot_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="openshot_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">pitivi</property>
+                                    <property name="subtitle">Editor para proyectos de audio/video usando el framework GStreamer</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="pitivi_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="pitivi_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">shotcut</property>
+                                    <property name="subtitle">Editor de video multiplataforma basado en Qt</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="shotcut_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="shotcut_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">smplayer</property>
+                                    <property name="subtitle">Reproductor multimedia con códecs incorporados que puede reproducir prácticamente todos los formatos de video y audio</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="smplayer_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="smplayer_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">vlc</property>
+                                    <property name="subtitle">Reproductor multiplataforma MPEG, VCD/DVD y DivX</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="vlc_check">
+                                        <property name="active">true</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="vlc_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+
+                            <!-- Internet Category -->
+                            <child>
+                              <object class="AdwExpanderRow" id="audio_expander">
+                                <property name="title">Audio</property>
+                                <property name="subtitle">Editores y reproductores de Audio</property>
+                                <property name="icon-name">music-note-symbolic</property>
+                              </object>
+                            </child>
+
+
+                            <!-- Mail Category -->
+                            <child>
+                              <object class="AdwExpanderRow" id="mail_expander">
+                                <property name="title">Comunicaciones</property>
+                                <property name="subtitle">Clientes de correo electrónico y Chat</property>
+                                <property name="icon-name">mail-unread-symbolic</property>
+                              </object>
+                            </child>
+
+                            <!-- Multimedia Category -->
+                            <child>
+                              <object class="AdwExpanderRow" id="developers_expander">
+                                <property name="title">Desarrollo</property>
+                                <property name="subtitle">IDE's y Herramientas para developers</property>
+                                <property name="icon-name">code-symbolic</property>
+                              </object>
+                            </child>
+
+                            <!-- Office Category -->
+                            <child>
+                              <object class="AdwExpanderRow" id="office_expander">
+                                <property name="title">Ofimática</property>
+                                <property name="subtitle">Productividad y documentos</property>
+                                <property name="icon-name">rich-text-symbolic</property>
+                              </object>
+                            </child>
+
+
+                            <!-- Virtualization Category -->
+                            <child>
+                               <object class="AdwExpanderRow" id="virtualization_expander">
+                                <property name="title">Virtualización</property>
+                                <property name="subtitle">Máquinas virtuales y contenedores</property>
+                                <property name="icon-name">computer-symbolic</property>
+                              </object>
+                            </child>
+
+                            <!-- Other Category -->
+                            <child>
+                              <object class="AdwExpanderRow" id="other_expander">
+                                <property name="title">Otros</property>
+                                <property name="subtitle">Aplicaciones diversas</property>
+                                <property name="icon-name">preferences-other-symbolic</property>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </child>
+  </object>
+</interface>

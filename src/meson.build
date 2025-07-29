@@ -26,6 +26,9 @@ executable('arcris',
     'page7.c',
     'window_kernel.c',
     'window_hardware.c',
+    'window_system.c',
+    'window_program_extra.c',
+    'window_apps.c',
     'partitionmanual.c',
 
 
