@@ -142,19 +142,21 @@ Selección de entorno de escritorio y aplicaciones esenciales.
 
 Opciones avanzadas para usuarios experimentados.
 
-### Página 8: Terminal de Instalación
+### Página 8: Progreso de Instalación
 <img src="data/img/Capturas/page8.png" alt="Terminal de Instalación" width="400">
-<img src="data/img/Capturas/page8_8.png" alt="Terminal de Instalación" width="400">
 
 Monitor en tiempo real del proceso de instalación.
 
-### Página 9: Progreso de Instalación
-<img src="data/img/Capturas/page9.png" alt="Progreso de Instalación" width="400">
-
+<img src="data/img/Capturas/page8_8.png" alt="Terminal de Instalación" width="400">
 
 Barra de progreso y estado detallado de la instalación.
 
-### Página 10: Finalización
+
+### Página 9: Finalización
+<img src="data/img/Capturas/page9.png" alt="Progreso de Instalación" width="400">
+
+
+### Página 10: Información extra
 <img src="data/img/Capturas/page10.png" alt="Finalización" width="400">
 
 Confirmación de instalación exitosa y opciones post-instalación.
