@@ -111,7 +111,7 @@ Arcris 2.0 guía al usuario a través de un proceso de instalación paso a paso:
 
 Verificación inicial del sistema y conectividad a internet.
 
-### Página 2: Configuración de Idioma
+### Página 2: Configuración del sistema
 <img src="data/img/Capturas/page2.png" alt="Configuración de Idioma" width="400">
 
 Selección de idioma, distribución de teclado y zona horaria.
@@ -121,26 +121,25 @@ Selección de idioma, distribución de teclado y zona horaria.
 
 Detección automática y selección del disco de instalación.
 
-### Página 4: Configuración de Particiones
+### Página 4: Configuración de Usuario
 <img src="data/img/Capturas/page4.png" alt="Configuración de Particiones" width="400">
 
-Gestión inteligente de particiones con opciones automáticas y manuales.
+Creación de usuario y configuración de contraseñas del sistema.
 
-### Página 5: Configuración de Usuario
+### Página 5: Entorno de Escritorio
 <img src="data/img/Capturas/page5.png" alt="Configuración de Usuario" width="400">
 
-Creación de usuario y configuración de contraseñas del sistema.
+Selección de entorno de escritorio y aplicaciones esenciales.
 
 ### Página 6: Selección de Software
 <img src="data/img/Capturas/page6.png" alt="Selección de Software" width="400">
 
-Selección de entorno de escritorio y aplicaciones esenciales.
+Opciones avanzadas para usuarios experimentados.
 
-### Página 7: Configuración Avanzada
+### Página 7: Resumen
 <img src="data/img/Capturas/page7.png" alt="Configuración Avanzada" width="400">
 <img src="data/img/Capturas/page7_7.png" alt="Configuración Avanzada" width="400">
 
-Opciones avanzadas para usuarios experimentados.
 
 ### Página 8: Progreso de Instalación
 <img src="data/img/Capturas/page8.png" alt="Terminal de Instalación" width="400">
@@ -155,11 +154,11 @@ Barra de progreso y estado detallado de la instalación.
 ### Página 9: Finalización
 <img src="data/img/Capturas/page9.png" alt="Progreso de Instalación" width="400">
 
+Confirmación de instalación exitosa y opciones post-instalación.
 
 ### Página 10: Información extra
 <img src="data/img/Capturas/page10.png" alt="Finalización" width="400">
 
-Confirmación de instalación exitosa y opciones post-instalación.
 
 ## 🔧 Desarrollo
 
