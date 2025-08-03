@@ -138,6 +138,7 @@ Selección de entorno de escritorio y aplicaciones esenciales.
 
 ### Página 7: Configuración Avanzada
 <img src="data/img/Capturas/page7.png" alt="Configuración Avanzada" width="400">
+<img src="data/img/Capturas/page7_7.png" alt="Configuración Avanzada" width="400">
 
 Opciones avanzadas para usuarios experimentados.
 
@@ -149,7 +150,7 @@ Monitor en tiempo real del proceso de instalación.
 
 ### Página 9: Progreso de Instalación
 <img src="data/img/Capturas/page9.png" alt="Progreso de Instalación" width="400">
-<img src="data/img/Capturas/page9_9.png" alt="Progreso de Instalación" width="400">
+
 
 Barra de progreso y estado detallado de la instalación.
 
