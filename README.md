@@ -35,7 +35,7 @@ Arcris 2.0 es un instalador gráfico moderno para Arch Linux, diseñado con GTK4
 
 ## 📦 Dependencias
 
-> **Nota**: Este instalador está diseñado exclusivamente para Arch Linux y sus derivados.
+> **Nota**: Este instalador está diseñado exclusivamente para Arch Linux.
 
 ### Instalación de Dependencias en Arch Linux
 
@@ -143,11 +143,13 @@ Opciones avanzadas para usuarios experimentados.
 
 ### Página 8: Terminal de Instalación
 <img src="data/img/Capturas/page8.png" alt="Terminal de Instalación" width="400">
+<img src="data/img/Capturas/page8_8.png" alt="Terminal de Instalación" width="400">
 
 Monitor en tiempo real del proceso de instalación.
 
 ### Página 9: Progreso de Instalación
 <img src="data/img/Capturas/page9.png" alt="Progreso de Instalación" width="400">
+<img src="data/img/Capturas/page9_9.png" alt="Progreso de Instalación" width="400">
 
 Barra de progreso y estado detallado de la instalación.
 
