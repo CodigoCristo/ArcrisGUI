@@ -73,12 +73,112 @@
                             </property>
 
 
-                            <!-- Games Category -->
+                            <!-- Browsers Category -->
                             <child>
                               <object class="AdwExpanderRow" id="browsers_expander">
                                 <property name="title">Browsers</property>
                                 <property name="subtitle">Web browsing and communication</property>
                                 <property name="icon-name">web-browser-symbolic</property>
+
+                                <!-- Google Chrome -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">google-chrome</property>
+                                    <property name="subtitle">Navegador web rápido, seguro y gratuito de Google</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="chrome_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="chrome_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.google.com/chrome/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Brave -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">brave-browser</property>
+                                    <property name="subtitle">Navegador web privado que bloquea anuncios y rastreadores por defecto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="brave_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="brave_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://brave.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Chromium -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">chromium</property>
+                                    <property name="subtitle">Proyecto de navegador web de código abierto que sirve como base para Google Chrome</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="chromium_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="chromium_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.chromium.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Firefox -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">firefox</property>
+                                    <property name="subtitle">Navegador web libre y de código abierto desarrollado por Mozilla</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="firefox_check">
+                                        <property name="active">true</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="firefox_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.mozilla.org/firefox/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Opera -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">opera</property>
+                                    <property name="subtitle">Navegador web con VPN gratuita, bloqueador de anuncios y herramientas de productividad</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="opera_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="opera_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.opera.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
                               </object>
                             </child>
 
@@ -88,6 +188,186 @@
                                 <property name="title">Gráficos</property>
                                 <property name="subtitle">Herramientas de diseño y edición</property>
                                 <property name="icon-name">applications-graphics-symbolic</property>
+
+                                <!-- GIMP -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">gimp</property>
+                                    <property name="subtitle">Programa de manipulación de imágenes GNU, editor de imágenes libre y de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="gimp_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="gimp_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.gimp.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Inkscape -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">inkscape</property>
+                                    <property name="subtitle">Editor de gráficos vectoriales libre y de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="inkscape_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="inkscape_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://inkscape.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Krita -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">krita</property>
+                                    <property name="subtitle">Programa de pintura digital libre y de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="krita_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="krita_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://krita.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Pinta -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">pinta</property>
+                                    <property name="subtitle">Programa de edición y pintura de imágenes simple y fácil de usar</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="pinta_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="pinta_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.pinta-project.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Blender -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">blender</property>
+                                    <property name="subtitle">Suite de creación 3D libre que incluye modelado, animación, renderizado y más</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="blender_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="blender_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.blender.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- darktable -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">darktable</property>
+                                    <property name="subtitle">Aplicación de fotografía y flujo de trabajo de imagen RAW de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="darktable_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="darktable_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.darktable.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- FreeCAD -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">freecad</property>
+                                    <property name="subtitle">Modelador CAD 3D paramétrico libre y de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="freecad_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="freecad_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.freecadweb.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Ristretto -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">ristretto</property>
+                                    <property name="subtitle">Visor de imágenes rápido y ligero para el entorno de escritorio Xfce</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="ristretto_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="ristretto_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://docs.xfce.org/apps/ristretto/start</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Viewnior -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">viewnior</property>
+                                    <property name="subtitle">Visor de imágenes elegante y simple con interfaz de usuario minimalista</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="viewnior_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="viewnior_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">http://siyanpanayotov.com/project/viewnior/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
                               </object>
                             </child>
 
@@ -265,7 +545,87 @@
                                       <object class="GtkButton" id="vlc_info">
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
-                                        <property name="tooltip-text">Más información</property>
+                                        <property name="tooltip-text">https://www.videolan.org/vlc/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- HandBrake -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">handbrake</property>
+                                    <property name="subtitle">Transcodificador de video de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="handbrake_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="handbrake_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://handbrake.fr/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Clapper -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">clapper</property>
+                                    <property name="subtitle">Reproductor multimedia moderno y simple para GNOME</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="clapper_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="clapper_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://rafostar.github.io/clapper/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- LMMS -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">lmms</property>
+                                    <property name="subtitle">Estación de trabajo de audio digital libre y multiplataforma</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="lmms_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="lmms_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://lmms.io/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Simple Screen Recorder -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">simplescreenrecorder</property>
+                                    <property name="subtitle">Grabador de pantalla simple y fácil de usar para Linux</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="simplescreenrecorder_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="simplescreenrecorder_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.maartenbaert.be/simplescreenrecorder/</property>
                                       </object>
                                     </child>
                                   </object>
@@ -274,31 +634,491 @@
                             </child>
 
 
-                            <!-- Internet Category -->
+                            <!-- Audio Category -->
                             <child>
                               <object class="AdwExpanderRow" id="audio_expander">
                                 <property name="title">Audio</property>
                                 <property name="subtitle">Editores y reproductores de Audio</property>
                                 <property name="icon-name">music-note-symbolic</property>
+
+                                <!-- Audacious -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">audacious</property>
+                                    <property name="subtitle">Reproductor de audio libre y ligero con soporte para muchos formatos</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="audacious_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="audacious_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://audacious-media-player.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Clementine -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">clementine</property>
+                                    <property name="subtitle">Reproductor y organizador de música moderno multiplataforma</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="clementine_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="clementine_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.clementine-player.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Audacity -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">audacity</property>
+                                    <property name="subtitle">Editor de audio libre y multiplataforma</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="audacity_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="audacity_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.audacityteam.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Ardour -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">ardour</property>
+                                    <property name="subtitle">Estación de trabajo de audio digital profesional</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="ardour_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="ardour_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://ardour.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Elisa -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">elisa</property>
+                                    <property name="subtitle">Reproductor de música simple y elegante por KDE</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="elisa_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="elisa_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://apps.kde.org/elisa/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
                               </object>
                             </child>
 
 
-                            <!-- Mail Category -->
+                            <!-- Communications Category -->
                             <child>
                               <object class="AdwExpanderRow" id="mail_expander">
                                 <property name="title">Comunicaciones</property>
                                 <property name="subtitle">Clientes de correo electrónico y Chat</property>
                                 <property name="icon-name">mail-unread-symbolic</property>
+
+                                <!-- Telegram -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">telegram-desktop</property>
+                                    <property name="subtitle">Aplicación de mensajería instantánea rápida y segura</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="telegram_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="telegram_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://telegram.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Element -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">element-desktop</property>
+                                    <property name="subtitle">Cliente seguro de mensajería y colaboración basado en Matrix</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="element_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="element_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://element.io/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Discord -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">discord</property>
+                                    <property name="subtitle">Plataforma de comunicación para comunidades y gamers</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="discord_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="discord_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://discord.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Thunderbird -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">thunderbird</property>
+                                    <property name="subtitle">Cliente de correo electrónico libre de Mozilla</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="thunderbird_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="thunderbird_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.thunderbird.net/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Signal -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">signal-desktop</property>
+                                    <property name="subtitle">Mensajería privada con cifrado de extremo a extremo</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="signal_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="signal_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://signal.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- WhatsApp -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">whatsapp-for-linux</property>
+                                    <property name="subtitle">Cliente no oficial de WhatsApp para Linux</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="whatsapp_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="whatsapp_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/eneshecan/whatsapp-for-linux</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Evolution -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">evolution</property>
+                                    <property name="subtitle">Cliente de correo y organizador personal de GNOME</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="evolution_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="evolution_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://wiki.gnome.org/Apps/Evolution</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Fractal -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">fractal</property>
+                                    <property name="subtitle">Cliente Matrix para GNOME escrito en Rust</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="fractal_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="fractal_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://wiki.gnome.org/Apps/Fractal</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
                               </object>
                             </child>
 
-                            <!-- Multimedia Category -->
+                            <!-- Development Category -->
                             <child>
                               <object class="AdwExpanderRow" id="developers_expander">
                                 <property name="title">Desarrollo</property>
                                 <property name="subtitle">IDE's y Herramientas para developers</property>
                                 <property name="icon-name">code-symbolic</property>
+
+                                                <!-- VS Code -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">visual-studio-code-bin</property>
+                                                    <property name="subtitle">Editor de código fuente desarrollado por Microsoft</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="vscode_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="vscode_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://code.visualstudio.com/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- VSCodium -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">vscodium-bin</property>
+                                                    <property name="subtitle">Versión libre de VS Code sin telemetría de Microsoft</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="vscodium_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="vscodium_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://vscodium.com/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- Zed -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">zed</property>
+                                                    <property name="subtitle">Editor de código colaborativo de alto rendimiento</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="zed_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="zed_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://zed.dev/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- Geany -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">geany</property>
+                                                    <property name="subtitle">IDE ligero usando GTK con características básicas</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="geany_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="geany_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://www.geany.org/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- Sublime Text -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">sublime-text-4</property>
+                                                    <property name="subtitle">Editor de texto sofisticado para código, marcado y prosa</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="sublime_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="sublime_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://www.sublimetext.com/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- Emacs -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">emacs</property>
+                                                    <property name="subtitle">Editor de texto extensible, personalizable y autodocumentado</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="emacs_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="emacs_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://www.gnu.org/software/emacs/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- Docker -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">docker</property>
+                                                    <property name="subtitle">Plataforma de contenedores para desarrollar, enviar y ejecutar aplicaciones</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="docker_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="docker_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://www.docker.com/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- PyCharm -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">pycharm-community-edition</property>
+                                                    <property name="subtitle">IDE para desarrollo en Python por JetBrains</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="pycharm_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="pycharm_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://www.jetbrains.com/pycharm/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- IntelliJ IDEA -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">intellij-idea-community-edition</property>
+                                                    <property name="subtitle">IDE para desarrollo en Java por JetBrains</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="intellij_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="intellij_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://www.jetbrains.com/idea/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- NetBeans -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">netbeans</property>
+                                                    <property name="subtitle">IDE de código abierto para Java, PHP, C++ y más</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="netbeans_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="netbeans_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://netbeans.apache.org/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
                               </object>
                             </child>
 
@@ -308,16 +1128,316 @@
                                 <property name="title">Ofimática</property>
                                 <property name="subtitle">Productividad y documentos</property>
                                 <property name="icon-name">rich-text-symbolic</property>
+
+                                                <!-- LibreOffice -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">libreoffice-fresh</property>
+                                                    <property name="subtitle">Suite ofimática libre completa compatible con Microsoft Office</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="libreoffice_check">
+                                                        <property name="active">true</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="libreoffice_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://www.libreoffice.org/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- OnlyOffice -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">onlyoffice-bin</property>
+                                                    <property name="subtitle">Suite ofimática con alta compatibilidad con Microsoft Office</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="onlyoffice_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="onlyoffice_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://www.onlyoffice.com/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- WPS Office -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">wps-office</property>
+                                                    <property name="subtitle">Suite ofimática con interfaz moderna y compatibilidad con MS Office</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="wps_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="wps_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://www.wps.com/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- AbiWord -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">abiword</property>
+                                                    <property name="subtitle">Procesador de textos libre y ligero</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="abiword_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="abiword_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://www.abisource.com/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- Calibre -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">calibre</property>
+                                                    <property name="subtitle">Gestor y lector de libros electrónicos completo</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="calibre_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="calibre_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://calibre-ebook.com/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- Evince -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">evince</property>
+                                                    <property name="subtitle">Visor de documentos para GNOME que soporta PDF, PostScript y más</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="evince_check">
+                                                        <property name="active">true</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="evince_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://wiki.gnome.org/Apps/Evince</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- Okular -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">okular</property>
+                                                    <property name="subtitle">Visor universal de documentos de KDE</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="okular_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="okular_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://okular.kde.org/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
+                                                <!-- PaperWork -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">paperwork</property>
+                                                    <property name="subtitle">Gestor de documentos personales con OCR</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="paperwork_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="paperwork_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://openpaper.work/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
                               </object>
                             </child>
 
 
-                            <!-- Virtualization Category -->
-                            <child>
-                               <object class="AdwExpanderRow" id="virtualization_expander">
-                                <property name="title">Virtualización</property>
-                                <property name="subtitle">Máquinas virtuales y contenedores</property>
-                                <property name="icon-name">computer-symbolic</property>
+                            <!-- Gaming Category -->
+            <child>
+               <object class="AdwExpanderRow" id="gamming_expander">
+                <property name="title">Gamming</property>
+                <property name="subtitle">Herramientas y Plataformas para jugadores</property>
+                <property name="icon-name">xbox-controller-symbolic</property>
+
+                                <!-- Steam -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">steam</property>
+                                    <property name="subtitle">Plataforma de distribución digital de videojuegos</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="steam_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="steam_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://store.steampowered.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Lutris -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">lutris</property>
+                                    <property name="subtitle">Plataforma de gaming libre para Linux</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="lutris_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="lutris_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://lutris.net/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Heroic -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">heroic-games-launcher-bin</property>
+                                    <property name="subtitle">Launcher alternativo para Epic Games Store y GOG</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="heroic_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="heroic_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://heroicgameslauncher.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Bottles -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">bottles</property>
+                                    <property name="subtitle">Gestor de prefijos de Wine fácil de usar</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="bottles_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="bottles_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://usebottles.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Wine -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">wine</property>
+                                    <property name="subtitle">Capa de compatibilidad para ejecutar aplicaciones Windows en Linux</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="wine_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="wine_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.winehq.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- PlayOnLinux -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">playonlinux</property>
+                                    <property name="subtitle">Frontend gráfico para Wine con scripts automáticos</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="playonlinux_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="playonlinux_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.playonlinux.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- SuperTux -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">supertux</property>
+                                    <property name="subtitle">Juego de plataformas 2D inspirado en Super Mario Bros</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="supertux_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="supertux_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.supertux.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
                               </object>
                             </child>
 
@@ -327,6 +1447,326 @@
                                 <property name="title">Otros</property>
                                 <property name="subtitle">Aplicaciones diversas</property>
                                 <property name="icon-name">preferences-other-symbolic</property>
+
+                                <!-- Octopi -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">octopi</property>
+                                    <property name="subtitle">Frontend gráfico para pacman con notificaciones</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="octopi_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="octopi_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://tintaescura.com/projects/octopi/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Pamac -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">pamac-aur</property>
+                                    <property name="subtitle">Gestor de paquetes gráfico para Arch Linux con soporte AUR</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="pamac_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="pamac_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://gitlab.manjaro.org/applications/pamac</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- GNOME Boxes -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">gnome-boxes</property>
+                                    <property name="subtitle">Aplicación simple de virtualización para GNOME</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="gnome_boxes_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="gnome_boxes_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://wiki.gnome.org/Apps/Boxes</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Virt-Manager -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">virt-manager</property>
+                                    <property name="subtitle">Gestor de máquinas virtuales para KVM/QEMU</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="virt_manager_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="virt_manager_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://virt-manager.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- VirtualBox -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">virtualbox</property>
+                                    <property name="subtitle">Hipervisor de virtualización multiplataforma</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="virtualbox_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="virtualbox_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.virtualbox.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- gfuw -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">gufw</property>
+                                    <property name="subtitle">Frontend gráfico para el firewall UFW</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="gufw_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="gufw_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://gufw.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Brasero -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">brasero</property>
+                                    <property name="subtitle">Aplicación de grabación de CD/DVD para GNOME</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="brasero_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="brasero_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://wiki.gnome.org/Apps/Brasero</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Transmission -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">transmission-gtk</property>
+                                    <property name="subtitle">Cliente BitTorrent ligero y fácil de usar</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="transmission_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="transmission_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://transmissionbt.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- FileZilla -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">filezilla</property>
+                                    <property name="subtitle">Cliente FTP, FTPS y SFTP multiplataforma</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="filezilla_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="filezilla_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://filezilla-project.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- PuTTY -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">putty</property>
+                                    <property name="subtitle">Cliente SSH, Telnet y rlogin</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="putty_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="putty_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.putty.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Stremio -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">stremio</property>
+                                    <property name="subtitle">Centro multimedia moderno para video streaming</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="stremio_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="stremio_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.stremio.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Mission Center -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">mission-center</property>
+                                    <property name="subtitle">Monitor del sistema nativo para GNOME</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="mission_center_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="mission_center_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://missioncenter.io/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- htop -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">htop</property>
+                                    <property name="subtitle">Visor de procesos interactivo para sistemas Unix</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="htop_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="htop_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://htop.dev/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Neovim -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">neovim</property>
+                                    <property name="subtitle">Fork moderno de Vim centrado en extensibilidad</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="neovim_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="neovim_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://neovim.io/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Timeshift -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">timeshift</property>
+                                    <property name="subtitle">Herramienta de backup del sistema tipo Time Machine</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="timeshift_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="timeshift_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/teejee2008/timeshift</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- KeePassXC -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">keepassxc</property>
+                                    <property name="subtitle">Gestor de contraseñas multiplataforma y de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="keepassxc_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="keepassxc_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://keepassxc.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
                               </object>
                             </child>
 

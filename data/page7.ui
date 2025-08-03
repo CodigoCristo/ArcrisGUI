@@ -3,24 +3,439 @@
   <requires lib="gtk" version="4.0"/>
   <requires lib="adwaita" version="1.2"/>
 
-  <object class="AdwBin" id="main_bin">
-    <property name="hexpand">true</property>
-    <property name="vexpand">true</property>
+  <!-- AdwStatusPage -->
+  <object class="AdwStatusPage" id="page7">
+    <property name="title" translatable="true">Resumen de Configuración</property>
+    <property name="description" translatable="true">Revisa tu configuración antes de continuar con la instalación.</property>
+
+    <!-- Contenido del AdwStatusPage -->
     <child>
       <object class="GtkBox">
         <property name="orientation">vertical</property>
         <property name="halign">center</property>
         <property name="valign">center</property>
-        <property name="spacing">0</property>
+        <property name="width-request">400</property>
+        <property name="spacing">10</property>
 
+        <!-- AdwClamp para Sistema Local -->
         <child>
-          <object class="GtkImage" id="logo">
-            <property name="resource">/org/gtk/arcris/logo.png</property>
-            <property name="pixel-size">200</property>
-            <property name="halign">center</property>
-            <property name="valign">center</property>
+          <object class="AdwClamp">
+            <property name="margin-bottom">5</property>
+            <property name="maximum-size">600</property>
+            <property name="tightening-threshold">650</property>
+
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title" translatable="yes">Sistema Local</property>
+
+                <!-- Teclado -->
+                <child>
+                  <object class="AdwActionRow" id="teclado_row">
+                    <property name="title" translatable="yes">Teclado</property>
+                    <property name="subtitle" translatable="yes">No configurado</property>
+                    <property name="activatable">false</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_teclado_button">
+                        <property name="tooltip-text" translatable="true">Editar configuración del teclado</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Zona Horaria -->
+                <child>
+                  <object class="AdwActionRow" id="zona_horaria_row">
+                    <property name="title" translatable="yes">Zona Horaria</property>
+                    <property name="subtitle" translatable="yes">No configurado</property>
+                    <property name="activatable">false</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_zona_horaria_button">
+                        <property name="tooltip-text" translatable="true">Editar zona horaria</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Ubicación/Idioma -->
+                <child>
+                  <object class="AdwActionRow" id="ubicacion_row">
+                    <property name="title" translatable="yes">Ubicación</property>
+                    <property name="subtitle" translatable="yes">No configurado</property>
+                    <property name="activatable">false</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_ubicacion_button">
+                        <property name="tooltip-text" translatable="true">Editar ubicación e idioma</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+            </child>
           </object>
         </child>
+
+        <!-- AdwClamp para Selección de Disco -->
+        <child>
+          <object class="AdwClamp">
+            <property name="margin-bottom">5</property>
+            <property name="maximum-size">600</property>
+            <property name="tightening-threshold">650</property>
+
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title" translatable="yes">Selección de Disco</property>
+
+                <!-- Disco Seleccionado -->
+                <child>
+                  <object class="AdwActionRow" id="disco_seleccionado_row">
+                    <property name="title" translatable="yes">Disco</property>
+                    <property name="subtitle" translatable="yes">No seleccionado</property>
+                    <property name="activatable">false</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_disco_seleccionado_button">
+                        <property name="tooltip-text" translatable="true">Cambiar disco seleccionado</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Tipo de Firmware -->
+                <child>
+                  <object class="AdwActionRow" id="firmware_row">
+                    <property name="title" translatable="yes">Tipo de Firmware</property>
+                    <property name="subtitle" translatable="yes">No detectado</property>
+                    <property name="activatable">false</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_firmware_button">
+                        <property name="tooltip-text" translatable="true">Información del firmware</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Tipo de Particionado -->
+                <child>
+                  <object class="AdwActionRow" id="particionado_row">
+                    <property name="title" translatable="yes">Tipo de Particionado</property>
+                    <property name="subtitle" translatable="yes">No configurado</property>
+                    <property name="activatable">false</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_particionado_button">
+                        <property name="tooltip-text" translatable="true">Cambiar tipo de particionado</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <!-- AdwClamp para Usuario -->
+        <child>
+          <object class="AdwClamp">
+            <property name="margin-bottom">5</property>
+            <property name="maximum-size">600</property>
+            <property name="tightening-threshold">650</property>
+
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title" translatable="yes">Usuario</property>
+
+                <!-- Nombre de Usuario -->
+                <child>
+                  <object class="AdwActionRow" id="nombre_usuario_row">
+                    <property name="title" translatable="yes">Nombre de Usuario</property>
+                    <property name="subtitle" translatable="yes">No configurado</property>
+                    <property name="activatable">false</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_nombre_usuario_button">
+                        <property name="tooltip-text" translatable="true">Editar nombre de usuario</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Hostname -->
+                <child>
+                  <object class="AdwActionRow" id="hostname_row">
+                    <property name="title" translatable="yes">Hostname</property>
+                    <property name="subtitle" translatable="yes">No configurado</property>
+                    <property name="activatable">false</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_hostname_button">
+                        <property name="tooltip-text" translatable="true">Editar hostname</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <!-- AdwClamp para Personalización -->
+        <child>
+          <object class="AdwClamp">
+            <property name="margin-bottom">5</property>
+            <property name="maximum-size">600</property>
+            <property name="tightening-threshold">650</property>
+
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title" translatable="yes">Personalización</property>
+
+                <!-- Entorno de Escritorio -->
+                <child>
+                  <object class="AdwActionRow" id="entorno_escritorio_row">
+                    <property name="title" translatable="yes">Entorno de Escritorio</property>
+                    <property name="subtitle" translatable="yes">No configurado</property>
+                    <property name="activatable">false</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_entorno_escritorio_button">
+                        <property name="tooltip-text" translatable="true">Cambiar entorno de escritorio</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <!-- AdwClamp para Sistema -->
+        <child>
+          <object class="AdwClamp">
+            <property name="margin-bottom">5</property>
+            <property name="maximum-size">400</property>
+            <property name="tightening-threshold">650</property>
+
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title" translatable="yes">Sistema</property>
+
+                <!-- Kernel -->
+                <child>
+                  <object class="AdwActionRow" id="kernel_row">
+                    <property name="title" translatable="yes">Kernel</property>
+                    <property name="subtitle" translatable="yes">No configurado</property>
+                    <property name="activatable">false</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_kernel_button">
+                        <property name="tooltip-text" translatable="true">Cambiar kernel</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Drivers con Expandible -->
+                <child>
+                  <object class="AdwExpanderRow" id="drivers_expander">
+                    <property name="title" translatable="yes">Drivers</property>
+                    <property name="subtitle" translatable="yes">No configurado</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_drivers_button">
+                        <property name="tooltip-text" translatable="true">Configurar drivers</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+
+                    <!-- Contenido expandible para drivers -->
+                    <child>
+                      <object class="AdwActionRow" id="driver_video_row">
+                        <property name="title" translatable="yes">Driver de Video</property>
+                        <property name="subtitle" translatable="yes">No configurado</property>
+                        <property name="activatable">false</property>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow" id="driver_audio_row">
+                        <property name="title" translatable="yes">Driver de Audio</property>
+                        <property name="subtitle" translatable="yes">No configurado</property>
+                        <property name="activatable">false</property>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow" id="driver_wifi_row">
+                        <property name="title" translatable="yes">Driver de WiFi</property>
+                        <property name="subtitle" translatable="yes">No configurado</property>
+                        <property name="activatable">false</property>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="AdwActionRow" id="driver_bluetooth_row">
+                        <property name="title" translatable="yes">Driver de Bluetooth</property>
+                        <property name="subtitle" translatable="yes">No configurado</property>
+                        <property name="activatable">false</property>
+                      </object>
+                    </child>
+
+                  </object>
+                </child>
+
+                <!-- Aplicaciones Base -->
+                <child>
+                  <object class="AdwActionRow" id="aplicaciones_base_row">
+                    <property name="title" translatable="yes">Aplicaciones Base</property>
+                    <property name="subtitle" translatable="yes">No configurado</property>
+                    <property name="activatable">false</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_aplicaciones_base_button">
+                        <property name="tooltip-text" translatable="true">Configurar aplicaciones base</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Programas de Utilidades -->
+                <child>
+                  <object class="AdwActionRow" id="utilidades_row">
+                    <property name="title" translatable="yes">Programas de Utilidades</property>
+                    <property name="subtitle" translatable="yes">No configurado</property>
+                    <property name="activatable">false</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_utilidades_button">
+                        <property name="tooltip-text" translatable="true">Configurar programas de utilidades</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Programas Extras -->
+                <child>
+                  <object class="AdwActionRow" id="programas_extras_row">
+                    <property name="title" translatable="yes">Programas Extras</property>
+                    <property name="subtitle" translatable="yes">Sin Programas Extras</property>
+
+                    <child type="suffix">
+                      <object class="GtkButton" id="edit_programas_extras_button">
+                        <property name="tooltip-text" translatable="true">Configurar programas extras</property>
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+
+
+                  </object>
+                </child>
+
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <!-- Botón de Instalación -->
+        <child>
+          <object class="AdwClamp">
+            <property name="margin-top">20</property>
+            <property name="maximum-size">300</property>
+
+            <child>
+              <object class="GtkButton" id="install_button">
+                <property name="tooltip-text" translatable="true">Iniciar instalación del sistema</property>
+                <property name="sensitive">true</property>
+                <property name="child">
+                  <object class="AdwButtonContent">
+                    <property name="icon-name">system-run-symbolic</property>
+                    <property name="label" translatable="yes">Instalar Sistema</property>
+                  </object>
+                </property>
+                <style>
+                  <class name="suggested-action"/>
+                  <class name="pill"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
       </object>
     </child>
   </object>

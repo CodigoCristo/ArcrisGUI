@@ -428,6 +428,7 @@ void save_combo_selections_to_file(void)
     gchar *driver_bluetooth_value = NULL;
     gchar *essential_apps_enabled_value = NULL;
     gchar *utilities_enabled_value = NULL;
+    gchar *program_extra_value = NULL;
     FILE *read_file = fopen(bash_file_path, "r");
     if (read_file) {
         char line[1024];
@@ -697,7 +698,18 @@ void save_combo_selections_to_file(void)
                 }
 
                 utilities_enabled_value = g_strdup(value);
-                LOG_INFO("UTILITIES_ENABLED preservado desde variables.sh: %s", utilities_enabled_value);
+                LOG_INFO("UTILITIES_ENABLED preservado desde page2: %s", utilities_enabled_value);
+            }
+            else if (g_str_has_prefix(line, "PROGRAM_EXTRA=")) {
+                char *value = line + 14;
+                line[strcspn(line, "\n")] = 0;
+                value = line + 14;
+                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                    value[strlen(value)-1] = 0;
+                    value++;
+                }
+                program_extra_value = g_strdup(value);
+                LOG_INFO("PROGRAM_EXTRA preservado desde page2: %s", program_extra_value);
             }
         }
         fclose(read_file);
@@ -845,17 +857,31 @@ void save_combo_selections_to_file(void)
         LOG_INFO("WINDOW_MANAGER reescrito en variables.sh: %s", window_manager_value);
     }
 
-    // Preservar variables de página 6 (solo si ya existen)
-    if (essential_apps_enabled_value || utilities_enabled_value) {
-        fprintf(file, "\n# Configuración de aplicaciones - Página 6\n");
-        if (essential_apps_enabled_value) {
-            fprintf(file, "ESSENTIAL_APPS_ENABLED=\"%s\"\n", essential_apps_enabled_value);
-            LOG_INFO("ESSENTIAL_APPS_ENABLED preservado en variables.sh: %s", essential_apps_enabled_value);
-        }
-        if (utilities_enabled_value) {
-            fprintf(file, "UTILITIES_ENABLED=\"%s\"\n", utilities_enabled_value);
-            LOG_INFO("UTILITIES_ENABLED preservado en variables.sh: %s", utilities_enabled_value);
-        }
+    // Escribir variables de página 6 - siempre escribir
+    fprintf(file, "\n# Configuración de aplicaciones - Página 6\n");
+
+    if (essential_apps_enabled_value) {
+        fprintf(file, "ESSENTIAL_APPS_ENABLED=\"%s\"\n", essential_apps_enabled_value);
+        LOG_INFO("ESSENTIAL_APPS_ENABLED preservado en variables.sh: %s", essential_apps_enabled_value);
+    } else {
+        fprintf(file, "ESSENTIAL_APPS_ENABLED=\"true\"\n");
+        LOG_INFO("ESSENTIAL_APPS_ENABLED inicializado por defecto desde page2: true");
+    }
+
+    if (utilities_enabled_value) {
+        fprintf(file, "UTILITIES_ENABLED=\"%s\"\n", utilities_enabled_value);
+        LOG_INFO("UTILITIES_ENABLED preservado en variables.sh: %s", utilities_enabled_value);
+    } else {
+        fprintf(file, "UTILITIES_ENABLED=\"false\"\n");
+        LOG_INFO("UTILITIES_ENABLED inicializado por defecto desde page2: false");
+    }
+
+    if (program_extra_value) {
+        fprintf(file, "PROGRAM_EXTRA=\"%s\"\n", program_extra_value);
+        LOG_INFO("PROGRAM_EXTRA preservado desde page2: %s", program_extra_value);
+    } else {
+        fprintf(file, "PROGRAM_EXTRA=\"false\"\n");
+        LOG_INFO("PROGRAM_EXTRA inicializado por defecto desde page2: false");
     }
 
 
@@ -873,6 +899,7 @@ void save_combo_selections_to_file(void)
     g_free(window_manager_value);
     g_free(essential_apps_enabled_value);
     g_free(utilities_enabled_value);
+    g_free(program_extra_value);
     g_free(driver_video_value);
     g_free(driver_audio_value);
     g_free(driver_wifi_value);
@@ -942,7 +969,7 @@ static gpointer open_tecla_task(gpointer data) {
         locale_keyboard = gtk_string_object_get_string(selected_item);
 
         if (locale_keyboard) {
-            gchar *command = g_strdup_printf("gkbd-keyboard-display -l %s &", locale_keyboard);
+            gchar *command = g_strdup_printf("tecla %s &", locale_keyboard);
             system(command);
             g_free(command);
             g_print("Abriendo visualización de teclado para: %s\n", locale_keyboard);

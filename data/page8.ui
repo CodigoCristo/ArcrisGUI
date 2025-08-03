@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adwaita" version="1.2"/>
+  <requires lib="vte" version="2.91"/>
+
+  <object class="AdwBin" id="main_bin">
+    <property name="hexpand">true</property>
+    <property name="vexpand">true</property>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="halign">fill</property>
+        <property name="valign">fill</property>
+        <property name="spacing">0</property>
+        <property name="hexpand">true</property>
+        <property name="vexpand">true</property>
+
+        <!-- Contenido principal con scroll -->
+        <child>
+          <object class="GtkScrolledWindow">
+            <property name="hexpand">true</property>
+            <property name="vexpand">true</property>
+            <property name="hscrollbar-policy">automatic</property>
+            <property name="vscrollbar-policy">automatic</property>
+            <property name="kinetic-scrolling">true</property>
+            <property name="propagate-natural-height">false</property>
+            <property name="propagate-natural-width">false</property>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="spacing">10</property>
+                <property name="margin-top">48</property>
+                <property name="margin-bottom">48</property>
+                <property name="margin-start">48</property>
+                <property name="margin-end">48</property>
+                <property name="hexpand">true</property>
+                <property name="vexpand">true</property>
+
+            <!-- Título de instalación con botón de terminal -->
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">horizontal</property>
+                <property name="halign">center</property>
+                <property name="spacing">20</property>
+
+                <child>
+                  <object class="GtkLabel" id="install_title">
+                    <property name="label" translatable="yes">Instalando Arch Linux</property>
+                    <property name="halign">center</property>
+                    <style>
+                      <class name="title-1"/>
+                    </style>
+                  </object>
+                </child>
+
+                <child>
+                  <object class="GtkToggleButton" id="terminal_button">
+                    <property name="tooltip-text" translatable="yes">Mostrar/Ocultar Terminal</property>
+                    <property name="icon-name">utilities-terminal</property>
+                    <property name="valign">center</property>
+                    <property name="width-request">44</property>
+                    <property name="height-request">44</property>
+                    <style>
+                      <class name="circular"/>
+                      <class name="flat"/>
+                    </style>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+            <!-- Stack con carousel y terminal -->
+            <child>
+              <object class="GtkStack" id="main_stack">
+                <property name="halign">fill</property>
+                <property name="valign">fill</property>
+                <property name="hexpand">true</property>
+                <property name="vexpand">true</property>
+                <property name="transition-type">slide-left-right</property>
+                <property name="transition-duration">350</property>
+
+                <!-- Página 0: Carousel de imágenes -->
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">carousel_page</property>
+                    <property name="title">Carousel</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">10</property>
+                        <property name="halign">fill</property>
+                        <property name="valign">fill</property>
+                        <property name="hexpand">true</property>
+                        <property name="vexpand">true</property>
+                        <property name="width-request">600</property>
+
+                        <!-- Carousel con imágenes mejorado -->
+                        <child>
+                          <object class="AdwClamp">
+                            <property name="vexpand">true</property>
+                            <property name="hexpand">true</property>
+                            <property name="maximum-size">600</property>
+                            <property name="tightening-threshold">300</property>
+                            <child>
+                              <object class="GtkBox">
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">10</property>
+                                <property name="halign">fill</property>
+                                <property name="valign">fill</property>
+                                <property name="hexpand">true</property>
+                                <property name="vexpand">true</property>
+
+                                <!-- Frame principal del carousel -->
+                                <child>
+                                  <object class="GtkFrame">
+                                    <property name="halign">center</property>
+                                    <property name="valign">center</property>
+                                    <property name="hexpand">false</property>
+                                    <property name="vexpand">false</property>
+                                    <style>
+                                      <class name="card"/>
+                                      <class name="toolbar"/>
+                                    </style>
+                                    <child>
+                                      <object class="AdwCarousel" id="image_carousel">
+                                        <property name="halign">fill</property>
+                                        <property name="valign">fill</property>
+                                        <property name="hexpand">true</property>
+                                        <property name="vexpand">true</property>
+                                        <property name="allow-mouse-drag">true</property>
+                                        <property name="allow-scroll-wheel">true</property>
+                                        <property name="allow-long-swipes">true</property>
+                                        <property name="interactive">true</property>
+
+                                        <!-- Imagen 1 -->
+                                        <child>
+                                          <object class="GtkBox">
+                                            <property name="orientation">vertical</property>
+                                            <property name="halign">fill</property>
+                                            <property name="valign">fill</property>
+                                            <property name="hexpand">true</property>
+                                            <property name="vexpand">true</property>
+                                            <child>
+                                              <object class="GtkPicture" id="carousel_image1">
+                                                <property name="file">/org/gtk/arcris/carousel-image1.png</property>
+                                                <property name="halign">fill</property>
+                                                <property name="valign">fill</property>
+                                                <property name="hexpand">true</property>
+                                                <property name="vexpand">true</property>
+                                                <property name="can-shrink">true</property>
+                                                <property name="content-fit">0</property>
+                                                <property name="keep-aspect-ratio">true</property>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+
+                                        <!-- Imagen 2 -->
+                                        <child>
+                                          <object class="GtkBox">
+                                            <property name="orientation">vertical</property>
+                                            <property name="halign">fill</property>
+                                            <property name="valign">fill</property>
+                                            <property name="hexpand">true</property>
+                                            <property name="vexpand">true</property>
+                                            <child>
+                                              <object class="GtkPicture" id="carousel_image2">
+                                                <property name="file">/org/gtk/arcris/carousel-image2.png</property>
+                                                <property name="halign">fill</property>
+                                                <property name="valign">fill</property>
+                                                <property name="hexpand">true</property>
+                                                <property name="vexpand">true</property>
+                                                <property name="can-shrink">true</property>
+                                                <property name="content-fit">0</property>
+                                                <property name="keep-aspect-ratio">true</property>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+
+                                        <!-- Imagen 3 -->
+                                        <child>
+                                          <object class="GtkBox">
+                                            <property name="orientation">vertical</property>
+                                            <property name="halign">fill</property>
+                                            <property name="valign">fill</property>
+                                            <property name="hexpand">true</property>
+                                            <property name="vexpand">true</property>
+                                            <child>
+                                              <object class="GtkPicture" id="carousel_image3">
+                                                <property name="file">/org/gtk/arcris/carousel-image3.png</property>
+                                                <property name="halign">fill</property>
+                                                <property name="valign">fill</property>
+                                                <property name="hexpand">true</property>
+                                                <property name="vexpand">true</property>
+                                                <property name="can-shrink">true</property>
+                                                <property name="content-fit">0</property>
+                                                <property name="keep-aspect-ratio">true</property>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+
+                                        <!-- Imagen 4 -->
+                                        <child>
+                                          <object class="GtkBox">
+                                            <property name="orientation">vertical</property>
+                                            <property name="halign">fill</property>
+                                            <property name="valign">fill</property>
+                                            <property name="hexpand">true</property>
+                                            <property name="vexpand">true</property>
+                                            <child>
+                                              <object class="GtkPicture" id="carousel_image4">
+                                                <property name="file">/org/gtk/arcris/carousel-image4.png</property>
+                                                <property name="halign">fill</property>
+                                                <property name="valign">fill</property>
+                                                <property name="hexpand">true</property>
+                                                <property name="vexpand">true</property>
+                                                <property name="can-shrink">true</property>
+                                                <property name="content-fit">0</property>
+                                                <property name="keep-aspect-ratio">true</property>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Indicadores del carousel mejorados -->
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <property name="halign">center</property>
+                                    <property name="spacing">8</property>
+                                    <property name="margin-top">12</property>
+                                    <property name="margin-bottom">8</property>
+                                    <child>
+                                      <object class="AdwCarouselIndicatorLines" id="carousel_indicators">
+                                        <property name="carousel">image_carousel</property>
+                                        <property name="halign">center</property>
+                                      </object>
+                                    </child>
+
+                                    <child>
+                                        <object class="GtkLabel" id="carousel_info">
+                                        <property name="label" translatable="yes">Esto puede demorar varios minutos, dependiendo de su conexión a Internet, por favor, espere...</property>
+                                        <property name="halign">center</property>
+                                        <property name="margin-top">12</property>
+                                        <property name="wrap">true</property>
+                                        <property name="wrap-mode">word-char</property>
+                                        <property name="justify">center</property>
+                                        <style>
+                                            <class name="dim-label"/>
+                                            <class name="caption"/>
+                                        </style>
+                                        </object>
+                                    </child>
+
+
+                                  </object>
+                                </child>
+
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+                <!-- Página 1: Terminal VTE -->
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">terminal_page</property>
+                    <property name="title">Terminal</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">10</property>
+                        <property name="margin-top">10</property>
+                        <property name="margin-bottom">10</property>
+                        <property name="margin-start">10</property>
+                        <property name="margin-end">10</property>
+                        <property name="hexpand">true</property>
+                        <property name="vexpand">true</property>
+
+                        <!-- Frame para la terminal mejorado -->
+                        <child>
+                          <object class="GtkFrame">
+                            <property name="halign">center</property>
+                            <property name="valign">center</property>
+                            <property name="hexpand">true</property>
+                            <property name="vexpand">true</property>
+                            <style>
+                              <class name="card"/>
+                              <class name="view"/>
+                            </style>
+                            <child>
+                              <object class="GtkBox">
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">0</property>
+                                <property name="hexpand">true</property>
+                                <property name="vexpand">true</property>
+
+
+                                <!-- Terminal con scroll -->
+                                <child>
+                                  <object class="GtkScrolledWindow">
+                                    <property name="hscrollbar-policy">automatic</property>
+                                    <property name="vscrollbar-policy">automatic</property>
+                                    <property name="hexpand">true</property>
+                                    <property name="vexpand">true</property>
+                                    <property name="min-content-height">350</property>
+                                    <property name="min-content-width">550</property>
+                                    <property name="propagate-natural-height">false</property>
+                                    <property name="propagate-natural-width">false</property>
+                                    <child>
+                                      <object class="VteTerminal" id="vte_terminal">
+                                        <property name="halign">fill</property>
+                                        <property name="valign">fill</property>
+                                        <property name="hexpand">true</property>
+                                        <property name="vexpand">true</property>
+                                        <property name="audible-bell">false</property>
+                                        <property name="scroll-on-output">true</property>
+                                        <property name="scroll-on-keystroke">true</property>
+                                        <property name="scrollback-lines">1000</property>
+                                        <property name="sensitive">false</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <!-- Información de la terminal mejorada -->
+                        <child>
+                          <object class="GtkLabel" id="terminal_info">
+                            <property name="label" translatable="yes">Aquí se muestra la salida detallada del proceso de instalación</property>
+                            <property name="halign">center</property>
+                            <property name="margin-top">12</property>
+                            <property name="wrap">true</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
+                            <style>
+                              <class name="dim-label"/>
+                              <class name="caption"/>
+                            </style>
+                          </object>
+                        </child>
+
+                      </object>
+                    </property>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+            <!-- Barra de progreso global -->
+            <child>
+              <object class="GtkProgressBar" id="progress_bar">
+                <property name="halign">center</property>
+                <property name="pulse-step">0.1</property>
+                <property name="show-text">false</property>
+                <property name="margin-start">24</property>
+                <property name="margin-end">24</property>
+                <property name="margin-top">12</property>
+                <property name="width-request">550</property>
+                <style>
+                  <class name="osd"/>
+                </style>
+              </object>
+            </child>
+
+              </object>
+            </child>
+          </object>
+        </child>
+
+      </object>
+    </child>
+  </object>
+</interface>

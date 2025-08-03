@@ -5,7 +5,7 @@
 
   <!-- Página principal de personalización -->
   <object class="AdwStatusPage" id="page5">
-    <property name="title">Personalización</property>
+    <property name="title">Entorno de Escritorio</property>
     <property name="description">Selecciona un escritorio o un gestor de ventanas o una terminal virtual</property>
     <property name="vexpand">true</property>
     <property name="hexpand">true</property>
@@ -179,7 +179,7 @@
                 <property name="hexpand">true</property>
                 <property name="vexpand">true</property>
                 <property name="can-shrink">true</property>
-                <property name="content-fit">4</property>
+                <property name="content-fit">3</property>
                 <style>
                   <class name="card"/>
                 </style>
@@ -279,7 +279,7 @@
                 <property name="hexpand">true</property>
                 <property name="vexpand">true</property>
                 <property name="can-shrink">true</property>
-                <property name="content-fit">4</property>
+                <property name="content-fit">3</property>
                 <style>
                   <class name="card"/>
                 </style>

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adwaita" version="1.2"/>
+
+  <object class="AdwBin" id="main_bin">
+    <property name="hexpand">true</property>
+    <property name="vexpand">true</property>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="halign">center</property>
+        <property name="valign">center</property>
+        <property name="spacing">48</property>
+        <property name="margin-top">64</property>
+        <property name="margin-bottom">64</property>
+        <property name="margin-start">64</property>
+        <property name="margin-end">64</property>
+
+        <!-- Contenedor del mensaje de éxito -->
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <property name="spacing">24</property>
+
+            <!-- Icono de éxito -->
+            <child>
+              <object class="GtkImage" id="success_icon">
+                <property name="icon-name">check-plain-symbolic</property>
+                <property name="pixel-size">64</property>
+                <property name="halign">center</property>
+                <style>
+                  <class name="success-icon"/>
+                </style>
+              </object>
+            </child>
+
+            <!-- Mensaje principal -->
+            <child>
+              <object class="GtkLabel" id="completion_message">
+                <property name="label">¡Bienvenido a Arch Linux!</property>
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="wrap">true</property>
+                <property name="wrap-mode">word-char</property>
+                <property name="justify">center</property>
+                <style>
+                  <class name="title-1"/>
+                  <class name="success-text"/>
+                </style>
+              </object>
+            </child>
+
+            <!-- Mensaje secundario -->
+            <child>
+              <object class="GtkLabel" id="secondary_message">
+                <property name="label">El sistema se ha instalado correctamente y está listo para usar</property>
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="wrap">true</property>
+                <property name="wrap-mode">word-char</property>
+                <property name="justify">center</property>
+                <style>
+                  <class name="body"/>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <!-- Contenedor de botones -->
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">horizontal</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <property name="spacing">24</property>
+            <property name="homogeneous">true</property>
+
+            <!-- Botón Reiniciar (ROJO) -->
+            <child>
+              <object class="GtkButton" id="restart_button">
+                <property name="label">Reiniciar</property>
+                <property name="width-request">140</property>
+                <property name="height-request">48</property>
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="tooltip-text">Reiniciar el sistema ahora</property>
+                <style>
+                  <class name="pill"/>
+                  <class name="restart-button"/>
+                  <class name="destructive-action"/>
+                </style>
+              </object>
+            </child>
+
+            <!-- Botón Salir (AZUL) -->
+            <child>
+              <object class="GtkButton" id="exit_button">
+                <property name="label">Salir</property>
+                <property name="width-request">140</property>
+                <property name="height-request">48</property>
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="tooltip-text">Salir del instalador</property>
+                <style>
+                  <class name="pill"/>
+                  <class name="exit-button"/>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <!-- Información adicional -->
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <property name="spacing">12</property>
+            <property name="margin-top">24</property>
+
+            <child>
+              <object class="GtkLabel" id="info_label">
+                <property name="label">Nota: Si elige "Salir", podrá reiniciar manualmente más tarde</property>
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="wrap">true</property>
+                <property name="wrap-mode">word-char</property>
+                <property name="justify">center</property>
+                <style>
+                  <class name="caption"/>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

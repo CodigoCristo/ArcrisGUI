@@ -11,13 +11,14 @@ LOCALE="es_PE.UTF-8"
 # Configuración de aplicaciones - Página 6
 ESSENTIAL_APPS_ENABLED="false"
 UTILITIES_ENABLED="false"
+PROGRAM_EXTRA="true"
 
 # Configuración de disco
-SELECTED_DISK="/dev/sdc"
+SELECTED_DISK="/dev/nvme0n1"
 PARTITION_MODE="auto"
 
 # Variables de configuración del usuario
-export USER="qwe"
+export USER="cristo"
 export PASSWORD_USER="123"
 export HOSTNAME="arcris"
 export PASSWORD_ROOT="123"
@@ -25,11 +26,11 @@ export PASSWORD_ROOT="123"
 # Tipo de instalación
 INSTALLATION_TYPE="TERMINAL"
 
+# Kernel seleccionado
 SELECTED_KERNEL="linux"
 
 # Drivers de hardware
 DRIVER_VIDEO="Open Source"
-DRIVER_AUDIO="Alsa Audio"
+DRIVER_AUDIO="pulseaudio"
 DRIVER_WIFI="Open Source"
-DRIVER_BLUETOOTH="bluetoothctl (terminal)"
-
+DRIVER_BLUETOOTH="blueman (Graphical)"

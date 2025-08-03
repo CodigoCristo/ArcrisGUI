@@ -1,4 +1,5 @@
 #include "window_program_extra.h"
+#include "page7.h"
 #include "config.h"
 #include <glib/gstdio.h>
 #include <string.h>
@@ -193,6 +194,7 @@ void window_program_extra_connect_signals(WindowProgramExtraData *data)
                         G_CALLBACK(on_program_extra_textbuffer_changed), data);
     }
     
+
     LOG_INFO("Señales de ventana de programas extra conectadas");
 }
 
@@ -250,6 +252,12 @@ gboolean window_program_extra_load_programs_from_file(WindowProgramExtraData *da
             
             if (data->programs_text) g_free(data->programs_text);
             data->programs_text = g_strdup(programs_text);
+            
+            // Actualizar subtitle en page7 al cargar texto existente
+            page7_update_programas_extras_subtitle(programs_text);
+        } else {
+            // Si no hay texto, actualizar con subtitle por defecto
+            page7_update_programas_extras_subtitle(NULL);
         }
         
         g_strfreev(lines);
@@ -286,10 +294,13 @@ gboolean window_program_extra_save_programs_to_file(WindowProgramExtraData *data
         return FALSE;
     }
     
+    // Determinar si hay texto para PROGRAM_EXTRA
+    gboolean has_program_text = (text && strlen(g_strstrip(text)) > 0);
+    
     // Procesar texto para extraer palabras
     GString *array_content = g_string_new("EXTRA_PROGRAMS=(");
     
-    if (text && strlen(g_strstrip(text)) > 0) {
+    if (has_program_text) {
         // Dividir texto en palabras (separados por espacios, tabs, saltos de línea)
         gchar **words = g_regex_split_simple("\\s+", g_strstrip(text), 0, 0);
         
@@ -306,23 +317,31 @@ gboolean window_program_extra_save_programs_to_file(WindowProgramExtraData *data
     
     g_string_append(array_content, ")");
     
-    // Buscar y reemplazar línea EXTRA_PROGRAMS o agregarla
+    // Buscar y reemplazar líneas EXTRA_PROGRAMS y PROGRAM_EXTRA o agregarlas
     gchar **lines = g_strsplit(content, "\n", -1);
     GString *new_content = g_string_new("");
-    gboolean found = FALSE;
+    gboolean found_extra_programs = FALSE;
+    gboolean found_program_extra = FALSE;
     
     for (int i = 0; lines[i] != NULL; i++) {
         if (g_str_has_prefix(g_strstrip(lines[i]), "EXTRA_PROGRAMS=")) {
             g_string_append_printf(new_content, "%s\n", array_content->str);
-            found = TRUE;
+            found_extra_programs = TRUE;
+        } else if (g_str_has_prefix(g_strstrip(lines[i]), "PROGRAM_EXTRA=")) {
+            g_string_append_printf(new_content, "PROGRAM_EXTRA=\"%s\"\n", has_program_text ? "true" : "false");
+            found_program_extra = TRUE;
         } else {
             g_string_append_printf(new_content, "%s\n", lines[i]);
         }
     }
     
-    // Si no se encontró, agregar al final
-    if (!found) {
+    // Si no se encontraron, agregar al final
+    if (!found_extra_programs) {
         g_string_append_printf(new_content, "\n# Programas extra agregados por el usuario\n%s\n", array_content->str);
+    }
+    
+    if (!found_program_extra) {
+        g_string_append_printf(new_content, "PROGRAM_EXTRA=\"%s\"\n", has_program_text ? "true" : "false");
     }
     
     // Guardar archivo actualizado
@@ -332,6 +351,7 @@ gboolean window_program_extra_save_programs_to_file(WindowProgramExtraData *data
         if (data->programs_text) g_free(data->programs_text);
         data->programs_text = g_strdup(text ? text : "");
         LOG_INFO("Programas guardados como array en variables.sh");
+        LOG_INFO("PROGRAM_EXTRA establecido a: %s", has_program_text ? "true" : "false");
     } else {
         LOG_ERROR("Error guardando en variables.sh: %s", error ? error->message : "Unknown error");
         if (error) g_error_free(error);
@@ -378,18 +398,37 @@ void on_program_extra_close_button_clicked(GtkButton *button, gpointer user_data
 
 void on_program_extra_save_button_clicked(GtkButton *button, gpointer user_data)
 {
+    static gboolean is_saving = FALSE;
+    
     WindowProgramExtraData *data = (WindowProgramExtraData*)user_data;
     if (!data) return;
     
+    // Protección contra múltiples llamadas
+    if (is_saving) {
+        LOG_INFO("Save button ya se está procesando, ignorando llamada duplicada");
+        return;
+    }
+    
+    is_saving = TRUE;
     LOG_INFO("Guardando programas extra");
     
     if (window_program_extra_save_programs_to_file(data)) {
         LOG_INFO("Programas guardados exitosamente");
+        
+        // Obtener el texto actual del textview y actualizar subtitle
+        gchar *programs_text = window_program_extra_get_programs_text(data);
+        page7_update_programas_extras_subtitle(programs_text);
+        
+        if (programs_text) g_free(programs_text);
+        LOG_INFO("Subtitle de page7 actualizado");
+        
         // Cerrar ventana después de guardar
         window_program_extra_hide(data);
     } else {
         LOG_ERROR("Error al guardar programas");
     }
+    
+    is_saving = FALSE;
 }
 
 
@@ -397,9 +436,17 @@ void on_program_extra_save_button_clicked(GtkButton *button, gpointer user_data)
 void on_program_extra_textbuffer_changed(GtkTextBuffer *buffer, gpointer user_data)
 {
     WindowProgramExtraData *data = (WindowProgramExtraData*)user_data;
-    if (!data) return;
+    if (!data || !buffer) return;
     
-    // Aquí se puede agregar lógica adicional para el TextView principal si es necesaria
+    // Obtener el texto actual del buffer
+    GtkTextIter start, end;
+    gtk_text_buffer_get_bounds(buffer, &start, &end);
+    gchar *text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+    
+    // Actualizar el subtitle de programas extras en page7 en tiempo real
+    page7_update_programas_extras_subtitle(text);
+    
+    if (text) g_free(text);
 }
 
 // Funciones de utilidad

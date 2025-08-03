@@ -4,6 +4,12 @@
 #include <gtk/gtk.h>
 #include <adwaita.h>
 
+// Estructura para datos de botones de información
+typedef struct _InfoButtonData {
+    gchar *url;
+    GtkWindow *window;
+} InfoButtonData;
+
 // Estructura para datos de la ventana de utilities apps
 typedef struct _WindowAppsData {
     GtkWindow *window;
@@ -39,6 +45,7 @@ void window_apps_hide(WindowAppsData *data);
 // Funciones de configuración
 void window_apps_setup_widgets(WindowAppsData *data);
 void window_apps_connect_signals(WindowAppsData *data);
+void window_apps_connect_info_buttons(WindowAppsData *data);
 void window_apps_load_widgets_from_builder(WindowAppsData *data);
 
 // Funciones de búsqueda
@@ -56,8 +63,14 @@ void on_apps_save_button_clicked(GtkButton *button, gpointer user_data);
 // Callbacks de búsqueda
 void on_apps_search_changed(GtkSearchEntry *entry, gpointer user_data);
 
+// Callbacks de botones de información
+void on_info_button_clicked(GtkButton *button, gpointer user_data);
+
 // Funciones de utilidad
 void window_apps_reset_to_defaults(WindowAppsData *data);
+void window_apps_free_info_button_data(InfoButtonData *data);
+void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data);
+void window_apps_apply_selections_to_checkboxes(WindowAppsData *data);
 GHashTable* window_apps_get_selected_apps(WindowAppsData *data);
 void window_apps_set_selected_apps(WindowAppsData *data, GHashTable *apps);
 

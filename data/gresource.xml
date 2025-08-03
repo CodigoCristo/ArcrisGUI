@@ -9,6 +9,8 @@
     <file alias="page5.ui" compressed="true">page5.ui</file>
     <file alias="page6.ui" compressed="true">page6.ui</file>
     <file alias="page7.ui" compressed="true">page7.ui</file>
+    <file alias="page8.ui" compressed="true">page8.ui</file>
+    <file alias="page9.ui" compressed="true">page9.ui</file>
     <file alias="window_kernel.ui" compressed="true">window_kernel.ui</file>
     <file alias="window_partition.ui" compressed="true">window_partition.ui</file>
     <file alias="window_hardware.ui" compressed="true">window_hardware.ui</file>
@@ -19,6 +21,13 @@
 
     <file alias="locale.gen">locale.gen</file>
     <file alias="logo.png">img/logo.png</file>
+
+    <!-- Imágenes del carousel -->
+    <file alias="carousel-image1.png">img/carousel/image1.png</file>
+    <file alias="carousel-image2.png">img/carousel/image2.png</file>
+    <file alias="carousel-image3.png">img/carousel/image3.png</file>
+    <file alias="carousel-image4.png">img/carousel/image4.png</file>
+
     <file alias="XFCE4.png">img/DE/XFCE4.png</file>
     <file alias="Deepin.png">img/DE/Deepin.png</file>
     <file alias="GNOME.png">img/DE/GNOME.png</file>
@@ -63,6 +72,8 @@
     <file alias="tab-new-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/tab-new-symbolic.svg</file>
     <file alias="adw-external-link-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/adw-external-link-symbolic.svg</file>
     <file alias="open-menu-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/open-menu-symbolic.svg</file>
+    <file alias="xbox-controller-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/xbox-controller-symbolic.svg</file>
+    <file alias="check-plain-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/check-plain-symbolic.svg</file>
 
   </gresource>
 

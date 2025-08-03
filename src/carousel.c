@@ -1,4 +1,5 @@
 #include "carousel.h"
+#include "config.h"
 #include "page1.h"
 #include "page2.h"
 #include "page3.h"
@@ -6,6 +7,8 @@
 #include "page5.h"
 #include "page6.h"
 #include "page7.h"
+#include "page8.h"
+#include "page9.h"
 
 
 #include "config.h"
@@ -55,6 +58,17 @@ void carousel_manager_init(CarouselManager *manager, GtkBuilder *builder)
     manager->revealer = GTK_REVEALER(gtk_builder_get_object(builder, "revealer"));
     manager->back_button = GTK_BUTTON(gtk_builder_get_object(builder, "back_button"));
     manager->next_button = GTK_BUTTON(gtk_builder_get_object(builder, "next_button"));
+    
+    // Debug del revealer en inicialización
+    if (manager->revealer) {
+        gboolean initial_reveal = gtk_revealer_get_reveal_child(manager->revealer);
+        gboolean initial_visible = gtk_widget_get_visible(GTK_WIDGET(manager->revealer));
+        LOG_INFO("Revealer inicializado correctamente - reveal_child: %s, visible: %s", 
+                 initial_reveal ? "TRUE" : "FALSE", 
+                 initial_visible ? "TRUE" : "FALSE");
+    } else {
+        LOG_ERROR("Revealer NO se pudo inicializar desde el builder");
+    }
     
     if (!manager->carousel || !manager->revealer || !manager->back_button || !manager->next_button) {
         LOG_ERROR("No se pudieron obtener todos los widgets del carousel");
@@ -106,8 +120,14 @@ void carousel_init_all_pages(CarouselManager *manager, GtkBuilder *builder)
     // Inicializar página 6 (Sistema)
     page6_init(builder, manager->carousel, manager->revealer);
     
-    // Inicializar página 7 (Logo Final)
+    // Inicializar página 7 (Resumen)
     page7_init(builder, manager->carousel, manager->revealer);
+    
+    // Inicializar página 8 (Instalación con carousel)
+    page8_init(builder, manager->carousel, manager->revealer);
+    
+    // Inicializar página 9 (Finalización)
+    page9_init(builder, manager->carousel, manager->revealer);
 
     
     LOG_INFO("Todas las páginas han sido inicializadas");
@@ -198,8 +218,8 @@ void carousel_update_navigation_controls(CarouselManager *manager)
     gboolean can_go_back = carousel_can_navigate_previous(manager);
     gboolean can_go_next = carousel_can_navigate_next(manager);
     
-    // Mostrar controles en todas las páginas excepto la primera
-    if (!arcris_is_first_page(manager->current_page)) {
+    // Mostrar controles en todas las páginas excepto la primera, página 7, página 8 (instalación) y página 9 (finalización)
+    if (!arcris_is_first_page(manager->current_page) && manager->current_page != 6 && manager->current_page != 7 && manager->current_page != 8) {
         show_controls = TRUE;
     }
     
@@ -369,6 +389,15 @@ void carousel_manager_cleanup(CarouselManager *manager)
     if (manager->page7_data) {
         page7_cleanup(manager->page7_data);
     }
+    
+    // Limpiar page8 (obtener datos y limpiar)
+    Page8Data *page8_data = page8_get_data();
+    if (page8_data) {
+        page8_cleanup(page8_data);
+    }
+    
+    // Limpiar page9 (maneja sus propios datos globales)
+    page9_cleanup();
 
     
     // Limpiar el manager
@@ -388,7 +417,11 @@ static void on_carousel_page_changed_internal(AdwCarousel *carousel, guint page,
     CarouselManager *manager = (CarouselManager *)user_data;
     if (!manager) return;
     
-    LOG_INFO("Cambio de página del carousel: página %u", page);
+    // Debug: mostrar total de páginas
+    guint total_pages = adw_carousel_get_n_pages(carousel);
+    LOG_INFO("=== CAROUSEL DEBUG ===");
+    LOG_INFO("Cambio de página del carousel: página %u de %u total", page, total_pages);
+    LOG_INFO("Índices: 0=página1, 1=página2, 2=página3, 3=página4, 4=página5, 5=página6, 6=página7");
     
     // Actualizar página actual en el manager
     manager->current_page = page;
@@ -406,6 +439,20 @@ static void on_carousel_page_changed_internal(AdwCarousel *carousel, guint page,
     // Llamar a la función específica de page7 cuando se entra en ella (índice 6)
     if (page == 6) {
         page7_on_page_shown();
+    } else if (page == 7) {
+        // Página 8 (índice 7) - página de instalación
+        page8_on_page_shown();
+        LOG_INFO("Página 8 (instalación) - revealer permanece oculto");
+    } else if (page == 8) {
+        // Página 9 (índice 8) - página de finalización
+        page9_on_page_shown();
+        LOG_INFO("Página 9 (finalización) - revealer permanece oculto");
+    } else {
+        // Mostrar revealer en todas las páginas que NO son página 7, página 8 ni página 9
+        if (manager->revealer) {
+            gtk_revealer_set_reveal_child(manager->revealer, TRUE);
+            LOG_INFO("Revealer mostrado en página %u", page);
+        }
     }
     
     // Las páginas ahora manejan su propia lógica de actualización

@@ -511,6 +511,9 @@ void save_system_variables_to_file(void)
     gchar *locale_value = NULL;
     gchar *essential_apps_enabled_value = NULL;
     gchar *utilities_enabled_value = NULL;
+    gchar *extra_programs_value = NULL;
+    gchar *utilities_apps_value = NULL;
+    gchar *program_extra_value = NULL;
 
 
 
@@ -721,7 +724,18 @@ void save_system_variables_to_file(void)
                     value++;
                 }
                 utilities_enabled_value = g_strdup(value);
-                LOG_INFO("UTILITIES_ENABLED preservado desde variables.sh: %s", utilities_enabled_value);
+            }
+            else if (g_str_has_prefix(line, "EXTRA_PROGRAMS=")) {
+                line[strcspn(line, "\n")] = 0;
+                extra_programs_value = g_strdup(line + 15); // Guardar todo después de "EXTRA_PROGRAMS="
+            }
+            else if (g_str_has_prefix(line, "UTILITIES_APPS=")) {
+                line[strcspn(line, "\n")] = 0;
+                utilities_apps_value = g_strdup(line + 15); // Guardar todo después de "UTILITIES_APPS="
+            }
+            else if (g_str_has_prefix(line, "PROGRAM_EXTRA=")) {
+                line[strcspn(line, "\n")] = 0;
+                program_extra_value = g_strdup(line + 14); // Guardar todo después de "PROGRAM_EXTRA="
             }
 
 
@@ -850,19 +864,40 @@ void save_system_variables_to_file(void)
         }
     }
 
-    // Preservar variables de página 6 (solo si ya existen)
-    if (essential_apps_enabled_value || utilities_enabled_value) {
-        fprintf(file, "\n# Configuración de aplicaciones - Página 6\n");
-        if (essential_apps_enabled_value) {
-            fprintf(file, "ESSENTIAL_APPS_ENABLED=\"%s\"\n", essential_apps_enabled_value);
-            LOG_INFO("ESSENTIAL_APPS_ENABLED preservado en variables.sh: %s", essential_apps_enabled_value);
-        }
-        if (utilities_enabled_value) {
-            fprintf(file, "UTILITIES_ENABLED=\"%s\"\n", utilities_enabled_value);
-            LOG_INFO("UTILITIES_ENABLED preservado en variables.sh: %s", utilities_enabled_value);
-        }
+    // Escribir variables de página 6
+    fprintf(file, "\n# Configuración de aplicaciones - Página 6\n");
+    
+    if (essential_apps_enabled_value) {
+        fprintf(file, "ESSENTIAL_APPS_ENABLED=\"%s\"\n", essential_apps_enabled_value);
+        LOG_INFO("ESSENTIAL_APPS_ENABLED preservado en variables.sh: %s", essential_apps_enabled_value);
+    }
+    if (utilities_enabled_value) {
+        fprintf(file, "UTILITIES_ENABLED=\"%s\"\n", utilities_enabled_value);
+        LOG_INFO("UTILITIES_ENABLED preservado en variables.sh: %s", utilities_enabled_value);
+    }
+    
+    // Program Extra Status - siempre escribir
+    if (program_extra_value) {
+        fprintf(file, "PROGRAM_EXTRA=%s\n", program_extra_value);
+        LOG_INFO("PROGRAM_EXTRA preservado desde window_system: %s", program_extra_value);
+    } else {
+        // Inicializar por defecto si no existe
+        fprintf(file, "PROGRAM_EXTRA=\"false\"\n");
+        LOG_INFO("PROGRAM_EXTRA inicializado por defecto desde window_system: false");
     }
 
+    // Preservar programas extra y utilidades
+    if (extra_programs_value) {
+        fprintf(file, "\n# Programas extra agregados por el usuario\n");
+        fprintf(file, "EXTRA_PROGRAMS=%s\n", extra_programs_value);
+        LOG_INFO("EXTRA_PROGRAMS preservado desde window_system: %s", extra_programs_value);
+    }
+
+    if (utilities_apps_value) {
+        fprintf(file, "\n# Utilidades seleccionadas\n");
+        fprintf(file, "UTILITIES_APPS=%s\n", utilities_apps_value);
+        LOG_INFO("UTILITIES_APPS preservado desde window_system: %s", utilities_apps_value);
+    }
 
 
 
@@ -890,6 +925,9 @@ void save_system_variables_to_file(void)
     g_free(locale_value);
     g_free(essential_apps_enabled_value);
     g_free(utilities_enabled_value);
+    g_free(extra_programs_value);
+    g_free(utilities_apps_value);
+    g_free(program_extra_value);
 
 
 

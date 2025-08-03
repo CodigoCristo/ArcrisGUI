@@ -807,6 +807,9 @@ void save_page6_switches_to_file(void)
     gchar *filesystems_enabled_value = NULL;
     gchar *compression_enabled_value = NULL;
     gchar *video_codecs_enabled_value = NULL;
+    gchar *extra_programs_value = NULL;
+    gchar *utilities_apps_value = NULL;
+    gchar *program_extra_value = NULL;
 
     FILE *read_file = fopen(bash_file_path, "r");
     if (read_file) {
@@ -1033,6 +1036,18 @@ void save_page6_switches_to_file(void)
                 }
                 password_root_value = g_strdup(value);
             }
+            else if (g_str_has_prefix(line, "EXTRA_PROGRAMS=")) {
+                line[strcspn(line, "\n")] = 0;
+                extra_programs_value = g_strdup(line + 15); // Guardar todo después de "EXTRA_PROGRAMS="
+            }
+            else if (g_str_has_prefix(line, "UTILITIES_APPS=")) {
+                line[strcspn(line, "\n")] = 0;
+                utilities_apps_value = g_strdup(line + 15); // Guardar todo después de "UTILITIES_APPS="
+            }
+            else if (g_str_has_prefix(line, "PROGRAM_EXTRA=")) {
+                line[strcspn(line, "\n")] = 0;
+                program_extra_value = g_strdup(line + 14); // Guardar todo después de "PROGRAM_EXTRA="
+            }
         }
         fclose(read_file);
     }
@@ -1084,18 +1099,36 @@ void save_page6_switches_to_file(void)
     // Escribir variables de página 6 (switches)
     fprintf(file, "\n# Configuración de aplicaciones - Página 6\n");
     
-    // Essential Apps Switch
+    // Essential Apps Switch - siempre escribir
     if (g_page6_data->essential_apps_switch) {
         gboolean active = adw_switch_row_get_active(g_page6_data->essential_apps_switch);
         fprintf(file, "ESSENTIAL_APPS_ENABLED=\"%s\"\n", active ? "true" : "false");
         LOG_INFO("ESSENTIAL_APPS_ENABLED guardado: %s", active ? "true" : "false");
+    } else {
+        // Inicializar por defecto si no existe
+        fprintf(file, "ESSENTIAL_APPS_ENABLED=\"true\"\n");
+        LOG_INFO("ESSENTIAL_APPS_ENABLED inicializado por defecto: true");
     }
 
-    // Utilities Switch
+    // Utilities Switch - siempre escribir
     if (g_page6_data->utilities_switch) {
         gboolean active = adw_switch_row_get_active(g_page6_data->utilities_switch);
         fprintf(file, "UTILITIES_ENABLED=\"%s\"\n", active ? "true" : "false");
         LOG_INFO("UTILITIES_ENABLED guardado: %s", active ? "true" : "false");
+    } else {
+        // Inicializar por defecto si no existe
+        fprintf(file, "UTILITIES_ENABLED=\"false\"\n");
+        LOG_INFO("UTILITIES_ENABLED inicializado por defecto: false");
+    }
+
+    // Program Extra Status - siempre escribir
+    if (program_extra_value) {
+        fprintf(file, "PROGRAM_EXTRA=%s\n", program_extra_value);
+        LOG_INFO("PROGRAM_EXTRA preservado: %s", program_extra_value);
+    } else {
+        // Inicializar por defecto si no existe
+        fprintf(file, "PROGRAM_EXTRA=\"false\"\n");
+        LOG_INFO("PROGRAM_EXTRA inicializado por defecto: false");
     }
 
     // Preservar variables de disco y partición
@@ -1160,6 +1193,22 @@ void save_page6_switches_to_file(void)
         }
     }
 
+    // Preservar programas extra
+    if (extra_programs_value) {
+        fprintf(file, "\n# Programas extra agregados por el usuario\n");
+        fprintf(file, "EXTRA_PROGRAMS=%s\n", extra_programs_value);
+        LOG_INFO("EXTRA_PROGRAMS preservado: %s", extra_programs_value);
+    }
+
+    // Preservar utilidades seleccionadas
+    if (utilities_apps_value) {
+        fprintf(file, "\n# Utilidades seleccionadas\n");
+        fprintf(file, "UTILITIES_APPS=%s\n", utilities_apps_value);
+        LOG_INFO("UTILITIES_APPS preservado: %s", utilities_apps_value);
+    }
+
+
+
     fclose(file);
 
     // Liberar memoria
@@ -1186,6 +1235,9 @@ void save_page6_switches_to_file(void)
     g_free(filesystems_enabled_value);
     g_free(compression_enabled_value);
     g_free(video_codecs_enabled_value);
+    g_free(extra_programs_value);
+    g_free(utilities_apps_value);
+    g_free(program_extra_value);
 
     LOG_INFO("Variables de página 6 guardadas exitosamente en data/variables.sh");
     LOG_INFO("=== save_page6_switches_to_file FINALIZADO ===");
