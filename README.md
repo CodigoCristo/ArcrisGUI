@@ -129,7 +129,7 @@ Creación de usuario y configuración de contraseñas del sistema.
 ### Página 5: Entorno de Escritorio
 <img src="data/img/Capturas/page5.png" alt="Configuración de Usuario" width="400">
 
-Selección de entorno de escritorio y aplicaciones esenciales.
+Selección de entorno de escritorio entre tty, DE o WM.
 
 ### Página 6: Selección de Software
 <img src="data/img/Capturas/page6.png" alt="Selección de Software" width="400">
@@ -198,7 +198,6 @@ Arcris2/
 │   ├── img/              # Imágenes y capturas
 │   │   └── Capturas/     # Capturas de pantalla
 │   └── icons/            # Iconos del sistema
-├── tests_drivers/         # Tests de hardware
 ├── dev.sh                # Script de desarrollo
 ├── meson.build           # Configuración de build
 └── README.md             # Documentación
