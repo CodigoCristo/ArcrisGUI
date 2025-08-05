@@ -16,7 +16,8 @@ export HOSTNAME="arcris"
 # La contraseña del usuario también será la contraseña de root
 export PASSWORD_ROOT="123"
 
-INSTALLATION_TYPE="DESKTOP"
+# Tipo de instalación seleccionado
+INSTALLATION_TYPE="TERMINAL"
 
 # Kernel seleccionado
 SELECTED_KERNEL="linux"
@@ -38,7 +39,3 @@ ESSENTIAL_APPS_ENABLED="false"
 UTILITIES_ENABLED="false"
 PROGRAM_EXTRA="true"
 
-
-
-# Variable DE seleccionada
-DESKTOP_ENVIRONMENT="KDE"
