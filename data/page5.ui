@@ -93,6 +93,7 @@
 
   <!-- Página de selección de DE -->
   <object class="AdwClamp" id="de_page">
+    <property name="halign">center</property>
     <property name="vexpand">true</property>
     <property name="hexpand">true</property>
     <property name="maximum-size">800</property>
@@ -174,12 +175,12 @@
             <child>
               <object class="GtkPicture" id="de_preview_picture">
                 <property name="file">/org/gtk/arcris/GNOME.png</property>
-                <property name="halign">fill</property>
+                <property name="halign">center</property>
                 <property name="valign">fill</property>
                 <property name="hexpand">true</property>
                 <property name="vexpand">true</property>
                 <property name="can-shrink">true</property>
-                <property name="content-fit">3</property>
+                <property name="content-fit">1</property>
                 <style>
                   <class name="card"/>
                 </style>
@@ -194,6 +195,7 @@
 
   <!-- Página de selección de WM -->
   <object class="AdwClamp" id="wm_page">
+    <property name="halign">center</property>
     <property name="vexpand">true</property>
     <property name="hexpand">true</property>
     <property name="maximum-size">800</property>
@@ -274,12 +276,12 @@
             <child>
               <object class="GtkPicture" id="wm_preview_picture">
                 <property name="file">/org/gtk/arcris/i3wm.png</property>
-                <property name="halign">fill</property>
+                <property name="halign">center</property>
                 <property name="valign">fill</property>
                 <property name="hexpand">true</property>
                 <property name="vexpand">true</property>
                 <property name="can-shrink">true</property>
-                <property name="content-fit">3</property>
+                <property name="content-fit">1</property>
                 <style>
                   <class name="card"/>
                 </style>

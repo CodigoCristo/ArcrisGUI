@@ -21,17 +21,46 @@ install_data('icons/hicolor/scalable/apps/org.gtk.arcris.svg',
   install_dir: get_option('datadir') / 'icons/hicolor/scalable/apps'
 )
 
-install_data('icons/hicolor/symbolic/apps/org.gtk.arcris-symbolic.svg',
-  install_dir: get_option('datadir') / 'icons/hicolor/symbolic/apps'
-)
+# Instalar iconos simbólicos (disponibles para todo el sistema)
+symbolic_icons = [
+  'org.gtk.arcris-symbolic.svg',
+  'org.gtk.arcris-clean-symbolic.svg',
+  'music-note-symbolic.svg',
+  'applications-graphics-symbolic.svg',
+  'applications-multimedia-symbolic.svg',
+  'web-browser-symbolic.svg',
+  'code-symbolic.svg',
+  'computer-symbolic.svg',
+  'harddisk-inverted-symbolic.svg',
+  'mail-unread-symbolic.svg',
+  'rich-text-symbolic.svg',
+  'org.gnome.DiskUtility-symbolic.svg',
+  'keyboard-symbolic.svg',
+  'month-symbolic.svg',
+  'view-refresh-symbolic.svg',
+  'go-next-symbolic.svg',
+  'go-previous-symbolic.svg',
+  'dialog-password-symbolic.svg',
+  'list-add-symbolic.svg',
+  'drive-removable-media-symbolic.svg',
+  'drive-harddisk-symbolic.svg',
+  'document-edit-symbolic.svg',
+  'tab-new-symbolic.svg',
+  'adw-external-link-symbolic.svg',
+  'open-menu-symbolic.svg',
+  'xbox-controller-symbolic.svg',
+  'check-plain-symbolic.svg'
+]
 
-# Instalar iconos limpios adicionales
+foreach icon : symbolic_icons
+  install_data('icons/hicolor/symbolic/apps/' + icon,
+    install_dir: get_option('datadir') / 'icons/hicolor/symbolic/apps'
+  )
+endforeach
+
+# Instalar iconos escalables adicionales
 install_data('icons/hicolor/scalable/apps/org.gtk.arcris-clean.svg',
   install_dir: get_option('datadir') / 'icons/hicolor/scalable/apps'
-)
-
-install_data('icons/hicolor/symbolic/apps/org.gtk.arcris-clean-symbolic.svg',
-  install_dir: get_option('datadir') / 'icons/hicolor/symbolic/apps'
 )
 
 # Instalar iconos de diferentes tamaños

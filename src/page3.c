@@ -604,7 +604,7 @@ void on_page3_gparted_button_clicked(GtkButton *button, gpointer user_data)
     LOG_INFO("Abriendo Gparted para disco: %s", selected_disk);
 
     // Construir comando para abrir Gparted
-    gchar *command = g_strdup_printf("pkexec gparted %s", selected_disk);
+    gchar *command = g_strdup_printf("sudo pkexec gparted %s", selected_disk);
 
     GError *error = NULL;
     gboolean success = g_spawn_command_line_async(command, &error);
