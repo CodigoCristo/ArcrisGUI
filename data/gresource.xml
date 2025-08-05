@@ -1,7 +1,5 @@
 <gresources>
-  <!-- Recursos principales de la aplicación -->
   <gresource prefix="/org/gtk/arcris">
-    <!-- Archivos de interfaz UI -->
     <file alias="window.ui" compressed="true">window.ui</file>
     <file alias="about.ui" compressed="true">about.ui</file>
     <file alias="page1.ui" compressed="true">page1.ui</file>
@@ -20,12 +18,9 @@
     <file alias="window_program_extra.ui" compressed="true">window_program_extra.ui</file>
     <file alias="window_apps.ui" compressed="true">window_apps.ui</file>
 
-    <!-- Archivos de configuración -->
-    <file alias="locale.gen">locale.gen</file>
 
-    <!-- Logotipo principal -->
+    <file alias="locale.gen">locale.gen</file>
     <file alias="logo.png">img/logo.png</file>
-    <file alias="org.gtk.arcris.png">img/org.gtk.arcris.png</file>
 
     <!-- Imágenes del carousel -->
     <file alias="carousel-image1.png">img/carousel/image1.png</file>
@@ -33,60 +28,54 @@
     <file alias="carousel-image3.png">img/carousel/image3.png</file>
     <file alias="carousel-image4.png">img/carousel/image4.png</file>
 
-    <!-- Imágenes de entornos de escritorio -->
     <file alias="XFCE4.png">img/DE/XFCE4.png</file>
     <file alias="Deepin.png">img/DE/Deepin.png</file>
     <file alias="GNOME.png">img/DE/GNOME.png</file>
     <file alias="KDE.png">img/DE/KDE.png</file>
 
-    <!-- Imágenes de gestores de ventanas -->
     <file alias="Bspwm.png">img/WM/Bspwm.png</file>
     <file alias="Qtile.png">img/WM/Qtile.png</file>
     <file alias="dwm.png">img/WM/dwm.png</file>
     <file alias="i3wm.png">img/WM/i3wm.png</file>
 
-    <!-- Iconos escalables de la aplicación -->
-    <file alias="org.gtk.arcris.svg">icons/hicolor/scalable/apps/org.gtk.arcris.svg</file>
-    <file alias="org.gtk.arcris-clean.svg">icons/hicolor/scalable/apps/org.gtk.arcris-clean.svg</file>
+    <file alias="org.gtk.arcris.png">img/org.gtk.arcris.png</file>
 
-    <!-- Iconos simbólicos principales de la aplicación -->
-    <file alias="org.gtk.arcris-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/org.gtk.arcris-symbolic.svg</file>
-    <file alias="org.gtk.arcris-clean-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/org.gtk.arcris-clean-symbolic.svg</file>
-  </gresource>
+
+    <file alias="org.gtk.arcris.svg">icons/hicolor/scalable/apps/org.gtk.arcris.svg</file>
+    <file alias="org.gtk.arcris-symbolic.svg">icons/hicolor/symbolic/apps/org.gtk.arcris-symbolic.svg</file>
+    <file alias="org.gtk.arcris-clean.svg">icons/hicolor/scalable/apps/org.gtk.arcris-clean.svg</file>
+    <file alias="org.gtk.arcris-clean-symbolic.svg">icons/hicolor/symbolic/apps/org.gtk.arcris-clean-symbolic.svg</file>
+</gresource>
 
   <!-- Iconos simbólicos personalizados para recoloreado automático -->
-  <gresource prefix="/org/gtk/arcris/icons/symbolic">
-    <!-- Iconos de aplicaciones -->
-    <file alias="apps/music-note-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/music-note-symbolic.svg</file>
-    <file alias="apps/applications-graphics-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/applications-graphics-symbolic.svg</file>
-    <file alias="apps/applications-multimedia-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/applications-multimedia-symbolic.svg</file>
-    <file alias="apps/web-browser-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/web-browser-symbolic.svg</file>
-    <file alias="apps/code-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/code-symbolic.svg</file>
-    <file alias="apps/mail-unread-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/mail-unread-symbolic.svg</file>
-    <file alias="apps/rich-text-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/rich-text-symbolic.svg</file>
+  <gresource prefix="/org/gtk/arcris/icons/symbolic/apps">
+    <file alias="music-note-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/music-note-symbolic.svg</file>
+    <file alias="applications-graphics-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/applications-graphics-symbolic.svg</file>
+    <file alias="applications-multimedia-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/applications-multimedia-symbolic.svg</file>
+    <file alias="web-browser-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/web-browser-symbolic.svg</file>
+    <file alias="code-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/code-symbolic.svg</file>
+    <file alias="computer-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/computer-symbolic.svg</file>
+    <file alias="harddisk-inverted-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/harddisk-inverted-symbolic.svg</file>
+    <file alias="mail-unread-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/mail-unread-symbolic.svg</file>
+    <file alias="rich-text-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/rich-text-symbolic.svg</file>
+    <file alias="org.gnome.DiskUtility-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/org.gnome.DiskUtility-symbolic.svg</file>
+    <file alias="keyboard-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/keyboard-symbolic.svg</file>
+    <file alias="month-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/month-symbolic.svg</file>
+    <file alias="view-refresh-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/view-refresh-symbolic.svg</file>
+    <file alias="go-next-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/go-next-symbolic.svg</file>
+    <file alias="go-previous-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/go-previous-symbolic.svg</file>
+    <file alias="dialog-password-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/dialog-password-symbolic.svg</file>
+    <file alias="list-add-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/list-add-symbolic.svg</file>
+    <file alias="drive-removable-media-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/drive-removable-media-symbolic.svg</file>
+    <file alias="drive-harddisk-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/drive-harddisk-symbolic.svg</file>
+    <file alias="document-edit-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/document-edit-symbolic.svg</file>
+    <file alias="tab-new-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/tab-new-symbolic.svg</file>
+    <file alias="adw-external-link-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/adw-external-link-symbolic.svg</file>
+    <file alias="open-menu-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/open-menu-symbolic.svg</file>
+    <file alias="xbox-controller-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/xbox-controller-symbolic.svg</file>
+    <file alias="check-plain-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/check-plain-symbolic.svg</file>
 
-    <!-- Iconos de sistema -->
-    <file alias="apps/computer-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/computer-symbolic.svg</file>
-    <file alias="apps/keyboard-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/keyboard-symbolic.svg</file>
-    <file alias="apps/dialog-password-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/dialog-password-symbolic.svg</file>
-    <file alias="apps/xbox-controller-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/xbox-controller-symbolic.svg</file>
-
-    <!-- Iconos de almacenamiento -->
-    <file alias="apps/harddisk-inverted-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/harddisk-inverted-symbolic.svg</file>
-    <file alias="apps/org.gnome.DiskUtility-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/org.gnome.DiskUtility-symbolic.svg</file>
-    <file alias="apps/drive-removable-media-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/drive-removable-media-symbolic.svg</file>
-    <file alias="apps/drive-harddisk-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/drive-harddisk-symbolic.svg</file>
-
-    <!-- Iconos de navegación y acciones -->
-    <file alias="apps/view-refresh-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/view-refresh-symbolic.svg</file>
-    <file alias="apps/go-next-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/go-next-symbolic.svg</file>
-    <file alias="apps/go-previous-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/go-previous-symbolic.svg</file>
-    <file alias="apps/list-add-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/list-add-symbolic.svg</file>
-    <file alias="apps/document-edit-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/document-edit-symbolic.svg</file>
-    <file alias="apps/tab-new-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/tab-new-symbolic.svg</file>
-    <file alias="apps/month-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/month-symbolic.svg</file>
-    <file alias="apps/adw-external-link-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/adw-external-link-symbolic.svg</file>
-    <file alias="apps/open-menu-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/open-menu-symbolic.svg</file>
-    <file alias="apps/check-plain-symbolic.svg" preprocess="xml-stripblanks">icons/hicolor/symbolic/apps/check-plain-symbolic.svg</file>
   </gresource>
+
+
 </gresources>

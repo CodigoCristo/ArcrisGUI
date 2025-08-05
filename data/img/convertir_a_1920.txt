@@ -1,2 +1,0 @@
-magick data/img/DE/Deepin.png -resize 1920x1080! data/img/DE/Deepin_1920x1080.png
-
