@@ -76,6 +76,15 @@ static void activate_cb(GtkApplication *app)
         LOG_WARNING("No se pudo obtener el tema de iconos");
     }
 
+    // Configurar tema dark adwaita por defecto
+    AdwStyleManager *style_manager = adw_style_manager_get_default();
+    if (style_manager) {
+        adw_style_manager_set_color_scheme(style_manager, ADW_COLOR_SCHEME_FORCE_DARK);
+        LOG_INFO("Tema dark adwaita configurado por defecto");
+    } else {
+        LOG_WARNING("No se pudo obtener el style manager para configurar el tema");
+    }
+
     // Cargar la interfaz principal desde el archivo UI
     GtkBuilder *builder = gtk_builder_new_from_resource(RESOURCE_PATH_WINDOW);
     if (!builder) {

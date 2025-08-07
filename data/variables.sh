@@ -38,4 +38,3 @@ DRIVER_BLUETOOTH="blueman (Graphical)"
 ESSENTIAL_APPS_ENABLED="false"
 UTILITIES_ENABLED="false"
 PROGRAM_EXTRA="true"
-
