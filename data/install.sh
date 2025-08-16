@@ -3,6 +3,14 @@
 # Importar variables de configuración
 source "$(dirname "$0")/variables.sh"
 
+# Verificar privilegios de root y ejecutar con sudo su si es necesario
+if [ "$EUID" -ne 0 ]; then
+    echo -e "\033[1;33mEste script requiere privilegios de root.\033[0m"
+    echo -e "\033[0;36mEjecutando con sudo su...\033[0m"
+    echo ""
+    exec sudo su -c "bash '$0'"
+fi
+
 # Colores
 RED='\033[0;31m'
 BOLD_RED='\033[1;31m'
@@ -65,6 +73,8 @@ echo "██║  ██║██║  ██║╚██████╗██║ 
 echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝";
 echo -e "${NC}"
 echo ""
+barra_progreso
+clear
 
 # Mostrar resumen de variables
 echo -e "${YELLOW}=== RESUMEN DE CONFIGURACIÓN ===${NC}"
@@ -89,40 +99,28 @@ echo ""
 titulo_progreso="| Cargando Variables de Configuración |"
 barra_progreso
 
-clear
 
-# Mostrar logo line de Arch Linux
-echo -e "${BLUE}"
-echo '                             -`                        '
-echo '                           .o+`                        '
-echo '                           `ooo/                       '
-echo '                          `+oooo:                      '
-echo '                         `+oooooo:                     '
-echo '                         -+oooooo+:                    '
-echo '                       `/:-:++oooo+:                   '
-echo '                      `/++++/+++++++:                  '
-echo '                     `/++++++++++++++:                 '
-echo '                    `/+++ooooooooooooo/`               '
-echo '                   ./ooosssso++osssssso+`              '
-echo '                  .oossssso-````/ossssss+`             '
-echo '                 -osssssso.      :ssssssso.            '
-echo '                :osssssss/        osssso+++.           '
-echo '               /ossssssss/        +ssssooo/-           '
-echo '             `/ossssso+/:-        -:/+osssso+-         '
-echo '            `+sso+:-`                 `.-/+oso:        '
-echo '           `++:.                           `-/+/       '
-echo '           .`                                 `/       '
-echo "                          _                  _         "
-echo "  .--.                   / \   _ __ ___ _ __(_)___     "
-echo " / _.-' .-.  .-.  .-.   / _ \ | '__/ __| '__| / __|    "
-echo " \  '-. '-'  '-'  '-'  / ___ \| | | (__| |  | \__ \    "
-echo "  '--'                /_/   \_\_|  \___|_|  |_|___/    "
-echo -e "${NC}"
+
+# Función para detectar tipo de firmware
+detect_firmware() {
+    if [ -d /sys/firmware/efi ]; then
+        echo "UEFI"
+    else
+        echo "BIOS"
+    fi
+}
+
+# Detectar tipo de firmware
+FIRMWARE_TYPE=$(detect_firmware)
+echo -e "\t\t\t| Firmware detectado: $FIRMWARE_TYPE |"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
+sleep 2
+clear
 
 # Configuración de zona horaria
 zonahoraria="$TIMEZONE"
-sudo su
+
 echo -e "\t\t\t| Configurando Zona Horaria: $zonahoraria |"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
@@ -170,41 +168,6 @@ sleep 3
 clear
 cat /etc/pacman.d/mirrorlist
 sleep 3
-clear
-
-titulo_progreso="| Instalando: Base y Base-devel |"
-barra_progreso
-pacstrap /mnt base
-pacstrap /mnt base-devel
-pacstrap /mnt reflector python3 rsync
-pacstrap /mnt nano
-pacstrap /mnt xdg-user-dirs
-clear
-
-titulo_progreso="| Actualizando mejores listas de Mirrors del sistema instalado |"
-barra_progreso
-arch-chroot /mnt /bin/bash -c "reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist"
-clear
-cat /mnt/etc/pacman.d/mirrorlist
-sleep 3
-clear
-echo ""
-
-# Función para detectar tipo de firmware
-detect_firmware() {
-    if [ -d /sys/firmware/efi ]; then
-        echo "UEFI"
-    else
-        echo "BIOS"
-    fi
-}
-
-# Detectar tipo de firmware
-FIRMWARE_TYPE=$(detect_firmware)
-echo -e "\t\t\t| Firmware detectado: $FIRMWARE_TYPE |"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
-sleep 2
 clear
 
 # Verificar modo de particionado
@@ -284,6 +247,24 @@ else
     sleep 3
     clear
 fi
+
+titulo_progreso="| Instalando: Base y Base-devel |"
+barra_progreso
+pacstrap /mnt base
+pacstrap /mnt base-devel
+pacstrap /mnt reflector python3 rsync
+pacstrap /mnt nano
+pacstrap /mnt xdg-user-dirs
+clear
+
+titulo_progreso="| Actualizando mejores listas de Mirrors del sistema instalado |"
+barra_progreso
+arch-chroot /mnt /bin/bash -c "reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist"
+clear
+cat /mnt/etc/pacman.d/mirrorlist
+sleep 3
+clear
+echo ""
 
 # Generar fstab
 echo -e "\t\t\t| Generando fstab |"
