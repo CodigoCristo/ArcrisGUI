@@ -122,7 +122,7 @@ echo ""
 
 # Configuración de zona horaria
 zonahoraria="$TIMEZONE"
-
+sudo su
 echo -e "\t\t\t| Configurando Zona Horaria: $zonahoraria |"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
