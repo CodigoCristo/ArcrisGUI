@@ -62,4 +62,15 @@ void page9_execute_exit(void);
 gboolean page9_can_restart(void);
 gboolean page9_can_exit(void);
 
+// Funciones auxiliares para verificaciones del sistema
+gboolean page9_check_critical_processes(void);
+gboolean page9_check_root_permissions(void);
+gboolean page9_check_system_state(void);
+gboolean page9_check_installation_in_progress(void);
+gboolean page9_check_installer_processes(void);
+
+// Funciones de manejo de archivos de bloqueo
+void page9_create_installation_lock(void);
+void page9_remove_installation_lock(void);
+
 #endif // PAGE9_H

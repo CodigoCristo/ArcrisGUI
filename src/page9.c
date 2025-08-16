@@ -3,13 +3,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <time.h>
+#include <gio/gio.h>
 
 // Variable global para datos de la página 9
 static Page9Data *g_page9_data = NULL;
 
 // Forward declarations for static functions
-static void on_restart_dialog_response(AdwAlertDialog *dialog, const char *response, gpointer user_data);
-static void on_exit_dialog_response(AdwAlertDialog *dialog, const char *response, gpointer user_data);
+static void on_restart_dialog_response(AdwAlertDialog *dialog, GAsyncResult *result, gpointer user_data);
+static void on_exit_dialog_response(AdwAlertDialog *dialog, GAsyncResult *result, gpointer user_data);
 
 // Función principal de inicialización de la página 9
 void page9_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *revealer)
@@ -268,8 +272,15 @@ void on_restart_button_clicked(GtkButton *button, gpointer user_data)
     adw_alert_dialog_add_response(dialog, "restart", "Reiniciar");
     adw_alert_dialog_set_response_appearance(dialog, "restart", ADW_RESPONSE_DESTRUCTIVE);
     
-    g_signal_connect(dialog, "response", G_CALLBACK(on_restart_dialog_response), NULL);
-    gtk_window_present(GTK_WINDOW(dialog));
+    // Obtener la ventana principal para mostrar el diálogo
+    GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(g_page9_data->main_content)));
+    if (parent_window) {
+        adw_alert_dialog_choose(dialog, GTK_WIDGET(parent_window), NULL, 
+                               (GAsyncReadyCallback)on_restart_dialog_response, NULL);
+    } else {
+        adw_alert_dialog_choose(dialog, NULL, NULL, 
+                               (GAsyncReadyCallback)on_restart_dialog_response, NULL);
+    }
 }
 
 // Callback del botón salir
@@ -292,8 +303,15 @@ void on_exit_button_clicked(GtkButton *button, gpointer user_data)
     adw_alert_dialog_add_response(dialog, "exit", "Salir");
     adw_alert_dialog_set_response_appearance(dialog, "exit", ADW_RESPONSE_SUGGESTED);
     
-    g_signal_connect(dialog, "response", G_CALLBACK(on_exit_dialog_response), NULL);
-    gtk_window_present(GTK_WINDOW(dialog));
+    // Obtener la ventana principal para mostrar el diálogo
+    GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(g_page9_data->main_content)));
+    if (parent_window) {
+        adw_alert_dialog_choose(dialog, GTK_WIDGET(parent_window), NULL, 
+                               (GAsyncReadyCallback)on_exit_dialog_response, NULL);
+    } else {
+        adw_alert_dialog_choose(dialog, NULL, NULL, 
+                               (GAsyncReadyCallback)on_exit_dialog_response, NULL);
+    }
 }
 
 // Función llamada cuando se muestra la página 9
@@ -333,23 +351,52 @@ void page9_execute_restart(void)
     LOG_INFO("Ejecutando reinicio del sistema...");
     
     // Sincronizar discos antes del reinicio
+    LOG_INFO("Sincronizando discos...");
     system("sync");
+    sleep(1);
     
-    // Ejecutar comando de reinicio
-    int result = system("reboot");
+    // Intentar varios métodos de reinicio
+    LOG_INFO("Intentando reinicio con systemctl...");
+    int result = system("systemctl reboot");
     
     if (result != 0) {
-        LOG_ERROR("Error ejecutando comando de reinicio");
+        LOG_WARNING("systemctl reboot falló, intentando con reboot...");
+        result = system("reboot");
         
-        // Mostrar diálogo de error usando AdwAlertDialog
-        AdwAlertDialog *error_dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new(
-            "Error al reiniciar el sistema",
-            "No se pudo ejecutar el comando de reinicio. Por favor, reinicie manualmente."
-        ));
-        
-        adw_alert_dialog_add_response(error_dialog, "ok", "Aceptar");
-        gtk_window_present(GTK_WINDOW(error_dialog));
+        if (result != 0) {
+            LOG_WARNING("reboot falló, intentando con shutdown...");
+            result = system("shutdown -r now");
+            
+            if (result != 0) {
+                LOG_ERROR("Todos los métodos de reinicio fallaron");
+                
+                // Mostrar diálogo de error usando AdwAlertDialog
+                AdwAlertDialog *error_dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new(
+                    "Error al reiniciar el sistema",
+                    "No se pudo ejecutar el comando de reinicio automático.\n\n"
+                    "Por favor:\n"
+                    "1. Cierre todas las aplicaciones\n"
+                    "2. Abra una terminal como root\n"
+                    "3. Ejecute: systemctl reboot\n\n"
+                    "O use el botón de reinicio físico del equipo."
+                ));
+                
+                adw_alert_dialog_add_response(error_dialog, "ok", "Entendido");
+                adw_alert_dialog_set_response_appearance(error_dialog, "ok", ADW_RESPONSE_SUGGESTED);
+                
+                // Obtener la ventana principal para mostrar el diálogo
+                GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(g_page9_data->main_content)));
+                if (parent_window) {
+                    adw_alert_dialog_choose(error_dialog, GTK_WIDGET(parent_window), NULL, NULL, NULL);
+                } else {
+                    adw_alert_dialog_choose(error_dialog, NULL, NULL, NULL, NULL);
+                }
+                return;
+            }
+        }
     }
+    
+    LOG_INFO("Comando de reinicio ejecutado exitosamente");
 }
 
 // Ejecutar salida del instalador
@@ -357,50 +404,282 @@ void page9_execute_exit(void)
 {
     LOG_INFO("Saliendo del instalador...");
     
-    // Limpiar recursos
-    page9_cleanup();
+    // Sincronizar discos para asegurar que todos los datos estén escritos
+    LOG_INFO("Sincronizando discos antes de salir...");
+    system("sync");
     
-    // Salir de la aplicación
-    g_application_quit(G_APPLICATION(g_application_get_default()));
+    // Limpiar recursos de la página 9
+    LOG_INFO("Limpiando recursos de página 9...");
+    
+    // Guardar cualquier configuración pendiente si es necesario
+    // (esto podría expandirse en el futuro)
+    
+    // Obtener la aplicación actual
+    GApplication *app = g_application_get_default();
+    
+    if (app) {
+        LOG_INFO("Cerrando aplicación correctamente...");
+        
+        // Limpiar recursos globales
+        page9_cleanup();
+        
+        // Intentar cerrar la aplicación de forma elegante
+        if (G_IS_APPLICATION(app)) {
+            // Usar g_timeout_add para permitir que el diálogo se cierre primero
+            g_timeout_add(100, (GSourceFunc)g_application_quit, app);
+        } else {
+            LOG_WARNING("No se pudo obtener la aplicación, forzando salida...");
+            exit(0);
+        }
+    } else {
+        LOG_WARNING("No se pudo obtener la aplicación actual, forzando salida...");
+        
+        // Limpiar recursos
+        page9_cleanup();
+        
+        // Salida forzada si no hay aplicación disponible
+        exit(0);
+    }
+    
+    LOG_INFO("Secuencia de salida iniciada");
 }
 
 // Verificar si se puede reiniciar
 gboolean page9_can_restart(void)
 {
-    // Verificar que el sistema esté en un estado válido para reiniciar
-    // Por ejemplo, que no haya procesos críticos ejecutándose
+    LOG_INFO("Verificando si se puede reiniciar el sistema...");
     
-    return TRUE; // Por ahora siempre permitir
+    // Verificar que no haya procesos críticos ejecutándose
+    if (page9_check_critical_processes()) {
+        LOG_WARNING("Hay procesos críticos ejecutándose, no se puede reiniciar");
+        return FALSE;
+    }
+    
+    // Verificar que tengamos permisos de root
+    if (!page9_check_root_permissions()) {
+        LOG_WARNING("No se tienen permisos de root para reiniciar");
+        return FALSE;
+    }
+    
+    // Verificar que estemos en un Live CD o sistema instalado
+    if (!page9_check_system_state()) {
+        LOG_WARNING("Estado del sistema no válido para reinicio");
+        return FALSE;
+    }
+    
+    LOG_INFO("Sistema listo para reiniciar");
+    return TRUE;
 }
 
 // Verificar si se puede salir
 gboolean page9_can_exit(void)
 {
-    // Verificar que no haya operaciones críticas en curso
+    LOG_INFO("Verificando si se puede salir del instalador...");
     
-    return TRUE; // Por ahora siempre permitir
+    // Verificar que no haya instalaciones en curso
+    if (page9_check_installation_in_progress()) {
+        LOG_WARNING("Hay una instalación en progreso, no se puede salir");
+        return FALSE;
+    }
+    
+    // Verificar que no haya procesos críticos del instalador
+    if (page9_check_installer_processes()) {
+        LOG_WARNING("Hay procesos críticos del instalador ejecutándose");
+        return FALSE;
+    }
+    
+    LOG_INFO("Instalador listo para salir");
+    return TRUE;
 }
 
 // Callback para respuesta del diálogo de reinicio
-static void on_restart_dialog_response(AdwAlertDialog *dialog, const char *response, gpointer user_data)
+static void on_restart_dialog_response(AdwAlertDialog *dialog, GAsyncResult *result, gpointer user_data)
 {
+    const char *response = adw_alert_dialog_choose_finish(dialog, result);
+    
     if (g_strcmp0(response, "restart") == 0) {
         LOG_INFO("Usuario confirmó reinicio del sistema");
         page9_execute_restart();
     } else {
         LOG_INFO("Usuario canceló el reinicio");
     }
-    gtk_window_destroy(GTK_WINDOW(dialog));
+}
+
+// Funciones auxiliares para verificaciones del sistema
+
+// Verificar procesos críticos del sistema
+gboolean page9_check_critical_processes(void)
+{
+    LOG_INFO("Verificando procesos críticos del sistema...");
+    
+    // Lista de procesos que no deberían estar ejecutándose durante reinicio
+    const char *critical_processes[] = {
+        "pacman",
+        "pacstrap", 
+        "mkfs",
+        "parted",
+        "gparted",
+        NULL
+    };
+    
+    for (int i = 0; critical_processes[i] != NULL; i++) {
+        char command[256];
+        snprintf(command, sizeof(command), "pgrep %s > /dev/null 2>&1", critical_processes[i]);
+        
+        if (system(command) == 0) {
+            LOG_WARNING("Proceso crítico encontrado: %s", critical_processes[i]);
+            return TRUE; // Hay procesos críticos
+        }
+    }
+    
+    LOG_INFO("No se encontraron procesos críticos");
+    return FALSE;
+}
+
+// Verificar permisos de root
+gboolean page9_check_root_permissions(void)
+{
+    LOG_INFO("Verificando permisos de root...");
+    
+    uid_t uid = getuid();
+    uid_t euid = geteuid();
+    
+    if (uid == 0 || euid == 0) {
+        LOG_INFO("Permisos de root confirmados");
+        return TRUE;
+    }
+    
+    // Verificar si podemos usar sudo
+    int result = system("sudo -n true > /dev/null 2>&1");
+    if (result == 0) {
+        LOG_INFO("Permisos sudo disponibles");
+        return TRUE;
+    }
+    
+    LOG_WARNING("No se tienen permisos de root ni sudo");
+    return FALSE;
+}
+
+// Verificar estado del sistema
+gboolean page9_check_system_state(void)
+{
+    LOG_INFO("Verificando estado del sistema...");
+    
+    // Verificar si estamos en un Live CD
+    if (access("/run/archiso", F_OK) == 0) {
+        LOG_INFO("Ejecutándose desde Live CD de Arch Linux");
+        return TRUE;
+    }
+    
+    // Verificar si el sistema está instalado
+    if (access("/etc/arch-release", F_OK) == 0) {
+        LOG_INFO("Ejecutándose en sistema Arch Linux instalado");
+        return TRUE;
+    }
+    
+    // Verificar systemd
+    if (access("/run/systemd/system", F_OK) == 0) {
+        LOG_INFO("Sistema con systemd detectado");
+        return TRUE;
+    }
+    
+    LOG_WARNING("No se pudo determinar el estado del sistema");
+    return FALSE;
+}
+
+// Verificar instalación en progreso
+gboolean page9_check_installation_in_progress(void)
+{
+    LOG_INFO("Verificando si hay instalación en progreso...");
+    
+    // Verificar si hay montajes activos en /mnt
+    FILE *mounts = fopen("/proc/mounts", "r");
+    if (mounts) {
+        char line[1024];
+        while (fgets(line, sizeof(line), mounts)) {
+            if (strstr(line, "/mnt") != NULL && strstr(line, "tmpfs") == NULL) {
+                LOG_INFO("Encontrado montaje activo en /mnt: instalación posiblemente en progreso");
+                fclose(mounts);
+                return TRUE;
+            }
+        }
+        fclose(mounts);
+    }
+    
+    // Verificar archivos temporales de instalación
+    if (access("/tmp/arcris_installation_lock", F_OK) == 0) {
+        LOG_INFO("Archivo de bloqueo de instalación encontrado");
+        return TRUE;
+    }
+    
+    LOG_INFO("No se detectó instalación en progreso");
+    return FALSE;
+}
+
+// Verificar procesos del instalador
+gboolean page9_check_installer_processes(void)
+{
+    LOG_INFO("Verificando procesos del instalador...");
+    
+    // Lista de procesos del instalador que deberían terminar antes de salir
+    const char *installer_processes[] = {
+        "install.sh",
+        "arch-chroot",
+        "chroot",
+        NULL
+    };
+    
+    for (int i = 0; installer_processes[i] != NULL; i++) {
+        char command[256];
+        snprintf(command, sizeof(command), "pgrep -f %s > /dev/null 2>&1", installer_processes[i]);
+        
+        if (system(command) == 0) {
+            LOG_WARNING("Proceso del instalador encontrado: %s", installer_processes[i]);
+            return TRUE; // Hay procesos del instalador
+        }
+    }
+    
+    LOG_INFO("No se encontraron procesos críticos del instalador");
+    return FALSE;
+}
+
+// Crear archivo de bloqueo de instalación
+void page9_create_installation_lock(void)
+{
+    LOG_INFO("Creando archivo de bloqueo de instalación...");
+    
+    FILE *lock_file = fopen("/tmp/arcris_installation_lock", "w");
+    if (lock_file) {
+        fprintf(lock_file, "ARCRIS Installation in progress\n");
+        fprintf(lock_file, "Started: %ld\n", time(NULL));
+        fclose(lock_file);
+        LOG_INFO("Archivo de bloqueo creado exitosamente");
+    } else {
+        LOG_WARNING("No se pudo crear archivo de bloqueo");
+    }
+}
+
+// Remover archivo de bloqueo de instalación
+void page9_remove_installation_lock(void)
+{
+    LOG_INFO("Removiendo archivo de bloqueo de instalación...");
+    
+    if (unlink("/tmp/arcris_installation_lock") == 0) {
+        LOG_INFO("Archivo de bloqueo removido exitosamente");
+    } else {
+        LOG_WARNING("No se pudo remover archivo de bloqueo (puede que no exista)");
+    }
 }
 
 // Callback para respuesta del diálogo de salida
-static void on_exit_dialog_response(AdwAlertDialog *dialog, const char *response, gpointer user_data)
+static void on_exit_dialog_response(AdwAlertDialog *dialog, GAsyncResult *result, gpointer user_data)
 {
+    const char *response = adw_alert_dialog_choose_finish(dialog, result);
+    
     if (g_strcmp0(response, "exit") == 0) {
         LOG_INFO("Usuario confirmó salida del instalador");
         page9_execute_exit();
     } else {
         LOG_INFO("Usuario canceló la salida");
     }
-    gtk_window_destroy(GTK_WINDOW(dialog));
 }

@@ -96,8 +96,7 @@ echo -e "  Bluetooth: $DRIVER_BLUETOOTH"
 echo ""
 
 # Barra de progreso para cargar variables (5 segundos)
-titulo_progreso="| Cargando Variables de Configuración |"
-barra_progreso
+sleep 5
 
 
 
@@ -244,12 +243,12 @@ else
     echo -e "${GREEN}| Asumiendo que las particiones ya están montadas en /mnt |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
+    lsblk -o NAME,FSTYPE,SIZE,MOUNTPOINT
     sleep 3
     clear
 fi
 
 titulo_progreso="| Instalando: Base y Base-devel |"
-barra_progreso
 pacstrap /mnt base
 pacstrap /mnt base-devel
 pacstrap /mnt reflector python3 rsync
@@ -271,6 +270,7 @@ echo -e "${GREEN}| Generando fstab |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 genfstab -U /mnt >> /mnt/etc/fstab
+cat /mnt/etc/fstab
 sleep 2
 clear
 
@@ -280,7 +280,7 @@ printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 arch-chroot /mnt /bin/bash -c "ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime"
 arch-chroot /mnt /bin/bash -c "hwclock --systohc"
-sleep 2
+sleep 3
 clear
 
 # Configuración de locale
@@ -290,7 +290,8 @@ echo ""
 echo "$LOCALE UTF-8" >> /mnt/etc/locale.gen
 arch-chroot /mnt /bin/bash -c "locale-gen"
 echo "LANG=$LOCALE" > /mnt/etc/locale.conf
-sleep 2
+cat /mnt/etc/locale.conf
+sleep 3
 clear
 
 # Configuración de teclado
@@ -299,7 +300,8 @@ printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
 echo "FONT=lat9w-16" >> /mnt/etc/vconsole.conf
-sleep 2
+cat /mnt/etc/vconsole.conf
+sleep 3
 clear
 
 # Configuración de hostname
@@ -312,7 +314,8 @@ cat > /mnt/etc/hosts << EOF
 ::1		localhost
 127.0.1.1	$HOSTNAME.localdomain	$HOSTNAME
 EOF
-sleep 2
+cat /mnt/etc/hosts
+sleep 3
 clear
 
 # Instalación de kernel y paquetes adicionales
@@ -326,14 +329,22 @@ if [ "$PARTITION_MODE" = "auto" ]; then
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         titulo_progreso="| Instalando bootloader GRUB para UEFI |"
         barra_progreso
-        arch-chroot /mnt /bin/bash -c "pacman -S grub efibootmgr --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S grub efibootmgr os-prober --noconfirm"
         arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB"
+
+        # Configurar GRUB: quitar quiet
+        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT=""/' /mnt/etc/default/grub
+
         arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
     else
         titulo_progreso="| Instalando bootloader GRUB para BIOS Legacy |"
         barra_progreso
-        arch-chroot /mnt /bin/bash -c "pacman -S grub --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S grub os-prober --noconfirm"
         arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK"
+
+        # Configurar GRUB: quitar quiet
+        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT=""/' /mnt/etc/default/grub
+
         arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
     fi
 else
@@ -381,7 +392,7 @@ fi
 # Instalación de herramientas de red
 titulo_progreso="| Instalando herramientas de red |"
 barra_progreso
-arch-chroot /mnt /bin/bash -c "pacman -S dhcpcd networkmanager --noconfirm"
+arch-chroot /mnt /bin/bash -c "pacman -S dhcp dhcpcd dhclient networkmanager --noconfirm"
 arch-chroot /mnt /bin/bash -c "systemctl enable dhcpcd"
 arch-chroot /mnt /bin/bash -c "systemctl enable NetworkManager"
 clear
@@ -394,12 +405,16 @@ echo ""
 # Habilitar multilib si es necesario
 sed -i '/\[multilib\]/,/Include/s/^#//' /mnt/etc/pacman.conf
 
+# Configurar descargas paralelas e ILoveCandy en pacman.conf
+sed -i 's/#ParallelDownloads = 5/ParallelDownloads = 5/' /mnt/etc/pacman.conf
+sed -i '/^#VerbosePkgLists/a ILoveCandy' /mnt/etc/pacman.conf
+
 # Actualizar base de datos de paquetes
 arch-chroot /mnt /bin/bash -c "pacman -Sy"
 
 # Configurar directorios de usuario
 arch-chroot /mnt /bin/bash -c "su - $USER -c 'xdg-user-dirs-update'"
-
+ls /mnt/home/$USER/
 sleep 3
 clear
 
