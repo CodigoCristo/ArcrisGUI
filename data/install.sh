@@ -112,7 +112,7 @@ detect_firmware() {
 
 # Detectar tipo de firmware
 FIRMWARE_TYPE=$(detect_firmware)
-echo -e "\t\t\t| Firmware detectado: $FIRMWARE_TYPE |"
+echo -e "${GREEN}| Firmware detectado: $FIRMWARE_TYPE |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 sleep 2
@@ -121,7 +121,7 @@ clear
 # Configuración de zona horaria
 zonahoraria="$TIMEZONE"
 
-echo -e "\t\t\t| Configurando Zona Horaria: $zonahoraria |"
+echo -e "${GREEN}| Configurando Zona Horaria: $zonahoraria |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
@@ -130,7 +130,7 @@ hwclock -w
 hwclock --hctosys
 hwclock --systohc
 
-echo -e "\t\t\t| Actualizando Hora Actual en LiveCD |"
+echo -e "${GREEN}| Actualizando Hora Actual en LiveCD |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo -e ""
 sleep 2
@@ -142,7 +142,7 @@ clear
 
 echo ""
 echo -e ""
-echo -e "\t\t\t| Actualizando lista de Keys en LiveCD |"
+echo -e "${GREEN}| Actualizando lista de Keys en LiveCD |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo -e ""
 sleep 2
@@ -152,7 +152,7 @@ clear
 
 echo ""
 echo -e ""
-echo -e "\t\t\t| Actualizando MirrorList en LiveCD |"
+echo -e "${GREEN}| Actualizando MirrorList en LiveCD |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo -e ""
 sleep 3
@@ -161,7 +161,7 @@ pacman -Sy python3 --noconfirm
 pacman -Sy rsync --noconfirm
 clear
 
-echo -e "\t\t\t| Actualizando mejores listas de Mirrors |"
+echo -e "${GREEN}| Actualizando mejores listas de Mirrors |${NC}"
 echo ""
 reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
 sleep 3
@@ -173,37 +173,37 @@ clear
 # Verificar modo de particionado
 if [ "$PARTITION_MODE" = "auto" ]; then
     # Particionado automático del disco
-    echo -e "\t\t\t| Particionando automáticamente disco: $SELECTED_DISK |"
+    echo -e "${GREEN}| Particionando automáticamente disco: $SELECTED_DISK |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
     sleep 2
 
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         # Configuración para UEFI
-        echo -e "\t\t\t| Configurando particiones para UEFI |"
+        echo -e "${GREEN}| Configurando particiones para UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
 
         # Crear tabla de particiones GPT
-        parted $SELECTED_DISK --script mklabel gpt
+        parted $SELECTED_DISK --script --align optimal mklabel gpt
 
         # Crear partición EFI (512MB)
-        parted $SELECTED_DISK --script mkpart ESP fat32 1MiB 513MiB
+        parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
         parted $SELECTED_DISK --script set 1 esp on
 
         # Crear partición root (resto del disco)
-        parted $SELECTED_DISK --script mkpart primary ext4 513MiB 100%
+        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 513MiB 100%
 
         # Formatear particiones
-        echo -e "\t\t\t| Formateando particiones UEFI |"
+        echo -e "${GREEN}| Formateando particiones UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkfs.fat -F32 ${SELECTED_DISK}1
-        mkfs.ext4 ${SELECTED_DISK}2
+        mkfs.fat -F32 -v ${SELECTED_DISK}1
+        mkfs.ext4 -F ${SELECTED_DISK}2
         sleep 2
 
         # Montar particiones
-        echo -e "\t\t\t| Montando particiones UEFI |"
+        echo -e "${GREEN}| Montando particiones UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
         mount ${SELECTED_DISK}2 /mnt
@@ -212,26 +212,26 @@ if [ "$PARTITION_MODE" = "auto" ]; then
 
     else
         # Configuración para BIOS Legacy
-        echo -e "\t\t\t| Configurando particiones para BIOS Legacy |"
+        echo -e "${GREEN}| Configurando particiones para BIOS Legacy |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
 
         # Crear tabla de particiones MBR
-        parted $SELECTED_DISK --script mklabel msdos
+        parted $SELECTED_DISK --script --align optimal mklabel msdos
 
         # Crear partición root (todo el disco)
-        parted $SELECTED_DISK --script mkpart primary ext4 1MiB 100%
+        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 100%
         parted $SELECTED_DISK --script set 1 boot on
 
         # Formatear partición
-        echo -e "\t\t\t| Formateando particiones BIOS |"
+        echo -e "${GREEN}| Formateando particiones BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkfs.ext4 ${SELECTED_DISK}1
+        mkfs.ext4 -F ${SELECTED_DISK}1
         sleep 2
 
         # Montar partición
-        echo -e "\t\t\t| Montando particiones BIOS |"
+        echo -e "${GREEN}| Montando particiones BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
         mount ${SELECTED_DISK}1 /mnt
@@ -240,8 +240,8 @@ if [ "$PARTITION_MODE" = "auto" ]; then
     sleep 2
     clear
 else
-    echo -e "\t\t\t| Modo de particionado manual detectado |"
-    echo -e "\t\t\t| Asumiendo que las particiones ya están montadas en /mnt |"
+    echo -e "${GREEN}| Modo de particionado manual detectado |${NC}"
+    echo -e "${GREEN}| Asumiendo que las particiones ya están montadas en /mnt |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
     sleep 3
@@ -267,7 +267,7 @@ clear
 echo ""
 
 # Generar fstab
-echo -e "\t\t\t| Generando fstab |"
+echo -e "${GREEN}| Generando fstab |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 genfstab -U /mnt >> /mnt/etc/fstab
@@ -275,7 +275,7 @@ sleep 2
 clear
 
 # Configuración del sistema instalado
-echo -e "\t\t\t| Configurando zona horaria: $TIMEZONE |"
+echo -e "${GREEN}| Configurando zona horaria: $TIMEZONE |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 arch-chroot /mnt /bin/bash -c "ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime"
@@ -284,7 +284,7 @@ sleep 2
 clear
 
 # Configuración de locale
-echo -e "\t\t\t| Configurando locale: $LOCALE |"
+echo -e "${GREEN}| Configurando locale: $LOCALE |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 echo "$LOCALE UTF-8" >> /mnt/etc/locale.gen
@@ -294,7 +294,7 @@ sleep 2
 clear
 
 # Configuración de teclado
-echo -e "\t\t\t| Configurando teclado: $KEYBOARD_LAYOUT |"
+echo -e "${GREEN}| Configurando teclado: $KEYBOARD_LAYOUT |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
@@ -303,7 +303,7 @@ sleep 2
 clear
 
 # Configuración de hostname
-echo -e "\t\t\t| Configurando hostname: $HOSTNAME |"
+echo -e "${GREEN}| Configurando hostname: $HOSTNAME |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 echo "$HOSTNAME" > /mnt/etc/hostname
@@ -337,7 +337,7 @@ if [ "$PARTITION_MODE" = "auto" ]; then
         arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
     fi
 else
-    echo -e "\t\t\t| Modo manual: Bootloader debe instalarse manualmente |"
+    echo -e "${GREEN}| Modo manual: Bootloader debe instalarse manualmente |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
     sleep 2
@@ -345,7 +345,7 @@ fi
 clear
 
 # Configuración de usuarios y contraseñas
-echo -e "\t\t\t| Configurando usuarios |"
+echo -e "${GREEN}| Configurando usuarios |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
@@ -387,7 +387,7 @@ arch-chroot /mnt /bin/bash -c "systemctl enable NetworkManager"
 clear
 
 # Configuración final del sistema
-echo -e "\t\t\t| Configuración final del sistema |"
+echo -e "${GREEN}| Configuración final del sistema |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
