@@ -78,14 +78,13 @@ echo ""
 
 # Configuración inicial del LiveCD
 echo -e "${GREEN}| Configurando LiveCD |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
 # Configuración de zona horaria
 timedatectl set-timezone $TIMEZONE
 hwclock -w
 hwclock --hctosys
-hwclock --systohc
+#hwclock --systohc
 
 # Configuración de locale
 echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen
@@ -259,6 +258,9 @@ partition_auto_btrfs() {
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}2 /mnt/tmp
         mount ${SELECTED_DISK}1 /mnt/boot
 
+        # Instalar herramientas específicas para BTRFS
+        pacstrap /mnt btrfs-progs
+
     else
         # Configuración para BIOS Legacy
         echo -e "${GREEN}| Configurando particiones BTRFS para BIOS Legacy |${NC}"
@@ -296,6 +298,9 @@ partition_auto_btrfs() {
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}1 /mnt/home
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}1 /mnt/var
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}1 /mnt/tmp
+
+        # Instalar herramientas específicas para BTRFS
+        pacstrap /mnt btrfs-progs
     fi
 }
 
@@ -346,6 +351,9 @@ partition_cifrado() {
         mkdir -p /mnt/boot
         mount ${SELECTED_DISK}1 /mnt/boot
 
+        # Instalar herramientas específicas para cifrado
+        pacstrap /mnt cryptsetup lvm2
+
     else
         # Configuración para BIOS Legacy con cifrado
         echo -e "${GREEN}| Configurando particiones cifradas para BIOS Legacy |${NC}"
@@ -377,6 +385,9 @@ partition_cifrado() {
         # Formatear y montar
         mkfs.ext4 /dev/vg0/root
         mount /dev/vg0/root /mnt
+
+        # Instalar herramientas específicas para cifrado
+        pacstrap /mnt cryptsetup lvm2
     fi
 }
 
@@ -448,6 +459,13 @@ case "$PARTITION_MODE" in
 esac
 
 sleep 2
+
+# Mostrar particiones montadas
+echo -e "${GREEN}| Particiones montadas |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+lsblk -o NAME,FSTYPE,SIZE,MOUNTPOINT | grep -E "(NAME|/mnt)"
+sleep 3
 clear
 
 # Instalación de paquetes principales
@@ -460,8 +478,7 @@ pacstrap /mnt base-devel
 pacstrap /mnt reflector python3 rsync
 pacstrap /mnt nano
 pacstrap /mnt xdg-user-dirs
-pacstrap /mnt cryptsetup lvm2 btrfs-progs
-pacstrap /mnt nefetch
+pacstrap /mnt fastfetch
 clear
 
 # Actualización de mirrors en el sistema instalado
@@ -762,9 +779,7 @@ clear
 # Mostrar resumen final
 echo -e "${GREEN}"
 echo "  ╔════════════════════════════════════════╗"
-echo "  ║                                        ║"
-echo "  ║    ✓ ARCRIS LINUX INSTALADO            ║"
-echo "  ║                                        ║"
+echo "  ║        ✓ ARCRIS LINUX INSTALADO        ║"
 echo "  ╚════════════════════════════════════════╝"
 echo -e "${NC}"
 
