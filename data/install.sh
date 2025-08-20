@@ -3,6 +3,8 @@
 # Importar variables de configuración
 source "$(dirname "$0")/variables.sh"
 
+
+
 # Verificar privilegios de root y ejecutar con sudo su si es necesario
 if [ "$EUID" -ne 0 ]; then
     echo -e "\033[1;33mEste script requiere privilegios de root.\033[0m"
@@ -73,32 +75,55 @@ echo "██║  ██║██║  ██║╚██████╗██║ 
 echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝";
 echo -e "${NC}"
 echo ""
-barra_progreso
+
+# Configuración inicial del LiveCD
+echo -e "${GREEN}| Configurando LiveCD |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+# Configuración de zona horaria
+timedatectl set-timezone $TIMEZONE
+hwclock -w
+hwclock --hctosys
+hwclock --systohc
+
+# Configuración de locale
+echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen
+locale-gen
+export LANG=$LOCALE.UTF-8
+
+sleep 2
+timedatectl status
+echo ""
+date +' %A, %B %d, %Y - %r'
+sleep 5
 clear
 
-# Mostrar resumen de variables
-echo -e "${YELLOW}=== RESUMEN DE CONFIGURACIÓN ===${NC}"
+# Actualización de keys
+echo -e "${GREEN}| Actualizando lista de Keys en LiveCD |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
-echo -e "${GREEN}Usuario:${NC} $USER"
-echo -e "${GREEN}Hostname:${NC} $HOSTNAME"
-echo -e "${GREEN}Zona Horaria:${NC} $TIMEZONE"
-echo -e "${GREEN}Teclado:${NC} $KEYBOARD_LAYOUT"
-echo -e "${GREEN}Locale:${NC} $LOCALE"
-echo -e "${GREEN}Disco Seleccionado:${NC} $SELECTED_DISK"
-echo -e "${GREEN}Kernel:${NC} $SELECTED_KERNEL"
-echo -e "${GREEN}Tipo de Instalación:${NC} $INSTALLATION_TYPE"
+pacman -Sy archlinux-keyring --noconfirm
+sleep 2
+clear
+
+# Instalación de herramientas necesarias
+sleep 3
+pacman -Sy reflector --noconfirm
+pacman -Sy python3 --noconfirm
+pacman -Sy rsync --noconfirm
+clear
+
+# Actualización de mirrorlist
+echo -e "${GREEN}| Actualizando mejores listas de Mirrors |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
-echo -e "${BLUE}Drivers configurados:${NC}"
-echo -e "  Video: $DRIVER_VIDEO"
-echo -e "  Audio: $DRIVER_AUDIO"
-echo -e "  WiFi: $DRIVER_WIFI"
-echo -e "  Bluetooth: $DRIVER_BLUETOOTH"
-echo ""
-
-# Barra de progreso para cargar variables (5 segundos)
-sleep 5
-
-
+reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+sleep 3
+clear
+cat /etc/pacman.d/mirrorlist
+sleep 3
+clear
 
 # Función para detectar tipo de firmware
 detect_firmware() {
@@ -117,62 +142,9 @@ echo ""
 sleep 2
 clear
 
-# Configuración de zona horaria
-zonahoraria="$TIMEZONE"
-
-echo -e "${GREEN}| Configurando Zona Horaria: $zonahoraria |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
-
-timedatectl set-timezone $zonahoraria
-hwclock -w
-hwclock --hctosys
-hwclock --systohc
-
-echo -e "${GREEN}| Actualizando Hora Actual en LiveCD |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo -e ""
-sleep 2
-timedatectl status
-echo ""
-date +' %A, %B %d, %Y - %r'
-sleep 5
-clear
-
-echo ""
-echo -e ""
-echo -e "${GREEN}| Actualizando lista de Keys en LiveCD |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo -e ""
-sleep 2
-pacman -Sy archlinux-keyring --noconfirm
-sleep 2
-clear
-
-echo ""
-echo -e ""
-echo -e "${GREEN}| Actualizando MirrorList en LiveCD |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo -e ""
-sleep 3
-pacman -Sy reflector --noconfirm
-pacman -Sy python3 --noconfirm
-pacman -Sy rsync --noconfirm
-clear
-
-echo -e "${GREEN}| Actualizando mejores listas de Mirrors |${NC}"
-echo ""
-reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
-sleep 3
-clear
-cat /etc/pacman.d/mirrorlist
-sleep 3
-clear
-
-# Verificar modo de particionado
-if [ "$PARTITION_MODE" = "auto" ]; then
-    # Particionado automático del disco
-    echo -e "${GREEN}| Particionando automáticamente disco: $SELECTED_DISK |${NC}"
+# Función para particionado automático ext4
+partition_auto() {
+    echo -e "${GREEN}| Particionando automáticamente disco: $SELECTED_DISK (EXT4) |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
     sleep 2
@@ -235,124 +207,428 @@ if [ "$PARTITION_MODE" = "auto" ]; then
         echo ""
         mount ${SELECTED_DISK}1 /mnt
     fi
+}
 
-    sleep 2
-    clear
-else
-    echo -e "${GREEN}| Modo de particionado manual detectado |${NC}"
-    echo -e "${GREEN}| Asumiendo que las particiones ya están montadas en /mnt |${NC}"
+# Función para particionado automático btrfs
+partition_auto_btrfs() {
+    echo -e "${GREEN}| Particionando automáticamente disco: $SELECTED_DISK (BTRFS) |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
+    sleep 2
+
+    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        # Configuración para UEFI
+        echo -e "${GREEN}| Configurando particiones BTRFS para UEFI |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+
+        # Crear tabla de particiones GPT
+        parted $SELECTED_DISK --script --align optimal mklabel gpt
+
+        # Crear partición EFI (512MB)
+        parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
+        parted $SELECTED_DISK --script set 1 esp on
+
+        # Crear partición root (resto del disco)
+        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 513MiB 100%
+
+        # Formatear particiones
+        echo -e "${GREEN}| Formateando particiones BTRFS UEFI |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+        mkfs.fat -F32 -v ${SELECTED_DISK}1
+        mkfs.btrfs -f ${SELECTED_DISK}2
+        sleep 2
+
+        # Montar y crear subvolúmenes BTRFS
+        echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+        mount ${SELECTED_DISK}2 /mnt
+        btrfs subvolume create /mnt/@
+        btrfs subvolume create /mnt/@home
+        btrfs subvolume create /mnt/@var
+        btrfs subvolume create /mnt/@tmp
+        umount /mnt
+
+        # Montar subvolúmenes
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}2 /mnt
+        mkdir -p /mnt/{boot,home,var,tmp}
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}2 /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}2 /mnt/var
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}2 /mnt/tmp
+        mount ${SELECTED_DISK}1 /mnt/boot
+
+    else
+        # Configuración para BIOS Legacy
+        echo -e "${GREEN}| Configurando particiones BTRFS para BIOS Legacy |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+
+        # Crear tabla de particiones MBR
+        parted $SELECTED_DISK --script --align optimal mklabel msdos
+
+        # Crear partición root (todo el disco)
+        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 1MiB 100%
+        parted $SELECTED_DISK --script set 1 boot on
+
+        # Formatear partición
+        echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+        mkfs.btrfs -f ${SELECTED_DISK}1
+        sleep 2
+
+        # Montar y crear subvolúmenes BTRFS
+        echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+        mount ${SELECTED_DISK}1 /mnt
+        btrfs subvolume create /mnt/@
+        btrfs subvolume create /mnt/@home
+        btrfs subvolume create /mnt/@var
+        btrfs subvolume create /mnt/@tmp
+        umount /mnt
+
+        # Montar subvolúmenes
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}1 /mnt
+        mkdir -p /mnt/{home,var,tmp}
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}1 /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}1 /mnt/var
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}1 /mnt/tmp
+    fi
+}
+
+# Función para particionado con cifrado LUKS
+partition_cifrado() {
+    echo -e "${GREEN}| Particionando disco con cifrado LUKS: $SELECTED_DISK |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+    sleep 2
+
+    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        # Configuración para UEFI con cifrado
+        echo -e "${GREEN}| Configurando particiones cifradas para UEFI |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+
+        # Crear tabla de particiones GPT
+        parted $SELECTED_DISK --script --align optimal mklabel gpt
+
+        # Crear partición EFI (512MB)
+        parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
+        parted $SELECTED_DISK --script set 1 esp on
+
+        # Crear partición cifrada (resto del disco)
+        parted $SELECTED_DISK --script --align optimal mkpart primary 513MiB 100%
+
+        # Formatear partición EFI
+        mkfs.fat -F32 -v ${SELECTED_DISK}1
+
+        # Configurar LUKS
+        echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptroot -
+
+        # Configurar LVM
+        echo -e "${GREEN}| Configurando LVM |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+        pvcreate /dev/mapper/cryptroot
+        vgcreate vg0 /dev/mapper/cryptroot
+        lvcreate -l 100%FREE vg0 -n root
+
+        # Formatear y montar
+        mkfs.ext4 /dev/vg0/root
+        mount /dev/vg0/root /mnt
+        mkdir -p /mnt/boot
+        mount ${SELECTED_DISK}1 /mnt/boot
+
+    else
+        # Configuración para BIOS Legacy con cifrado
+        echo -e "${GREEN}| Configurando particiones cifradas para BIOS Legacy |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+
+        # Crear tabla de particiones MBR
+        parted $SELECTED_DISK --script --align optimal mklabel msdos
+
+        # Crear partición cifrada (todo el disco)
+        parted $SELECTED_DISK --script --align optimal mkpart primary 1MiB 100%
+        parted $SELECTED_DISK --script set 1 boot on
+
+        # Configurar LUKS
+        echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}1 -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}1 cryptroot -
+
+        # Configurar LVM
+        echo -e "${GREEN}| Configurando LVM |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+        pvcreate /dev/mapper/cryptroot
+        vgcreate vg0 /dev/mapper/cryptroot
+        lvcreate -l 100%FREE vg0 -n root
+
+        # Formatear y montar
+        mkfs.ext4 /dev/vg0/root
+        mount /dev/vg0/root /mnt
+    fi
+}
+
+# Función para particionado manual
+partition_manual() {
+    echo -e "${GREEN}| Particionado manual detectado |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    # Procesar array de particiones
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+
+        echo -e "${GREEN}| Procesando: $device -> $format -> $mountpoint |${NC}"
+
+        # Formatear según el tipo especificado
+        case $format in
+            "mkfs.fat32")
+                mkfs.fat -F32 -v $device
+                ;;
+            "mkfs.ext4")
+                mkfs.ext4 -F $device
+                ;;
+            "mkfs.btrfs")
+                mkfs.btrfs -f $device
+                ;;
+            "mkswap")
+                mkswap $device
+                swapon $device
+                continue
+                ;;
+            *)
+                echo -e "${RED}| Formato no reconocido: $format |${NC}"
+                continue
+                ;;
+        esac
+
+        # Montar en el punto especificado
+        if [ "$mountpoint" = "/" ]; then
+            mount $device /mnt
+        else
+            mkdir -p /mnt$mountpoint
+            mount $device /mnt$mountpoint
+        fi
+    done
+
     lsblk -o NAME,FSTYPE,SIZE,MOUNTPOINT
     sleep 3
-    clear
-fi
+}
 
-titulo_progreso="| Instalando: Base y Base-devel |"
+# Ejecutar particionado según el modo seleccionado
+case "$PARTITION_MODE" in
+    "auto")
+        partition_auto
+        ;;
+    "auto_btrfs")
+        partition_auto_btrfs
+        ;;
+    "cifrado")
+        partition_cifrado
+        ;;
+    "manual")
+        partition_manual
+        ;;
+    *)
+        echo -e "${RED}| Modo de particionado no válido: $PARTITION_MODE |${NC}"
+        exit 1
+        ;;
+esac
+
+sleep 2
+clear
+
+# Instalación de paquetes principales
+echo -e "${GREEN}| Instalando paquetes principales de la distribución |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
 pacstrap /mnt base
 pacstrap /mnt base-devel
 pacstrap /mnt reflector python3 rsync
 pacstrap /mnt nano
 pacstrap /mnt xdg-user-dirs
+pacstrap /mnt cryptsetup lvm2 btrfs-progs
 clear
 
-titulo_progreso="| Actualizando mejores listas de Mirrors del sistema instalado |"
-barra_progreso
+# Actualización de mirrors en el sistema instalado
 arch-chroot /mnt /bin/bash -c "reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist"
 clear
 cat /mnt/etc/pacman.d/mirrorlist
 sleep 3
 clear
-echo ""
+
+# Actualización del sistema instalado
+arch-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+cp data/config/pacman.conf /mnt/etc/pacman.conf
+arch-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+arch-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+sleep 5
 
 # Generar fstab
-echo -e "${GREEN}| Generando fstab |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+genfstab -U /mnt > /mnt/etc/fstab
 echo ""
-genfstab -U /mnt >> /mnt/etc/fstab
-cat /mnt/etc/fstab
-sleep 2
-clear
-
-# Configuración del sistema instalado
-echo -e "${GREEN}| Configurando zona horaria: $TIMEZONE |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
-arch-chroot /mnt /bin/bash -c "ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime"
-arch-chroot /mnt /bin/bash -c "hwclock --systohc"
+arch-chroot /mnt /bin/bash -c "cat /etc/fstab"
 sleep 3
 clear
 
-# Configuración de locale
-echo -e "${GREEN}| Configurando locale: $LOCALE |${NC}"
+# Configuración del sistema
+echo -e "${GREEN}| Configurando sistema base |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
+
+# Configuración de zona horaria
+arch-chroot /mnt /bin/bash -c "ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime"
+arch-chroot /mnt /bin/bash -c "hwclock --systohc"
+
+# Configuración de locale
 echo "$LOCALE UTF-8" >> /mnt/etc/locale.gen
 arch-chroot /mnt /bin/bash -c "locale-gen"
 echo "LANG=$LOCALE" > /mnt/etc/locale.conf
-cat /mnt/etc/locale.conf
-sleep 3
-clear
 
 # Configuración de teclado
-echo -e "${GREEN}| Configurando teclado: $KEYBOARD_LAYOUT |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
 echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
 echo "FONT=lat9w-16" >> /mnt/etc/vconsole.conf
-cat /mnt/etc/vconsole.conf
-sleep 3
-clear
 
 # Configuración de hostname
-echo -e "${GREEN}| Configurando hostname: $HOSTNAME |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
 echo "$HOSTNAME" > /mnt/etc/hostname
 cat > /mnt/etc/hosts << EOF
 127.0.0.1	localhost
 ::1		localhost
 127.0.1.1	$HOSTNAME.localdomain	$HOSTNAME
 EOF
-cat /mnt/etc/hosts
+
 sleep 3
 clear
 
-# Instalación de kernel y paquetes adicionales
-titulo_progreso="| Instalando kernel: $SELECTED_KERNEL |"
-barra_progreso
-arch-chroot /mnt /bin/bash -c "pacman -S $SELECTED_KERNEL linux-firmware --noconfirm"
+# Instalación del kernel seleccionado
+echo -e "${GREEN}| Instalando kernel: $SELECTED_KERNEL |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+case "$SELECTED_KERNEL" in
+    "linux")
+        arch-chroot /mnt /bin/bash -c "pacman -S linux linux-firmware --noconfirm"
+        ;;
+    "linux-hardened")
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-hardened linux-firmware --noconfirm"
+        ;;
+    "linux-lts")
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-lts linux-firmware --noconfirm"
+        ;;
+    "linux-rt-lts")
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-rt-lts linux-firmware --noconfirm"
+        ;;
+    "linux-zen")
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-zen linux-firmware --noconfirm"
+        ;;
+    *)
+        arch-chroot /mnt /bin/bash -c "pacman -S linux linux-firmware --noconfirm"
+        ;;
+esac
+
 clear
 
-# Instalación de bootloader según tipo de firmware (solo en modo automático)
-if [ "$PARTITION_MODE" = "auto" ]; then
-    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        titulo_progreso="| Instalando bootloader GRUB para UEFI |"
-        barra_progreso
-        arch-chroot /mnt /bin/bash -c "pacman -S grub efibootmgr os-prober --noconfirm"
-        arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB"
+# Instalación de drivers de video
+echo -e "${GREEN}| Instalando drivers de video: $DRIVER_VIDEO |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
 
-        # Configurar GRUB: quitar quiet
-        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT=""/' /mnt/etc/default/grub
+case "$DRIVER_VIDEO" in
+    "Open Source")
+        arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa mesa --noconfirm"
+        ;;
+    "Nvidia Private")
+        arch-chroot /mnt /bin/bash -c "pacman -S nvidia nvidia-utils --noconfirm"
+        ;;
+    "AMD Private")
+        arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu mesa --noconfirm"
+        ;;
+    "Intel Private")
+        arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-intel mesa --noconfirm"
+        ;;
+    "Máquina Virtual")
+        arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vmware mesa --noconfirm"
+        ;;
+esac
 
-        arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
-    else
-        titulo_progreso="| Instalando bootloader GRUB para BIOS Legacy |"
-        barra_progreso
-        arch-chroot /mnt /bin/bash -c "pacman -S grub os-prober --noconfirm"
-        arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK"
+clear
 
-        # Configurar GRUB: quitar quiet
-        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT=""/' /mnt/etc/default/grub
+# Instalación de drivers de audio
+echo -e "${GREEN}| Instalando drivers de audio: $DRIVER_AUDIO |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
 
-        arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
-    fi
-else
-    echo -e "${GREEN}| Modo manual: Bootloader debe instalarse manualmente |${NC}"
-    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-    echo ""
-    sleep 2
-fi
+case "$DRIVER_AUDIO" in
+    "Alsa Audio")
+        arch-chroot /mnt /bin/bash -c "pacman -S alsa-utils alsa-plugins --noconfirm"
+        ;;
+    "pipewire")
+        arch-chroot /mnt /bin/bash -c "pacman -S pipewire pipewire-pulse pipewire-alsa --noconfirm"
+        ;;
+    "pulseaudio")
+        arch-chroot /mnt /bin/bash -c "pacman -S pulseaudio pulseaudio-alsa pavucontrol --noconfirm"
+        ;;
+    "Jack2")
+        arch-chroot /mnt /bin/bash -c "pacman -S jack2 --noconfirm"
+        ;;
+esac
+
+clear
+
+# Instalación de drivers de WiFi
+echo -e "${GREEN}| Instalando drivers de WiFi: $DRIVER_WIFI |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+case "$DRIVER_WIFI" in
+    "Ninguno")
+        echo "Sin drivers de WiFi"
+        ;;
+    "Open Source")
+        arch-chroot /mnt /bin/bash -c "pacman -S networkmanager wpa_supplicant --noconfirm"
+        ;;
+    "broadcom-wl")
+        arch-chroot /mnt /bin/bash -c "pacman -S broadcom-wl networkmanager --noconfirm"
+        ;;
+    "Realtek")
+        arch-chroot /mnt /bin/bash -c "pacman -S rtl8821cu-morrownr-dkms-git networkmanager --noconfirm"
+        ;;
+esac
+
+clear
+
+# Instalación de drivers de Bluetooth
+echo -e "${GREEN}| Instalando drivers de Bluetooth: $DRIVER_BLUETOOTH |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+case "$DRIVER_BLUETOOTH" in
+    "Ninguno")
+        echo "Sin soporte Bluetooth"
+        ;;
+    "bluetoothctl (terminal)")
+        arch-chroot /mnt /bin/bash -c "pacman -S bluez bluez-utils --noconfirm"
+        arch-chroot /mnt /bin/bash -c "systemctl enable bluetooth"
+        ;;
+    "blueman (Graphical)")
+        arch-chroot /mnt /bin/bash -c "pacman -S bluez bluez-utils blueman --noconfirm"
+        arch-chroot /mnt /bin/bash -c "systemctl enable bluetooth"
+        ;;
+esac
+
 clear
 
 # Configuración de usuarios y contraseñas
@@ -374,27 +650,72 @@ echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
 sleep 2
 clear
 
-# Instalación de drivers según configuración
-if [ "$DRIVER_AUDIO" = "Alsa Audio" ]; then
-    titulo_progreso="| Instalando drivers de audio ALSA |"
-    barra_progreso
-    arch-chroot /mnt /bin/bash -c "pacman -S alsa-utils alsa-plugins --noconfirm"
-    clear
-fi
+# Instalación de bootloader
+if [ "$PARTITION_MODE" != "manual" ]; then
+    echo -e "${GREEN}| Instalando bootloader |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
 
-if [ "$DRIVER_VIDEO" = "Open Source" ]; then
-    titulo_progreso="| Instalando drivers de video Open Source |"
-    barra_progreso
-    arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa mesa --noconfirm"
-    clear
+    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        arch-chroot /mnt /bin/bash -c "pacman -S grub efibootmgr --noconfirm"
+        arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB"
+
+        # Configuración especial para cifrado
+        if [ "$PARTITION_MODE" = "cifrado" ]; then
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="cryptdevice='${SELECTED_DISK}'2:cryptroot root=\/dev\/vg0\/root loglevel=3 quiet"/' /mnt/etc/default/grub
+            echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
+        else
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' /mnt/etc/default/grub
+        fi
+
+        arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
+    else
+        arch-chroot /mnt /bin/bash -c "pacman -S grub --noconfirm"
+        arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK"
+
+        # Configuración especial para cifrado
+        if [ "$PARTITION_MODE" = "cifrado" ]; then
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="cryptdevice='${SELECTED_DISK}'1:cryptroot root=\/dev\/vg0\/root loglevel=3 quiet"/' /mnt/etc/default/grub
+            echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
+        else
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' /mnt/etc/default/grub
+        fi
+
+        arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
+    fi
+else
+    echo -e "${GREEN}| Modo manual: Bootloader debe instalarse manualmente |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+    sleep 2
 fi
+clear
 
 # Instalación de herramientas de red
-titulo_progreso="| Instalando herramientas de red |"
-barra_progreso
-arch-chroot /mnt /bin/bash -c "pacman -S dhcp dhcpcd dhclient networkmanager --noconfirm"
-arch-chroot /mnt /bin/bash -c "systemctl enable dhcpcd"
+echo -e "${GREEN}| Instalando herramientas de red |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+arch-chroot /mnt /bin/bash -c "pacman -S dhcp dhcpcd dhclient networkmanager wpa_supplicant --noconfirm"
+# Deshabilitar dhcpcd para evitar conflictos con NetworkManager
+arch-chroot /mnt /bin/bash -c "systemctl disable dhcpcd"
 arch-chroot /mnt /bin/bash -c "systemctl enable NetworkManager"
+clear
+
+# Copiado de archivos de configuración
+echo -e "${GREEN}| Copiando archivos de configuración |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+cp data/config/bashrc /mnt/home/$USER/.bashrc
+cp data/config/bashrc /mnt/home/$USER/.bashrc
+cp data/config/bashrc-root /mnt/root/.bashrc
+cp data/config/zshrc /mnt/home/$USER/.zshrc
+
+# Configurar permisos de archivos de usuario
+arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.bashrc"
+arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.zshrc"
+
+sleep 2
 clear
 
 # Configuración final del sistema
@@ -402,40 +723,46 @@ echo -e "${GREEN}| Configuración final del sistema |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
-# Habilitar multilib si es necesario
-sed -i '/\[multilib\]/,/Include/s/^#//' /mnt/etc/pacman.conf
+# Configurar directorios de usuario
+arch-chroot /mnt /bin/bash -c "su - $USER -c 'xdg-user-dirs-update'"
 
-# Configurar descargas paralelas e ILoveCandy en pacman.conf
-sed -i 's/#ParallelDownloads = 5/ParallelDownloads = 5/' /mnt/etc/pacman.conf
-sed -i '/^#VerbosePkgLists/a ILoveCandy' /mnt/etc/pacman.conf
+# Configuración especial para cifrado
+if [ "$PARTITION_MODE" = "cifrado" ]; then
+    echo -e "${GREEN}| Configurando mkinitcpio para cifrado |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    # Instalar paquetes adicionales para cifrado
+    arch-chroot /mnt /bin/bash -c "pacman -S cryptsetup lvm2 --noconfirm"
+
+    # Configurar mkinitcpio para cifrado con hooks en orden correcto
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+
+    # Regenerar initramfs
+    arch-chroot /mnt /bin/bash -c "mkinitcpio -P"
+
+    # Configurar crypttab si es necesario
+    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        echo "cryptroot UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2) none luks" >> /mnt/etc/crypttab
+    else
+        echo "cryptroot UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) none luks" >> /mnt/etc/crypttab
+    fi
+
+    sleep 2
+fi
 
 # Actualizar base de datos de paquetes
 arch-chroot /mnt /bin/bash -c "pacman -Sy"
 
-# Configurar directorios de usuario
-arch-chroot /mnt /bin/bash -c "su - $USER -c 'xdg-user-dirs-update'"
 ls /mnt/home/$USER/
-sleep 3
+sleep 5
 clear
 
 # Mostrar resumen final
 echo -e "${GREEN}"
 echo "  ╔════════════════════════════════════════╗"
 echo "  ║                                        ║"
-echo "  ║    ✓ ARCH LINUX INSTALADO              ║"
-echo "  ║                                        ║"
-echo "  ║    Configuración completada:           ║"
-echo "  ║    • Usuario: $USER                   ║"
-echo "  ║    • Hostname: $HOSTNAME              ║"
-echo "  ║    • Zona horaria: $TIMEZONE          ║"
-echo "  ║    • Locale: $LOCALE                  ║"
-echo "  ║    • Teclado: $KEYBOARD_LAYOUT        ║"
-echo "  ║    • Disco: $SELECTED_DISK            ║"
-echo "  ║    • Kernel: $SELECTED_KERNEL         ║"
-echo "  ║    • Firmware: $FIRMWARE_TYPE         ║"
-echo "  ║    • Particionado: $PARTITION_MODE    ║"
-echo "  ║                                        ║"
-echo "  ║    El sistema está listo para usar     ║"
+echo "  ║    ✓ ARCRIS LINUX INSTALADO            ║"
 echo "  ║                                        ║"
 echo "  ╚════════════════════════════════════════╝"
 echo -e "${NC}"
@@ -444,6 +771,9 @@ echo ""
 echo -e "${YELLOW}IMPORTANTE:${NC}"
 echo -e "${CYAN}• Reinicia el sistema y retira el medio de instalación${NC}"
 echo -e "${CYAN}• El sistema iniciará con GRUB${NC}"
+if [ "$PARTITION_MODE" = "cifrado" ]; then
+    echo -e "${CYAN}• Se solicitará la contraseña de cifrado al iniciar${NC}"
+fi
 echo -e "${CYAN}• Puedes iniciar sesión con:${NC}"
 echo -e "  Usuario: ${GREEN}$USER${NC}"
 echo -e "  Contraseña: ${GREEN}$PASSWORD_USER${NC}"
