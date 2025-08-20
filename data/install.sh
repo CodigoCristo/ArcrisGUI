@@ -461,6 +461,7 @@ pacstrap /mnt reflector python3 rsync
 pacstrap /mnt nano
 pacstrap /mnt xdg-user-dirs
 pacstrap /mnt cryptsetup lvm2 btrfs-progs
+pacstrap /mnt nefetch
 clear
 
 # Actualización de mirrors en el sistema instalado
@@ -472,7 +473,7 @@ clear
 
 # Actualización del sistema instalado
 arch-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
-cp data/config/pacman.conf /mnt/etc/pacman.conf
+cp /usr/share/arcrisgui/data/config/pacman.conf /mnt/etc/pacman.conf
 arch-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
 arch-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
 sleep 5
@@ -706,10 +707,10 @@ echo -e "${GREEN}| Copiando archivos de configuración |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
-cp data/config/bashrc /mnt/home/$USER/.bashrc
-cp data/config/bashrc /mnt/home/$USER/.bashrc
-cp data/config/bashrc-root /mnt/root/.bashrc
-cp data/config/zshrc /mnt/home/$USER/.zshrc
+cp /usr/share/arcrisgui/data/config/bashrc /mnt/home/$USER/.bashrc
+cp /usr/share/arcrisgui/data/config/bashrc /mnt/home/$USER/.bashrc
+cp /usr/share/arcrisgui/data/config/bashrc-root /mnt/root/.bashrc
+cp /usr/share/arcrisgui/data/config/zshrc /mnt/home/$USER/.zshrc
 
 # Configurar permisos de archivos de usuario
 arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.bashrc"
