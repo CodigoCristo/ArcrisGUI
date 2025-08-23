@@ -71,7 +71,7 @@ echo " █████╗ ██████╗  ██████╗███�
 echo "██╔══██╗██╔══██╗██╔════╝██╔══██╗██║██╔════╝";
 echo "███████║██████╔╝██║     ██████╔╝██║███████╗";
 echo "██╔══██║██╔══██╗██║     ██╔══██╗██║╚════██║";
-echo "█CRISTO VIVE4█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
+echo "█CRISTO VIVE5█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
 echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝";
 echo -e "${NC}"
 echo ""
@@ -399,15 +399,8 @@ partition_cifrado() {
         sleep 2
         sync
 
-        echo -e "${CYAN}Creando directorios de montaje...${NC}"
-        mkdir -p /mnt/boot/efi
+        echo -e "${CYAN}Creando directorio de montaje boot...${NC}"
         mkdir -p /mnt/boot
-
-        echo -e "${CYAN}Montando partición EFI...${NC}"
-        if ! mount ${SELECTED_DISK}1 /mnt/boot/efi; then
-            echo -e "${RED}ERROR: Falló el montaje de la partición EFI${NC}"
-            exit 1
-        fi
 
         echo -e "${CYAN}Montando partición boot...${NC}"
         if ! mount ${SELECTED_DISK}2 /mnt/boot; then
@@ -415,13 +408,22 @@ partition_cifrado() {
             exit 1
         fi
 
-        # Verificar que los montajes sean exitosos
-        if ! mountpoint -q /mnt/boot/efi; then
-            echo -e "${RED}ERROR: /mnt/boot/efi no está montado correctamente${NC}"
+        echo -e "${CYAN}Creando directorio EFI dentro de boot...${NC}"
+        mkdir -p /mnt/boot/efi
+
+        echo -e "${CYAN}Montando partición EFI...${NC}"
+        if ! mount ${SELECTED_DISK}1 /mnt/boot/efi; then
+            echo -e "${RED}ERROR: Falló el montaje de la partición EFI${NC}"
             exit 1
         fi
+
+        # Verificar que los montajes sean exitosos (en orden correcto)
         if ! mountpoint -q /mnt/boot; then
             echo -e "${RED}ERROR: /mnt/boot no está montado correctamente${NC}"
+            exit 1
+        fi
+        if ! mountpoint -q /mnt/boot/efi; then
+            echo -e "${RED}ERROR: /mnt/boot/efi no está montado correctamente${NC}"
             exit 1
         fi
 
@@ -917,8 +919,10 @@ if [ "$PARTITION_MODE" != "manual" ]; then
         if ! mountpoint -q /mnt/boot/efi; then
             echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot/efi${NC}"
             echo -e "${YELLOW}Información de debug:${NC}"
+            echo "- Contenido de /mnt/boot:"
+            ls -la /mnt/boot/ 2>/dev/null || echo "  Directorio /mnt/boot no accesible"
             echo "- Contenido de /mnt/boot/efi:"
-            ls -la /mnt/boot/efi/ 2>/dev/null || echo "  Directorio no accesible"
+            ls -la /mnt/boot/efi/ 2>/dev/null || echo "  Directorio /mnt/boot/efi no accesible"
             echo "- Montajes actuales:"
             mount | grep "/mnt"
             echo "- Particiones disponibles:"
@@ -993,9 +997,13 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             echo -e "${YELLOW}Log de grub-install:${NC}"
             cat /tmp/grub-install.log
             echo -e "${YELLOW}Información adicional:${NC}"
+            echo "- Estado de /boot:"
+            ls -la /mnt/boot/
             echo "- Estado de /boot/efi:"
             ls -la /mnt/boot/efi/
-            echo "- Espacio disponible:"
+            echo "- Espacio disponible en /boot:"
+            df -h /mnt/boot
+            echo "- Espacio disponible en /boot/efi:"
             df -h /mnt/boot/efi
             exit 1
         fi
