@@ -161,24 +161,29 @@ partition_auto() {
         parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
         parted $SELECTED_DISK --script set 1 esp on
 
+        # Crear partición swap (8GB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 513MiB 8705MiB
+
         # Crear partición root (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 513MiB 100%
+        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 8705MiB 100%
 
         # Formatear particiones
         echo -e "${GREEN}| Formateando particiones UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
         mkfs.fat -F32 -v ${SELECTED_DISK}1
-        mkfs.ext4 -F ${SELECTED_DISK}2
+        mkswap ${SELECTED_DISK}2
+        mkfs.ext4 -F ${SELECTED_DISK}3
         sleep 2
 
         # Montar particiones
         echo -e "${GREEN}| Montando particiones UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount ${SELECTED_DISK}2 /mnt
-        mkdir -p /mnt/boot
-        mount ${SELECTED_DISK}1 /mnt/boot
+        mount ${SELECTED_DISK}3 /mnt
+        swapon ${SELECTED_DISK}2
+        mkdir -p /mnt/efi
+        mount ${SELECTED_DISK}1 /mnt/efi
 
     else
         # Configuración para BIOS Legacy
@@ -189,22 +194,28 @@ partition_auto() {
         # Crear tabla de particiones MBR
         parted $SELECTED_DISK --script --align optimal mklabel msdos
 
-        # Crear partición root (todo el disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 100%
-        parted $SELECTED_DISK --script set 1 boot on
+        # Crear partición swap (8GB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1MiB 8193MiB
 
-        # Formatear partición
+        # Crear partición root (resto del disco)
+        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 8193MiB 100%
+        parted $SELECTED_DISK --script set 2 boot on
+
+        # Formatear particiones
         echo -e "${GREEN}| Formateando particiones BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkfs.ext4 -F ${SELECTED_DISK}1
+        mkswap ${SELECTED_DISK}1
+        mkfs.ext4 -F ${SELECTED_DISK}2
         sleep 2
 
-        # Montar partición
+        # Montar particiones
         echo -e "${GREEN}| Montando particiones BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount ${SELECTED_DISK}1 /mnt
+        mount ${SELECTED_DISK}2 /mnt
+        swapon ${SELECTED_DISK}1
+        mkdir -p /mnt/boot
     fi
 }
 
@@ -228,14 +239,65 @@ partition_auto_btrfs() {
         parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
         parted $SELECTED_DISK --script set 1 esp on
 
+        # Crear partición swap (8GB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 513MiB 8705MiB
+
         # Crear partición root (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 513MiB 100%
+        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 8705MiB 100%
 
         # Formatear particiones
         echo -e "${GREEN}| Formateando particiones BTRFS UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
         mkfs.fat -F32 -v ${SELECTED_DISK}1
+        mkswap ${SELECTED_DISK}2
+        mkfs.btrfs -f ${SELECTED_DISK}3
+        sleep 2
+
+        # Montar y crear subvolúmenes BTRFS
+        echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+        mount ${SELECTED_DISK}3 /mnt
+        btrfs subvolume create /mnt/@
+        btrfs subvolume create /mnt/@home
+        btrfs subvolume create /mnt/@var
+        btrfs subvolume create /mnt/@tmp
+        umount /mnt
+
+        # Montar subvolúmenes
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}3 /mnt
+        swapon ${SELECTED_DISK}2
+        mkdir -p /mnt/{efi,home,var,tmp}
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}3 /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}3 /mnt/var
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
+        mount ${SELECTED_DISK}1 /mnt/efi
+
+        # Instalar herramientas específicas para BTRFS
+        pacstrap /mnt btrfs-progs
+
+    else
+        # Configuración para BIOS Legacy
+        echo -e "${GREEN}| Configurando particiones BTRFS para BIOS Legacy |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+
+        # Crear tabla de particiones MBR
+        parted $SELECTED_DISK --script --align optimal mklabel msdos
+
+        # Crear partición swap (8GB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1MiB 8193MiB
+
+        # Crear partición root (resto del disco)
+        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 8193MiB 100%
+        parted $SELECTED_DISK --script set 2 boot on
+
+        # Formatear particiones
+        echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+        mkswap ${SELECTED_DISK}1
         mkfs.btrfs -f ${SELECTED_DISK}2
         sleep 2
 
@@ -252,52 +314,11 @@ partition_auto_btrfs() {
 
         # Montar subvolúmenes
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}2 /mnt
+        swapon ${SELECTED_DISK}1
         mkdir -p /mnt/{boot,home,var,tmp}
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}2 /mnt/home
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}2 /mnt/var
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}2 /mnt/tmp
-        mount ${SELECTED_DISK}1 /mnt/boot
-
-        # Instalar herramientas específicas para BTRFS
-        pacstrap /mnt btrfs-progs
-
-    else
-        # Configuración para BIOS Legacy
-        echo -e "${GREEN}| Configurando particiones BTRFS para BIOS Legacy |${NC}"
-        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-        echo ""
-
-        # Crear tabla de particiones MBR
-        parted $SELECTED_DISK --script --align optimal mklabel msdos
-
-        # Crear partición root (todo el disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 1MiB 100%
-        parted $SELECTED_DISK --script set 1 boot on
-
-        # Formatear partición
-        echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
-        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-        echo ""
-        mkfs.btrfs -f ${SELECTED_DISK}1
-        sleep 2
-
-        # Montar y crear subvolúmenes BTRFS
-        echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
-        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-        echo ""
-        mount ${SELECTED_DISK}1 /mnt
-        btrfs subvolume create /mnt/@
-        btrfs subvolume create /mnt/@home
-        btrfs subvolume create /mnt/@var
-        btrfs subvolume create /mnt/@tmp
-        umount /mnt
-
-        # Montar subvolúmenes
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}1 /mnt
-        mkdir -p /mnt/{home,var,tmp}
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}1 /mnt/home
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}1 /mnt/var
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}1 /mnt/tmp
 
         # Instalar herramientas específicas para BTRFS
         pacstrap /mnt btrfs-progs
@@ -324,18 +345,22 @@ partition_cifrado() {
         parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
         parted $SELECTED_DISK --script set 1 esp on
 
-        # Crear partición cifrada (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary 513MiB 100%
+        # Crear partición swap (8GB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 513MiB 8705MiB
 
-        # Formatear partición EFI
+        # Crear partición cifrada (resto del disco)
+        parted $SELECTED_DISK --script --align optimal mkpart primary 8705MiB 100%
+
+        # Formatear particiones
         mkfs.fat -F32 -v ${SELECTED_DISK}1
+        mkswap ${SELECTED_DISK}2
 
         # Configurar LUKS
         echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptroot -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}3 -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}3 cryptroot -
 
         # Configurar LVM
         echo -e "${GREEN}| Configurando LVM |${NC}"
@@ -345,11 +370,16 @@ partition_cifrado() {
         vgcreate vg0 /dev/mapper/cryptroot
         lvcreate -l 100%FREE vg0 -n root
 
+        # Verificar que el volumen LVM esté disponible
+        sleep 2
+        vgchange -ay vg0
+
         # Formatear y montar
-        mkfs.ext4 /dev/vg0/root
+        mkfs.ext4 -F /dev/vg0/root
         mount /dev/vg0/root /mnt
-        mkdir -p /mnt/boot
-        mount ${SELECTED_DISK}1 /mnt/boot
+        swapon ${SELECTED_DISK}2
+        mkdir -p /mnt/efi
+        mount ${SELECTED_DISK}1 /mnt/efi
 
         # Instalar herramientas específicas para cifrado
         pacstrap /mnt cryptsetup lvm2
@@ -363,16 +393,26 @@ partition_cifrado() {
         # Crear tabla de particiones MBR
         parted $SELECTED_DISK --script --align optimal mklabel msdos
 
-        # Crear partición cifrada (todo el disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary 1MiB 100%
+        # Crear partición de boot sin cifrar (500MB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 501MiB
         parted $SELECTED_DISK --script set 1 boot on
+
+        # Crear partición swap (8GB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 501MiB 8693MiB
+
+        # Crear partición cifrada (resto del disco)
+        parted $SELECTED_DISK --script --align optimal mkpart primary 8693MiB 100%
+
+        # Formatear particiones
+        mkfs.ext4 -F ${SELECTED_DISK}1
+        mkswap ${SELECTED_DISK}2
 
         # Configurar LUKS
         echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}1 -
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}1 cryptroot -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}3 -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}3 cryptroot -
 
         # Configurar LVM
         echo -e "${GREEN}| Configurando LVM |${NC}"
@@ -382,9 +422,16 @@ partition_cifrado() {
         vgcreate vg0 /dev/mapper/cryptroot
         lvcreate -l 100%FREE vg0 -n root
 
+        # Verificar que el volumen LVM esté disponible
+        sleep 2
+        vgchange -ay vg0
+
         # Formatear y montar
-        mkfs.ext4 /dev/vg0/root
+        mkfs.ext4 -F /dev/vg0/root
         mount /dev/vg0/root /mnt
+        swapon ${SELECTED_DISK}2
+        mkdir -p /mnt/boot
+        mount ${SELECTED_DISK}1 /mnt/boot
 
         # Instalar herramientas específicas para cifrado
         pacstrap /mnt cryptsetup lvm2
@@ -676,12 +723,14 @@ if [ "$PARTITION_MODE" != "manual" ]; then
 
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         arch-chroot /mnt /bin/bash -c "pacman -S grub efibootmgr --noconfirm"
-        arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB"
+        arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB"
 
         # Configuración especial para cifrado
         if [ "$PARTITION_MODE" = "cifrado" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="cryptdevice='${SELECTED_DISK}'2:cryptroot root=\/dev\/vg0\/root loglevel=3 quiet"/' /mnt/etc/default/grub
+            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root loglevel=3 quiet\"/" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' /mnt/etc/default/grub
         fi
@@ -693,7 +742,8 @@ if [ "$PARTITION_MODE" != "manual" ]; then
 
         # Configuración especial para cifrado
         if [ "$PARTITION_MODE" = "cifrado" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="cryptdevice='${SELECTED_DISK}'1:cryptroot root=\/dev\/vg0\/root loglevel=3 quiet"/' /mnt/etc/default/grub
+            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root loglevel=3 quiet\"/" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' /mnt/etc/default/grub
@@ -756,15 +806,18 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     # Configurar mkinitcpio para cifrado con hooks en orden correcto
     sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
+    # Agregar módulos necesarios
+    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt aes_x86_64 sha256 sha512)/' /mnt/etc/mkinitcpio.conf
+
     # Regenerar initramfs
     arch-chroot /mnt /bin/bash -c "mkinitcpio -P"
 
     # Configurar crypttab si es necesario
-    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        echo "cryptroot UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2) none luks" >> /mnt/etc/crypttab
-    else
-        echo "cryptroot UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) none luks" >> /mnt/etc/crypttab
-    fi
+    CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+    echo "cryptroot UUID=${CRYPT_UUID} none luks" >> /mnt/etc/crypttab
+
+    # Verificar que los servicios LVM estén habilitados
+    arch-chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service"
 
     sleep 2
 fi
