@@ -71,7 +71,7 @@ echo " █████╗ ██████╗  ██████╗███�
 echo "██╔══██╗██╔══██╗██╔════╝██╔══██╗██║██╔════╝";
 echo "███████║██████╔╝██║     ██████╔╝██║███████╗";
 echo "██╔══██║██╔══██╗██║     ██╔══██╗██║╚════██║";
-echo "█CRISTO VIVE66█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
+echo "█CRISTO VIVE3333█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
 echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝";
 echo -e "${NC}"
 echo ""
@@ -330,10 +330,16 @@ partition_cifrado() {
     echo -e "${GREEN}| Particionando disco con cifrado LUKS: $SELECTED_DISK |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
-    sleep 2
+    echo -e "${CYAN}NOTA IMPORTANTE: Esta configuración implementa LUKS+LVM siguiendo mejores prácticas:${NC}"
+    echo -e "${CYAN}  • Solo la partición EFI/boot queda sin cifrar (necesario para el bootloader)${NC}"
+    echo -e "${CYAN}  • LUKS cifra toda la partición principal${NC}"
+    echo -e "${CYAN}  • LVM se ejecuta sobre LUKS para flexibilidad en particiones${NC}"
+    echo -e "${CYAN}  • CRITICAL: Guarda bien tu contraseña LUKS - sin ella perderás todos los datos${NC}"
+    echo ""
+    sleep 3
 
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        # Configuración para UEFI con cifrado
+        # Configuración para UEFI con cifrado (siguiendo mejores prácticas)
         echo -e "${GREEN}| Configurando particiones cifradas para UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
@@ -341,57 +347,67 @@ partition_cifrado() {
         # Crear tabla de particiones GPT
         parted $SELECTED_DISK --script --align optimal mklabel gpt
 
-        # Crear partición EFI (512MB)
+        # Crear partición EFI (512MB) - única partición sin cifrar
         parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
         parted $SELECTED_DISK --script set 1 esp on
 
-        # Crear partición boot sin cifrar (1GB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 513MiB 1537MiB
+        # Crear partición principal cifrada (resto del disco)
+        parted $SELECTED_DISK --script --align optimal mkpart primary 513MiB 100%
 
-        # Crear partición cifrada (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary 1537MiB 100%
-
-        # Formatear particiones
+        # Formatear partición EFI
         mkfs.fat -F32 -v ${SELECTED_DISK}1
-        mkfs.ext4 -F ${SELECTED_DISK}2
 
-        # Configurar LUKS
+        # Configurar LUKS en la partición principal
         echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}3 -
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}3 cryptroot -
+        echo -e "${CYAN}Aplicando cifrado LUKS a ${SELECTED_DISK}2...${NC}"
+        echo -e "${YELLOW}IMPORTANTE: Esto puede tomar unos minutos dependiendo del tamaño del disco${NC}"
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptlvm -
 
-        # Configurar LVM
-        echo -e "${GREEN}| Configurando LVM |${NC}"
+        # Crear backup del header LUKS (recomendación de seguridad)
+        echo -e "${CYAN}Creando backup del header LUKS...${NC}"
+        cryptsetup luksHeaderBackup ${SELECTED_DISK}2 --header-backup-file /tmp/luks-header-backup
+        echo -e "${GREEN}✓ Backup del header LUKS guardado en /tmp/luks-header-backup${NC}"
+        echo -e "${YELLOW}IMPORTANTE: Copia este archivo a un lugar seguro después de la instalación${NC}"
+
+        # Configurar LVM sobre LUKS
+        echo -e "${GREEN}| Configurando LVM sobre LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        pvcreate /dev/mapper/cryptroot
-        vgcreate vg0 /dev/mapper/cryptroot
+        echo -e "${CYAN}Creando Physical Volume sobre dispositivo cifrado...${NC}"
+        pvcreate /dev/mapper/cryptlvm
+        echo -e "${CYAN}Creando Volume Group 'vg0'...${NC}"
+        vgcreate vg0 /dev/mapper/cryptlvm
+        echo -e "${CYAN}Creando Logical Volume 'swap' de 8GB...${NC}"
         lvcreate -L 8G vg0 -n swap
+        echo -e "${CYAN}Creando Logical Volume 'root' con el espacio restante...${NC}"
         lvcreate -l 100%FREE vg0 -n root
+
+        echo -e "${GREEN}✓ Configuración LVM completada:${NC}"
+        echo -e "${GREEN}  • Volume Group: vg0${NC}"
+        echo -e "${GREEN}  • Swap: 8GB (/dev/vg0/swap)${NC}"
+        echo -e "${GREEN}  • Root: Resto del espacio (/dev/vg0/root)${NC}"
 
         # Verificar que el volumen LVM esté disponible
         sleep 2
         vgchange -ay vg0
 
-        # Formatear y montar
+        # Formatear volúmenes LVM
         echo -e "${CYAN}Formateando volúmenes LVM...${NC}"
         mkfs.ext4 -F /dev/vg0/root
         mkswap /dev/vg0/swap
 
+        # Montar sistema de archivos root
         echo -e "${CYAN}Montando sistema raíz...${NC}"
         mount /dev/vg0/root /mnt
         swapon /dev/vg0/swap
 
-        # Verificar que las particiones existan antes de montar
-        echo -e "${CYAN}Verificando particiones antes del montaje...${NC}"
+        # Verificar que la partición EFI exista
+        echo -e "${CYAN}Verificando partición EFI antes del montaje...${NC}"
         if [ ! -b "${SELECTED_DISK}1" ]; then
             echo -e "${RED}ERROR: Partición EFI ${SELECTED_DISK}1 no existe${NC}"
-            exit 1
-        fi
-        if [ ! -b "${SELECTED_DISK}2" ]; then
-            echo -e "${RED}ERROR: Partición boot ${SELECTED_DISK}2 no existe${NC}"
             exit 1
         fi
 
@@ -399,41 +415,30 @@ partition_cifrado() {
         sleep 2
         sync
 
-        echo -e "${CYAN}Creando directorio de montaje boot...${NC}"
+        # Montar partición EFI directamente en /boot
+        echo -e "${CYAN}Creando directorio /boot...${NC}"
         mkdir -p /mnt/boot
 
-        echo -e "${CYAN}Montando partición boot...${NC}"
-        if ! mount ${SELECTED_DISK}2 /mnt/boot; then
-            echo -e "${RED}ERROR: Falló el montaje de la partición boot${NC}"
-            exit 1
-        fi
-
-        echo -e "${CYAN}Creando directorio EFI dentro de boot...${NC}"
-        mkdir -p /mnt/boot/efi
-
-        echo -e "${CYAN}Montando partición EFI...${NC}"
-        if ! mount ${SELECTED_DISK}1 /mnt/boot/efi; then
+        echo -e "${CYAN}Montando partición EFI en /boot...${NC}"
+        if ! mount ${SELECTED_DISK}1 /mnt/boot; then
             echo -e "${RED}ERROR: Falló el montaje de la partición EFI${NC}"
             exit 1
         fi
 
-        # Verificar que los montajes sean exitosos (en orden correcto)
+        # Verificar que el montaje sea exitoso
         if ! mountpoint -q /mnt/boot; then
             echo -e "${RED}ERROR: /mnt/boot no está montado correctamente${NC}"
             exit 1
         fi
-        if ! mountpoint -q /mnt/boot/efi; then
-            echo -e "${RED}ERROR: /mnt/boot/efi no está montado correctamente${NC}"
-            exit 1
-        fi
 
         echo -e "${GREEN}✓ Todas las particiones montadas correctamente${NC}"
+        echo -e "${GREEN}✓ Esquema LUKS+LVM configurado: Solo EFI sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
         pacstrap /mnt cryptsetup lvm2
 
     else
-        # Configuración para BIOS Legacy con cifrado
+        # Configuración para BIOS Legacy con cifrado (siguiendo mejores prácticas)
         echo -e "${GREEN}| Configurando particiones cifradas para BIOS Legacy |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
@@ -441,29 +446,29 @@ partition_cifrado() {
         # Crear tabla de particiones MBR
         parted $SELECTED_DISK --script --align optimal mklabel msdos
 
-        # Crear partición de boot sin cifrar (1GB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 1025MiB
+        # Crear partición de boot sin cifrar (512MB) - mínima necesaria
+        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 513MiB
         parted $SELECTED_DISK --script set 1 boot on
 
         # Crear partición cifrada (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary 1025MiB 100%
+        parted $SELECTED_DISK --script --align optimal mkpart primary 513MiB 100%
 
-        # Formatear particiones
+        # Formatear partición boot
         mkfs.ext4 -F ${SELECTED_DISK}1
 
-        # Configurar LUKS
+        # Configurar LUKS en la partición principal
         echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
         echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptroot -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptlvm -
 
-        # Configurar LVM
-        echo -e "${GREEN}| Configurando LVM |${NC}"
+        # Configurar LVM sobre LUKS
+        echo -e "${GREEN}| Configurando LVM sobre LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        pvcreate /dev/mapper/cryptroot
-        vgcreate vg0 /dev/mapper/cryptroot
+        pvcreate /dev/mapper/cryptlvm
+        vgcreate vg0 /dev/mapper/cryptlvm
         lvcreate -L 8G vg0 -n swap
         lvcreate -l 100%FREE vg0 -n root
 
@@ -471,16 +476,17 @@ partition_cifrado() {
         sleep 2
         vgchange -ay vg0
 
-        # Formatear y montar
+        # Formatear volúmenes LVM
         echo -e "${CYAN}Formateando volúmenes LVM...${NC}"
         mkfs.ext4 -F /dev/vg0/root
         mkswap /dev/vg0/swap
 
+        # Montar sistema de archivos root
         echo -e "${CYAN}Montando sistema raíz...${NC}"
         mount /dev/vg0/root /mnt
         swapon /dev/vg0/swap
 
-        # Verificar que la partición exista antes de montar
+        # Verificar que la partición boot exista
         echo -e "${CYAN}Verificando partición boot antes del montaje...${NC}"
         if [ ! -b "${SELECTED_DISK}1" ]; then
             echo -e "${RED}ERROR: Partición boot ${SELECTED_DISK}1 no existe${NC}"
@@ -491,7 +497,8 @@ partition_cifrado() {
         sleep 2
         sync
 
-        echo -e "${CYAN}Creando directorio de montaje...${NC}"
+        # Montar partición boot
+        echo -e "${CYAN}Creando directorio /boot...${NC}"
         mkdir -p /mnt/boot
 
         echo -e "${CYAN}Montando partición boot...${NC}"
@@ -602,90 +609,6 @@ pacstrap /mnt nano
 pacstrap /mnt xdg-user-dirs
 pacstrap /mnt fastfetch
 
-# Instalación de firmware de Linux
-echo -e "${GREEN}| Instalando firmware de Linux |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
-
-# Detectar e instalar firmware específico según el hardware detectado
-echo -e "${GREEN}| Detectando hardware específico |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
-
-# Detectar GPU AMD
-if lspci | grep -i "amd\|ati" | grep -i "vga\|3d\|display"; then
-    echo "✓ Detectada GPU AMD/ATI - Instalando firmware AMD"
-    pacstrap /mnt linux-firmware-amdgpu linux-firmware-radeon
-fi
-
-# Detectar GPU NVIDIA
-if lspci | grep -i "nvidia" | grep -i "vga\|3d\|display"; then
-    echo "✓ Detectada GPU NVIDIA - Instalando firmware NVIDIA"
-    pacstrap /mnt linux-firmware-nvidia
-fi
-
-# Detectar hardware Intel
-if lspci | grep -i "intel"; then
-    echo "✓ Detectado hardware Intel - Instalando firmware Intel"
-    pacstrap /mnt linux-firmware-intel
-fi
-
-# Detectar adaptadores Realtek
-if lspci | grep -i "realtek"; then
-    echo "✓ Detectados adaptadores Realtek - Instalando firmware Realtek"
-    pacstrap /mnt linux-firmware-realtek
-fi
-
-# Detectar adaptadores Broadcom
-if lspci | grep -i "broadcom"; then
-    echo "✓ Detectados adaptadores Broadcom - Instalando firmware Broadcom"
-    pacstrap /mnt linux-firmware-broadcom
-fi
-
-# Detectar adaptadores Atheros
-if lspci | grep -i "atheros\|qualcomm"; then
-    echo "✓ Detectados adaptadores Atheros/Qualcomm - Instalando firmware Atheros"
-    pacstrap /mnt linux-firmware-atheros
-fi
-
-# Detectar adaptadores MediaTek/Ralink
-if lspci | grep -i "mediatek\|ralink"; then
-    echo "✓ Detectados adaptadores MediaTek/Ralink - Instalando firmware MediaTek"
-    pacstrap /mnt linux-firmware-mediatek
-fi
-
-# Detectar dispositivos de audio Cirrus Logic
-if lspci | grep -i "cirrus"; then
-    echo "✓ Detectados dispositivos Cirrus Logic - Instalando firmware Cirrus"
-    pacstrap /mnt linux-firmware-cirrus
-fi
-
-# Instalar firmware de audio SOF si hay dispositivos de audio Intel
-if lspci | grep -i "intel" | grep -i "audio"; then
-    echo "✓ Detectado audio Intel - Instalando SOF firmware"
-    pacstrap /mnt sof-firmware
-fi
-
-
-
-# Verificar si no se detectó hardware específico
-FIRMWARE_INSTALLED=false
-if lspci | grep -iE "amd|ati|nvidia|intel|realtek|broadcom|atheros|qualcomm|mediatek|ralink|cirrus"; then
-    FIRMWARE_INSTALLED=true
-fi
-
-if [ "$FIRMWARE_INSTALLED" = "false" ]; then
-    echo "⚠ No se detectó hardware específico conocido"
-    echo "  Instalando firmware básico recomendado..."
-    pacstrap /mnt linux-firmware-other
-fi
-
-echo ""
-echo "ℹ Después del reinicio, puedes verificar firmware cargado con:"
-echo "  sudo journalctl -kg 'loaded f'"
-
-sleep 2
-clear
 
 # Actualización de mirrors en el sistema instalado
 arch-chroot /mnt /bin/bash -c "reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist"
@@ -880,13 +803,21 @@ printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
 if [ "$PARTITION_MODE" = "cifrado" ]; then
-    echo "Configurando mkinitcpio para cifrado..."
+    echo -e "${GREEN}Configurando mkinitcpio para cifrado LUKS+LVM...${NC}"
 
-    # Configurar módulos específicos para cifrado
-    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_thin_pool)/' /mnt/etc/mkinitcpio.conf
+    # Configurar módulos específicos para LUKS+LVM (siguiendo mejores prácticas)
+    echo -e "${CYAN}Configurando módulos del kernel para cifrado...${NC}"
+    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_snapshot dm_mirror)/' /mnt/etc/mkinitcpio.conf
 
-    # Configurar hooks para cifrado con LVM
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect modconf kms keyboard keymap consolefont block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+    # Configurar hooks para cifrado con LVM - orden crítico: encrypt antes de lvm2
+    echo -e "${CYAN}Configurando hooks - ORDEN CRÍTICO: encrypt debe ir antes de lvm2${NC}"
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+
+    echo -e "${GREEN}✓ Configuración mkinitcpio actualizada para LUKS+LVM${NC}"
+    echo -e "${CYAN}  • Módulos: dm_mod dm_crypt dm_snapshot dm_mirror${NC}"
+    echo -e "${CYAN}  • Hooks: base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck${NC}"
+    echo -e "${YELLOW}  • IMPORTANTE: 'encrypt' DEBE ir antes de 'lvm2' para que funcione correctamente${NC}"
+    echo -e "${YELLOW}  • keyboard y keymap son necesarios para introducir la contraseña en el boot${NC}"
 
 elif [ "$PARTITION_MODE" = "btrfs" ]; then
     echo "Configurando mkinitcpio para BTRFS..."
@@ -966,23 +897,34 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             partprobe $SELECTED_DISK 2>/dev/null || true
             sleep 1
 
-            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
             # Reintentar si no se obtuvo UUID
             if [ -z "$CRYPT_UUID" ]; then
                 echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
                 sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
             fi
 
             if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}3${NC}"
+                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}2${NC}"
                 echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
                 exit 1
             fi
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
-            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/mapper\/vg0-root resume=\/dev\/mapper\/vg0-swap loglevel=3\"/" /mnt/etc/default/grub
+            # Configurar GRUB para LUKS+LVM (siguiendo mejores prácticas de la guía)
+            echo -e "${CYAN}Configurando parámetros de kernel para LUKS+LVM...${NC}"
+            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
+
+            # Habilitar soporte para discos cifrados en GRUB
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
+
+            # Precargar módulos necesarios para cifrado
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
+
+            echo -e "${GREEN}✓ Configuración GRUB para cifrado:${NC}"
+            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
+            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
+            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
@@ -992,15 +934,13 @@ if [ "$PARTITION_MODE" != "manual" ]; then
         fi
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck --debug" 2>&1 | tee /tmp/grub-install.log; then
+        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --recheck --debug" 2>&1 | tee /tmp/grub-install.log; then
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
             echo -e "${YELLOW}Log de grub-install:${NC}"
             cat /tmp/grub-install.log
             echo -e "${YELLOW}Información adicional:${NC}"
             echo "- Estado de /boot:"
             ls -la /mnt/boot/
-            echo "- Estado de /boot/efi:"
-            ls -la /mnt/boot/efi/
             echo "- Espacio disponible en /boot:"
             df -h /mnt/boot
             echo "- Espacio disponible en /boot/efi:"
@@ -1061,7 +1001,8 @@ if [ "$PARTITION_MODE" != "manual" ]; then
                 exit 1
             fi
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
-            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/mapper\/vg0-root resume=\/dev\/mapper\/vg0-swap loglevel=3\"/" /mnt/etc/default/grub
+            # Usar GRUB_CMDLINE_LINUX en lugar de GRUB_CMDLINE_LINUX_DEFAULT para mejores prácticas
+            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
@@ -1203,10 +1144,12 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     else
         CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
     fi
-    echo "cryptroot UUID=${CRYPT_UUID} none luks,discard" >> /mnt/etc/crypttab
+    echo "cryptlvm UUID=${CRYPT_UUID} none luks,discard" >> /mnt/etc/crypttab
+    echo -e "${GREEN}✓ Configuración crypttab creada para montaje automático${NC}"
 
     # Crear archivo de configuración para LVM
     echo "# LVM devices for encrypted setup" > /mnt/etc/lvm/lvm.conf.local
+    echo -e "${CYAN}Configuración LVM aplicada para sistema cifrado${NC}"
     echo "activation {" >> /mnt/etc/lvm/lvm.conf.local
     echo "    udev_sync = 1" >> /mnt/etc/lvm/lvm.conf.local
     echo "    udev_rules = 1" >> /mnt/etc/lvm/lvm.conf.local
@@ -1216,9 +1159,10 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     arch-chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service"
 
     # Configuración adicional para reducir timeouts de cifrado y LVM
-    # Los parámetros de cifrado ya están configurados arriba, no necesitamos modificar nuevamente GRUB_CMDLINE_LINUX_DEFAULT
+    echo -e "${CYAN}Aplicando optimizaciones para sistema cifrado...${NC}"
 
     # Asegurar que LVM esté disponible y activo
+    echo -e "${CYAN}Activando volumes LVM...${NC}"
     arch-chroot /mnt /bin/bash -c "vgchange -ay vg0"
     arch-chroot /mnt /bin/bash -c "lvchange -ay vg0/root"
     arch-chroot /mnt /bin/bash -c "lvchange -ay vg0/swap"
@@ -1311,3 +1255,42 @@ titulo_progreso="| Finalizando instalación de ARCRIS LINUX |"
 barra_progreso
 
 echo -e "${GREEN}✓ Instalación de ARCRIS LINUX completada exitosamente!${NC}"
+
+# Mostrar información importante para sistemas cifrados
+if [ "$PARTITION_MODE" = "cifrado" ]; then
+    echo ""
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}           SISTEMA CIFRADO CON LUKS+LVM CONFIGURADO EXITOSAMENTE${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${YELLOW}🔐 INFORMACIÓN CRÍTICA SOBRE TU SISTEMA CIFRADO:${NC}"
+    echo ""
+    echo -e "${GREEN}✓ Configuración aplicada:${NC}"
+    echo -e "${CYAN}  • Solo la partición EFI/boot queda sin cifrar (necesario para arrancar)${NC}"
+    echo -e "${CYAN}  • Toda la partición principal está cifrada con LUKS${NC}"
+    echo -e "${CYAN}  • LVM gestiona las particiones sobre el cifrado${NC}"
+    echo -e "${CYAN}  • Swap cifrado incluido (8GB)${NC}"
+    echo ""
+    echo -e "${RED}⚠️  ADVERTENCIAS IMPORTANTES:${NC}"
+    echo -e "${RED}  • SIN LA CONTRASEÑA LUKS PERDERÁS TODOS TUS DATOS${NC}"
+    echo -e "${RED}  • Guarda la contraseña en un lugar seguro${NC}"
+    echo -e "${RED}  • Considera hacer backup del header LUKS${NC}"
+    echo ""
+    echo -e "${GREEN}🚀 Al reiniciar:${NC}"
+    echo -e "${CYAN}  1. El sistema pedirá tu contraseña LUKS para desbloquear el disco${NC}"
+    echo -e "${CYAN}  2. Una vez desbloqueado, el sistema arrancará normalmente${NC}"
+    echo -e "${CYAN}  3. Si olvidas la contraseña, no podrás acceder a tus datos${NC}"
+    echo ""
+    echo -e "${GREEN}📁 Backup del header LUKS:${NC}"
+    echo -e "${CYAN}  • Se creó un backup en /tmp/luks-header-backup${NC}"
+    echo -e "${YELLOW}  • CÓPIALO A UN LUGAR SEGURO después del primer arranque${NC}"
+    echo -e "${CYAN}  • Comando: cp /tmp/luks-header-backup ~/luks-backup-$(date +%Y%m%d)${NC}"
+    echo ""
+    echo -e "${GREEN}🔧 Comandos útiles post-instalación:${NC}"
+    echo -e "${CYAN}  • Ver estado LVM: sudo vgdisplay && sudo lvdisplay${NC}"
+    echo -e "${CYAN}  • Redimensionar particiones: sudo lvresize${NC}"
+    echo -e "${CYAN}  • Backup adicional header: sudo cryptsetup luksHeaderBackup /dev/sdaX${NC}"
+    echo ""
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════════════${NC}"
+    echo ""
+fi
