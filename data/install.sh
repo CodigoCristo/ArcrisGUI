@@ -71,7 +71,7 @@ echo " █████╗ ██████╗  ██████╗███�
 echo "██╔══██╗██╔══██╗██╔════╝██╔══██╗██║██╔════╝";
 echo "███████║██████╔╝██║     ██████╔╝██║███████╗";
 echo "██╔══██║██╔══██╗██║     ██╔══██╗██║╚════██║";
-echo "█CRISTO VIVE3█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
+echo "█CRISTO VIVE4█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
 echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝";
 echo -e "${NC}"
 echo ""
@@ -376,14 +376,56 @@ partition_cifrado() {
         vgchange -ay vg0
 
         # Formatear y montar
+        echo -e "${CYAN}Formateando volúmenes LVM...${NC}"
         mkfs.ext4 -F /dev/vg0/root
         mkswap /dev/vg0/swap
+
+        echo -e "${CYAN}Montando sistema raíz...${NC}"
         mount /dev/vg0/root /mnt
         swapon /dev/vg0/swap
+
+        # Verificar que las particiones existan antes de montar
+        echo -e "${CYAN}Verificando particiones antes del montaje...${NC}"
+        if [ ! -b "${SELECTED_DISK}1" ]; then
+            echo -e "${RED}ERROR: Partición EFI ${SELECTED_DISK}1 no existe${NC}"
+            exit 1
+        fi
+        if [ ! -b "${SELECTED_DISK}2" ]; then
+            echo -e "${RED}ERROR: Partición boot ${SELECTED_DISK}2 no existe${NC}"
+            exit 1
+        fi
+
+        # Esperar que las particiones estén completamente listas
+        sleep 2
+        sync
+
+        echo -e "${CYAN}Creando directorios de montaje...${NC}"
         mkdir -p /mnt/boot/efi
         mkdir -p /mnt/boot
-        mount ${SELECTED_DISK}1 /mnt/boot/efi
-        mount ${SELECTED_DISK}2 /mnt/boot
+
+        echo -e "${CYAN}Montando partición EFI...${NC}"
+        if ! mount ${SELECTED_DISK}1 /mnt/boot/efi; then
+            echo -e "${RED}ERROR: Falló el montaje de la partición EFI${NC}"
+            exit 1
+        fi
+
+        echo -e "${CYAN}Montando partición boot...${NC}"
+        if ! mount ${SELECTED_DISK}2 /mnt/boot; then
+            echo -e "${RED}ERROR: Falló el montaje de la partición boot${NC}"
+            exit 1
+        fi
+
+        # Verificar que los montajes sean exitosos
+        if ! mountpoint -q /mnt/boot/efi; then
+            echo -e "${RED}ERROR: /mnt/boot/efi no está montado correctamente${NC}"
+            exit 1
+        fi
+        if ! mountpoint -q /mnt/boot; then
+            echo -e "${RED}ERROR: /mnt/boot no está montado correctamente${NC}"
+            exit 1
+        fi
+
+        echo -e "${GREEN}✓ Todas las particiones montadas correctamente${NC}"
 
         # Instalar herramientas específicas para cifrado
         pacstrap /mnt cryptsetup lvm2
@@ -428,12 +470,41 @@ partition_cifrado() {
         vgchange -ay vg0
 
         # Formatear y montar
+        echo -e "${CYAN}Formateando volúmenes LVM...${NC}"
         mkfs.ext4 -F /dev/vg0/root
         mkswap /dev/vg0/swap
+
+        echo -e "${CYAN}Montando sistema raíz...${NC}"
         mount /dev/vg0/root /mnt
         swapon /dev/vg0/swap
+
+        # Verificar que la partición exista antes de montar
+        echo -e "${CYAN}Verificando partición boot antes del montaje...${NC}"
+        if [ ! -b "${SELECTED_DISK}1" ]; then
+            echo -e "${RED}ERROR: Partición boot ${SELECTED_DISK}1 no existe${NC}"
+            exit 1
+        fi
+
+        # Esperar que la partición esté completamente lista
+        sleep 2
+        sync
+
+        echo -e "${CYAN}Creando directorio de montaje...${NC}"
         mkdir -p /mnt/boot
-        mount ${SELECTED_DISK}1 /mnt/boot
+
+        echo -e "${CYAN}Montando partición boot...${NC}"
+        if ! mount ${SELECTED_DISK}1 /mnt/boot; then
+            echo -e "${RED}ERROR: Falló el montaje de la partición boot${NC}"
+            exit 1
+        fi
+
+        # Verificar que el montaje sea exitoso
+        if ! mountpoint -q /mnt/boot; then
+            echo -e "${RED}ERROR: /mnt/boot no está montado correctamente${NC}"
+            exit 1
+        fi
+
+        echo -e "${GREEN}✓ Partición boot montada correctamente${NC}"
 
         # Instalar herramientas específicas para cifrado
         pacstrap /mnt cryptsetup lvm2
@@ -841,17 +912,30 @@ if [ "$PARTITION_MODE" != "manual" ]; then
     echo ""
 
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        # Verificar que la partición EFI esté montada
+        # Verificar que la partición EFI esté montada con debug adicional
+        echo -e "${CYAN}Verificando montaje de partición EFI...${NC}"
         if ! mountpoint -q /mnt/boot/efi; then
             echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot/efi${NC}"
+            echo -e "${YELLOW}Información de debug:${NC}"
+            echo "- Contenido de /mnt/boot/efi:"
+            ls -la /mnt/boot/efi/ 2>/dev/null || echo "  Directorio no accesible"
+            echo "- Montajes actuales:"
+            mount | grep "/mnt"
+            echo "- Particiones disponibles:"
+            lsblk ${SELECTED_DISK}
             exit 1
         fi
+        echo -e "${GREEN}✓ Partición EFI montada correctamente en /mnt/boot/efi${NC}"
 
-        # Verificar sistema UEFI
+        # Verificar sistema UEFI con debug
+        echo -e "${CYAN}Verificando sistema UEFI...${NC}"
         if [ ! -d "/sys/firmware/efi" ]; then
             echo -e "${RED}ERROR: Sistema no está en modo UEFI${NC}"
+            echo "- Directorio /sys/firmware/efi no existe"
+            echo "- El sistema puede estar en modo BIOS Legacy"
             exit 1
         fi
+        echo -e "${GREEN}✓ Sistema en modo UEFI confirmado${NC}"
 
         # Limpiar entradas UEFI previas que puedan causar conflictos
         echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
@@ -904,16 +988,29 @@ if [ "$PARTITION_MODE" != "manual" ]; then
         fi
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck"; then
+        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck --debug" 2>&1 | tee /tmp/grub-install.log; then
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
+            echo -e "${YELLOW}Log de grub-install:${NC}"
+            cat /tmp/grub-install.log
+            echo -e "${YELLOW}Información adicional:${NC}"
+            echo "- Estado de /boot/efi:"
+            ls -la /mnt/boot/efi/
+            echo "- Espacio disponible:"
+            df -h /mnt/boot/efi
             exit 1
         fi
 
-        # Verificar que grubx64.efi se haya creado
+        # Verificar que grubx64.efi se haya creado con debug
         if [ ! -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
             echo -e "${RED}ERROR: No se creó grubx64.efi${NC}"
+            echo -e "${YELLOW}Información de debug:${NC}"
+            echo "- Contenido de /mnt/boot/efi/EFI/:"
+            ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
+            echo "- Contenido de /mnt/boot/efi/EFI/GRUB/:"
+            ls -la /mnt/boot/efi/EFI/GRUB/ 2>/dev/null || echo "  Directorio GRUB no existe"
             exit 1
         fi
+        echo -e "${GREEN}✓ grubx64.efi creado exitosamente${NC}"
 
         echo -e "${CYAN}Generando configuración de GRUB...${NC}"
         if ! arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
