@@ -71,7 +71,7 @@ echo " █████╗ ██████╗  ██████╗███�
 echo "██╔══██╗██╔══██╗██╔════╝██╔══██╗██║██╔════╝";
 echo "███████║██████╔╝██║     ██████╔╝██║███████╗";
 echo "██╔══██║██╔══██╗██║     ██╔══██╗██║╚════██║";
-echo "█CRISTO VIVE5█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
+echo "█CRISTO VIVE66█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
 echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝";
 echo -e "${NC}"
 echo ""
@@ -883,10 +883,10 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo "Configurando mkinitcpio para cifrado..."
 
     # Configurar módulos específicos para cifrado
-    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt)/' /mnt/etc/mkinitcpio.conf
+    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_thin_pool)/' /mnt/etc/mkinitcpio.conf
 
     # Configurar hooks para cifrado con LVM
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect modconf kms keyboard keymap consolefont block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
 elif [ "$PARTITION_MODE" = "btrfs" ]; then
     echo "Configurando mkinitcpio para BTRFS..."
@@ -980,14 +980,14 @@ if [ "$PARTITION_MODE" != "manual" ]; then
                 exit 1
             fi
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
-            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap loglevel=3 quiet\"/" /mnt/etc/default/grub
+            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/mapper\/vg0-root resume=\/dev\/mapper\/vg0-swap loglevel=3\"/" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3 quiet"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
         else
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
         fi
 
@@ -1061,14 +1061,14 @@ if [ "$PARTITION_MODE" != "manual" ]; then
                 exit 1
             fi
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
-            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap loglevel=3 quiet\"/" /mnt/etc/default/grub
+            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/mapper\/vg0-root resume=\/dev\/mapper\/vg0-swap loglevel=3\"/" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3 quiet"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
         else
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
         fi
 
@@ -1203,13 +1203,48 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     else
         CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
     fi
-    echo "cryptroot UUID=${CRYPT_UUID} none luks" >> /mnt/etc/crypttab
+    echo "cryptroot UUID=${CRYPT_UUID} none luks,discard" >> /mnt/etc/crypttab
+
+    # Crear archivo de configuración para LVM
+    echo "# LVM devices for encrypted setup" > /mnt/etc/lvm/lvm.conf.local
+    echo "activation {" >> /mnt/etc/lvm/lvm.conf.local
+    echo "    udev_sync = 1" >> /mnt/etc/lvm/lvm.conf.local
+    echo "    udev_rules = 1" >> /mnt/etc/lvm/lvm.conf.local
+    echo "}" >> /mnt/etc/lvm/lvm.conf.local
 
     # Verificar que los servicios LVM estén habilitados
     arch-chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service"
 
-    # Configuración adicional para reducir timeouts de cifrado
-    echo "rd.luks.options=timeout=120" >> /mnt/etc/default/grub
+    # Configuración adicional para reducir timeouts de cifrado y LVM
+    # Los parámetros de cifrado ya están configurados arriba, no necesitamos modificar nuevamente GRUB_CMDLINE_LINUX_DEFAULT
+
+    # Asegurar que LVM esté disponible y activo
+    arch-chroot /mnt /bin/bash -c "vgchange -ay vg0"
+    arch-chroot /mnt /bin/bash -c "lvchange -ay vg0/root"
+    arch-chroot /mnt /bin/bash -c "lvchange -ay vg0/swap"
+
+    # Generar fstab correctamente con nombres de dispositivos apropiados
+    echo -e "${CYAN}Generando fstab con dispositivos LVM...${NC}"
+    # Limpiar fstab existente
+    > /mnt/etc/fstab
+    # Agregar entradas manualmente para asegurar nombres correctos
+    echo "# <file system> <mount point> <type> <options> <dump> <pass>" >> /mnt/etc/fstab
+    echo "/dev/mapper/vg0-root / ext4 rw,relatime 0 1" >> /mnt/etc/fstab
+    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
+        echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
+    else
+        echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
+    fi
+    echo "/dev/mapper/vg0-swap none swap defaults 0 0" >> /mnt/etc/fstab
+
+    # Regenerar initramfs después de todas las configuraciones
+    echo -e "${CYAN}Regenerando initramfs con configuración LVM...${NC}"
+    arch-chroot /mnt /bin/bash -c "mkinitcpio -P"
+
+    # Regenerar configuración de GRUB con parámetros LVM
+    echo -e "${CYAN}Regenerando configuración de GRUB...${NC}"
+    arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
 
     sleep 2
 fi
