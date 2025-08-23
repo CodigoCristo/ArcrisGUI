@@ -71,7 +71,7 @@ echo " █████╗ ██████╗  ██████╗███�
 echo "██╔══██╗██╔══██╗██╔════╝██╔══██╗██║██╔════╝";
 echo "███████║██████╔╝██║     ██████╔╝██║███████╗";
 echo "██╔══██║██╔══██╗██║     ██╔══██╗██║╚════██║";
-echo "█CRISTO VIVE3333█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
+echo "█CRISTO2█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
 echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝";
 echo -e "${NC}"
 echo ""
@@ -331,7 +331,7 @@ partition_cifrado() {
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
     echo -e "${CYAN}NOTA IMPORTANTE: Esta configuración implementa LUKS+LVM siguiendo mejores prácticas:${NC}"
-    echo -e "${CYAN}  • Solo la partición EFI/boot queda sin cifrar (necesario para el bootloader)${NC}"
+    echo -e "${CYAN}  • Solo las particiones EFI y boot quedan sin cifrar (necesario para el bootloader)${NC}"
     echo -e "${CYAN}  • LUKS cifra toda la partición principal${NC}"
     echo -e "${CYAN}  • LVM se ejecuta sobre LUKS para flexibilidad en particiones${NC}"
     echo -e "${CYAN}  • CRITICAL: Guarda bien tu contraseña LUKS - sin ella perderás todos los datos${NC}"
@@ -347,28 +347,32 @@ partition_cifrado() {
         # Crear tabla de particiones GPT
         parted $SELECTED_DISK --script --align optimal mklabel gpt
 
-        # Crear partición EFI (512MB) - única partición sin cifrar
+        # Crear partición EFI (512MB)
         parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
         parted $SELECTED_DISK --script set 1 esp on
 
-        # Crear partición principal cifrada (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary 513MiB 100%
+        # Crear partición boot sin cifrar (1GB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 513MiB 1537MiB
 
-        # Formatear partición EFI
+        # Crear partición principal cifrada (resto del disco)
+        parted $SELECTED_DISK --script --align optimal mkpart primary 1537MiB 100%
+
+        # Formatear particiones
         mkfs.fat -F32 -v ${SELECTED_DISK}1
+        mkfs.ext4 -F ${SELECTED_DISK}2
 
         # Configurar LUKS en la partición principal
         echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        echo -e "${CYAN}Aplicando cifrado LUKS a ${SELECTED_DISK}2...${NC}"
+        echo -e "${CYAN}Aplicando cifrado LUKS a ${SELECTED_DISK}3...${NC}"
         echo -e "${YELLOW}IMPORTANTE: Esto puede tomar unos minutos dependiendo del tamaño del disco${NC}"
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptlvm -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}3 -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}3 cryptlvm -
 
         # Crear backup del header LUKS (recomendación de seguridad)
         echo -e "${CYAN}Creando backup del header LUKS...${NC}"
-        cryptsetup luksHeaderBackup ${SELECTED_DISK}2 --header-backup-file /tmp/luks-header-backup
+        cryptsetup luksHeaderBackup ${SELECTED_DISK}3 --header-backup-file /tmp/luks-header-backup
         echo -e "${GREEN}✓ Backup del header LUKS guardado en /tmp/luks-header-backup${NC}"
         echo -e "${YELLOW}IMPORTANTE: Copia este archivo a un lugar seguro después de la instalación${NC}"
 
@@ -404,10 +408,14 @@ partition_cifrado() {
         mount /dev/vg0/root /mnt
         swapon /dev/vg0/swap
 
-        # Verificar que la partición EFI exista
-        echo -e "${CYAN}Verificando partición EFI antes del montaje...${NC}"
+        # Verificar que las particiones existan antes de montar
+        echo -e "${CYAN}Verificando particiones antes del montaje...${NC}"
         if [ ! -b "${SELECTED_DISK}1" ]; then
             echo -e "${RED}ERROR: Partición EFI ${SELECTED_DISK}1 no existe${NC}"
+            exit 1
+        fi
+        if [ ! -b "${SELECTED_DISK}2" ]; then
+            echo -e "${RED}ERROR: Partición boot ${SELECTED_DISK}2 no existe${NC}"
             exit 1
         fi
 
@@ -415,24 +423,37 @@ partition_cifrado() {
         sleep 2
         sync
 
-        # Montar partición EFI directamente en /boot
-        echo -e "${CYAN}Creando directorio /boot...${NC}"
+        echo -e "${CYAN}Creando directorio de montaje boot...${NC}"
         mkdir -p /mnt/boot
 
-        echo -e "${CYAN}Montando partición EFI en /boot...${NC}"
-        if ! mount ${SELECTED_DISK}1 /mnt/boot; then
+        echo -e "${CYAN}Montando partición boot...${NC}"
+        if ! mount ${SELECTED_DISK}2 /mnt/boot; then
+            echo -e "${RED}ERROR: Falló el montaje de la partición boot${NC}"
+            exit 1
+        fi
+
+        echo -e "${CYAN}Creando directorio EFI dentro de boot...${NC}"
+        mkdir -p /mnt/boot/efi
+
+        echo -e "${CYAN}Montando partición EFI...${NC}"
+        if ! mount ${SELECTED_DISK}1 /mnt/boot/efi; then
             echo -e "${RED}ERROR: Falló el montaje de la partición EFI${NC}"
             exit 1
         fi
 
-        # Verificar que el montaje sea exitoso
+        # Verificar que los montajes sean exitosos (en orden correcto)
         if ! mountpoint -q /mnt/boot; then
             echo -e "${RED}ERROR: /mnt/boot no está montado correctamente${NC}"
             exit 1
         fi
+        if ! mountpoint -q /mnt/boot/efi; then
+            echo -e "${RED}ERROR: /mnt/boot/efi no está montado correctamente${NC}"
+            exit 1
+        fi
 
         echo -e "${GREEN}✓ Todas las particiones montadas correctamente${NC}"
-        echo -e "${GREEN}✓ Esquema LUKS+LVM configurado: Solo EFI sin cifrar, resto cifrado${NC}"
+        echo -e "${GREEN}✓ Esquema LUKS+LVM configurado:${NC}"
+        echo -e "${GREEN}  • UEFI: EFI (512MB) + boot (1GB) sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
         pacstrap /mnt cryptsetup lvm2
@@ -514,6 +535,8 @@ partition_cifrado() {
         fi
 
         echo -e "${GREEN}✓ Partición boot montada correctamente${NC}"
+        echo -e "${GREEN}✓ Esquema LUKS+LVM configurado:${NC}"
+        echo -e "${GREEN}  • BIOS Legacy: boot (512MB) sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
         pacstrap /mnt cryptsetup lvm2
@@ -897,16 +920,16 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             partprobe $SELECTED_DISK 2>/dev/null || true
             sleep 1
 
-            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
             # Reintentar si no se obtuvo UUID
             if [ -z "$CRYPT_UUID" ]; then
                 echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
                 sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
             fi
 
             if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}2${NC}"
+                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}3${NC}"
                 echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
                 exit 1
             fi
@@ -934,13 +957,15 @@ if [ "$PARTITION_MODE" != "manual" ]; then
         fi
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --recheck --debug" 2>&1 | tee /tmp/grub-install.log; then
+        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck --debug" 2>&1 | tee /tmp/grub-install.log; then
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
             echo -e "${YELLOW}Log de grub-install:${NC}"
             cat /tmp/grub-install.log
             echo -e "${YELLOW}Información adicional:${NC}"
             echo "- Estado de /boot:"
             ls -la /mnt/boot/
+            echo "- Estado de /boot/efi:"
+            ls -la /mnt/boot/efi/
             echo "- Espacio disponible en /boot:"
             df -h /mnt/boot
             echo "- Espacio disponible en /boot/efi:"
@@ -1266,7 +1291,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${YELLOW}🔐 INFORMACIÓN CRÍTICA SOBRE TU SISTEMA CIFRADO:${NC}"
     echo ""
     echo -e "${GREEN}✓ Configuración aplicada:${NC}"
-    echo -e "${CYAN}  • Solo la partición EFI/boot queda sin cifrar (necesario para arrancar)${NC}"
+    echo -e "${CYAN}  • Solo las particiones EFI y boot quedan sin cifrar (necesario para arrancar)${NC}"
     echo -e "${CYAN}  • Toda la partición principal está cifrada con LUKS${NC}"
     echo -e "${CYAN}  • LVM gestiona las particiones sobre el cifrado${NC}"
     echo -e "${CYAN}  • Swap cifrado incluido (8GB)${NC}"
