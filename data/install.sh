@@ -116,6 +116,7 @@ clear
 echo -e "${GREEN}| Actualizando mejores listas de Mirrors |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
+barra_progreso
 sudo reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
 sleep 3
 clear
@@ -840,6 +841,12 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             exit 1
         fi
 
+        # Verificar sistema UEFI
+        if [ ! -d "/sys/firmware/efi" ]; then
+            echo -e "${RED}ERROR: Sistema no está en modo UEFI${NC}"
+            exit 1
+        fi
+
         # Limpiar entradas UEFI previas que puedan causar conflictos
         echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
         efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
@@ -849,8 +856,47 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             rm -rf /mnt/boot/efi/EFI/GRUB
         fi
 
+        # Crear directorio EFI si no existe
+        mkdir -p /mnt/boot/efi/EFI
+
         echo -e "${CYAN}Instalando paquetes GRUB para UEFI...${NC}"
         arch-chroot /mnt /bin/bash -c "pacman -S grub efibootmgr --noconfirm"
+
+        # Configuración específica según el modo de particionado ANTES de instalar
+        echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
+        if [ "$PARTITION_MODE" = "cifrado" ]; then
+            # Esperar que la partición esté lista y obtener UUID
+            echo -e "${CYAN}Obteniendo UUID de la partición cifrada...${NC}"
+            sleep 2
+            sync
+            partprobe $SELECTED_DISK 2>/dev/null || true
+            sleep 1
+
+            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+            # Reintentar si no se obtuvo UUID
+            if [ -z "$CRYPT_UUID" ]; then
+                echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
+                sleep 2
+                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+            fi
+
+            if [ -z "$CRYPT_UUID" ]; then
+                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}2${NC}"
+                echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
+                exit 1
+            fi
+            echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
+            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap loglevel=3 quiet\"/" /mnt/etc/default/grub
+            echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
+            echo "GRUB_CRYPTODISK_ENABLE=y" >> /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
+        elif [ "$PARTITION_MODE" = "btrfs" ]; then
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3 quiet"/' /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
+        else
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
+        fi
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
         if ! arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck"; then
@@ -862,20 +908,6 @@ if [ "$PARTITION_MODE" != "manual" ]; then
         if [ ! -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
             echo -e "${RED}ERROR: No se creó grubx64.efi${NC}"
             exit 1
-        fi
-
-        # Configuración específica según el modo de particionado
-        if [ "$PARTITION_MODE" = "cifrado" ]; then
-            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
-            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap loglevel=3 quiet\"/" /mnt/etc/default/grub
-            echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256\"" >> /mnt/etc/default/grub
-        elif [ "$PARTITION_MODE" = "btrfs" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3 quiet"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
-        else
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
         fi
 
         echo -e "${CYAN}Generando configuración de GRUB...${NC}"
@@ -895,24 +927,46 @@ if [ "$PARTITION_MODE" != "manual" ]; then
         echo -e "${CYAN}Instalando paquetes GRUB para BIOS...${NC}"
         arch-chroot /mnt /bin/bash -c "pacman -S grub --noconfirm"
 
-        echo -e "${CYAN}Instalando GRUB en disco...${NC}"
-        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK --recheck"; then
-            echo -e "${RED}ERROR: Falló la instalación de GRUB BIOS${NC}"
-            exit 1
-        fi
-
-        # Configuración específica según el modo de particionado
+        # Configuración específica según el modo de particionado ANTES de instalar
+        echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
         if [ "$PARTITION_MODE" = "cifrado" ]; then
+            # Esperar que la partición esté lista y obtener UUID
+            echo -e "${CYAN}Obteniendo UUID de la partición cifrada...${NC}"
+            sleep 2
+            sync
+            partprobe $SELECTED_DISK 2>/dev/null || true
+            sleep 1
+
             CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+            # Reintentar si no se obtuvo UUID
+            if [ -z "$CRYPT_UUID" ]; then
+                echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
+                sleep 2
+                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+            fi
+
+            if [ -z "$CRYPT_UUID" ]; then
+                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}2${NC}"
+                echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
+                exit 1
+            fi
+            echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
             sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap loglevel=3 quiet\"/" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256\"" >> /mnt/etc/default/grub
+            echo "GRUB_CRYPTODISK_ENABLE=y" >> /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3 quiet"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
+        fi
+
+        echo -e "${CYAN}Instalando GRUB en disco...${NC}"
+        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK --recheck"; then
+            echo -e "${RED}ERROR: Falló la instalación de GRUB BIOS${NC}"
+            exit 1
         fi
 
         echo -e "${CYAN}Generando configuración de GRUB...${NC}"
@@ -1043,11 +1097,6 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 
     # Configuración adicional para reducir timeouts de cifrado
     echo "rd.luks.options=timeout=120" >> /mnt/etc/default/grub
-
-    # Configurar GRUB para soportar cifrado en el directorio /boot si es BIOS Legacy
-    if [ "$FIRMWARE_TYPE" != "UEFI" ]; then
-        echo "GRUB_CRYPTODISK_ENABLE=y" >> /mnt/etc/default/grub
-    fi
 
     sleep 2
 fi
