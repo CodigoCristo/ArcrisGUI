@@ -2,7 +2,7 @@
 <interface>
   <object class="AdwApplicationWindow" id="HardwareListWindow">
     <property name="title">Hardware</property>
-    <property name="default-width">550</property>
+    <property name="default-width">650</property>
     <property name="default-height">520</property>
     <property name="modal">true</property>
     <property name="resizable">false</property>
@@ -61,7 +61,11 @@
                           <object class="GtkStringList">
                             <items>
                               <item>Open Source</item>
-                              <item>Nvidia Private</item>
+                              <item>Nvidia for linux</item>
+                              <item>Nvidia-lts for linux-lts</item>
+                              <item>Nvidia-dkms (any kernel)</item>
+                              <item>Nvidia-470</item>
+                              <item>Nvidia-390</item>
                               <item>AMD Private</item>
                               <item>Intel Private</item>
                               <item>Máquina Virtual</item>

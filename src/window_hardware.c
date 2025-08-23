@@ -514,7 +514,11 @@ const char* window_hardware_get_video_driver_name(VideoDriverType driver)
 {
     switch (driver) {
         case VIDEO_DRIVER_OPEN_SOURCE: return "Open Source";
-        case VIDEO_DRIVER_NVIDIA_PRIVATE: return "Nvidia Private";
+        case VIDEO_DRIVER_NVIDIA_LINUX: return "nvidia";
+        case VIDEO_DRIVER_NVIDIA_LTS: return "nvidia-lts";
+        case VIDEO_DRIVER_NVIDIA_DKMS: return "nvidia-dkms";
+        case VIDEO_DRIVER_NVIDIA_470: return "nvidia-470xx-dkms";
+        case VIDEO_DRIVER_NVIDIA_390: return "nvidia-390xx-dkms";
         case VIDEO_DRIVER_AMD_PRIVATE: return "AMD Private";
         case VIDEO_DRIVER_INTEL_PRIVATE: return "Intel Private";
         case VIDEO_DRIVER_VIRTUAL_MACHINE: return "Máquina Virtual";
@@ -604,8 +608,16 @@ gboolean window_hardware_load_from_variables(WindowHardwareData *data)
             // Convertir string a enum
             if (g_strcmp0(value, "Open Source") == 0) {
                 data->current_video_driver = VIDEO_DRIVER_OPEN_SOURCE;
-            } else if (g_strcmp0(value, "Nvidia Private") == 0) {
-                data->current_video_driver = VIDEO_DRIVER_NVIDIA_PRIVATE;
+            } else if (g_strcmp0(value, "nvidia") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_LINUX;
+            } else if (g_strcmp0(value, "nvidia-lts") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_LTS;
+            } else if (g_strcmp0(value, "nvidia-dkms") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_DKMS;
+            } else if (g_strcmp0(value, "nvidia-470xx-dkms") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_470;
+            } else if (g_strcmp0(value, "nvidia-390xx-dkms") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_390;
             } else if (g_strcmp0(value, "AMD Private") == 0) {
                 data->current_video_driver = VIDEO_DRIVER_AMD_PRIVATE;
             } else if (g_strcmp0(value, "Intel Private") == 0) {
