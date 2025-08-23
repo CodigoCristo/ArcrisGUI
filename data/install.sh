@@ -83,7 +83,7 @@ echo ""
 # Configuración de zona horaria
 timedatectl set-timezone $TIMEZONE
 sudo hwclock -w
-sudo hwclock --systohc
+sudo hwclock --systohc --rtc=/dev/rtc0
 
 # Configuración de locale
 echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen
