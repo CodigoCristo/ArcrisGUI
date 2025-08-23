@@ -181,8 +181,8 @@ partition_auto() {
         echo ""
         mount ${SELECTED_DISK}3 /mnt
         swapon ${SELECTED_DISK}2
-        mkdir -p /mnt/efi
-        mount ${SELECTED_DISK}1 /mnt/efi
+        mkdir -p /mnt/boot/efi
+        mount ${SELECTED_DISK}1 /mnt/boot/efi
 
     else
         # Configuración para BIOS Legacy
@@ -267,11 +267,11 @@ partition_auto_btrfs() {
         # Montar subvolúmenes
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}3 /mnt
         swapon ${SELECTED_DISK}2
-        mkdir -p /mnt/{efi,home,var,tmp}
+        mkdir -p /mnt/{boot/efi,home,var,tmp}
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}3 /mnt/home
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}3 /mnt/var
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
-        mount ${SELECTED_DISK}1 /mnt/efi
+        mount ${SELECTED_DISK}1 /mnt/boot/efi
 
         # Instalar herramientas específicas para BTRFS
         pacstrap /mnt btrfs-progs
@@ -375,8 +375,8 @@ partition_cifrado() {
         mkswap /dev/vg0/swap
         mount /dev/vg0/root /mnt
         swapon /dev/vg0/swap
-        mkdir -p /mnt/efi
-        mount ${SELECTED_DISK}1 /mnt/efi
+        mkdir -p /mnt/boot/efi
+        mount ${SELECTED_DISK}1 /mnt/boot/efi
 
         # Instalar herramientas específicas para cifrado
         pacstrap /mnt cryptsetup lvm2
@@ -834,8 +834,35 @@ if [ "$PARTITION_MODE" != "manual" ]; then
     echo ""
 
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        # Verificar que la partición EFI esté montada
+        if ! mountpoint -q /mnt/boot/efi; then
+            echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot/efi${NC}"
+            exit 1
+        fi
+
+        # Limpiar entradas UEFI previas que puedan causar conflictos
+        echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
+        efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
+
+        # Limpiar directorio EFI previo si existe
+        if [ -d "/mnt/boot/efi/EFI/GRUB" ]; then
+            rm -rf /mnt/boot/efi/EFI/GRUB
+        fi
+
+        echo -e "${CYAN}Instalando paquetes GRUB para UEFI...${NC}"
         arch-chroot /mnt /bin/bash -c "pacman -S grub efibootmgr --noconfirm"
-        arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB"
+
+        echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
+        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck"; then
+            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
+            exit 1
+        fi
+
+        # Verificar que grubx64.efi se haya creado
+        if [ ! -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
+            echo -e "${RED}ERROR: No se creó grubx64.efi${NC}"
+            exit 1
+        fi
 
         # Configuración específica según el modo de particionado
         if [ "$PARTITION_MODE" = "cifrado" ]; then
@@ -851,10 +878,28 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
         fi
 
-        arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
+        echo -e "${CYAN}Generando configuración de GRUB...${NC}"
+        if ! arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
+            echo -e "${RED}ERROR: Falló la generación de grub.cfg${NC}"
+            exit 1
+        fi
+
+        # Verificar que grub.cfg se haya creado
+        if [ ! -f "/mnt/boot/grub/grub.cfg" ]; then
+            echo -e "${RED}ERROR: No se creó grub.cfg${NC}"
+            exit 1
+        fi
+
+        echo -e "${GREEN}✓ GRUB UEFI instalado correctamente${NC}"
     else
+        echo -e "${CYAN}Instalando paquetes GRUB para BIOS...${NC}"
         arch-chroot /mnt /bin/bash -c "pacman -S grub --noconfirm"
-        arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK"
+
+        echo -e "${CYAN}Instalando GRUB en disco...${NC}"
+        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK --recheck"; then
+            echo -e "${RED}ERROR: Falló la instalación de GRUB BIOS${NC}"
+            exit 1
+        fi
 
         # Configuración específica según el modo de particionado
         if [ "$PARTITION_MODE" = "cifrado" ]; then
@@ -870,7 +915,19 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
         fi
 
-        arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
+        echo -e "${CYAN}Generando configuración de GRUB...${NC}"
+        if ! arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
+            echo -e "${RED}ERROR: Falló la generación de grub.cfg${NC}"
+            exit 1
+        fi
+
+        # Verificar que grub.cfg se haya creado
+        if [ ! -f "/mnt/boot/grub/grub.cfg" ]; then
+            echo -e "${RED}ERROR: No se creó grub.cfg${NC}"
+            exit 1
+        fi
+
+        echo -e "${GREEN}✓ GRUB BIOS instalado correctamente${NC}"
     fi
 else
     echo -e "${GREEN}| Modo manual: Bootloader debe instalarse manualmente |${NC}"
@@ -879,13 +936,57 @@ else
     echo -e "${YELLOW}Para instalar GRUB manualmente:${NC}"
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         echo "pacman -S grub efibootmgr"
-        echo "grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB"
+        echo "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck"
     else
         echo "pacman -S grub"
-        echo "grub-install --target=i386-pc $SELECTED_DISK"
+        echo "grub-install --target=i386-pc $SELECTED_DISK --recheck"
     fi
     echo "grub-mkconfig -o /boot/grub/grub.cfg"
+    echo ""
+    echo -e "${CYAN}Verificar después de la instalación:${NC}"
+    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        echo "ls /boot/efi/EFI/GRUB/grubx64.efi"
+    fi
+    echo "ls /boot/grub/grub.cfg"
     sleep 3
+fi
+
+# Verificación final del bootloader
+if [ "$PARTITION_MODE" != "manual" ]; then
+    echo -e "${GREEN}| Verificación final del bootloader |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
+            echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente${NC}"
+
+            # Crear entrada UEFI manualmente si no existe
+            if ! efibootmgr | grep -q "GRUB"; then
+                echo -e "${CYAN}Creando entrada UEFI para GRUB...${NC}"
+                efibootmgr --disk $SELECTED_DISK --part 1 --create --label "GRUB" --loader '\EFI\GRUB\grubx64.efi'
+
+                # Hacer que GRUB sea la primera opción de boot
+                GRUB_NUM=$(efibootmgr | grep "GRUB" | head -1 | cut -d'*' -f1 | sed 's/Boot//')
+                if [ -n "$GRUB_NUM" ]; then
+                    CURRENT_ORDER=$(efibootmgr | grep BootOrder | cut -d' ' -f2)
+                    NEW_ORDER="$GRUB_NUM,${CURRENT_ORDER//$GRUB_NUM,/}"
+                    NEW_ORDER="${NEW_ORDER//,,/,}"
+                    NEW_ORDER="${NEW_ORDER%,}"
+                    efibootmgr --bootorder "$NEW_ORDER" 2>/dev/null || true
+                fi
+            fi
+        else
+            echo -e "${RED}⚠ Problema con la instalación del bootloader UEFI${NC}"
+        fi
+    else
+        if [ -f "/mnt/boot/grub/grub.cfg" ]; then
+            echo -e "${GREEN}✓ Bootloader BIOS verificado correctamente${NC}"
+        else
+            echo -e "${RED}⚠ Problema con la instalación del bootloader BIOS${NC}"
+        fi
+    fi
+    sleep 2
 fi
 clear
 
