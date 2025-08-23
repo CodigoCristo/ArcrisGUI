@@ -82,9 +82,8 @@ echo ""
 
 # Configuración de zona horaria
 timedatectl set-timezone $TIMEZONE
-hwclock -w
-hwclock --hctosys
-#hwclock --systohc
+sudo hwclock -w
+sudo hwclock --systohc
 
 # Configuración de locale
 echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen
@@ -117,7 +116,7 @@ clear
 echo -e "${GREEN}| Actualizando mejores listas de Mirrors |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
-reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+sudo reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
 sleep 3
 clear
 cat /etc/pacman.d/mirrorlist
@@ -526,6 +525,88 @@ pacstrap /mnt reflector python3 rsync
 pacstrap /mnt nano
 pacstrap /mnt xdg-user-dirs
 pacstrap /mnt fastfetch
+
+# Instalación de firmware de Linux
+echo -e "${GREEN}| Instalando firmware de Linux |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+# Detectar e instalar firmware específico según el hardware detectado
+echo -e "${GREEN}| Detectando hardware específico |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+# Detectar GPU AMD
+if lspci | grep -i "amd\|ati" | grep -i "vga\|3d\|display"; then
+    echo "✓ Detectada GPU AMD/ATI - Instalando firmware AMD"
+    pacstrap /mnt linux-firmware-amdgpu linux-firmware-radeon
+fi
+
+# Detectar GPU NVIDIA
+if lspci | grep -i "nvidia" | grep -i "vga\|3d\|display"; then
+    echo "✓ Detectada GPU NVIDIA - Instalando firmware NVIDIA"
+    pacstrap /mnt linux-firmware-nvidia
+fi
+
+# Detectar hardware Intel
+if lspci | grep -i "intel"; then
+    echo "✓ Detectado hardware Intel - Instalando firmware Intel"
+    pacstrap /mnt linux-firmware-intel
+fi
+
+# Detectar adaptadores Realtek
+if lspci | grep -i "realtek"; then
+    echo "✓ Detectados adaptadores Realtek - Instalando firmware Realtek"
+    pacstrap /mnt linux-firmware-realtek
+fi
+
+# Detectar adaptadores Broadcom
+if lspci | grep -i "broadcom"; then
+    echo "✓ Detectados adaptadores Broadcom - Instalando firmware Broadcom"
+    pacstrap /mnt linux-firmware-broadcom
+fi
+
+# Detectar adaptadores Atheros
+if lspci | grep -i "atheros\|qualcomm"; then
+    echo "✓ Detectados adaptadores Atheros/Qualcomm - Instalando firmware Atheros"
+    pacstrap /mnt linux-firmware-atheros
+fi
+
+# Detectar adaptadores MediaTek/Ralink
+if lspci | grep -i "mediatek\|ralink"; then
+    echo "✓ Detectados adaptadores MediaTek/Ralink - Instalando firmware MediaTek"
+    pacstrap /mnt linux-firmware-mediatek
+fi
+
+# Detectar dispositivos de audio Cirrus Logic
+if lspci | grep -i "cirrus"; then
+    echo "✓ Detectados dispositivos Cirrus Logic - Instalando firmware Cirrus"
+    pacstrap /mnt linux-firmware-cirrus
+fi
+
+# Instalar firmware de audio SOF si hay dispositivos de audio Intel
+if lspci | grep -i "intel" | grep -i "audio"; then
+    echo "✓ Detectado audio Intel - Instalando SOF firmware"
+    pacstrap /mnt sof-firmware
+fi
+
+# Verificar si no se detectó hardware específico
+FIRMWARE_INSTALLED=false
+if lspci | grep -iE "amd|ati|nvidia|intel|realtek|broadcom|atheros|qualcomm|mediatek|ralink|cirrus"; then
+    FIRMWARE_INSTALLED=true
+fi
+
+if [ "$FIRMWARE_INSTALLED" = "false" ]; then
+    echo "⚠ No se detectó hardware específico conocido"
+    echo "  Instalando firmware básico recomendado..."
+    pacstrap /mnt linux-firmware-other
+fi
+
+echo ""
+echo "ℹ Después del reinicio, puedes verificar firmware cargado con:"
+echo "  sudo journalctl -kg 'loaded f'"
+
+sleep 2
 clear
 
 # Actualización de mirrors en el sistema instalado
@@ -585,22 +666,22 @@ echo ""
 
 case "$SELECTED_KERNEL" in
     "linux")
-        arch-chroot /mnt /bin/bash -c "pacman -S linux linux-firmware --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S linux --noconfirm"
         ;;
     "linux-hardened")
-        arch-chroot /mnt /bin/bash -c "pacman -S linux-hardened linux-firmware --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-hardened --noconfirm"
         ;;
     "linux-lts")
-        arch-chroot /mnt /bin/bash -c "pacman -S linux-lts linux-firmware --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-lts --noconfirm"
         ;;
     "linux-rt-lts")
-        arch-chroot /mnt /bin/bash -c "pacman -S linux-rt-lts linux-firmware --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-rt-lts --noconfirm"
         ;;
     "linux-zen")
-        arch-chroot /mnt /bin/bash -c "pacman -S linux-zen linux-firmware --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-zen --noconfirm"
         ;;
     *)
-        arch-chroot /mnt /bin/bash -c "pacman -S linux linux-firmware --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S linux --noconfirm"
         ;;
 esac
 
@@ -715,6 +796,39 @@ echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
 sleep 2
 clear
 
+# Configuración de mkinitcpio según el modo de particionado
+echo -e "${GREEN}| Configurando mkinitcpio |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+if [ "$PARTITION_MODE" = "cifrado" ]; then
+    echo "Configurando mkinitcpio para cifrado..."
+
+    # Configurar módulos específicos para cifrado
+    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt aes_x86_64 aes_generic sha256 sha512 xts lrw wp512)/' /mnt/etc/mkinitcpio.conf
+
+    # Configurar hooks para cifrado con LVM
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+
+elif [ "$PARTITION_MODE" = "btrfs" ]; then
+    echo "Configurando mkinitcpio para BTRFS..."
+    # Configurar módulos específicos para BTRFS
+    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c-intel crc32c zstd_compress lzo_compress)/' /mnt/etc/mkinitcpio.conf
+
+    # Configurar hooks para BTRFS
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+
+else
+    echo "Configurando mkinitcpio para sistema estándar..."
+    # Configuración estándar para ext4
+    sed -i 's/^MODULES=.*/MODULES=()/' /mnt/etc/mkinitcpio.conf
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+fi
+
+# Regenerar initramfs
+arch-chroot /mnt /bin/bash -c "mkinitcpio -P"
+sleep 2
+
 # Instalación de bootloader
 if [ "$PARTITION_MODE" != "manual" ]; then
     echo -e "${GREEN}| Instalando bootloader |${NC}"
@@ -725,14 +839,18 @@ if [ "$PARTITION_MODE" != "manual" ]; then
         arch-chroot /mnt /bin/bash -c "pacman -S grub efibootmgr --noconfirm"
         arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB"
 
-        # Configuración especial para cifrado
+        # Configuración específica según el modo de particionado
         if [ "$PARTITION_MODE" = "cifrado" ]; then
             CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
             sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root loglevel=3 quiet\"/" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256\"" >> /mnt/etc/default/grub
+        elif [ "$PARTITION_MODE" = "btrfs" ]; then
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3 quiet"/' /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
         fi
 
         arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
@@ -740,13 +858,18 @@ if [ "$PARTITION_MODE" != "manual" ]; then
         arch-chroot /mnt /bin/bash -c "pacman -S grub --noconfirm"
         arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK"
 
-        # Configuración especial para cifrado
+        # Configuración específica según el modo de particionado
         if [ "$PARTITION_MODE" = "cifrado" ]; then
             CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
             sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root loglevel=3 quiet\"/" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256\"" >> /mnt/etc/default/grub
+        elif [ "$PARTITION_MODE" = "btrfs" ]; then
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3 quiet"/' /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
         fi
 
         arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
@@ -755,7 +878,16 @@ else
     echo -e "${GREEN}| Modo manual: Bootloader debe instalarse manualmente |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
-    sleep 2
+    echo -e "${YELLOW}Para instalar GRUB manualmente:${NC}"
+    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        echo "pacman -S grub efibootmgr"
+        echo "grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB"
+    else
+        echo "pacman -S grub"
+        echo "grub-install --target=i386-pc $SELECTED_DISK"
+    fi
+    echo "grub-mkconfig -o /boot/grub/grub.cfg"
+    sleep 3
 fi
 clear
 
@@ -791,33 +923,51 @@ echo -e "${GREEN}| Configuración final del sistema |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
+
+
 # Configurar directorios de usuario
 arch-chroot /mnt /bin/bash -c "su - $USER -c 'xdg-user-dirs-update'"
 
 # Configuración especial para cifrado
+# Configuración adicional para cifrado
 if [ "$PARTITION_MODE" = "cifrado" ]; then
-    echo -e "${GREEN}| Configurando mkinitcpio para cifrado |${NC}"
+    echo -e "${GREEN}| Configuración adicional para cifrado |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
 
-    # Instalar paquetes adicionales para cifrado
-    arch-chroot /mnt /bin/bash -c "pacman -S cryptsetup lvm2 --noconfirm"
-
-    # Configurar mkinitcpio para cifrado con hooks en orden correcto
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
-
-    # Agregar módulos necesarios
-    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt aes_x86_64 sha256 sha512)/' /mnt/etc/mkinitcpio.conf
-
-    # Regenerar initramfs
-    arch-chroot /mnt /bin/bash -c "mkinitcpio -P"
-
-    # Configurar crypttab si es necesario
+    # Configurar crypttab
     CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
     echo "cryptroot UUID=${CRYPT_UUID} none luks" >> /mnt/etc/crypttab
 
     # Verificar que los servicios LVM estén habilitados
     arch-chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service"
+
+    # Configurar GRUB para soportar cifrado en el directorio /boot si es BIOS Legacy
+    if [ "$FIRMWARE_TYPE" != "UEFI" ]; then
+        echo "GRUB_CRYPTODISK_ENABLE=y" >> /mnt/etc/default/grub
+    fi
+
+    sleep 2
+fi
+
+# Configuración adicional para BTRFS
+if [ "$PARTITION_MODE" = "btrfs" ]; then
+    echo -e "${GREEN}| Configuración adicional para BTRFS |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    # Habilitar servicios de mantenimiento BTRFS
+    arch-chroot /mnt /bin/bash -c "systemctl enable btrfs-scrub@-.timer"
+    arch-chroot /mnt /bin/bash -c "systemctl enable fstrim.timer"
+
+    # Configurar snapshots automáticos si snapper está disponible
+    if arch-chroot /mnt /bin/bash -c "pacman -Qq snapper" 2>/dev/null; then
+        arch-chroot /mnt /bin/bash -c "snapper -c root create-config /"
+        arch-chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer snapper-cleanup.timer"
+    fi
+
+    # Optimizar fstab para BTRFS
+    sed -i 's/relatime/noatime/g' /mnt/etc/fstab
 
     sleep 2
 fi
@@ -846,6 +996,15 @@ fi
 echo -e "${CYAN}• Puedes iniciar sesión con:${NC}"
 echo -e "  Usuario: ${GREEN}$USER${NC}"
 echo -e "  Contraseña: ${GREEN}$PASSWORD_USER${NC}"
+echo ""
+echo -e "${YELLOW}VERIFICACIÓN DE FIRMWARE:${NC}"
+echo -e "${CYAN}• Para verificar firmware cargado después del reinicio:${NC}"
+echo -e "  ${GREEN}sudo journalctl -kg 'loaded f'${NC}"
+echo -e "${CYAN}• Si necesitas firmware adicional, instala manualmente:${NC}"
+echo -e "  ${GREEN}sudo pacman -S linux-firmware-[vendor]${NC}"
+echo -e "${CYAN}• Vendors disponibles: amdgpu, intel, nvidia, realtek,${NC}"
+echo -e "${CYAN}  broadcom, atheros, mediatek, cirrus, other${NC}"
+
 echo ""
 
 # Barra de progreso final
