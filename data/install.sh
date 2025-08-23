@@ -484,14 +484,29 @@ partition_cifrado() {
         echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -
         echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptlvm -
 
+        # Crear backup del header LUKS (recomendación de seguridad)
+        echo -e "${CYAN}Creando backup del header LUKS...${NC}"
+        cryptsetup luksHeaderBackup ${SELECTED_DISK}2 --header-backup-file /tmp/luks-header-backup
+        echo -e "${GREEN}✓ Backup del header LUKS guardado en /tmp/luks-header-backup${NC}"
+        echo -e "${YELLOW}IMPORTANTE: Copia este archivo a un lugar seguro después de la instalación${NC}"
+
         # Configurar LVM sobre LUKS
         echo -e "${GREEN}| Configurando LVM sobre LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
+        echo -e "${CYAN}Creando Physical Volume sobre dispositivo cifrado...${NC}"
         pvcreate /dev/mapper/cryptlvm
+        echo -e "${CYAN}Creando Volume Group 'vg0'...${NC}"
         vgcreate vg0 /dev/mapper/cryptlvm
+        echo -e "${CYAN}Creando Logical Volume 'swap' de 8GB...${NC}"
         lvcreate -L 8G vg0 -n swap
+        echo -e "${CYAN}Creando Logical Volume 'root' con el espacio restante...${NC}"
         lvcreate -l 100%FREE vg0 -n root
+
+        echo -e "${GREEN}✓ Configuración LVM completada:${NC}"
+        echo -e "${GREEN}  • Volume Group: vg0${NC}"
+        echo -e "${GREEN}  • Swap: 8GB (/dev/vg0/swap)${NC}"
+        echo -e "${GREEN}  • Root: Resto del espacio (/dev/vg0/root)${NC}"
 
         # Verificar que el volumen LVM esté disponible
         sleep 2
@@ -944,10 +959,14 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             # Precargar módulos necesarios para cifrado
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
 
+            # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
+
             echo -e "${GREEN}✓ Configuración GRUB para cifrado:${NC}"
             echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
             echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
             echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
+            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
@@ -1028,8 +1047,17 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
             # Usar GRUB_CMDLINE_LINUX en lugar de GRUB_CMDLINE_LINUX_DEFAULT para mejores prácticas
             sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
+            # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
+
+            echo -e "${GREEN}✓ Configuración GRUB para cifrado BIOS Legacy:${NC}"
+            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
+            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
+            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
+            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
+            echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
