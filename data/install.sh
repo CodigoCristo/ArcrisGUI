@@ -344,22 +344,18 @@ partition_cifrado() {
         parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
         parted $SELECTED_DISK --script set 1 esp on
 
-        # Crear partición swap (8GB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 513MiB 8705MiB
-
         # Crear partición cifrada (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary 8705MiB 100%
+        parted $SELECTED_DISK --script --align optimal mkpart primary 513MiB 100%
 
         # Formatear particiones
         mkfs.fat -F32 -v ${SELECTED_DISK}1
-        mkswap ${SELECTED_DISK}2
 
         # Configurar LUKS
         echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}3 -
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}3 cryptroot -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptroot -
 
         # Configurar LVM
         echo -e "${GREEN}| Configurando LVM |${NC}"
@@ -367,6 +363,7 @@ partition_cifrado() {
         echo ""
         pvcreate /dev/mapper/cryptroot
         vgcreate vg0 /dev/mapper/cryptroot
+        lvcreate -L 8G vg0 -n swap
         lvcreate -l 100%FREE vg0 -n root
 
         # Verificar que el volumen LVM esté disponible
@@ -375,8 +372,9 @@ partition_cifrado() {
 
         # Formatear y montar
         mkfs.ext4 -F /dev/vg0/root
+        mkswap /dev/vg0/swap
         mount /dev/vg0/root /mnt
-        swapon ${SELECTED_DISK}2
+        swapon /dev/vg0/swap
         mkdir -p /mnt/efi
         mount ${SELECTED_DISK}1 /mnt/efi
 
@@ -396,22 +394,18 @@ partition_cifrado() {
         parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 501MiB
         parted $SELECTED_DISK --script set 1 boot on
 
-        # Crear partición swap (8GB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 501MiB 8693MiB
-
         # Crear partición cifrada (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary 8693MiB 100%
+        parted $SELECTED_DISK --script --align optimal mkpart primary 501MiB 100%
 
         # Formatear particiones
         mkfs.ext4 -F ${SELECTED_DISK}1
-        mkswap ${SELECTED_DISK}2
 
         # Configurar LUKS
         echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}3 -
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}3 cryptroot -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptroot -
 
         # Configurar LVM
         echo -e "${GREEN}| Configurando LVM |${NC}"
@@ -419,6 +413,7 @@ partition_cifrado() {
         echo ""
         pvcreate /dev/mapper/cryptroot
         vgcreate vg0 /dev/mapper/cryptroot
+        lvcreate -L 8G vg0 -n swap
         lvcreate -l 100%FREE vg0 -n root
 
         # Verificar que el volumen LVM esté disponible
@@ -427,8 +422,9 @@ partition_cifrado() {
 
         # Formatear y montar
         mkfs.ext4 -F /dev/vg0/root
+        mkswap /dev/vg0/swap
         mount /dev/vg0/root /mnt
-        swapon ${SELECTED_DISK}2
+        swapon /dev/vg0/swap
         mkdir -p /mnt/boot
         mount ${SELECTED_DISK}1 /mnt/boot
 
@@ -589,6 +585,8 @@ if lspci | grep -i "intel" | grep -i "audio"; then
     echo "✓ Detectado audio Intel - Instalando SOF firmware"
     pacstrap /mnt sof-firmware
 fi
+
+
 
 # Verificar si no se detectó hardware específico
 FIRMWARE_INSTALLED=false
@@ -805,7 +803,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo "Configurando mkinitcpio para cifrado..."
 
     # Configurar módulos específicos para cifrado
-    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt aes_x86_64 aes_generic sha256 sha512 xts lrw wp512)/' /mnt/etc/mkinitcpio.conf
+    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt)/' /mnt/etc/mkinitcpio.conf
 
     # Configurar hooks para cifrado con LVM
     sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
@@ -841,8 +839,8 @@ if [ "$PARTITION_MODE" != "manual" ]; then
 
         # Configuración específica según el modo de particionado
         if [ "$PARTITION_MODE" = "cifrado" ]; then
-            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
-            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root loglevel=3 quiet\"/" /mnt/etc/default/grub
+            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap loglevel=3 quiet\"/" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256\"" >> /mnt/etc/default/grub
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
@@ -860,8 +858,8 @@ if [ "$PARTITION_MODE" != "manual" ]; then
 
         # Configuración específica según el modo de particionado
         if [ "$PARTITION_MODE" = "cifrado" ]; then
-            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
-            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root loglevel=3 quiet\"/" /mnt/etc/default/grub
+            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+            sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap loglevel=3 quiet\"/" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256\"" >> /mnt/etc/default/grub
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
@@ -936,11 +934,14 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo ""
 
     # Configurar crypttab
-    CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+    CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
     echo "cryptroot UUID=${CRYPT_UUID} none luks" >> /mnt/etc/crypttab
 
     # Verificar que los servicios LVM estén habilitados
     arch-chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service"
+
+    # Configuración adicional para reducir timeouts de cifrado
+    echo "rd.luks.options=timeout=120" >> /mnt/etc/default/grub
 
     # Configurar GRUB para soportar cifrado en el directorio /boot si es BIOS Legacy
     if [ "$FIRMWARE_TYPE" != "UEFI" ]; then
