@@ -71,7 +71,7 @@ echo " █████╗ ██████╗  ██████╗███�
 echo "██╔══██╗██╔══██╗██╔════╝██╔══██╗██║██╔════╝";
 echo "███████║██████╔╝██║     ██████╔╝██║███████╗";
 echo "██╔══██║██╔══██╗██║     ██╔══██╗██║╚════██║";
-echo "█CRISTO VIVE1█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
+echo "█CRISTO VIVE3█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
 echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝";
 echo -e "${NC}"
 echo ""
@@ -345,18 +345,22 @@ partition_cifrado() {
         parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
         parted $SELECTED_DISK --script set 1 esp on
 
+        # Crear partición boot sin cifrar (1GB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 513MiB 1537MiB
+
         # Crear partición cifrada (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary 513MiB 100%
+        parted $SELECTED_DISK --script --align optimal mkpart primary 1537MiB 100%
 
         # Formatear particiones
         mkfs.fat -F32 -v ${SELECTED_DISK}1
+        mkfs.ext4 -F ${SELECTED_DISK}2
 
         # Configurar LUKS
         echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptroot -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}3 -
+        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}3 cryptroot -
 
         # Configurar LVM
         echo -e "${GREEN}| Configurando LVM |${NC}"
@@ -377,7 +381,9 @@ partition_cifrado() {
         mount /dev/vg0/root /mnt
         swapon /dev/vg0/swap
         mkdir -p /mnt/boot/efi
+        mkdir -p /mnt/boot
         mount ${SELECTED_DISK}1 /mnt/boot/efi
+        mount ${SELECTED_DISK}2 /mnt/boot
 
         # Instalar herramientas específicas para cifrado
         pacstrap /mnt cryptsetup lvm2
@@ -391,12 +397,12 @@ partition_cifrado() {
         # Crear tabla de particiones MBR
         parted $SELECTED_DISK --script --align optimal mklabel msdos
 
-        # Crear partición de boot sin cifrar (500MB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 501MiB
+        # Crear partición de boot sin cifrar (1GB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 1025MiB
         parted $SELECTED_DISK --script set 1 boot on
 
         # Crear partición cifrada (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary 501MiB 100%
+        parted $SELECTED_DISK --script --align optimal mkpart primary 1025MiB 100%
 
         # Formatear particiones
         mkfs.ext4 -F ${SELECTED_DISK}1
@@ -872,23 +878,22 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             partprobe $SELECTED_DISK 2>/dev/null || true
             sleep 1
 
-            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
             # Reintentar si no se obtuvo UUID
             if [ -z "$CRYPT_UUID" ]; then
                 echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
                 sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
             fi
 
             if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}2${NC}"
+                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}3${NC}"
                 echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
                 exit 1
             fi
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
             sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap loglevel=3 quiet\"/" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
-            echo "GRUB_CRYPTODISK_ENABLE=y" >> /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3 quiet"/' /mnt/etc/default/grub
@@ -953,7 +958,6 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
             sed -i "s/GRUB_CMDLINE_LINUX_DEFAULT=\"quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"cryptdevice=UUID=${CRYPT_UUID}:cryptroot root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap loglevel=3 quiet\"/" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
-            echo "GRUB_CRYPTODISK_ENABLE=y" >> /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3 quiet"/' /mnt/etc/default/grub
@@ -1089,7 +1093,11 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo ""
 
     # Configurar crypttab
-    CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+    else
+        CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+    fi
     echo "cryptroot UUID=${CRYPT_UUID} none luks" >> /mnt/etc/crypttab
 
     # Verificar que los servicios LVM estén habilitados
