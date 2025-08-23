@@ -71,7 +71,7 @@ echo " █████╗ ██████╗  ██████╗███�
 echo "██╔══██╗██╔══██╗██╔════╝██╔══██╗██║██╔════╝";
 echo "███████║██████╔╝██║     ██████╔╝██║███████╗";
 echo "██╔══██║██╔══██╗██║     ██╔══██╗██║╚════██║";
-echo "█CRISTO AMÉN█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
+echo "█CRISTO2█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
 echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝";
 echo -e "${NC}"
 echo ""
@@ -484,29 +484,14 @@ partition_cifrado() {
         echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -
         echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptlvm -
 
-        # Crear backup del header LUKS (recomendación de seguridad)
-        echo -e "${CYAN}Creando backup del header LUKS...${NC}"
-        cryptsetup luksHeaderBackup ${SELECTED_DISK}2 --header-backup-file /tmp/luks-header-backup
-        echo -e "${GREEN}✓ Backup del header LUKS guardado en /tmp/luks-header-backup${NC}"
-        echo -e "${YELLOW}IMPORTANTE: Copia este archivo a un lugar seguro después de la instalación${NC}"
-
         # Configurar LVM sobre LUKS
         echo -e "${GREEN}| Configurando LVM sobre LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        echo -e "${CYAN}Creando Physical Volume sobre dispositivo cifrado...${NC}"
         pvcreate /dev/mapper/cryptlvm
-        echo -e "${CYAN}Creando Volume Group 'vg0'...${NC}"
         vgcreate vg0 /dev/mapper/cryptlvm
-        echo -e "${CYAN}Creando Logical Volume 'swap' de 8GB...${NC}"
         lvcreate -L 8G vg0 -n swap
-        echo -e "${CYAN}Creando Logical Volume 'root' con el espacio restante...${NC}"
         lvcreate -l 100%FREE vg0 -n root
-
-        echo -e "${GREEN}✓ Configuración LVM completada:${NC}"
-        echo -e "${GREEN}  • Volume Group: vg0${NC}"
-        echo -e "${GREEN}  • Swap: 8GB (/dev/vg0/swap)${NC}"
-        echo -e "${GREEN}  • Root: Resto del espacio (/dev/vg0/root)${NC}"
 
         # Verificar que el volumen LVM esté disponible
         sleep 2
@@ -960,7 +945,7 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
 
             # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
 
             echo -e "${GREEN}✓ Configuración GRUB para cifrado:${NC}"
             echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
@@ -968,10 +953,10 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
             echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
         else
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
         fi
 
@@ -1048,21 +1033,14 @@ if [ "$PARTITION_MODE" != "manual" ]; then
             # Usar GRUB_CMDLINE_LINUX en lugar de GRUB_CMDLINE_LINUX_DEFAULT para mejores prácticas
             sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
             # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
-
-            echo -e "${GREEN}✓ Configuración GRUB para cifrado BIOS Legacy:${NC}"
-            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
-            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
-            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
-            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
-            echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
         else
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
         fi
 
@@ -1292,6 +1270,15 @@ fi
 echo -e "${CYAN}• Puedes iniciar sesión con:${NC}"
 echo -e "  Usuario: ${GREEN}$USER${NC}"
 echo -e "  Contraseña: ${GREEN}$PASSWORD_USER${NC}"
+echo ""
+echo -e "${YELLOW}VERIFICACIÓN DE FIRMWARE:${NC}"
+echo -e "${CYAN}• Para verificar firmware cargado después del reinicio:${NC}"
+echo -e "  ${GREEN}sudo journalctl -kg 'loaded f'${NC}"
+echo -e "${CYAN}• Si necesitas firmware adicional, instala manualmente:${NC}"
+echo -e "  ${GREEN}sudo pacman -S linux-firmware-[vendor]${NC}"
+echo -e "${CYAN}• Vendors disponibles: amdgpu, intel, nvidia, realtek,${NC}"
+echo -e "${CYAN}  broadcom, atheros, mediatek, cirrus, other${NC}"
+
 echo ""
 
 # Barra de progreso final

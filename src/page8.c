@@ -461,7 +461,7 @@ void page8_terminal_output(Page8Data *data, const gchar *text)
 static void on_install_script_finished(VteTerminal *terminal, gint status, gpointer user_data)
 {
     Page8Data *data = (Page8Data*)user_data;
-    
+
     LOG_INFO("=== DEBUG: CALLBACK on_install_script_finished EJECUTADO ===");
     LOG_INFO("DEBUG: terminal=%p, status=%d, user_data=%p", terminal, status, user_data);
     LOG_INFO("DEBUG: data=%p", data);
@@ -498,12 +498,12 @@ static gboolean page8_navigate_to_completion(Page8Data *data)
     // Navegar a la página 9 (debería ser la última - ya inicializada en carousel)
     guint total_pages = adw_carousel_get_n_pages(data->carousel);
     LOG_INFO("DEBUG: Total de páginas en carousel: %u", total_pages);
-    
+
     if (total_pages == 0) {
         LOG_ERROR("DEBUG: Carousel no tiene páginas!");
         return FALSE;
     }
-    
+
     guint page9_index = total_pages - 1;
     LOG_INFO("DEBUG: Calculado page9_index = %u (última página)", page9_index);
 
@@ -515,12 +515,12 @@ static gboolean page8_navigate_to_completion(Page8Data *data)
 
     GtkWidget *page9_widget = adw_carousel_get_nth_page(data->carousel, page9_index);
     LOG_INFO("DEBUG: page9_widget obtenido = %p", page9_widget);
-    
+
     if (page9_widget) {
         LOG_INFO("DEBUG: Ejecutando adw_carousel_scroll_to...");
         adw_carousel_scroll_to(data->carousel, page9_widget, TRUE);
         LOG_INFO("Navegación a página 9 completada exitosamente");
-        
+
         // Verificar que realmente cambió
         guint current_page = (guint)adw_carousel_get_position(data->carousel);
         LOG_INFO("DEBUG: Página actual después de scroll_to: %u", current_page);
@@ -561,7 +561,8 @@ void page8_execute_install_script(Page8Data *data)
     // Preparar argumentos para ejecutar el script
     gchar *argv[] = {
         "/bin/bash",
-        script_path,
+        "-c",
+        g_strdup_printf("bash %s 2>&1 | tee ~/install.log", script_path),
         NULL
     };
 
@@ -574,9 +575,9 @@ void page8_execute_install_script(Page8Data *data)
 
     // Conectar señal para detectar cuando el proceso termine
     LOG_INFO("DEBUG: Conectando señal 'child-exited' para detectar fin del script");
-    LOG_INFO("DEBUG: vte_terminal=%p, callback=%p, data=%p", 
+    LOG_INFO("DEBUG: vte_terminal=%p, callback=%p, data=%p",
              data->vte_terminal, on_install_script_finished, data);
-    g_signal_connect(data->vte_terminal, "child-exited", 
+    g_signal_connect(data->vte_terminal, "child-exited",
                      G_CALLBACK(on_install_script_finished), data);
     LOG_INFO("DEBUG: Señal 'child-exited' conectada exitosamente");
 
