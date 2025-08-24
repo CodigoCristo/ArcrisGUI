@@ -1181,7 +1181,8 @@ if true; then
 
         # Limpiar entradas UEFI previas que puedan causar conflictos
         echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
-        efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
+        efibootmgr | awk '/grub/i {gsub(/Boot|\*.*/, ""); system("efibootmgr -b " $1 " -B 2>/dev/null")}'
+        # efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
 
         # Limpiar directorio EFI previo si existe
         if [ -d "/mnt/boot/efi/EFI/GRUB" ]; then
