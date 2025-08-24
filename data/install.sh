@@ -71,7 +71,7 @@ echo " █████╗ ██████╗  ██████╗███�
 echo "██╔══██╗██╔══██╗██╔════╝██╔══██╗██║██╔════╝";
 echo "███████║██████╔╝██║     ██████╔╝██║███████╗";
 echo "██╔══██║██╔══██╗██║     ██╔══██╗██║╚════██║";
-echo "██║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
+echo "█CRISTO VIVE █║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
 echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝";
 echo -e "${NC}"
 echo ""
@@ -788,17 +788,26 @@ if [ "$PARTITION_MODE" = "manual" ]; then
             continue
         fi
 
-        # Omitir particiones no formateadas
+        # Para particiones no formateadas (none), detectar el sistema de archivos existente
         if [ "$format" = "none" ]; then
-            continue
+            DETECTED_FS=$(blkid -s TYPE -o value $device)
+            if [ -z "$DETECTED_FS" ]; then
+                echo -e "${YELLOW}ADVERTENCIA: No se pudo detectar sistema de archivos en $device, omitiendo del fstab${NC}"
+                continue
+            fi
+            echo -e "${CYAN}Detectado sistema de archivos existente en $device: $DETECTED_FS${NC}"
+            format_for_fstab="$DETECTED_FS"
+        else
+            # Para particiones formateadas, usar el formato especificado
+            format_for_fstab="$format"
         fi
 
         # Obtener UUID de la partición
         PART_UUID=$(blkid -s UUID -o value $device)
         if [ -n "$PART_UUID" ]; then
             # Determinar el tipo de sistema de archivos
-            case $format in
-                "mkfs.fat32"|"mkfs.fat16")
+            case $format_for_fstab in
+                "mkfs.fat32"|"mkfs.fat16"|"vfat")
                     FS_TYPE="vfat"
                     if [ "$mountpoint" = "/boot/EFI" ]; then
                         echo "UUID=$PART_UUID /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
@@ -806,31 +815,44 @@ if [ "$PARTITION_MODE" = "manual" ]; then
                         echo "UUID=$PART_UUID $mountpoint vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
                     fi
                     ;;
-                "mkfs.ext4"|"mkfs.ext3"|"mkfs.ext2")
-                    FS_TYPE="${format#mkfs.}"
+                "mkfs.ext4"|"mkfs.ext3"|"mkfs.ext2"|"ext4"|"ext3"|"ext2")
+                    if [[ "$format_for_fstab" =~ ^mkfs\. ]]; then
+                        FS_TYPE="${format_for_fstab#mkfs.}"
+                    else
+                        FS_TYPE="$format_for_fstab"
+                    fi
                     if [ "$mountpoint" = "/" ]; then
                         echo "UUID=$PART_UUID / $FS_TYPE rw,relatime 0 1" >> /mnt/etc/fstab
                     else
                         echo "UUID=$PART_UUID $mountpoint $FS_TYPE rw,relatime 0 2" >> /mnt/etc/fstab
                     fi
                     ;;
-                "mkfs.btrfs")
+                "mkfs.btrfs"|"btrfs")
                     echo "UUID=$PART_UUID $mountpoint btrfs rw,noatime,compress=zstd,space_cache=v2 0 2" >> /mnt/etc/fstab
                     ;;
-                "mkfs.xfs")
+                "mkfs.xfs"|"xfs")
                     echo "UUID=$PART_UUID $mountpoint xfs rw,relatime 0 2" >> /mnt/etc/fstab
                     ;;
-                "mkfs.f2fs")
+                "mkfs.f2fs"|"f2fs")
                     echo "UUID=$PART_UUID $mountpoint f2fs rw,relatime 0 2" >> /mnt/etc/fstab
                     ;;
-                "mkfs.ntfs")
+                "mkfs.ntfs"|"ntfs")
                     echo "UUID=$PART_UUID $mountpoint ntfs rw,relatime 0 2" >> /mnt/etc/fstab
                     ;;
-                "mkfs.reiserfs")
+                "mkfs.reiserfs"|"reiserfs")
                     echo "UUID=$PART_UUID $mountpoint reiserfs rw,relatime 0 2" >> /mnt/etc/fstab
                     ;;
-                "mkfs.jfs")
+                "mkfs.jfs"|"jfs")
                     echo "UUID=$PART_UUID $mountpoint jfs rw,relatime 0 2" >> /mnt/etc/fstab
+                    ;;
+                *)
+                    echo -e "${YELLOW}ADVERTENCIA: Sistema de archivos no reconocido ($format_for_fstab) para $device${NC}"
+                    echo -e "${YELLOW}Usando opciones genéricas en fstab${NC}"
+                    if [ "$mountpoint" = "/" ]; then
+                        echo "UUID=$PART_UUID / $format_for_fstab rw,relatime 0 1" >> /mnt/etc/fstab
+                    else
+                        echo "UUID=$PART_UUID $mountpoint $format_for_fstab rw,relatime 0 2" >> /mnt/etc/fstab
+                    fi
                     ;;
             esac
         fi
