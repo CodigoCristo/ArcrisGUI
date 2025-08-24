@@ -945,25 +945,28 @@ echo ""
 
 case "$DRIVER_VIDEO" in
     "Open Source")
-        # Detección automática de hardware de video
-        if lspci | grep -i nvidia > /dev/null; then
+        # Detección automática de hardware de video usando VGA controller
+        VGA_LINE=$(lspci | grep -i "vga compatible controller")
+        echo -e "${CYAN}Tarjeta de video detectada: $VGA_LINE${NC}"
+
+        if echo "$VGA_LINE" | grep -i nvidia > /dev/null; then
             echo "Detectado hardware NVIDIA - Instalando driver open source nouveau"
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-nouveau mesa --noconfirm"
-        elif lspci | grep -i amd > /dev/null || lspci | grep -i radeon > /dev/null; then
+        elif echo "$VGA_LINE" | grep -i "amd\|radeon" > /dev/null; then
             echo "Detectado hardware AMD/Radeon - Instalando driver open source amdgpu"
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu mesa --noconfirm"
-        elif lspci | grep -i intel > /dev/null; then
+        elif echo "$VGA_LINE" | grep -i intel > /dev/null; then
             echo "Detectado hardware Intel - Instalando driver open source intel"
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-intel mesa --noconfirm"
+        elif echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
+            echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
+            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa xf86-video-qxl qemu-guest-agent mesa --noconfirm"
         elif lspci | grep -i virtualbox > /dev/null; then
             echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
             arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils xf86-video-vmware mesa --noconfirm"
         elif lspci | grep -i vmware > /dev/null; then
             echo "Detectado VMware - Instalando open-vm-tools y driver vmware"
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vmware open-vm-tools mesa --noconfirm"
-        elif lspci | grep -i qemu > /dev/null || lspci | grep -i "Red Hat" > /dev/null; then
-            echo "Detectado QEMU/KVM - Instalando driver qxl y guest agent"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl qemu-guest-agent mesa --noconfirm"
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa mesa --noconfirm"
@@ -1004,8 +1007,8 @@ case "$DRIVER_VIDEO" in
         elif lspci | grep -i vmware > /dev/null; then
             echo "Detectado VMware - Instalando open-vm-tools y driver vmware"
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vmware open-vm-tools mesa --noconfirm"
-        elif lspci | grep -i qemu > /dev/null || lspci | grep -i "Red Hat" > /dev/null; then
-            echo "Detectado QEMU/KVM - Instalando driver qxl y guest agent"
+        elif lspci | grep -i qemu > /dev/null || lspci | grep -i "Red Hat.*Virtio" > /dev/null || lspci | grep -i virtio > /dev/null; then
+            echo "Detectado QEMU/KVM/Virtio - Instalando driver qxl y guest agent"
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl qemu-guest-agent mesa --noconfirm"
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"

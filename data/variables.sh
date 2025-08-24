@@ -6,13 +6,15 @@ KEYBOARD_LAYOUT="es"
 KEYMAP_TTY="es"
 TIMEZONE="America/Lima"
 LOCALE="es_PE.UTF-8"
+SELECTED_DISK="/dev/sdc"
+PARTITION_MODE="auto"
 
 # Variables de configuración del usuario
 export USER="qwe"
-export PASSWORD_USER="133"
+export PASSWORD_USER="123"
 export HOSTNAME="arcris"
 # La contraseña del usuario también será la contraseña de root
-export PASSWORD_ROOT="133"
+export PASSWORD_ROOT="123"
 
 # Tipo de instalación seleccionado
 INSTALLATION_TYPE="TERMINAL"
@@ -21,7 +23,7 @@ INSTALLATION_TYPE="TERMINAL"
 SELECTED_KERNEL="linux"
 
 # Driver de Video
-DRIVER_VIDEO="nvidia-dkms"
+DRIVER_VIDEO="Open Source"
 
 # Driver de Audio
 DRIVER_AUDIO="Alsa Audio"
@@ -36,10 +38,4 @@ DRIVER_BLUETOOTH="Ninguno"
 ESSENTIAL_APPS_ENABLED="false"
 UTILITIES_ENABLED="false"
 PROGRAM_EXTRA="false"
-SELECTED_DISK="/dev/sdc"
-PARTITION_MODE="manual"
-PARTITIONS=(
-    "/dev/sdc1 mkfs.fat32 /boot/EFI"
-    "/dev/sdc2 mkswap swap"
-    "/dev/sdc3 none /"
-)
+
