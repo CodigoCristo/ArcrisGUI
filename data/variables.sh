@@ -6,8 +6,13 @@ KEYBOARD_LAYOUT="es"
 KEYMAP_TTY="es"
 TIMEZONE="America/Lima"
 LOCALE="es_PE.UTF-8"
-SELECTED_DISK="/dev/sda"
-PARTITION_MODE="auto"
+
+# Variables de configuración del usuario
+export USER="qwe"
+export PASSWORD_USER="133"
+export HOSTNAME="arcris"
+# La contraseña del usuario también será la contraseña de root
+export PASSWORD_ROOT="133"
 
 # Tipo de instalación seleccionado
 INSTALLATION_TYPE="TERMINAL"
@@ -31,10 +36,10 @@ DRIVER_BLUETOOTH="Ninguno"
 ESSENTIAL_APPS_ENABLED="false"
 UTILITIES_ENABLED="false"
 PROGRAM_EXTRA="false"
-
-# Variables de configuración del usuario
-export USER="qwe"
-export PASSWORD_USER="133"
-export HOSTNAME="arcris"
-# La contraseña del usuario también será la contraseña de root
-export PASSWORD_ROOT="133"
+SELECTED_DISK="/dev/sdc"
+PARTITION_MODE="manual"
+PARTITIONS=(
+    "/dev/sdc1 mkfs.fat32 /boot/EFI"
+    "/dev/sdc2 mkswap swap"
+    "/dev/sdc3 none /"
+)

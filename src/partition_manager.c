@@ -712,16 +712,35 @@ gchar* partition_manager_format_to_mkfs(const gchar *format)
 {
     if (!format) return g_strdup("mkfs.ext4");
     
-    // Caso especial: Sin Formatear
+    // Mapear formatos del UI a comandos mkfs
     if (g_strcmp0(format, "Sin Formatear") == 0) {
         return g_strdup("none");
+    } else if (g_strcmp0(format, "Ext4") == 0) {
+        return g_strdup("mkfs.ext4");
+    } else if (g_strcmp0(format, "Ext3") == 0) {
+        return g_strdup("mkfs.ext3");
+    } else if (g_strcmp0(format, "Ext2") == 0) {
+        return g_strdup("mkfs.ext2");
+    } else if (g_strcmp0(format, "Btrfs") == 0) {
+        return g_strdup("mkfs.btrfs");
+    } else if (g_strcmp0(format, "XFS") == 0) {
+        return g_strdup("mkfs.xfs");
+    } else if (g_strcmp0(format, "F2FS") == 0) {
+        return g_strdup("mkfs.f2fs");
+    } else if (g_strcmp0(format, "Fat32") == 0) {
+        return g_strdup("mkfs.fat32");
+    } else if (g_strcmp0(format, "Fat16") == 0) {
+        return g_strdup("mkfs.fat16");
+    } else if (g_strcmp0(format, "NTFS") == 0) {
+        return g_strdup("mkfs.ntfs");
+    } else if (g_strcmp0(format, "ReiserFS") == 0) {
+        return g_strdup("mkfs.reiserfs");
+    } else if (g_strcmp0(format, "JFS") == 0) {
+        return g_strdup("mkfs.jfs");
     }
     
-    gchar *format_lower = g_ascii_strdown(format, -1);
-    gchar *result = g_strdup_printf("mkfs.%s", format_lower);
-    g_free(format_lower);
-    
-    return result;
+    // Fallback por defecto
+    return g_strdup("mkfs.ext4");
 }
 
 // Función auxiliar para convertir formato mkfs a formato de UI
@@ -729,32 +748,33 @@ gchar* partition_manager_mkfs_to_format(const gchar *mkfs_format)
 {
     if (!mkfs_format) return g_strdup("Ext4");
     
-    // Caso especial: none
+    // Mapear comandos mkfs a formatos del UI
     if (g_strcmp0(mkfs_format, "none") == 0) {
         return g_strdup("Sin Formatear");
-    }
-    
-    // Caso especial: mkswap
-    if (g_strcmp0(mkfs_format, "mkswap") == 0) {
+    } else if (g_strcmp0(mkfs_format, "mkswap") == 0) {
         return g_strdup("Sin Formatear");
-    }
-    
-    // Si ya tiene prefijo mkfs., quitarlo
-    if (g_str_has_prefix(mkfs_format, "mkfs.")) {
-        const gchar *format_part = mkfs_format + 5; // Saltar "mkfs."
-        // Capitalizar primera letra
-        if (strlen(format_part) > 0) {
-            gchar *result = g_strdup(format_part);
-            result[0] = g_ascii_toupper(result[0]);
-            return result;
-        }
-    }
-    
-    // Si no tiene prefijo, capitalizar primera letra
-    if (strlen(mkfs_format) > 0) {
-        gchar *result = g_strdup(mkfs_format);
-        result[0] = g_ascii_toupper(result[0]);
-        return result;
+    } else if (g_strcmp0(mkfs_format, "mkfs.ext4") == 0) {
+        return g_strdup("Ext4");
+    } else if (g_strcmp0(mkfs_format, "mkfs.ext3") == 0) {
+        return g_strdup("Ext3");
+    } else if (g_strcmp0(mkfs_format, "mkfs.ext2") == 0) {
+        return g_strdup("Ext2");
+    } else if (g_strcmp0(mkfs_format, "mkfs.btrfs") == 0) {
+        return g_strdup("Btrfs");
+    } else if (g_strcmp0(mkfs_format, "mkfs.xfs") == 0) {
+        return g_strdup("XFS");
+    } else if (g_strcmp0(mkfs_format, "mkfs.f2fs") == 0) {
+        return g_strdup("F2FS");
+    } else if (g_strcmp0(mkfs_format, "mkfs.fat32") == 0) {
+        return g_strdup("Fat32");
+    } else if (g_strcmp0(mkfs_format, "mkfs.fat16") == 0) {
+        return g_strdup("Fat16");
+    } else if (g_strcmp0(mkfs_format, "mkfs.ntfs") == 0) {
+        return g_strdup("NTFS");
+    } else if (g_strcmp0(mkfs_format, "mkfs.reiserfs") == 0) {
+        return g_strdup("ReiserFS");
+    } else if (g_strcmp0(mkfs_format, "mkfs.jfs") == 0) {
+        return g_strdup("JFS");
     }
     
     return g_strdup("Ext4");

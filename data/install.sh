@@ -564,41 +564,149 @@ partition_manual() {
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
 
-    # Procesar array de particiones
+    # Primera pasada: Formatear todas las particiones
+    echo -e "${CYAN}=== FASE 1: Formateo de particiones ===${NC}"
     for partition_config in "${PARTITIONS[@]}"; do
         IFS=' ' read -r device format mountpoint <<< "$partition_config"
 
-        echo -e "${GREEN}| Procesando: $device -> $format -> $mountpoint |${NC}"
+        echo -e "${GREEN}| Formateando: $device -> $format |${NC}"
 
         # Formatear según el tipo especificado
         case $format in
-            "mkfs.fat32")
-                mkfs.fat -F32 -v $device
+            "none")
+                echo -e "${CYAN}Sin formatear: $device${NC}"
                 ;;
             "mkfs.ext4")
                 mkfs.ext4 -F $device
                 ;;
+            "mkfs.ext3")
+                mkfs.ext3 -F $device
+                ;;
+            "mkfs.ext2")
+                mkfs.ext2 -F $device
+                ;;
             "mkfs.btrfs")
                 mkfs.btrfs -f $device
+                ;;
+            "mkfs.xfs")
+                mkfs.xfs -f $device
+                ;;
+            "mkfs.f2fs")
+                mkfs.f2fs -f $device
+                ;;
+            "mkfs.fat32")
+                mkfs.fat -F32 -v $device
+                ;;
+            "mkfs.fat16")
+                mkfs.fat -F16 -v $device
+                ;;
+            "mkfs.ntfs")
+                mkfs.ntfs -f $device
+                ;;
+            "mkfs.reiserfs")
+                mkfs.reiserfs -f $device
+                ;;
+            "mkfs.jfs")
+                mkfs.jfs -f $device
                 ;;
             "mkswap")
                 mkswap $device
                 swapon $device
-                continue
                 ;;
             *)
                 echo -e "${RED}| Formato no reconocido: $format |${NC}"
-                continue
                 ;;
         esac
+    done
 
-        # Montar en el punto especificado
+    # Validaciones antes del montaje
+    echo -e "${CYAN}=== VALIDACIONES ===${NC}"
+
+    # Verificar que existe partición raíz
+    ROOT_FOUND=false
+    EFI_FOUND=false
+    BOOT_FOUND=false
+
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+
         if [ "$mountpoint" = "/" ]; then
-            mount $device /mnt
-        else
-            mkdir -p /mnt$mountpoint
-            mount $device /mnt$mountpoint
+            ROOT_FOUND=true
+        elif [ "$mountpoint" = "/boot/EFI" ]; then
+            EFI_FOUND=true
+            # Verificar que la partición EFI use formato FAT
+            if [ "$format" != "mkfs.fat32" ] && [ "$format" != "mkfs.fat16" ]; then
+                echo -e "${YELLOW}ADVERTENCIA: Partición EFI ($device) debería usar formato FAT32 o FAT16${NC}"
+                echo -e "${YELLOW}Formato actual: $format${NC}"
+            fi
+        elif [ "$mountpoint" = "/boot" ]; then
+            BOOT_FOUND=true
         fi
+    done
+
+    # Validar configuración
+    if [ "$ROOT_FOUND" = false ]; then
+        echo -e "${RED}ERROR: No se encontró partición raíz (/) configurada${NC}"
+        echo -e "${RED}Debe configurar al menos una partición con punto de montaje '/'${NC}"
+        exit 1
+    fi
+
+    if [ "$EFI_FOUND" = true ] && [ "$BOOT_FOUND" = true ]; then
+        echo -e "${GREEN}✓ Configuración detectada: /boot separado + /boot/EFI${NC}"
+    elif [ "$EFI_FOUND" = true ]; then
+        echo -e "${GREEN}✓ Configuración detectada: /boot/EFI (sin /boot separado)${NC}"
+    fi
+
+    echo -e "${GREEN}✓ Validaciones completadas${NC}"
+
+    # Segunda pasada: Montaje en orden correcto
+    echo -e "${CYAN}=== FASE 2: Montaje de particiones ===${NC}"
+
+    # 1. Montar partición raíz primero
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+        if [ "$mountpoint" = "/" ]; then
+            echo -e "${GREEN}| Montando raíz: $device -> /mnt |${NC}"
+            mount $device /mnt
+            break
+        fi
+    done
+
+    # 2. Montar /boot si existe
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+        if [ "$mountpoint" = "/boot" ]; then
+            echo -e "${GREEN}| Montando /boot: $device -> /mnt/boot |${NC}"
+            mkdir -p /mnt/boot
+            mount $device /mnt/boot
+            break
+        fi
+    done
+
+    # 3. Montar /boot/EFI (debe ir después de /boot para evitar conflictos)
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+        if [ "$mountpoint" = "/boot/EFI" ]; then
+            echo -e "${GREEN}| Montando EFI: $device -> /mnt/boot/efi |${NC}"
+            mkdir -p /mnt/boot/efi
+            mount $device /mnt/boot/efi
+            echo -e "${CYAN}Partición EFI montada en /mnt/boot/efi${NC}"
+            break
+        fi
+    done
+
+    # 4. Montar todas las demás particiones
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+
+        # Saltar las ya montadas y swap
+        if [ "$mountpoint" = "/" ] || [ "$mountpoint" = "/boot" ] || [ "$mountpoint" = "/boot/EFI" ] || [ "$mountpoint" = "swap" ]; then
+            continue
+        fi
+
+        echo -e "${GREEN}| Montando: $device -> /mnt$mountpoint |${NC}"
+        mkdir -p /mnt$mountpoint
+        mount $device /mnt$mountpoint
     done
 
     lsblk -o NAME,FSTYPE,SIZE,MOUNTPOINT
@@ -663,7 +771,89 @@ arch-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
 sleep 5
 
 # Generar fstab
-genfstab -U /mnt > /mnt/etc/fstab
+if [ "$PARTITION_MODE" = "manual" ]; then
+    echo -e "${GREEN}| Generando fstab para particionado manual |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    # Crear fstab base
+    echo "# <file system> <mount point> <type> <options> <dump> <pass>" > /mnt/etc/fstab
+
+    # Procesar configuraciones de particiones para fstab
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+
+        # Omitir particiones swap (se manejan separadamente)
+        if [ "$mountpoint" = "swap" ]; then
+            continue
+        fi
+
+        # Omitir particiones no formateadas
+        if [ "$format" = "none" ]; then
+            continue
+        fi
+
+        # Obtener UUID de la partición
+        PART_UUID=$(blkid -s UUID -o value $device)
+        if [ -n "$PART_UUID" ]; then
+            # Determinar el tipo de sistema de archivos
+            case $format in
+                "mkfs.fat32"|"mkfs.fat16")
+                    FS_TYPE="vfat"
+                    if [ "$mountpoint" = "/boot/EFI" ]; then
+                        echo "UUID=$PART_UUID /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
+                    else
+                        echo "UUID=$PART_UUID $mountpoint vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
+                    fi
+                    ;;
+                "mkfs.ext4"|"mkfs.ext3"|"mkfs.ext2")
+                    FS_TYPE="${format#mkfs.}"
+                    if [ "$mountpoint" = "/" ]; then
+                        echo "UUID=$PART_UUID / $FS_TYPE rw,relatime 0 1" >> /mnt/etc/fstab
+                    else
+                        echo "UUID=$PART_UUID $mountpoint $FS_TYPE rw,relatime 0 2" >> /mnt/etc/fstab
+                    fi
+                    ;;
+                "mkfs.btrfs")
+                    echo "UUID=$PART_UUID $mountpoint btrfs rw,noatime,compress=zstd,space_cache=v2 0 2" >> /mnt/etc/fstab
+                    ;;
+                "mkfs.xfs")
+                    echo "UUID=$PART_UUID $mountpoint xfs rw,relatime 0 2" >> /mnt/etc/fstab
+                    ;;
+                "mkfs.f2fs")
+                    echo "UUID=$PART_UUID $mountpoint f2fs rw,relatime 0 2" >> /mnt/etc/fstab
+                    ;;
+                "mkfs.ntfs")
+                    echo "UUID=$PART_UUID $mountpoint ntfs rw,relatime 0 2" >> /mnt/etc/fstab
+                    ;;
+                "mkfs.reiserfs")
+                    echo "UUID=$PART_UUID $mountpoint reiserfs rw,relatime 0 2" >> /mnt/etc/fstab
+                    ;;
+                "mkfs.jfs")
+                    echo "UUID=$PART_UUID $mountpoint jfs rw,relatime 0 2" >> /mnt/etc/fstab
+                    ;;
+            esac
+        fi
+    done
+
+    # Agregar particiones swap
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+
+        if [ "$mountpoint" = "swap" ]; then
+            SWAP_UUID=$(blkid -s UUID -o value $device)
+            if [ -n "$SWAP_UUID" ]; then
+                echo "UUID=$SWAP_UUID none swap defaults 0 0" >> /mnt/etc/fstab
+            fi
+        fi
+    done
+
+    echo -e "${GREEN}✓ fstab generado para particionado manual${NC}"
+else
+    # Usar genfstab para modos automáticos
+    genfstab -U /mnt > /mnt/etc/fstab
+fi
+
 echo ""
 arch-chroot /mnt /bin/bash -c "cat /etc/fstab"
 sleep 3
@@ -930,7 +1120,8 @@ arch-chroot /mnt /bin/bash -c "mkinitcpio -P"
 sleep 2
 
 # Instalación de bootloader
-if [ "$PARTITION_MODE" != "manual" ]; then
+# Instalar bootloader para todos los modos (incluyendo manual)
+if true; then
     echo -e "${GREEN}| Instalando bootloader |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
@@ -1139,30 +1330,11 @@ if [ "$PARTITION_MODE" != "manual" ]; then
 
         echo -e "${GREEN}✓ GRUB BIOS instalado correctamente${NC}"
     fi
-else
-    echo -e "${GREEN}| Modo manual: Bootloader debe instalarse manualmente |${NC}"
-    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-    echo ""
-    echo -e "${YELLOW}Para instalar GRUB manualmente:${NC}"
-    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        echo "pacman -S grub efibootmgr"
-        echo "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck"
-    else
-        echo "pacman -S grub"
-        echo "grub-install --target=i386-pc $SELECTED_DISK --recheck"
-    fi
-    echo "grub-mkconfig -o /boot/grub/grub.cfg"
-    echo ""
-    echo -e "${CYAN}Verificar después de la instalación:${NC}"
-    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        echo "ls /boot/efi/EFI/GRUB/grubx64.efi"
-    fi
-    echo "ls /boot/grub/grub.cfg"
-    sleep 3
 fi
 
 # Verificación final del bootloader
-if [ "$PARTITION_MODE" != "manual" ]; then
+# Verificar bootloader para todos los modos (incluyendo manual)
+if true; then
     echo -e "${GREEN}| Verificación final del bootloader |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""

@@ -89,7 +89,7 @@
                           <object class="GtkStringList" id="mount_point_list">
                             <items>
                               <item>/boot</item>
-                              <item>/efi</item>
+                              <item>/boot/EFI</item>
                               <item>/</item>
                               <item>/home</item>
                               <item>/var</item>
