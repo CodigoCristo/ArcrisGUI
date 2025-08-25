@@ -71,7 +71,7 @@ echo " █████╗ ██████╗  ██████╗███�
 echo "██╔══██╗██╔══██╗██╔════╝██╔══██╗██║██╔════╝";
 echo "███████║██████╔╝██║     ██████╔╝██║███████╗";
 echo "██╔══██║██╔══██╗██║     ██╔══██╗██║╚════██║";
-echo "█ssss█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
+echo "██║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
 echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝";
 echo -e "${NC}"
 echo ""
@@ -1181,6 +1181,7 @@ if true; then
 
         # Limpiar entradas UEFI previas que puedan causar conflictos
         echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
+        # efibootmgr | awk '/grub/i {gsub(/Boot|\*.*/, ""); system("efibootmgr -b " $1 " -B 2>/dev/null")}'
         efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
 
         # Limpiar directorio EFI previo si existe
@@ -1245,10 +1246,10 @@ if true; then
         fi
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck --debug" 2>&1 | tee /tmp/grub-install.log; then
+        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Arch"; then
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
             echo -e "${YELLOW}Log de grub-install:${NC}"
-            cat /tmp/grub-install.log
+
             echo -e "${YELLOW}Información adicional:${NC}"
             echo "- Estado de /boot:"
             ls -la /mnt/boot/
@@ -1359,42 +1360,42 @@ fi
 
 # Verificación final del bootloader
 # Verificar bootloader para todos los modos (incluyendo manual)
-#if true; then
-#    echo -e "${GREEN}| Verificación final del bootloader |${NC}"
-#    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-#    echo ""
-#
-#    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-#        if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
-#            echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente${NC}"
-#
-#            # Crear entrada UEFI manualmente si no existe
-#            if ! efibootmgr | grep -q "GRUB"; then
-#                echo -e "${CYAN}Creando entrada UEFI para GRUB...${NC}"
-#                efibootmgr --disk $SELECTED_DISK --part 1 --create --label "GRUB" --loader '\EFI\GRUB\grubx64.efi'
-#
+if true; then
+    echo -e "${GREEN}| Verificación final del bootloader |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
+            echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente${NC}"
+
+            # Crear entrada UEFI manualmente si no existe
+            if ! efibootmgr | grep -q "GRUB"; then
+                echo -e "${CYAN}Creando entrada UEFI para GRUB...${NC}"
+                efibootmgr --disk $SELECTED_DISK --part 1 --create --label "GRUB" --loader '\EFI\GRUB\grubx64.efi'
+
                 # Hacer que GRUB sea la primera opción de boot
-#                GRUB_NUM=$(efibootmgr | grep "GRUB" | head -1 | cut -d'*' -f1 | sed 's/Boot//')
-#                if [ -n "$GRUB_NUM" ]; then
-#                    CURRENT_ORDER=$(efibootmgr | grep BootOrder | cut -d' ' -f2)
-#                    NEW_ORDER="$GRUB_NUM,${CURRENT_ORDER//$GRUB_NUM,/}"
-#                    NEW_ORDER="${NEW_ORDER//,,/,}"
-#                    NEW_ORDER="${NEW_ORDER%,}"
-#                    efibootmgr --bootorder "$NEW_ORDER" 2>/dev/null || true
-#                fi
-#            fi
-#        else
-#            echo -e "${RED}⚠ Problema con la instalación del bootloader UEFI${NC}"
-#        fi
-#    else
-#        if [ -f "/mnt/boot/grub/grub.cfg" ]; then
-#            echo -e "${GREEN}✓ Bootloader BIOS verificado correctamente${NC}"
-#        else
-#            echo -e "${RED}⚠ Problema con la instalación del bootloader BIOS${NC}"
-#        fi
-#    fi
-#    sleep 2
-#fi
+                GRUB_NUM=$(efibootmgr | grep "GRUB" | head -1 | cut -d'*' -f1 | sed 's/Boot//')
+                if [ -n "$GRUB_NUM" ]; then
+                    CURRENT_ORDER=$(efibootmgr | grep BootOrder | cut -d' ' -f2)
+                    NEW_ORDER="$GRUB_NUM,${CURRENT_ORDER//$GRUB_NUM,/}"
+                    NEW_ORDER="${NEW_ORDER//,,/,}"
+                    NEW_ORDER="${NEW_ORDER%,}"
+                    efibootmgr --bootorder "$NEW_ORDER" 2>/dev/null || true
+                fi
+            fi
+        else
+            echo -e "${RED}⚠ Problema con la instalación del bootloader UEFI${NC}"
+        fi
+    else
+        if [ -f "/mnt/boot/grub/grub.cfg" ]; then
+            echo -e "${GREEN}✓ Bootloader BIOS verificado correctamente${NC}"
+        else
+            echo -e "${RED}⚠ Problema con la instalación del bootloader BIOS${NC}"
+        fi
+    fi
+    sleep 2
+fi
 clear
 
 # Instalación de herramientas de red
