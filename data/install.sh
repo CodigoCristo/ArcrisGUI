@@ -1247,7 +1247,7 @@ if true; then
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
         arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --removable"
-        sleep 6
+        sleep 3
         if ! arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB"; then
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
             echo -e "${YELLOW}Log de grub-install:${NC}"

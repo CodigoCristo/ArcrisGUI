@@ -562,7 +562,7 @@ void page8_execute_install_script(Page8Data *data)
     gchar *argv[] = {
         "/bin/bash",
         "-c",
-        g_strdup_printf("bash %s 2>&1 | tee ~/install.log", script_path),
+        g_strdup_printf("script -q ~/install.log -c 'bash %s'", script_path),
         NULL
     };
 
