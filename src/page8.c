@@ -560,9 +560,11 @@ void page8_execute_install_script(Page8Data *data)
 
     // Preparar argumentos para ejecutar el script
     gchar *argv[] = {
-        "/bin/bash",
+        "/usr/bin/script",
+        "-q",
         "-c",
-        g_strdup_printf("script -q ~/install.log -c 'bash %s'", script_path),
+        g_strdup_printf("bash %s", script_path),
+        g_strdup_printf("%s/install.log", g_get_home_dir()),
         NULL
     };
 
