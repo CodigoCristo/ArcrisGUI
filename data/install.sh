@@ -22,41 +22,6 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Función de cleanup para procesos colgados
-cleanup() {
-    echo -e "\n${YELLOW}Limpiando procesos y montajes...${NC}"
-
-    # Matar procesos efibootmgr colgados
-    pkill -f efibootmgr 2>/dev/null || true
-    pkill -f grub-install 2>/dev/null || true
-
-    # Esperar un poco para que los procesos terminen
-    sleep 2
-
-    # Forzar kill si es necesario
-    pkill -9 -f efibootmgr 2>/dev/null || true
-    pkill -9 -f grub-install 2>/dev/null || true
-
-    # Desmontar dispositivos si están montados
-    if mountpoint -q /mnt/boot/efi 2>/dev/null; then
-        umount /mnt/boot/efi 2>/dev/null || true
-    fi
-    if mountpoint -q /mnt/boot 2>/dev/null; then
-        umount /mnt/boot 2>/dev/null || true
-    fi
-
-    # Cerrar dispositivos LUKS si están abiertos
-    if [ -e /dev/mapper/cryptlvm ]; then
-        cryptsetup close cryptlvm 2>/dev/null || true
-    fi
-
-    echo -e "${GREEN}Cleanup completado${NC}"
-}
-
-# Configurar traps para cleanup automático
-trap cleanup EXIT
-trap 'echo -e "\n${RED}Instalación interrumpida por el usuario${NC}"; cleanup; exit 1' INT TERM
-
 # Función para imprimir en rojo
 print_red() {
     echo -e "${BOLD_RED}$1${NC}"
@@ -106,7 +71,7 @@ echo " █████╗ ██████╗  ██████╗███�
 echo "██╔══██╗██╔══██╗██╔════╝██╔══██╗██║██╔════╝";
 echo "███████║██████╔╝██║     ██████╔╝██║███████╗";
 echo "██╔══██║██╔══██╗██║     ██╔══██╗██║╚════██║";
-echo "█CRISTO VIVE █║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
+echo "█ssss█║  ██║██║  ██║╚██████╗██║  ██║██║███████║";
 echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝";
 echo -e "${NC}"
 echo ""
@@ -1175,53 +1140,8 @@ else
     sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 fi
 
-# Regenerar initramfs con verificación especial para cifrado
-echo -e "${GREEN}| Regenerando initramfs |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
-
-if [ "$PARTITION_MODE" = "cifrado" ]; then
-    echo -e "${CYAN}Regenerando initramfs para sistema cifrado...${NC}"
-
-    # Verificar que los módulos de cifrado estén disponibles
-    echo -e "${YELLOW}Verificando módulos de cifrado disponibles...${NC}"
-    arch-chroot /mnt /bin/bash -c "modinfo dm_crypt dm_mod" > /dev/null 2>&1 || {
-        echo -e "${RED}ERROR: Módulos de cifrado no disponibles${NC}"
-        exit 1
-    }
-
-    # Asegurar que cryptsetup esté instalado y funcionando
-    if ! arch-chroot /mnt /bin/bash -c "cryptsetup --version" > /dev/null 2>&1; then
-        echo -e "${RED}ERROR: cryptsetup no está instalado correctamente${NC}"
-        exit 1
-    fi
-
-    # Regenerar con timeout y verificación
-    echo -e "${CYAN}Generando initramfs (esto puede tomar unos minutos)...${NC}"
-    if ! timeout 120 arch-chroot /mnt /bin/bash -c "mkinitcpio -P" 2>&1 | tee /tmp/mkinitcpio.log; then
-        echo -e "${RED}ERROR: Falló la regeneración del initramfs para cifrado${NC}"
-        echo -e "${YELLOW}Log de mkinitcpio:${NC}"
-        cat /tmp/mkinitcpio.log
-        exit 1
-    fi
-
-    # Verificar que se crearon los archivos initramfs
-    echo -e "${CYAN}Verificando archivos initramfs generados...${NC}"
-    if ! ls /mnt/boot/initramfs-*.img > /dev/null 2>&1; then
-        echo -e "${RED}ERROR: No se generaron archivos initramfs${NC}"
-        exit 1
-    fi
-
-    echo -e "${GREEN}✓ initramfs para cifrado regenerado exitosamente${NC}"
-else
-    echo -e "${CYAN}Regenerando initramfs para sistema estándar...${NC}"
-    if ! timeout 60 arch-chroot /mnt /bin/bash -c "mkinitcpio -P"; then
-        echo -e "${RED}ERROR: Falló la regeneración del initramfs${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ initramfs regenerado exitosamente${NC}"
-fi
-
+# Regenerar initramfs
+arch-chroot /mnt /bin/bash -c "mkinitcpio -P"
 sleep 2
 
 # Instalación de bootloader
@@ -1324,118 +1244,21 @@ if true; then
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
         fi
 
-        # Verificar y limpiar procesos efibootmgr antes de grub-install
-        echo -e "${CYAN}Preparando sistema para instalación GRUB...${NC}"
-
-        # Verificar procesos efibootmgr colgados
-        if pgrep efibootmgr > /dev/null; then
-            echo -e "${YELLOW}Detectados procesos efibootmgr en ejecución. Limpiando...${NC}"
-            pkill -f efibootmgr 2>/dev/null || true
-            sleep 2
-        fi
-
-        # Sincronizar sistema de archivos
-        echo -e "${CYAN}Sincronizando sistema de archivos...${NC}"
-        sync
-        sleep 1
-
-        # Verificar que efivars esté montado
-        if [ ! -d "/sys/firmware/efi/efivars" ] || ! mountpoint -q /sys/firmware/efi/efivars 2>/dev/null; then
-            echo -e "${YELLOW}Montando efivars...${NC}"
-            mount -t efivarfs efivarfs /sys/firmware/efi/efivars 2>/dev/null || true
-        fi
-
-        # Verificar espacio disponible en partición EFI
-        EFI_SPACE=$(df -BM /mnt/boot/efi | awk 'NR==2 {print $4}' | sed 's/M//')
-        if [ "$EFI_SPACE" -lt 50 ]; then
-            echo -e "${RED}ADVERTENCIA: Poco espacio en partición EFI (${EFI_SPACE}MB disponible)${NC}"
-        fi
-
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        # Primer intento con timeout - normal
-        echo -e "${YELLOW}Intentando instalación GRUB normal (con timeout de 45s)...${NC}"
-        if timeout 45 bash -c '
-            # Función para matar grub-install si se cuelga
-            (
-                sleep 40
-                pkill -f "grub-install" 2>/dev/null || true
-                sleep 3
-                pkill -9 -f "grub-install" 2>/dev/null || true
-                pkill -f "efibootmgr" 2>/dev/null || true
-                pkill -9 -f "efibootmgr" 2>/dev/null || true
-            ) &
-            KILL_PID=$!
-
-            # Ejecutar grub-install
-            if arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ARCH --recheck --debug" 2>&1 | tee /tmp/grub-install.log; then
-                kill $KILL_PID 2>/dev/null || true
-                exit 0
-            else
-                kill $KILL_PID 2>/dev/null || true
-                exit 1
-            fi
-        '; then
-            echo -e "${GREEN}✓ GRUB instalado exitosamente${NC}"
-        else
-            echo -e "${YELLOW}Instalación normal falló o timeout. Limpiando procesos...${NC}"
-            pkill -f efibootmgr 2>/dev/null || true
-            pkill -f grub-install 2>/dev/null || true
-            sleep 3
-
-            echo -e "${YELLOW}Intentando con --no-nvram (evita problemas con efibootmgr)...${NC}"
-            # Segundo intento sin modificar NVRAM (evita problemas con efibootmgr)
-            if timeout 45 bash -c '
-                # Función para matar grub-install si se cuelga
-                (
-                    sleep 40
-                    pkill -f "grub-install" 2>/dev/null || true
-                    sleep 3
-                    pkill -9 -f "grub-install" 2>/dev/null || true
-                ) &
-                KILL_PID=$!
-
-                # Ejecutar grub-install sin nvram
-                if arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ARCH --no-nvram --recheck" 2>&1 | tee /tmp/grub-install-nonvram.log; then
-                    kill $KILL_PID 2>/dev/null || true
-                    exit 0
-                else
-                    kill $KILL_PID 2>/dev/null || true
-                    exit 1
-                fi
-            '; then
-                echo -e "${GREEN}✓ GRUB instalado con --no-nvram${NC}"
-                echo -e "${YELLOW}NOTA: Es posible que necesites configurar manualmente la entrada UEFI después del reinicio${NC}"
-                echo -e "${CYAN}Puedes usar: efibootmgr -c -d $SELECTED_DISK -p 1 -L \"GRUB\" -l \\EFI\\GRUB\\grubx64.efi${NC}"
-            else
-                echo -e "${YELLOW}Ambos intentos fallaron. Limpiando procesos nuevamente...${NC}"
-                pkill -9 -f efibootmgr 2>/dev/null || true
-                pkill -9 -f grub-install 2>/dev/null || true
-                sleep 2
-
-                echo -e "${RED}ERROR: Ambos intentos de instalación GRUB fallaron${NC}"
-                echo -e "${YELLOW}Log del primer intento:${NC}"
-                cat /tmp/grub-install.log 2>/dev/null || echo "Log no disponible"
-                echo -e "${YELLOW}Log del segundo intento:${NC}"
-                cat /tmp/grub-install-nonvram.log 2>/dev/null || echo "Log no disponible"
-                echo -e "${YELLOW}Información adicional:${NC}"
-                echo "- Estado de /boot:"
-                ls -la /mnt/boot/
-                echo "- Estado de /boot/efi:"
-                ls -la /mnt/boot/efi/
-                echo "- Espacio disponible en /boot:"
-                df -h /mnt/boot
-                echo "- Espacio disponible en /boot/efi:"
-                df -h /mnt/boot/efi
-
-                # Intento final solo copiando archivos manualmente
-                echo -e "${YELLOW}Último intento: instalación manual de archivos GRUB...${NC}"
-                if arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ARCH --no-nvram --no-bootsector --no-rs-codes" 2>&1 | tee /tmp/grub-install-manual.log; then
-                    echo -e "${GREEN}✓ Archivos GRUB copiados manualmente${NC}"
-                else
-                    echo -e "${RED}ERROR: Falló completamente la instalación de GRUB UEFI${NC}"
-                    exit 1
-                fi
-            fi
+        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck --debug" 2>&1 | tee /tmp/grub-install.log; then
+            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
+            echo -e "${YELLOW}Log de grub-install:${NC}"
+            cat /tmp/grub-install.log
+            echo -e "${YELLOW}Información adicional:${NC}"
+            echo "- Estado de /boot:"
+            ls -la /mnt/boot/
+            echo "- Estado de /boot/efi:"
+            ls -la /mnt/boot/efi/
+            echo "- Espacio disponible en /boot:"
+            df -h /mnt/boot
+            echo "- Espacio disponible en /boot/efi:"
+            df -h /mnt/boot/efi
+            exit 1
         fi
 
         # Verificar que grubx64.efi se haya creado con debug
@@ -1536,42 +1359,42 @@ fi
 
 # Verificación final del bootloader
 # Verificar bootloader para todos los modos (incluyendo manual)
-if true; then
-    echo -e "${GREEN}| Verificación final del bootloader |${NC}"
-    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-    echo ""
-
-    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
-            echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente${NC}"
-
-            # Crear entrada UEFI manualmente si no existe
-            if ! efibootmgr | grep -q "GRUB"; then
-                echo -e "${CYAN}Creando entrada UEFI para GRUB...${NC}"
-                efibootmgr --disk $SELECTED_DISK --part 1 --create --label "GRUB" --loader '\EFI\GRUB\grubx64.efi'
-
+#if true; then
+#    echo -e "${GREEN}| Verificación final del bootloader |${NC}"
+#    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+#    echo ""
+#
+#    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+#        if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
+#            echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente${NC}"
+#
+#            # Crear entrada UEFI manualmente si no existe
+#            if ! efibootmgr | grep -q "GRUB"; then
+#                echo -e "${CYAN}Creando entrada UEFI para GRUB...${NC}"
+#                efibootmgr --disk $SELECTED_DISK --part 1 --create --label "GRUB" --loader '\EFI\GRUB\grubx64.efi'
+#
                 # Hacer que GRUB sea la primera opción de boot
-                GRUB_NUM=$(efibootmgr | grep "GRUB" | head -1 | cut -d'*' -f1 | sed 's/Boot//')
-                if [ -n "$GRUB_NUM" ]; then
-                    CURRENT_ORDER=$(efibootmgr | grep BootOrder | cut -d' ' -f2)
-                    NEW_ORDER="$GRUB_NUM,${CURRENT_ORDER//$GRUB_NUM,/}"
-                    NEW_ORDER="${NEW_ORDER//,,/,}"
-                    NEW_ORDER="${NEW_ORDER%,}"
-                    efibootmgr --bootorder "$NEW_ORDER" 2>/dev/null || true
-                fi
-            fi
-        else
-            echo -e "${RED}⚠ Problema con la instalación del bootloader UEFI${NC}"
-        fi
-    else
-        if [ -f "/mnt/boot/grub/grub.cfg" ]; then
-            echo -e "${GREEN}✓ Bootloader BIOS verificado correctamente${NC}"
-        else
-            echo -e "${RED}⚠ Problema con la instalación del bootloader BIOS${NC}"
-        fi
-    fi
-    sleep 2
-fi
+#                GRUB_NUM=$(efibootmgr | grep "GRUB" | head -1 | cut -d'*' -f1 | sed 's/Boot//')
+#                if [ -n "$GRUB_NUM" ]; then
+#                    CURRENT_ORDER=$(efibootmgr | grep BootOrder | cut -d' ' -f2)
+#                    NEW_ORDER="$GRUB_NUM,${CURRENT_ORDER//$GRUB_NUM,/}"
+#                    NEW_ORDER="${NEW_ORDER//,,/,}"
+#                    NEW_ORDER="${NEW_ORDER%,}"
+#                    efibootmgr --bootorder "$NEW_ORDER" 2>/dev/null || true
+#                fi
+#            fi
+#        else
+#            echo -e "${RED}⚠ Problema con la instalación del bootloader UEFI${NC}"
+#        fi
+#    else
+#        if [ -f "/mnt/boot/grub/grub.cfg" ]; then
+#            echo -e "${GREEN}✓ Bootloader BIOS verificado correctamente${NC}"
+#        else
+#            echo -e "${RED}⚠ Problema con la instalación del bootloader BIOS${NC}"
+#        fi
+#    fi
+#    sleep 2
+#fi
 clear
 
 # Instalación de herramientas de red
