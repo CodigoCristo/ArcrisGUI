@@ -1246,12 +1246,8 @@ if true; then
         fi
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck --removable"
-        sleep 3
-
-        # Verificar si la instalación fue exitosa
-        if [ $? -ne 0 ]; then
-            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
+        arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --recheck --removable --no-nvram" || {
+            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (modo removible)${NC}"
             echo -e "${YELLOW}Información adicional:${NC}"
             echo "- Estado de /boot:"
             ls -la /mnt/boot/
@@ -1262,7 +1258,20 @@ if true; then
             echo "- Espacio disponible en /boot/efi:"
             df -h /mnt/boot/efi
             exit 1
-        fi
+        }
+
+        echo -e "${GREEN}✓ GRUB instalado en modo removible (/EFI/BOOT/bootx64.efi)${NC}"
+
+        echo -e "${CYAN}Instalando GRUB con entrada NVRAM...${NC}"
+        arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck" || {
+            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (entrada NVRAM)${NC}"
+            echo -e "${YELLOW}Información adicional:${NC}"
+            echo "- Estado de /boot/efi/EFI/:"
+            ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
+            exit 1
+        }
+
+        echo -e "${GREEN}✓ GRUB instalado con entrada NVRAM (/EFI/GRUB/grubx64.efi)${NC}"
 
         # Verificar que grubx64.efi se haya creado con debug
         if [ ! -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
