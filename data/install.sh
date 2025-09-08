@@ -1427,11 +1427,10 @@ echo ""
 cp /usr/share/arcrisgui/data/config/bashrc /mnt/home/$USER/.bashrc
 cp /usr/share/arcrisgui/data/config/bashrc /mnt/home/$USER/.bashrc
 cp /usr/share/arcrisgui/data/config/bashrc-root /mnt/root/.bashrc
-cp /usr/share/arcrisgui/data/config/zshrc /mnt/home/$USER/.zshrc
 
 # Configurar permisos de archivos de usuario
 arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.bashrc"
-arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.zshrc"
+
 
 sleep 2
 clear
@@ -2079,7 +2078,13 @@ if [ "${ESSENTIAL_APPS_ENABLED:-false}" = "true" ]; then
             arch-chroot /mnt /bin/bash -c "chsh -s /usr/bin/fish $USER"
             ;;
         "zsh")
-            arch-chroot /mnt /bin/bash -c "pacman -S zsh zsh-completions --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S zsh --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S zsh-completions --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S zsh-syntax-highlighting --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S zsh-autosuggestions --noconfirm"
+            cp /usr/share/arcrisgui/data/config/zshrc /mnt/home/$USER/.zshrc
+            cp /usr/share/arcrisgui/data/config/zshrc /mnt/root/.zshrc
+            arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.zshrc"
             arch-chroot /mnt /bin/bash -c "chsh -s /bin/zsh $USER"
             ;;
         *)
@@ -2158,6 +2163,7 @@ if [ "${COMPRESSION_ENABLED:-false}" = "true" ]; then
 
     # Instalar RAR desde AUR (requiere compilación)
     echo -e "${CYAN}Instalando RAR desde AUR...${NC}"
+    arch-chroot /mnt /bin/bash -c "pacman -S git --noconfirm"
     arch-chroot /mnt /bin/bash -c "su - $USER -c 'git clone https://aur.archlinux.org/rar.git /tmp/rar'"
     arch-chroot /mnt /bin/bash -c "su - $USER -c 'cd /tmp/rar && makepkg -si --noconfirm'" || echo -e "${YELLOW}⚠ No se pudo instalar RAR desde AUR${NC}"
 
@@ -2210,6 +2216,134 @@ fi
 sleep 2
 clear
 
+echo -e "${GREEN}✓ Tipografías instaladas${NC}"
+arch-chroot /mnt pacman -S noto-fonts-emoji --noconfirm
+arch-chroot /mnt pacman -S noto-fonts-cjk --noconfirm
+arch-chroot /mnt pacman -S adobe-source-code-pro-fonts --noconfirm
+arch-chroot /mnt pacman -S ttf-cascadia-code --noconfirm
+arch-chroot /mnt pacman -S cantarell-fonts --noconfirm
+arch-chroot /mnt pacman -S ttf-roboto --noconfirm
+arch-chroot /mnt pacman -S ttf-ubuntu-font-family --noconfirm
+arch-chroot /mnt pacman -S gnu-free-fonts --noconfirm
+sleep 2
+clear
+
+# Configuración del layout de teclado para Xorg y Wayland
+echo -e "${GREEN}| Configurando layout de teclado: $KEYBOARD_LAYOUT |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+# Configuración para Xorg (X11)
+echo -e "${CYAN}Configurando teclado para Xorg...${NC}"
+mkdir -p /mnt/etc/X11/xorg.conf.d
+cat > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf << EOF
+Section "InputClass"
+        Identifier "system-keyboard"
+        MatchIsKeyboard "on"
+        Option "XkbLayout" "$KEYBOARD_LAYOUT"
+        Option "XkbModel" "pc105"
+        Option "XkbVariant" ""
+        Option "XkbOptions" "grp:alt_shift_toggle"
+EndSection
+EOF
+
+# Configuración para Wayland
+echo -e "${CYAN}Configurando teclado para Wayland...${NC}"
+mkdir -p /mnt/etc/xdg/wlroots
+cat > /mnt/etc/xdg/wlroots/wlr.conf << EOF
+[keyboard]
+layout=$KEYBOARD_LAYOUT
+model=pc105
+variant=
+options=grp:alt_shift_toggle
+
+[input]
+kb_layout=$KEYBOARD_LAYOUT
+kb_model=pc105
+kb_variant=
+kb_options=grp:alt_shift_toggle
+EOF
+
+# Configuración adicional para el usuario
+echo -e "${CYAN}Configurando teclado para el usuario...${NC}"
+mkdir -p /mnt/home/$USER/.config
+echo "export XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT" >> /mnt/home/$USER/.profile
+echo "export XKB_DEFAULT_MODEL=pc105" >> /mnt/home/$USER/.profile
+
+# Configuración para diferentes entornos de escritorio
+case "$INSTALLATION_TYPE" in
+    "DESKTOP")
+        case "$DESKTOP_ENVIRONMENT" in
+            "GNOME")
+                # GNOME usa gsettings, se configurará en el primer arranque
+                echo -e "${CYAN}GNOME detectado - El layout se configurará automáticamente${NC}"
+                ;;
+            "KDE")
+                # KDE/Plasma configuración
+                mkdir -p /mnt/home/$USER/.config
+                cat > /mnt/home/$USER/.config/kxkbrc << EOF
+[Layout]
+DisplayNames=
+LayoutList=$KEYBOARD_LAYOUT
+Model=pc105
+Options=grp:alt_shift_toggle
+ResetOldOptions=true
+Use=true
+EOF
+                ;;
+            "XFCE4"|"DEEPIN")
+                # XFCE4/Deepin configuración
+                mkdir -p /mnt/home/$USER/.config/xfce4/xfconf/xfce-perchannel-xml
+                cat > /mnt/home/$USER/.config/xfce4/xfconf/xfce-perchannel-xml/keyboard.xml << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="keyboard" version="1.0">
+  <property name="Default" type="empty">
+    <property name="XkbLayout" type="string" value="$KEYBOARD_LAYOUT"/>
+    <property name="XkbModel" type="string" value="pc105"/>
+    <property name="XkbOptions" type="empty">
+      <property name="Group" type="string" value="grp:alt_shift_toggle"/>
+    </property>
+  </property>
+</channel>
+EOF
+                ;;
+        esac
+        ;;
+    "WINDOW_MANAGER")
+        # Para gestores de ventanas, crear script de autostart
+        mkdir -p /mnt/home/$USER/.config/autostart
+        cat > /mnt/home/$USER/.config/autostart/keyboard-layout.desktop << EOF
+[Desktop Entry]
+Type=Application
+Name=Keyboard Layout
+Exec=setxkbmap $KEYBOARD_LAYOUT
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+EOF
+
+        # También agregar a .xinitrc para respaldo
+        echo "setxkbmap $KEYBOARD_LAYOUT &" >> /mnt/home/$USER/.xinitrc || true
+        ;;
+esac
+
+# Configuración del locale del sistema para el teclado
+echo -e "${CYAN}Configurando locale del sistema...${NC}"
+echo "KEYMAP=$KEYMAP_TTY" >> /mnt/etc/vconsole.conf
+
+# Establecer permisos correctos
+arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config" 2>/dev/null || true
+arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.profile" 2>/dev/null || true
+arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.xinitrc" 2>/dev/null || true
+
+echo -e "${GREEN}✓ Layout de teclado configurado para Xorg y Wayland${NC}"
+echo -e "${CYAN}  • Layout: $KEYBOARD_LAYOUT${NC}"
+echo -e "${CYAN}  • Modelo: pc105${NC}"
+echo -e "${CYAN}  • Cambio de layout: Alt+Shift${NC}"
+
+sleep 3
+clear
+
 echo ""
 ls /mnt/home/$USER/
 sleep 5
@@ -2233,7 +2367,7 @@ echo -e "${CYAN}• Puedes iniciar sesión con:${NC}"
 echo -e "  Usuario: ${GREEN}$USER${NC}"
 echo -e "  Contraseña: ${GREEN}$PASSWORD_USER${NC}"
 echo ""
-
+sleep 5
 # Barra de progreso final
 titulo_progreso="| Finalizando instalación de ARCRIS LINUX |"
 barra_progreso
