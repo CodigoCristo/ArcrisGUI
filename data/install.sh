@@ -1533,6 +1533,126 @@ fi
 clear
 # Actualizar base de datos de paquetes
 arch-chroot /mnt /bin/bash -c "pacman -Sy"
+
+clear
+
+# Instalación de entorno de escritorio/gestor de ventanas
+echo -e "${GREEN}| Configurando entorno gráfico: $INSTALLATION_TYPE |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+case "$INSTALLATION_TYPE" in
+    "TERMINAL")
+        echo -e "${CYAN}Instalación solo terminal - No se instalará entorno gráfico${NC}"
+        ;;
+    "DESKTOP")
+        echo -e "${GREEN}Instalando entorno de escritorio: $DESKTOP_ENVIRONMENT${NC}"
+
+        # Instalar X.org como base para todos los escritorios
+        echo -e "${CYAN}Instalando servidor X.org...${NC}"
+        arch-chroot /mnt /bin/bash -c "pacman -S xorg-server xorg-xinit xorg-xauth --noconfirm"
+
+        case "$DESKTOP_ENVIRONMENT" in
+            "GNOME")
+                echo -e "${CYAN}Instalando GNOME Desktop...${NC}"
+                arch-chroot /mnt /bin/bash -c "pacman -S gnome gnome-extra gdm --noconfirm"
+                arch-chroot /mnt /bin/bash -c "systemctl enable gdm"
+                ;;
+            "KDE")
+                echo -e "${CYAN}Instalando KDE Plasma Desktop...${NC}"
+                arch-chroot /mnt /bin/bash -c "pacman -S plasma plasma-wayland-session kde-applications sddm --noconfirm"
+                arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
+                ;;
+            "XFCE4")
+                echo -e "${CYAN}Instalando XFCE4 Desktop...${NC}"
+                arch-chroot /mnt /bin/bash -c "pacman -S xfce4 xfce4-goodies lightdm lightdm-gtk-greeter --noconfirm"
+                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                ;;
+            "DEEPIN")
+                echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
+                arch-chroot /mnt /bin/bash -c "pacman -S deepin deepin-extra lightdm lightdm-gtk-greeter --noconfirm"
+                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                ;;
+            *)
+                echo -e "${YELLOW}Entorno de escritorio no reconocido: $DESKTOP_ENVIRONMENT${NC}"
+                echo -e "${CYAN}Instalando XFCE4 como alternativa...${NC}"
+                arch-chroot /mnt /bin/bash -c "pacman -S xfce4 xfce4-goodies lightdm lightdm-gtk-greeter --noconfirm"
+                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                ;;
+        esac
+        ;;
+    "WINDOW_MANAGER")
+        echo -e "${GREEN}Instalando gestor de ventanas: $WINDOW_MANAGER${NC}"
+
+        # Instalar X.org y dependencias base para gestores de ventanas
+        echo -e "${CYAN}Instalando servidor X.org y dependencias base...${NC}"
+        arch-chroot /mnt /bin/bash -c "pacman -S xorg-server xorg-xinit xorg-xauth xterm dmenu --noconfirm"
+
+        case "$WINDOW_MANAGER" in
+            "I3")
+                echo -e "${CYAN}Instalando i3 Window Manager...${NC}"
+                arch-chroot /mnt /bin/bash -c "pacman -S i3-wm i3status i3lock i3blocks --noconfirm"
+                # Crear configuración básica de i3
+                mkdir -p /mnt/home/$USER/.config/i3
+                echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
+                echo "exec i3" > /mnt/home/$USER/.xinitrc
+                arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.xinitrc"
+                ;;
+            "BSPWM")
+                echo -e "${CYAN}Instalando BSPWM Window Manager...${NC}"
+                arch-chroot /mnt /bin/bash -c "pacman -S bspwm sxhkd --noconfirm"
+                # Crear configuración básica de bspwm
+                mkdir -p /mnt/home/$USER/.config/bspwm
+                mkdir -p /mnt/home/$USER/.config/sxhkd
+                echo "exec bspwm" > /mnt/home/$USER/.xinitrc
+                arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.xinitrc"
+                ;;
+            "DWM")
+                echo -e "${CYAN}Instalando DWM Window Manager...${NC}"
+                arch-chroot /mnt /bin/bash -c "pacman -S git base-devel --noconfirm"
+                # Compilar dwm desde AUR (simplificado)
+                arch-chroot /mnt /bin/bash -c "su - $USER -c 'git clone https://aur.archlinux.org/dwm.git /tmp/dwm'"
+                arch-chroot /mnt /bin/bash -c "su - $USER -c 'cd /tmp/dwm && makepkg -si --noconfirm'"
+                echo "exec dwm" > /mnt/home/$USER/.xinitrc
+                arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.xinitrc"
+                ;;
+            "QTILE")
+                echo -e "${CYAN}Instalando Qtile Window Manager...${NC}"
+                arch-chroot /mnt /bin/bash -c "pacman -S python python-pip --noconfirm"
+                arch-chroot /mnt /bin/bash -c "pip install qtile"
+                # Crear configuración básica de qtile
+                mkdir -p /mnt/home/$USER/.config/qtile
+                echo "exec qtile start" > /mnt/home/$USER/.xinitrc
+                arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.xinitrc"
+                ;;
+            *)
+                echo -e "${YELLOW}Gestor de ventanas no reconocido: $WINDOW_MANAGER${NC}"
+                echo -e "${CYAN}Instalando i3 como alternativa...${NC}"
+                arch-chroot /mnt /bin/bash -c "pacman -S i3-wm i3status i3lock i3blocks --noconfirm"
+                mkdir -p /mnt/home/$USER/.config/i3
+                echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
+                echo "exec i3" > /mnt/home/$USER/.xinitrc
+                arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.xinitrc"
+                ;;
+        esac
+
+        # Instalar herramientas adicionales para gestores de ventanas
+        echo -e "${CYAN}Instalando herramientas adicionales...${NC}"
+        arch-chroot /mnt /bin/bash -c "pacman -S firefox thunar alacritty --noconfirm"
+        ;;
+    *)
+        echo -e "${YELLOW}Tipo de instalación no reconocido: $INSTALLATION_TYPE${NC}"
+        echo -e "${CYAN}Continuando sin instalación de entorno gráfico...${NC}"
+        ;;
+esac
+
+sleep 3
+clear
+
 echo ""
 ls /mnt/home/$USER/
 sleep 5
