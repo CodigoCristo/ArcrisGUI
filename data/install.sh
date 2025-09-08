@@ -1588,6 +1588,11 @@ case "$INSTALLATION_TYPE" in
         echo -e "${CYAN}Instalando servidor X.org y dependencias base...${NC}"
         arch-chroot /mnt /bin/bash -c "pacman -S xorg-server xorg-xinit xorg-xauth xterm dmenu --noconfirm"
 
+        # Instalar Ly display manager
+        echo -e "${CYAN}Instalando Ly display manager...${NC}"
+        arch-chroot /mnt /bin/bash -c "pacman -S ly --noconfirm"
+        arch-chroot /mnt /bin/bash -c "systemctl enable ly"
+
         case "$WINDOW_MANAGER" in
             "I3")
                 echo -e "${CYAN}Instalando i3 Window Manager...${NC}"
@@ -1595,9 +1600,7 @@ case "$INSTALLATION_TYPE" in
                 # Crear configuración básica de i3
                 mkdir -p /mnt/home/$USER/.config/i3
                 echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
-                echo "exec i3" > /mnt/home/$USER/.xinitrc
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
-                arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.xinitrc"
                 ;;
             "BSPWM")
                 echo -e "${CYAN}Instalando BSPWM Window Manager...${NC}"
@@ -1605,9 +1608,7 @@ case "$INSTALLATION_TYPE" in
                 # Crear configuración básica de bspwm
                 mkdir -p /mnt/home/$USER/.config/bspwm
                 mkdir -p /mnt/home/$USER/.config/sxhkd
-                echo "exec bspwm" > /mnt/home/$USER/.xinitrc
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
-                arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.xinitrc"
                 ;;
             "DWM")
                 echo -e "${CYAN}Instalando DWM Window Manager...${NC}"
@@ -1615,18 +1616,13 @@ case "$INSTALLATION_TYPE" in
                 # Compilar dwm desde AUR (simplificado)
                 arch-chroot /mnt /bin/bash -c "su - $USER -c 'git clone https://aur.archlinux.org/dwm.git /tmp/dwm'"
                 arch-chroot /mnt /bin/bash -c "su - $USER -c 'cd /tmp/dwm && makepkg -si --noconfirm'"
-                echo "exec dwm" > /mnt/home/$USER/.xinitrc
-                arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.xinitrc"
                 ;;
             "QTILE")
                 echo -e "${CYAN}Instalando Qtile Window Manager...${NC}"
-                arch-chroot /mnt /bin/bash -c "pacman -S python python-pip --noconfirm"
-                arch-chroot /mnt /bin/bash -c "pip install qtile"
+                arch-chroot /mnt /bin/bash -c "pacman -S qtile --noconfirm"
                 # Crear configuración básica de qtile
                 mkdir -p /mnt/home/$USER/.config/qtile
-                echo "exec qtile start" > /mnt/home/$USER/.xinitrc
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
-                arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.xinitrc"
                 ;;
             *)
                 echo -e "${YELLOW}Gestor de ventanas no reconocido: $WINDOW_MANAGER${NC}"
@@ -1634,15 +1630,418 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "pacman -S i3-wm i3status i3lock i3blocks --noconfirm"
                 mkdir -p /mnt/home/$USER/.config/i3
                 echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
-                echo "exec i3" > /mnt/home/$USER/.xinitrc
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
-                arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.xinitrc"
                 ;;
         esac
 
         # Instalar herramientas adicionales para gestores de ventanas
         echo -e "${CYAN}Instalando herramientas adicionales...${NC}"
-        arch-chroot /mnt /bin/bash -c "pacman -S firefox thunar alacritty --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S firefox thunar alacritty foot kitty --noconfirm"
+
+        # Configurar terminales con configuraciones básicas
+        echo -e "${CYAN}Configurando terminales...${NC}"
+
+        # Configuración básica para Foot
+        mkdir -p /mnt/home/$USER/.config/foot
+        cat > /mnt/home/$USER/.config/foot/foot.ini << 'EOF'
+[main]
+term=xterm-256color
+login-shell=no
+
+[bell]
+urgent=no
+notify=no
+visual=no
+
+[scrollback]
+lines=1000
+
+[url]
+launch=xdg-open ${url}
+label-letters=sadfjklewcmpgh
+osc8-underline=url-mode
+protocols=http, https, ftp, ftps, file, gemini, gopher
+
+[cursor]
+style=block
+unfocused-style=hollow
+
+[mouse]
+hide-when-typing=no
+
+[colors]
+foreground=cdd6f4
+background=1e1e2e
+regular0=45475a
+regular1=f38ba8
+regular2=a6e3a1
+regular3=f9e2af
+regular4=89b4fa
+regular5=f5c2e7
+regular6=94e2d5
+regular7=bac2de
+bright0=585b70
+bright1=f38ba8
+bright2=a6e3a1
+bright3=f9e2af
+bright4=89b4fa
+bright5=f5c2e7
+bright6=94e2d5
+bright7=a6adc8
+
+[key-bindings]
+scrollback-up-page=Shift+Page_Up
+scrollback-up-half-page=none
+scrollback-up-line=none
+scrollback-down-page=Shift+Page_Down
+scrollback-down-half-page=none
+scrollback-down-line=none
+clipboard-copy=Control+Shift+c XF86Copy
+clipboard-paste=Control+Shift+v XF86Paste
+primary-paste=Shift+Insert
+search-start=Control+Shift+f
+font-increase=Control+plus Control+equal Control+KP_Add
+font-decrease=Control+minus Control+KP_Subtract
+font-reset=Control+0 Control+KP_0
+spawn-terminal=Control+Shift+n
+minimize=none
+maximize=none
+fullscreen=F11
+pipe-visible=[sh -c "xurls | fuzzel | xargs -r firefox"] none
+pipe-scrollback=[sh -c "xurls | fuzzel | xargs -r firefox"] none
+pipe-selected=[xargs -r firefox] none
+show-urls-launch=Control+Shift+u
+show-urls-copy=none
+show-urls-persistent=none
+prompt-prev=Control+Shift+z
+prompt-next=Control+Shift+x
+unicode-input=Control+Shift+u
+noop=none
+
+[search-bindings]
+cancel=Control+g Control+c Escape
+commit=Return
+find-prev=Control+r
+find-next=Control+s
+cursor-left=Left Control+b
+cursor-left-word=Control+Left Mod1+b
+cursor-right=Right Control+f
+cursor-right-word=Control+Right Mod1+f
+cursor-home=Home Control+a
+cursor-end=End Control+e
+delete-prev=BackSpace
+delete-prev-word=Mod1+BackSpace Control+BackSpace
+delete-next=Delete
+delete-next-word=Mod1+d Control+Delete
+extend-to-word-boundary=Control+w
+extend-to-next-whitespace=Control+Shift+w
+clipboard-paste=Control+v Control+Shift+v Control+y XF86Paste
+primary-paste=Shift+Insert
+unicode-input=none
+
+[url-bindings]
+cancel=Control+g Control+c Control+d Escape
+toggle-url-visible=t
+
+[text-bindings]
+\x03=Mod4+c
+EOF
+
+        # Configuración básica para Kitty
+        mkdir -p /mnt/home/$USER/.config/kitty
+        cat > /mnt/home/$USER/.config/kitty/kitty.conf << 'EOF'
+# Font settings
+font_family      JetBrains Mono
+bold_font        auto
+italic_font      auto
+bold_italic_font auto
+font_size 12.0
+
+# Cursor
+cursor_shape block
+cursor_beam_thickness 1.5
+cursor_underline_thickness 2.0
+cursor_blink_interval 0
+
+# Scrollback
+scrollback_lines 2000
+scrollback_pager less --chop-long-lines --RAW-CONTROL-CHARS +INPUT_LINE_NUMBER
+scrollback_pager_history_size 0
+wheel_scroll_multiplier 5.0
+touch_scroll_multiplier 1.0
+
+# Mouse
+mouse_hide_wait 3.0
+url_color #0087bd
+url_style curly
+open_url_modifiers kitty_mod
+open_url_with default
+url_prefixes http https file ftp gemini irc gopher mailto news git
+detect_urls yes
+
+# Performance tuning
+repaint_delay 10
+input_delay 3
+sync_to_monitor yes
+
+# Terminal bell
+enable_audio_bell no
+visual_bell_duration 0.0
+window_alert_on_bell yes
+bell_on_tab yes
+command_on_bell none
+
+# Window layout
+remember_window_size  yes
+initial_window_width  640
+initial_window_height 400
+enabled_layouts *
+window_resize_step_cells 2
+window_resize_step_lines 2
+window_border_width 0.5pt
+draw_minimal_borders yes
+window_margin_width 0
+single_window_margin_width -1
+window_padding_width 0
+placement_strategy center
+active_border_color #00ff00
+inactive_border_color #cccccc
+bell_border_color #ff5a00
+inactive_text_alpha 1.0
+
+# Tab bar
+tab_bar_edge bottom
+tab_bar_margin_width 0.0
+tab_bar_style fade
+tab_bar_min_tabs 2
+tab_switch_strategy previous
+tab_fade 0.25 0.5 0.75 1
+tab_separator " ┇"
+tab_title_template "{title}"
+active_tab_title_template none
+active_tab_foreground   #000
+active_tab_background   #eee
+active_tab_font_style   bold-italic
+inactive_tab_foreground #444
+inactive_tab_background #999
+inactive_tab_font_style normal
+
+# Color scheme (Catppuccin Mocha)
+foreground              #CDD6F4
+background              #1E1E2E
+selection_foreground    #1E1E2E
+selection_background    #F5E0DC
+
+# Cursor colors
+cursor                  #F5E0DC
+cursor_text_color       #1E1E2E
+
+# URL underline color when hovering with mouse
+url_color               #F5E0DC
+
+# Kitty window border colors
+active_border_color     #B4BEFE
+inactive_border_color   #6C7086
+bell_border_color       #F9E2AF
+
+# OS Window titlebar colors
+wayland_titlebar_color system
+macos_titlebar_color system
+
+# Tab bar colors
+active_tab_foreground   #11111B
+active_tab_background   #CBA6F7
+inactive_tab_foreground #CDD6F4
+inactive_tab_background #181825
+tab_bar_background      #11111B
+
+# Colors for marks (marked text in the terminal)
+mark1_foreground #1E1E2E
+mark1_background #B4BEFE
+mark2_foreground #1E1E2E
+mark2_background #CBA6F7
+mark3_foreground #1E1E2E
+mark3_background #74C7EC
+
+# The 16 terminal colors
+
+# normal
+color0 #45475A
+color1 #F38BA8
+color2 #A6E3A1
+color3 #F9E2AF
+color4 #89B4FA
+color5 #F5C2E7
+color6 #94E2D5
+color7 #BAC2DE
+
+# bright
+color8  #585B70
+color9  #F38BA8
+color10 #A6E3A1
+color11 #F9E2AF
+color12 #89B4FA
+color13 #F5C2E7
+color14 #94E2D5
+color15 #A6ADC8
+
+# extended base16 colors
+color16 #FAB387
+color17 #F2CDCD
+
+# Keyboard shortcuts
+kitty_mod ctrl+shift
+
+# Clipboard
+map kitty_mod+c copy_to_clipboard
+map kitty_mod+v paste_from_clipboard
+map kitty_mod+s paste_from_selection
+map shift+insert paste_from_selection
+map kitty_mod+o pass_selection_to_program
+
+# Scrolling
+map kitty_mod+up        scroll_line_up
+map kitty_mod+k         scroll_line_up
+map kitty_mod+down      scroll_line_down
+map kitty_mod+j         scroll_line_down
+map kitty_mod+page_up   scroll_page_up
+map kitty_mod+page_down scroll_page_down
+map kitty_mod+home      scroll_home
+map kitty_mod+end       scroll_end
+
+# Window management
+map kitty_mod+enter new_window
+map kitty_mod+n new_os_window
+map kitty_mod+w close_window
+map kitty_mod+] next_window
+map kitty_mod+[ previous_window
+map kitty_mod+f move_window_forward
+map kitty_mod+b move_window_backward
+map kitty_mod+` move_window_to_top
+map kitty_mod+r start_resizing_window
+map kitty_mod+1 first_window
+map kitty_mod+2 second_window
+map kitty_mod+3 third_window
+map kitty_mod+4 fourth_window
+map kitty_mod+5 fifth_window
+map kitty_mod+6 sixth_window
+map kitty_mod+7 seventh_window
+map kitty_mod+8 eighth_window
+map kitty_mod+9 ninth_window
+map kitty_mod+0 tenth_window
+
+# Tab management
+map kitty_mod+right next_tab
+map kitty_mod+left  previous_tab
+map kitty_mod+t     new_tab
+map kitty_mod+q     close_tab
+map kitty_mod+.     move_tab_forward
+map kitty_mod+,     move_tab_backward
+map kitty_mod+alt+t set_tab_title
+
+# Layout management
+map kitty_mod+l next_layout
+
+# Font sizes
+map kitty_mod+equal     change_font_size all +2.0
+map kitty_mod+plus      change_font_size all +2.0
+map kitty_mod+kp_add    change_font_size all +2.0
+map kitty_mod+minus     change_font_size all -2.0
+map kitty_mod+kp_subtract change_font_size all -2.0
+map kitty_mod+backspace change_font_size all 0
+
+# Select and act on visible text
+map kitty_mod+e kitten hints
+map kitty_mod+p>f kitten hints --type path --program -
+map kitty_mod+p>shift+f kitten hints --type path
+map kitty_mod+p>l kitten hints --type line --program -
+map kitty_mod+p>w kitten hints --type word --program -
+map kitty_mod+p>h kitten hints --type hash --program -
+map kitty_mod+p>n kitten hints --type linenum
+
+# Miscellaneous
+map kitty_mod+f11    toggle_fullscreen
+map kitty_mod+f10    toggle_maximized
+map kitty_mod+u      kitten unicode_input
+map kitty_mod+f2     edit_config_file
+map kitty_mod+escape kitty_shell window
+
+# Sending arbitrary text on key presses
+map kitty_mod+alt+1 send_text all \x01
+map kitty_mod+alt+2 send_text all \x02
+map kitty_mod+alt+3 send_text all \x03
+
+# You can use the special action no_op to unmap a keyboard shortcut that is
+# assigned in the default configuration
+map kitty_mod+space no_op
+
+# You can combine multiple actions to be triggered by a single shortcut
+map kitty_mod+e combine : clear_terminal scroll active : send_text normal,application \x0c
+EOF
+
+        # Establecer permisos correctos para las configuraciones
+        arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config/foot"
+        arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config/kitty"
+
+        # Configurar Ly para reconocer los window managers
+        echo -e "${CYAN}Configurando Ly display manager...${NC}"
+        mkdir -p /mnt/usr/share/xsessions
+
+        # Crear archivos .desktop para cada window manager
+        case "$WINDOW_MANAGER" in
+            "I3")
+                cat > /mnt/usr/share/xsessions/i3.desktop << EOF
+[Desktop Entry]
+Name=i3
+Comment=improved dynamic tiling window manager
+Exec=i3
+TryExec=i3
+Type=Application
+X-LightDM-DesktopName=i3
+DesktopNames=i3
+Keywords=tiling;wm;windowmanager;window;manager;
+EOF
+                ;;
+            "BSPWM")
+                cat > /mnt/usr/share/xsessions/bspwm.desktop << EOF
+[Desktop Entry]
+Name=bspwm
+Comment=Binary space partitioning window manager
+Exec=bspwm
+TryExec=bspwm
+Type=Application
+X-LightDM-DesktopName=bspwm
+DesktopNames=bspwm
+Keywords=tiling;wm;windowmanager;window;manager;
+EOF
+                ;;
+            "DWM")
+                cat > /mnt/usr/share/xsessions/dwm.desktop << EOF
+[Desktop Entry]
+Name=dwm
+Comment=Dynamic window manager
+Exec=dwm
+TryExec=dwm
+Type=Application
+X-LightDM-DesktopName=dwm
+DesktopNames=dwm
+Keywords=tiling;wm;windowmanager;window;manager;
+EOF
+                ;;
+            "QTILE")
+                cat > /mnt/usr/share/xsessions/qtile.desktop << EOF
+[Desktop Entry]
+Name=Qtile
+Comment=A full-featured, hackable tiling window manager written in Python
+Exec=qtile start
+TryExec=qtile
+Type=Application
+X-LightDM-DesktopName=Qtile
+DesktopNames=Qtile
+Keywords=tiling;wm;windowmanager;window;manager;
+EOF
+                ;;
+        esac
         ;;
     *)
         echo -e "${YELLOW}Tipo de instalación no reconocido: $INSTALLATION_TYPE${NC}"
@@ -1651,6 +2050,164 @@ case "$INSTALLATION_TYPE" in
 esac
 
 sleep 3
+clear
+
+# Instalación de aplicaciones adicionales basadas en configuración
+echo -e "${GREEN}| Instalando aplicaciones adicionales |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+# Verificar si ESSENTIAL_APPS está habilitado
+if [ "${ESSENTIAL_APPS_ENABLED:-false}" = "true" ]; then
+    echo -e "${CYAN}Instalando shell del sistema: ${SYSTEM_SHELL:-bash}${NC}"
+
+    case "${SYSTEM_SHELL:-bash}" in
+        "bash")
+            arch-chroot /mnt /bin/bash -c "pacman -S bash bash-completion --noconfirm"
+            arch-chroot /mnt /bin/bash -c "chsh -s /bin/bash $USER"
+            ;;
+        "dash")
+            arch-chroot /mnt /bin/bash -c "pacman -S dash --noconfirm"
+            arch-chroot /mnt /bin/bash -c "chsh -s /bin/dash $USER"
+            ;;
+        "ksh")
+            arch-chroot /mnt /bin/bash -c "pacman -S ksh --noconfirm"
+            arch-chroot /mnt /bin/bash -c "chsh -s /usr/bin/ksh $USER"
+            ;;
+        "fish")
+            arch-chroot /mnt /bin/bash -c "pacman -S fish --noconfirm"
+            arch-chroot /mnt /bin/bash -c "chsh -s /usr/bin/fish $USER"
+            ;;
+        "zsh")
+            arch-chroot /mnt /bin/bash -c "pacman -S zsh zsh-completions --noconfirm"
+            arch-chroot /mnt /bin/bash -c "chsh -s /bin/zsh $USER"
+            ;;
+        *)
+            echo -e "${YELLOW}Shell no reconocida: ${SYSTEM_SHELL}, usando bash${NC}"
+            arch-chroot /mnt /bin/bash -c "pacman -S bash bash-completion --noconfirm"
+            arch-chroot /mnt /bin/bash -c "chsh -s /bin/bash $USER"
+            ;;
+    esac
+    echo -e "${GREEN}✓ Shell del sistema configurada${NC}"
+fi
+
+# Verificar si FILESYSTEMS está habilitado
+if [ "${FILESYSTEMS_ENABLED:-false}" = "true" ]; then
+    echo -e "${CYAN}Instalando herramientas de sistemas de archivos...${NC}"
+
+    arch-chroot /mnt /bin/bash -c "pacman -S android-file-transfer --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S android-tools --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S android-udev --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S msmtp --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libmtp --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libcddb --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gvfs --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gvfs-afc --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gvfs-smb --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gvfs-gphoto2 --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gvfs-mtp --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gvfs-goa --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gvfs-nfs --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gvfs-google --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gst-libav --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S dosfstools --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S f2fs-tools --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S ntfs-3g --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S udftools --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S nilfs-utils --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S polkit --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gpart --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S mtools --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S cifs-utils --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S jfsutils --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S btrfs-progs --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S xfsprogs --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S reiserfsprogs --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S e2fsprogs --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S exfatprogs --noconfirm"
+
+    echo -e "${GREEN}✓ Herramientas de sistemas de archivos instaladas${NC}"
+fi
+
+# Verificar si COMPRESSION está habilitado
+if [ "${COMPRESSION_ENABLED:-false}" = "true" ]; then
+    echo -e "${CYAN}Instalando herramientas de compresión...${NC}"
+
+    arch-chroot /mnt /bin/bash -c "pacman -S xarchiver --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S unarchiver --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S binutils --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gzip --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S lha --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S lrzip --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S lzip --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S lz4 --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S p7zip --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S tar --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S xz --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S bzip2 --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S lbzip2 --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S arj --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S lzop --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S cpio --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S unrar --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S unzip --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S zstd --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S zip --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S unarj --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S dpkg --noconfirm"
+
+    # Instalar RAR desde AUR (requiere compilación)
+    echo -e "${CYAN}Instalando RAR desde AUR...${NC}"
+    arch-chroot /mnt /bin/bash -c "su - $USER -c 'git clone https://aur.archlinux.org/rar.git /tmp/rar'"
+    arch-chroot /mnt /bin/bash -c "su - $USER -c 'cd /tmp/rar && makepkg -si --noconfirm'" || echo -e "${YELLOW}⚠ No se pudo instalar RAR desde AUR${NC}"
+
+    echo -e "${GREEN}✓ Herramientas de compresión instaladas${NC}"
+fi
+
+# Verificar si VIDEO_CODECS está habilitado
+if [ "${VIDEO_CODECS_ENABLED:-false}" = "true" ]; then
+    echo -e "${CYAN}Instalando codecs de video...${NC}"
+
+    arch-chroot /mnt /bin/bash -c "pacman -S ffmpeg --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S aom --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libde265 --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S x265 --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S x264 --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libmpeg2 --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S xvidcore --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libtheora --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libvpx --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S sdl --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gstreamer --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gst-plugins-bad --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gst-plugins-base --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gst-plugins-base-libs --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gst-plugins-good --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S gst-plugins-ugly --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S xine-lib --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libdvdcss --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libdvdread --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S dvd+rw-tools --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S lame --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S jasper --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libmng --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libraw --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libkdcraw --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S vcdimager --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S mpv --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S faac --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S faad2 --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S flac --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S opus --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libvorbis --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S wavpack --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libheif --noconfirm"
+    arch-chroot /mnt /bin/bash -c "pacman -S libavif --noconfirm"
+
+    echo -e "${GREEN}✓ Codecs de video instalados${NC}"
+fi
+
+sleep 2
 clear
 
 echo ""
