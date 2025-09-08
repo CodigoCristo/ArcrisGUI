@@ -2218,7 +2218,6 @@ clear
 
 echo -e "${GREEN}✓ Tipografías instaladas${NC}"
 arch-chroot /mnt pacman -S noto-fonts-emoji --noconfirm
-arch-chroot /mnt pacman -S noto-fonts-cjk --noconfirm
 arch-chroot /mnt pacman -S adobe-source-code-pro-fonts --noconfirm
 arch-chroot /mnt pacman -S ttf-cascadia-code --noconfirm
 arch-chroot /mnt pacman -S cantarell-fonts --noconfirm
