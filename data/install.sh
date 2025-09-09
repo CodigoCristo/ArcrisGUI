@@ -963,6 +963,392 @@ echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
 clear
 
 
+
+
+sleep 2
+clear
+
+# Configuración de mkinitcpio según el modo de particionado
+echo -e "${GREEN}| Configurando mkinitcpio |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+if [ "$PARTITION_MODE" = "cifrado" ]; then
+    echo -e "${GREEN}Configurando mkinitcpio para cifrado LUKS+LVM...${NC}"
+
+    # Configurar módulos específicos para LUKS+LVM (siguiendo mejores prácticas)
+    echo -e "${CYAN}Configurando módulos del kernel para cifrado...${NC}"
+    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_snapshot dm_mirror)/' /mnt/etc/mkinitcpio.conf
+
+    # Configurar hooks para cifrado con LVM - orden crítico: encrypt antes de lvm2
+    echo -e "${CYAN}Configurando hooks - ORDEN CRÍTICO: encrypt debe ir antes de lvm2${NC}"
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+
+    echo -e "${GREEN}✓ Configuración mkinitcpio actualizada para LUKS+LVM${NC}"
+    echo -e "${CYAN}  • Módulos: dm_mod dm_crypt dm_snapshot dm_mirror${NC}"
+    echo -e "${CYAN}  • Hooks: base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck${NC}"
+    echo -e "${YELLOW}  • IMPORTANTE: 'encrypt' DEBE ir antes de 'lvm2' para que funcione correctamente${NC}"
+    echo -e "${YELLOW}  • keyboard y keymap son necesarios para introducir la contraseña en el boot${NC}"
+
+elif [ "$PARTITION_MODE" = "btrfs" ]; then
+    echo "Configurando mkinitcpio para BTRFS..."
+    # Configurar módulos específicos para BTRFS
+    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c-intel crc32c zstd_compress lzo_compress)/' /mnt/etc/mkinitcpio.conf
+
+    # Configurar hooks para BTRFS
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+
+else
+    echo "Configurando mkinitcpio para sistema estándar..."
+    # Configuración estándar para ext4
+    sed -i 's/^MODULES=.*/MODULES=()/' /mnt/etc/mkinitcpio.conf
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+fi
+
+# Regenerar initramfs
+arch-chroot /mnt /bin/bash -c "mkinitcpio -P"
+sleep 2
+
+# Instalación de bootloader
+# Instalar bootloader para todos los modos (incluyendo manual)
+if true; then
+    echo -e "${GREEN}| Instalando bootloader |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        # Verificar que la partición EFI esté montada con debug adicional
+        echo -e "${CYAN}Verificando montaje de partición EFI...${NC}"
+        if ! mountpoint -q /mnt/boot/efi; then
+            echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot/efi${NC}"
+            echo -e "${YELLOW}Información de debug:${NC}"
+            echo "- Contenido de /mnt/boot:"
+            ls -la /mnt/boot/ 2>/dev/null || echo "  Directorio /mnt/boot no accesible"
+            echo "- Contenido de /mnt/boot/efi:"
+            ls -la /mnt/boot/efi/ 2>/dev/null || echo "  Directorio /mnt/boot/efi no accesible"
+            echo "- Montajes actuales:"
+            mount | grep "/mnt"
+            echo "- Particiones disponibles:"
+            lsblk ${SELECTED_DISK}
+            exit 1
+        fi
+        echo -e "${GREEN}✓ Partición EFI montada correctamente en /mnt/boot/efi${NC}"
+
+        # Verificar sistema UEFI con debug
+        echo -e "${CYAN}Verificando sistema UEFI...${NC}"
+        if [ ! -d "/sys/firmware/efi" ]; then
+            echo -e "${RED}ERROR: Sistema no está en modo UEFI${NC}"
+            echo "- Directorio /sys/firmware/efi no existe"
+            echo "- El sistema puede estar en modo BIOS Legacy"
+            exit 1
+        fi
+        echo -e "${GREEN}✓ Sistema en modo UEFI confirmado${NC}"
+
+        # Limpiar entradas UEFI previas que puedan causar conflictos
+        # echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
+        # efibootmgr | awk '/grub/i {gsub(/Boot|\*.*/, ""); system("efibootmgr -b " $1 " -B 2>/dev/null")}'
+        # efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
+
+        # Limpiar directorio EFI previo si existe
+        if [ -d "/mnt/boot/efi/EFI/GRUB" ]; then
+            rm -rf /mnt/boot/efi/EFI/GRUB
+        fi
+
+        # Crear directorio EFI si no existe
+        mkdir -p /mnt/boot/efi/EFI
+
+        echo -e "${CYAN}Instalando paquetes GRUB para UEFI...${NC}"
+        arch-chroot /mnt /bin/bash -c "pacman -S grub efibootmgr --noconfirm"
+
+        # Configuración específica según el modo de particionado ANTES de instalar
+        echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
+        if [ "$PARTITION_MODE" = "cifrado" ]; then
+            # Esperar que la partición esté lista y obtener UUID
+            echo -e "${CYAN}Obteniendo UUID de la partición cifrada...${NC}"
+            sleep 2
+            sync
+            partprobe $SELECTED_DISK 2>/dev/null || true
+            sleep 1
+
+            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+            # Reintentar si no se obtuvo UUID
+            if [ -z "$CRYPT_UUID" ]; then
+                echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
+                sleep 2
+                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+            fi
+
+            if [ -z "$CRYPT_UUID" ]; then
+                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}3${NC}"
+                echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
+                exit 1
+            fi
+            echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
+            # Configurar GRUB para LUKS+LVM (siguiendo mejores prácticas de la guía)
+            echo -e "${CYAN}Configurando parámetros de kernel para LUKS+LVM...${NC}"
+            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
+
+            # Habilitar soporte para discos cifrados en GRUB
+            echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
+
+            # Precargar módulos necesarios para cifrado
+            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
+
+            # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+
+            echo -e "${GREEN}✓ Configuración GRUB para cifrado:${NC}"
+            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
+            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
+            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
+            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
+        elif [ "$PARTITION_MODE" = "btrfs" ]; then
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
+        else
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
+        fi
+
+        echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
+        arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --removable" || {
+            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (modo removible)${NC}"
+            echo -e "${YELLOW}Información adicional:${NC}"
+            echo "- Estado de /boot:"
+            ls -la /mnt/boot/
+            echo "- Estado de /boot/efi:"
+            ls -la /mnt/boot/efi/
+            echo "- Espacio disponible en /boot:"
+            df -h /mnt/boot
+            echo "- Espacio disponible en /boot/efi:"
+            df -h /mnt/boot/efi
+            exit 1
+        }
+        sleep 5
+        echo -e "${GREEN}✓ GRUB instalado en modo removible (/EFI/BOOT/bootx64.efi)${NC}"
+
+        echo -e "${CYAN}Instalando GRUB con entrada NVRAM...${NC}"
+        arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB" || {
+            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (entrada NVRAM)${NC}"
+            echo -e "${YELLOW}Información adicional:${NC}"
+            echo "- Estado de /boot/efi/EFI/:"
+            ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
+            exit 1
+        }
+
+        echo -e "${GREEN}✓ GRUB instalado con entrada NVRAM (/EFI/GRUB/grubx64.efi)${NC}"
+
+        # Verificar que grubx64.efi se haya creado con debug
+        if [ ! -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
+            echo -e "${RED}ERROR: No se creó grubx64.efi${NC}"
+            echo -e "${YELLOW}Información de debug:${NC}"
+            echo "- Contenido de /mnt/boot/efi/EFI/:"
+            ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
+            echo "- Contenido de /mnt/boot/efi/EFI/GRUB/:"
+            ls -la /mnt/boot/efi/EFI/GRUB/ 2>/dev/null || echo "  Directorio GRUB no existe"
+            exit 1
+        fi
+        echo -e "${GREEN}✓ grubx64.efi creado exitosamente${NC}"
+
+        echo -e "${CYAN}Generando configuración de GRUB...${NC}"
+        if ! arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
+            echo -e "${RED}ERROR: Falló la generación de grub.cfg${NC}"
+            exit 1
+        fi
+
+        # Verificar que grub.cfg se haya creado
+        if [ ! -f "/mnt/boot/grub/grub.cfg" ]; then
+            echo -e "${RED}ERROR: No se creó grub.cfg${NC}"
+            exit 1
+        fi
+
+        echo -e "${GREEN}✓ GRUB UEFI instalado correctamente${NC}"
+    else
+        echo -e "${CYAN}Instalando paquetes GRUB para BIOS...${NC}"
+        arch-chroot /mnt /bin/bash -c "pacman -S grub --noconfirm"
+
+        # Configuración específica según el modo de particionado ANTES de instalar
+        echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
+        if [ "$PARTITION_MODE" = "cifrado" ]; then
+            # Esperar que la partición esté lista y obtener UUID
+            echo -e "${CYAN}Obteniendo UUID de la partición cifrada...${NC}"
+            sleep 2
+            sync
+            partprobe $SELECTED_DISK 2>/dev/null || true
+            sleep 1
+
+            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+            # Reintentar si no se obtuvo UUID
+            if [ -z "$CRYPT_UUID" ]; then
+                echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
+                sleep 2
+                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+            fi
+
+            if [ -z "$CRYPT_UUID" ]; then
+                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}2${NC}"
+                echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
+                exit 1
+            fi
+            echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
+            # Usar GRUB_CMDLINE_LINUX en lugar de GRUB_CMDLINE_LINUX_DEFAULT para mejores prácticas
+            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
+            # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+            echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
+
+            echo -e "${GREEN}✓ Configuración GRUB para cifrado BIOS Legacy:${NC}"
+            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
+            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
+            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
+            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
+            echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
+        elif [ "$PARTITION_MODE" = "btrfs" ]; then
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
+        else
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+            echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
+        fi
+
+        echo -e "${CYAN}Instalando GRUB en disco...${NC}"
+        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK --recheck"; then
+            echo -e "${RED}ERROR: Falló la instalación de GRUB BIOS${NC}"
+            exit 1
+        fi
+
+        echo -e "${CYAN}Generando configuración de GRUB...${NC}"
+        if ! arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
+            echo -e "${RED}ERROR: Falló la generación de grub.cfg${NC}"
+            exit 1
+        fi
+
+        # Verificar que grub.cfg se haya creado
+        if [ ! -f "/mnt/boot/grub/grub.cfg" ]; then
+            echo -e "${RED}ERROR: No se creó grub.cfg${NC}"
+            exit 1
+        fi
+
+        echo -e "${GREEN}✓ GRUB BIOS instalado correctamente${NC}"
+    fi
+fi
+
+# Verificación final del bootloader
+# Verificar bootloader para todos los modos (incluyendo manual)
+if true; then
+    echo -e "${GREEN}| Verificación final del bootloader |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
+            echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente${NC}"
+
+            # Crear entrada UEFI manualmente si no existe
+            if ! efibootmgr | grep -q "GRUB"; then
+                echo -e "${CYAN}Creando entrada UEFI para GRUB...${NC}"
+                efibootmgr --disk $SELECTED_DISK --part 1 --create --label "GRUB" --loader '\EFI\GRUB\grubx64.efi'
+
+                # Hacer que GRUB sea la primera opción de boot
+                GRUB_NUM=$(efibootmgr | grep "GRUB" | head -1 | cut -d'*' -f1 | sed 's/Boot//')
+                if [ -n "$GRUB_NUM" ]; then
+                    CURRENT_ORDER=$(efibootmgr | grep BootOrder | cut -d' ' -f2)
+                    NEW_ORDER="$GRUB_NUM,${CURRENT_ORDER//$GRUB_NUM,/}"
+                    NEW_ORDER="${NEW_ORDER//,,/,}"
+                    NEW_ORDER="${NEW_ORDER%,}"
+                    efibootmgr --bootorder "$NEW_ORDER" 2>/dev/null || true
+                fi
+            fi
+        else
+            echo -e "${RED}⚠ Problema con la instalación del bootloader UEFI${NC}"
+        fi
+    else
+        if [ -f "/mnt/boot/grub/grub.cfg" ]; then
+            echo -e "${GREEN}✓ Bootloader BIOS verificado correctamente${NC}"
+        else
+            echo -e "${RED}⚠ Problema con la instalación del bootloader BIOS${NC}"
+        fi
+    fi
+    sleep 2
+fi
+clear
+
+
+sleep 2
+clear
+
+# Detección de otros sistemas operativos
+echo -e "${GREEN}| Detectando otros sistemas operativos |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+# Instalar os-prober para detectar otros sistemas
+echo -e "${CYAN}Instalando os-prober...${NC}"
+arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S os-prober --noeditmenu --noconfirm --needed"
+
+# Instalar ntfs-3g para mejor soporte de particiones Windows
+echo -e "${CYAN}Instalando ntfs-3g para soporte Windows...${NC}"
+arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ntfs-3g --noeditmenu --noconfirm --needed"
+
+# Habilitar os-prober en GRUB
+echo -e "${CYAN}Habilitando os-prober en configuración GRUB...${NC}"
+if ! grep -q "GRUB_DISABLE_OS_PROBER=false" /mnt/etc/default/grub; then
+    # Si la línea está comentada, descomentarla
+    if grep -q "#GRUB_DISABLE_OS_PROBER=false" /mnt/etc/default/grub; then
+        sed -i 's/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/' /mnt/etc/default/grub
+    else
+        # Si no existe, agregarla
+        echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
+    fi
+    echo -e "${GREEN}✓ os-prober habilitado en GRUB${NC}"
+else
+    echo -e "${GREEN}✓ os-prober ya estaba habilitado${NC}"
+fi
+
+# Crear directorios de montaje temporales
+mkdir -p /mnt/mnt/windows 2>/dev/null || true
+mkdir -p /mnt/mnt/other 2>/dev/null || true
+
+# Ejecutar os-prober para detectar otros sistemas
+echo -e "${CYAN}Ejecutando os-prober para detectar otros sistemas...${NC}"
+DETECTED_SYSTEMS=$(arch-chroot /mnt /bin/bash -c "os-prober" 2>/dev/null || true)
+
+if [ -n "$DETECTED_SYSTEMS" ]; then
+    echo -e "${GREEN}✓ Sistemas detectados:${NC}"
+    echo "$DETECTED_SYSTEMS" | while IFS= read -r line; do
+        if [ -n "$line" ]; then
+            echo -e "${CYAN}  • $line${NC}"
+        fi
+    done
+
+    # Regenerar configuración de GRUB con los sistemas detectados
+    echo -e "${CYAN}Regenerando configuración de GRUB con sistemas detectados...${NC}"
+    arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
+
+    # Verificar que se agregaron entradas
+    GRUB_ENTRIES=$(arch-chroot /mnt /bin/bash -c "grep -c 'menuentry' /boot/grub/grub.cfg" 2>/dev/null || echo "0")
+    echo -e "${GREEN}✓ Configuración GRUB actualizada (${GRUB_ENTRIES} entradas de menú)${NC}"
+else
+    echo -e "${YELLOW}⚠ No se detectaron otros sistemas operativos${NC}"
+    echo -e "${CYAN}  • Solo se encontró el sistema Arcris Linux actual${NC}"
+fi
+
+# Limpiar directorios temporales
+rmdir /mnt/mnt/windows 2>/dev/null || true
+rmdir /mnt/mnt/other 2>/dev/null || true
+rmdir /mnt/mnt 2>/dev/null || true
+
+echo -e "${GREEN}✓ Detección de sistemas operativos completada${NC}"
+echo ""
+
+
+
+sleep 3
+clear
+
+
+
 # Instalación de drivers de video
 echo -e "${GREEN}| Instalando drivers de video: $DRIVER_VIDEO |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
@@ -1200,316 +1586,9 @@ case "$DRIVER_BLUETOOTH" in
         ;;
 esac
 
-
-
 sleep 2
 clear
 
-# Configuración de mkinitcpio según el modo de particionado
-echo -e "${GREEN}| Configurando mkinitcpio |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
-
-if [ "$PARTITION_MODE" = "cifrado" ]; then
-    echo -e "${GREEN}Configurando mkinitcpio para cifrado LUKS+LVM...${NC}"
-
-    # Configurar módulos específicos para LUKS+LVM (siguiendo mejores prácticas)
-    echo -e "${CYAN}Configurando módulos del kernel para cifrado...${NC}"
-    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_snapshot dm_mirror)/' /mnt/etc/mkinitcpio.conf
-
-    # Configurar hooks para cifrado con LVM - orden crítico: encrypt antes de lvm2
-    echo -e "${CYAN}Configurando hooks - ORDEN CRÍTICO: encrypt debe ir antes de lvm2${NC}"
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
-
-    echo -e "${GREEN}✓ Configuración mkinitcpio actualizada para LUKS+LVM${NC}"
-    echo -e "${CYAN}  • Módulos: dm_mod dm_crypt dm_snapshot dm_mirror${NC}"
-    echo -e "${CYAN}  • Hooks: base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck${NC}"
-    echo -e "${YELLOW}  • IMPORTANTE: 'encrypt' DEBE ir antes de 'lvm2' para que funcione correctamente${NC}"
-    echo -e "${YELLOW}  • keyboard y keymap son necesarios para introducir la contraseña en el boot${NC}"
-
-elif [ "$PARTITION_MODE" = "btrfs" ]; then
-    echo "Configurando mkinitcpio para BTRFS..."
-    # Configurar módulos específicos para BTRFS
-    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c-intel crc32c zstd_compress lzo_compress)/' /mnt/etc/mkinitcpio.conf
-
-    # Configurar hooks para BTRFS
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
-
-else
-    echo "Configurando mkinitcpio para sistema estándar..."
-    # Configuración estándar para ext4
-    sed -i 's/^MODULES=.*/MODULES=()/' /mnt/etc/mkinitcpio.conf
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
-fi
-
-# Regenerar initramfs
-arch-chroot /mnt /bin/bash -c "mkinitcpio -P"
-sleep 2
-
-# Instalación de bootloader
-# Instalar bootloader para todos los modos (incluyendo manual)
-if true; then
-    echo -e "${GREEN}| Instalando bootloader |${NC}"
-    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-    echo ""
-
-    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        # Verificar que la partición EFI esté montada con debug adicional
-        echo -e "${CYAN}Verificando montaje de partición EFI...${NC}"
-        if ! mountpoint -q /mnt/boot/efi; then
-            echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot/efi${NC}"
-            echo -e "${YELLOW}Información de debug:${NC}"
-            echo "- Contenido de /mnt/boot:"
-            ls -la /mnt/boot/ 2>/dev/null || echo "  Directorio /mnt/boot no accesible"
-            echo "- Contenido de /mnt/boot/efi:"
-            ls -la /mnt/boot/efi/ 2>/dev/null || echo "  Directorio /mnt/boot/efi no accesible"
-            echo "- Montajes actuales:"
-            mount | grep "/mnt"
-            echo "- Particiones disponibles:"
-            lsblk ${SELECTED_DISK}
-            exit 1
-        fi
-        echo -e "${GREEN}✓ Partición EFI montada correctamente en /mnt/boot/efi${NC}"
-
-        # Verificar sistema UEFI con debug
-        echo -e "${CYAN}Verificando sistema UEFI...${NC}"
-        if [ ! -d "/sys/firmware/efi" ]; then
-            echo -e "${RED}ERROR: Sistema no está en modo UEFI${NC}"
-            echo "- Directorio /sys/firmware/efi no existe"
-            echo "- El sistema puede estar en modo BIOS Legacy"
-            exit 1
-        fi
-        echo -e "${GREEN}✓ Sistema en modo UEFI confirmado${NC}"
-
-        # Limpiar entradas UEFI previas que puedan causar conflictos
-        # echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
-        # efibootmgr | awk '/grub/i {gsub(/Boot|\*.*/, ""); system("efibootmgr -b " $1 " -B 2>/dev/null")}'
-        # efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
-
-        # Limpiar directorio EFI previo si existe
-        if [ -d "/mnt/boot/efi/EFI/GRUB" ]; then
-            rm -rf /mnt/boot/efi/EFI/GRUB
-        fi
-
-        # Crear directorio EFI si no existe
-        mkdir -p /mnt/boot/efi/EFI
-
-        echo -e "${CYAN}Instalando paquetes GRUB para UEFI...${NC}"
-        arch-chroot /mnt /bin/bash -c "pacman -S grub efibootmgr --noconfirm"
-
-        # Configuración específica según el modo de particionado ANTES de instalar
-        echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
-        if [ "$PARTITION_MODE" = "cifrado" ]; then
-            # Esperar que la partición esté lista y obtener UUID
-            echo -e "${CYAN}Obteniendo UUID de la partición cifrada...${NC}"
-            sleep 2
-            sync
-            partprobe $SELECTED_DISK 2>/dev/null || true
-            sleep 1
-
-            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
-            # Reintentar si no se obtuvo UUID
-            if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
-                sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
-            fi
-
-            if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}3${NC}"
-                echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
-                exit 1
-            fi
-            echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
-            # Configurar GRUB para LUKS+LVM (siguiendo mejores prácticas de la guía)
-            echo -e "${CYAN}Configurando parámetros de kernel para LUKS+LVM...${NC}"
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
-
-            # Habilitar soporte para discos cifrados en GRUB
-            echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
-
-            # Precargar módulos necesarios para cifrado
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
-
-            # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
-
-            echo -e "${GREEN}✓ Configuración GRUB para cifrado:${NC}"
-            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
-            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
-            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
-            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
-        elif [ "$PARTITION_MODE" = "btrfs" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
-        else
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
-        fi
-
-        echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --recheck --removable --no-nvram" || {
-            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (modo removible)${NC}"
-            echo -e "${YELLOW}Información adicional:${NC}"
-            echo "- Estado de /boot:"
-            ls -la /mnt/boot/
-            echo "- Estado de /boot/efi:"
-            ls -la /mnt/boot/efi/
-            echo "- Espacio disponible en /boot:"
-            df -h /mnt/boot
-            echo "- Espacio disponible en /boot/efi:"
-            df -h /mnt/boot/efi
-            exit 1
-        }
-
-        echo -e "${GREEN}✓ GRUB instalado en modo removible (/EFI/BOOT/bootx64.efi)${NC}"
-
-        echo -e "${CYAN}Instalando GRUB con entrada NVRAM...${NC}"
-        arch-chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB" || {
-            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (entrada NVRAM)${NC}"
-            echo -e "${YELLOW}Información adicional:${NC}"
-            echo "- Estado de /boot/efi/EFI/:"
-            ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
-            exit 1
-        }
-
-        echo -e "${GREEN}✓ GRUB instalado con entrada NVRAM (/EFI/GRUB/grubx64.efi)${NC}"
-
-        # Verificar que grubx64.efi se haya creado con debug
-        if [ ! -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
-            echo -e "${RED}ERROR: No se creó grubx64.efi${NC}"
-            echo -e "${YELLOW}Información de debug:${NC}"
-            echo "- Contenido de /mnt/boot/efi/EFI/:"
-            ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
-            echo "- Contenido de /mnt/boot/efi/EFI/GRUB/:"
-            ls -la /mnt/boot/efi/EFI/GRUB/ 2>/dev/null || echo "  Directorio GRUB no existe"
-            exit 1
-        fi
-        echo -e "${GREEN}✓ grubx64.efi creado exitosamente${NC}"
-
-        echo -e "${CYAN}Generando configuración de GRUB...${NC}"
-        if ! arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
-            echo -e "${RED}ERROR: Falló la generación de grub.cfg${NC}"
-            exit 1
-        fi
-
-        # Verificar que grub.cfg se haya creado
-        if [ ! -f "/mnt/boot/grub/grub.cfg" ]; then
-            echo -e "${RED}ERROR: No se creó grub.cfg${NC}"
-            exit 1
-        fi
-
-        echo -e "${GREEN}✓ GRUB UEFI instalado correctamente${NC}"
-    else
-        echo -e "${CYAN}Instalando paquetes GRUB para BIOS...${NC}"
-        arch-chroot /mnt /bin/bash -c "pacman -S grub --noconfirm"
-
-        # Configuración específica según el modo de particionado ANTES de instalar
-        echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
-        if [ "$PARTITION_MODE" = "cifrado" ]; then
-            # Esperar que la partición esté lista y obtener UUID
-            echo -e "${CYAN}Obteniendo UUID de la partición cifrada...${NC}"
-            sleep 2
-            sync
-            partprobe $SELECTED_DISK 2>/dev/null || true
-            sleep 1
-
-            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
-            # Reintentar si no se obtuvo UUID
-            if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
-                sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
-            fi
-
-            if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}2${NC}"
-                echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
-                exit 1
-            fi
-            echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
-            # Usar GRUB_CMDLINE_LINUX en lugar de GRUB_CMDLINE_LINUX_DEFAULT para mejores prácticas
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
-            # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
-
-            echo -e "${GREEN}✓ Configuración GRUB para cifrado BIOS Legacy:${NC}"
-            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
-            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
-            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
-            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
-            echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
-        elif [ "$PARTITION_MODE" = "btrfs" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
-        else
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
-        fi
-
-        echo -e "${CYAN}Instalando GRUB en disco...${NC}"
-        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK --recheck"; then
-            echo -e "${RED}ERROR: Falló la instalación de GRUB BIOS${NC}"
-            exit 1
-        fi
-
-        echo -e "${CYAN}Generando configuración de GRUB...${NC}"
-        if ! arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
-            echo -e "${RED}ERROR: Falló la generación de grub.cfg${NC}"
-            exit 1
-        fi
-
-        # Verificar que grub.cfg se haya creado
-        if [ ! -f "/mnt/boot/grub/grub.cfg" ]; then
-            echo -e "${RED}ERROR: No se creó grub.cfg${NC}"
-            exit 1
-        fi
-
-        echo -e "${GREEN}✓ GRUB BIOS instalado correctamente${NC}"
-    fi
-fi
-
-# Verificación final del bootloader
-# Verificar bootloader para todos los modos (incluyendo manual)
-if true; then
-    echo -e "${GREEN}| Verificación final del bootloader |${NC}"
-    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-    echo ""
-
-    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
-            echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente${NC}"
-
-            # Crear entrada UEFI manualmente si no existe
-            if ! efibootmgr | grep -q "GRUB"; then
-                echo -e "${CYAN}Creando entrada UEFI para GRUB...${NC}"
-                efibootmgr --disk $SELECTED_DISK --part 1 --create --label "GRUB" --loader '\EFI\GRUB\grubx64.efi'
-
-                # Hacer que GRUB sea la primera opción de boot
-                GRUB_NUM=$(efibootmgr | grep "GRUB" | head -1 | cut -d'*' -f1 | sed 's/Boot//')
-                if [ -n "$GRUB_NUM" ]; then
-                    CURRENT_ORDER=$(efibootmgr | grep BootOrder | cut -d' ' -f2)
-                    NEW_ORDER="$GRUB_NUM,${CURRENT_ORDER//$GRUB_NUM,/}"
-                    NEW_ORDER="${NEW_ORDER//,,/,}"
-                    NEW_ORDER="${NEW_ORDER%,}"
-                    efibootmgr --bootorder "$NEW_ORDER" 2>/dev/null || true
-                fi
-            fi
-        else
-            echo -e "${RED}⚠ Problema con la instalación del bootloader UEFI${NC}"
-        fi
-    else
-        if [ -f "/mnt/boot/grub/grub.cfg" ]; then
-            echo -e "${GREEN}✓ Bootloader BIOS verificado correctamente${NC}"
-        else
-            echo -e "${RED}⚠ Problema con la instalación del bootloader BIOS${NC}"
-        fi
-    fi
-    sleep 2
-fi
-clear
 
 # Instalación de herramientas de red
 echo -e "${GREEN}| Instalando herramientas de red |${NC}"
