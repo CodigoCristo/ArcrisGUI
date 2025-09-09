@@ -936,7 +936,32 @@ case "$SELECTED_KERNEL" in
         ;;
 esac
 
+sleep 3
 clear
+echo -e "${GREEN}✓ Instalanado extras${NC}"
+arch-chroot /mnt pacman -S yay-bin --noconfirm
+arch-chroot /mnt pacman -S alsi --noconfirm
+clear
+
+clear
+
+# Configuración de usuarios y contraseñas
+echo -e "${GREEN}| Configurando usuarios |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+# Configurar contraseña de root
+echo "root:$PASSWORD_ROOT" | arch-chroot /mnt /bin/bash -c "chpasswd"
+
+# Crear usuario
+arch-chroot /mnt /bin/bash -c "useradd -m -G wheel,audio,video,optical,storage -s /bin/bash $USER"
+echo "$USER:$PASSWORD_USER" | arch-chroot /mnt /bin/bash -c "chpasswd"
+
+# Configurar sudo
+arch-chroot /mnt /bin/bash -c "pacman -S sudo --noconfirm"
+echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
+clear
+
 
 # Instalación de drivers de video
 echo -e "${GREEN}| Instalando drivers de video: $DRIVER_VIDEO |${NC}"
@@ -951,13 +976,37 @@ case "$DRIVER_VIDEO" in
 
         if echo "$VGA_LINE" | grep -i nvidia > /dev/null; then
             echo "Detectado hardware NVIDIA - Instalando driver open source nouveau"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-nouveau mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-nouveau --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-nouveau lib32-vulkan-nouveau --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver lib32-libva-mesa-driver --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
         elif echo "$VGA_LINE" | grep -i "amd\|radeon" > /dev/null; then
             echo "Detectado hardware AMD/Radeon - Instalando driver open source amdgpu"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-ati --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-radeon lib32-vulkan-radeon --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S radeontop --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver lib32-libva-mesa-driver --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
         elif echo "$VGA_LINE" | grep -i intel > /dev/null; then
             echo "Detectado hardware Intel - Instalando driver open source intel"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-intel mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-intel --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-intel lib32-vulkan-intel --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S libva-intel-driver intel-media-driver --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S intel-gpu-tools --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
         elif echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
             echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa xf86-video-qxl qemu-guest-agent mesa --noconfirm"
@@ -974,45 +1023,97 @@ case "$DRIVER_VIDEO" in
         ;;
     "nvidia")
         echo "Instalando driver NVIDIA para kernel linux"
-        arch-chroot /mnt /bin/bash -c "pacman -S nvidia nvidia-utils --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noeditmenu --noconfirm --needed"
+
         ;;
     "nvidia-lts")
         echo "Instalando driver NVIDIA para kernel LTS"
-        arch-chroot /mnt /bin/bash -c "pacman -S nvidia-lts nvidia-utils --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-lts --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noeditmenu --noconfirm --needed"
         ;;
     "nvidia-dkms")
         echo "Instalando driver NVIDIA DKMS"
-        arch-chroot /mnt /bin/bash -c "pacman -S nvidia-dkms nvidia-utils --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-dkms --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noeditmenu --noconfirm --needed"
         ;;
     "nvidia-470xx-dkms")
         echo "Instalando driver NVIDIA serie 470.xx con DKMS"
-        arch-chroot /mnt /bin/bash -c "pacman -S nvidia-470xx-dkms nvidia-470xx-utils --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-dkms --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-utils --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia-470xx --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-settings --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-470xx-utils --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia-470xx --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mhwd-nvidia-470xx --noeditmenu --noconfirm --needed"
         ;;
     "nvidia-390xx-dkms")
         echo "Instalando driver NVIDIA serie 390.xx con DKMS (hardware antiguo)"
-        arch-chroot /mnt /bin/bash -c "pacman -S nvidia-390xx-dkms nvidia-390xx-utils --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-dkms --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-utils --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia-390xx --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-390xx-utils --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia-390xx --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-settings --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mhwd-nvidia-390xx --noeditmenu --noconfirm --needed"
         ;;
     "AMD Private")
         echo "Instalando drivers privativos de AMD"
-        arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu mesa vulkan-radeon lib32-vulkan-radeon --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu mesa lib32-mesa --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S radeontop --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S amf-amdgpu-pro --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S amdgpu-pro-oglp --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-amdgpu-pro-oglp --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vulkan-amdgpu-pro --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-vulkan-amdgpu-pro --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-amd --noeditmenu --noconfirm --needed"
         ;;
     "Intel Private")
         echo "Instalando drivers privativos de Intel"
-        arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-intel mesa vulkan-intel lib32-vulkan-intel --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-intel --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S vulkan-intel lib32-vulkan-intel --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S intel-gpu-tools --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-media-driver --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S libva-intel-driver --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-compute-runtime --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-hybrid-codec-driver-git --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vpl-gpu-rt --noeditmenu --noconfirm --needed"
         ;;
     "Máquina Virtual")
         if lspci | grep -i virtualbox > /dev/null; then
             echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
-            arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils xf86-video-vmware mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils xf86-video-vmware mesa lib32-mesa --noconfirm"
         elif lspci | grep -i vmware > /dev/null; then
             echo "Detectado VMware - Instalando open-vm-tools y driver vmware"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vmware open-vm-tools mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vmware open-vm-tools mesa lib32-mesa --noconfirm"
         elif lspci | grep -i qemu > /dev/null || lspci | grep -i "Red Hat.*Virtio" > /dev/null || lspci | grep -i virtio > /dev/null; then
             echo "Detectado QEMU/KVM/Virtio - Instalando driver qxl y guest agent"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl qemu-guest-agent mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl qemu-guest-agent mesa lib32-mesa --noconfirm"
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa mesa lib32-mesa --noconfirm"
         fi
         ;;
 esac
@@ -1036,6 +1137,10 @@ case "$DRIVER_AUDIO" in
         ;;
     "Jack2")
         arch-chroot /mnt /bin/bash -c "pacman -S jack2 --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S lib32-jack2 --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S jack2-dbus --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S carla --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S qjackctl --noconfirm"
         ;;
 esac
 
@@ -1051,13 +1156,26 @@ case "$DRIVER_WIFI" in
         echo "Sin drivers de WiFi"
         ;;
     "Open Source")
-        arch-chroot /mnt /bin/bash -c "pacman -S networkmanager wpa_supplicant --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S networkmanager --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S wpa_supplicant --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S wireless_tools --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S iw --noconfirm"
         ;;
     "broadcom-wl")
+        arch-chroot /mnt /bin/bash -c "pacman -S networkmanager --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S wpa_supplicant --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S wireless_tools --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S iw --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S broadcom-wl networkmanager --noconfirm"
         ;;
     "Realtek")
-        arch-chroot /mnt /bin/bash -c "pacman -S rtl8821cu-morrownr-dkms-git networkmanager --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S networkmanager --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S wpa_supplicant --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S wireless_tools --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S iw --noconfirm"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtl8821cu-dkms-git --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtl8821ce-dkms-git --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtw88-dkms-git --noeditmenu --noconfirm --needed"
         ;;
 esac
 
@@ -1082,23 +1200,7 @@ case "$DRIVER_BLUETOOTH" in
         ;;
 esac
 
-clear
 
-# Configuración de usuarios y contraseñas
-echo -e "${GREEN}| Configurando usuarios |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
-
-# Configurar contraseña de root
-echo "root:$PASSWORD_ROOT" | arch-chroot /mnt /bin/bash -c "chpasswd"
-
-# Crear usuario
-arch-chroot /mnt /bin/bash -c "useradd -m -G wheel,audio,video,optical,storage -s /bin/bash $USER"
-echo "$USER:$PASSWORD_USER" | arch-chroot /mnt /bin/bash -c "chpasswd"
-
-# Configurar sudo
-arch-chroot /mnt /bin/bash -c "pacman -S sudo --noconfirm"
-echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
 
 sleep 2
 clear
@@ -1180,9 +1282,9 @@ if true; then
         echo -e "${GREEN}✓ Sistema en modo UEFI confirmado${NC}"
 
         # Limpiar entradas UEFI previas que puedan causar conflictos
-        echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
+        # echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
         # efibootmgr | awk '/grub/i {gsub(/Boot|\*.*/, ""); system("efibootmgr -b " $1 " -B 2>/dev/null")}'
-        efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
+        # efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
 
         # Limpiar directorio EFI previo si existe
         if [ -d "/mnt/boot/efi/EFI/GRUB" ]; then
@@ -1549,33 +1651,54 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar X.org como base para todos los escritorios
         echo -e "${CYAN}Instalando servidor X.org...${NC}"
-        arch-chroot /mnt /bin/bash -c "pacman -S xorg-server xorg-xinit xorg-xauth --noconfirm"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noeditmenu --noconfirm --needed"
 
         case "$DESKTOP_ENVIRONMENT" in
             "GNOME")
                 echo -e "${CYAN}Instalando GNOME Desktop...${NC}"
-                arch-chroot /mnt /bin/bash -c "pacman -S gnome gnome-extra gdm --noconfirm"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-extra --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdm --noeditmenu --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable gdm"
                 ;;
             "KDE")
                 echo -e "${CYAN}Instalando KDE Plasma Desktop...${NC}"
-                arch-chroot /mnt /bin/bash -c "pacman -S plasma plasma-wayland-session kde-applications sddm --noconfirm"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-wayland-session --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S kde-applications --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noeditmenu --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
                 ;;
             "XFCE4")
                 echo -e "${CYAN}Instalando XFCE4 Desktop...${NC}"
-                arch-chroot /mnt /bin/bash -c "pacman -S xfce4 xfce4-goodies lightdm lightdm-gtk-greeter --noconfirm"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4 --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4-goodies --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S light-locker --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noeditmenu --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
                 ;;
             "DEEPIN")
                 echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
-                arch-chroot /mnt /bin/bash -c "pacman -S deepin deepin-extra lightdm lightdm-gtk-greeter --noconfirm"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin-extra --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noeditmenu --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
                 ;;
             *)
                 echo -e "${YELLOW}Entorno de escritorio no reconocido: $DESKTOP_ENVIRONMENT${NC}"
                 echo -e "${CYAN}Instalando XFCE4 como alternativa...${NC}"
-                arch-chroot /mnt /bin/bash -c "pacman -S xfce4 xfce4-goodies lightdm lightdm-gtk-greeter --noconfirm"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4 --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4-goodies --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noeditmenu --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
                 ;;
         esac
@@ -1585,17 +1708,24 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar X.org y dependencias base para gestores de ventanas
         echo -e "${CYAN}Instalando servidor X.org y dependencias base...${NC}"
-        arch-chroot /mnt /bin/bash -c "pacman -S xorg-server xorg-xinit xorg-xauth xterm dmenu --noconfirm"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xterm --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dmenu --noeditmenu --noconfirm --needed"
 
         # Instalar Ly display manager
         echo -e "${CYAN}Instalando Ly display manager...${NC}"
-        arch-chroot /mnt /bin/bash -c "pacman -S ly --noconfirm"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ly --noeditmenu --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "systemctl enable ly"
 
         case "$WINDOW_MANAGER" in
             "I3")
                 echo -e "${CYAN}Instalando i3 Window Manager...${NC}"
-                arch-chroot /mnt /bin/bash -c "pacman -S i3-wm i3status i3lock i3blocks --noconfirm"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3-wm --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3status --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3lock --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noeditmenu --noconfirm --needed"
                 # Crear configuración básica de i3
                 mkdir -p /mnt/home/$USER/.config/i3
                 echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
@@ -1603,7 +1733,8 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "BSPWM")
                 echo -e "${CYAN}Instalando BSPWM Window Manager...${NC}"
-                arch-chroot /mnt /bin/bash -c "pacman -S bspwm sxhkd --noconfirm"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S bspwm --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sxhkd --noeditmenu --noconfirm --needed"
                 # Crear configuración básica de bspwm
                 mkdir -p /mnt/home/$USER/.config/bspwm
                 mkdir -p /mnt/home/$USER/.config/sxhkd
@@ -1611,14 +1742,13 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "DWM")
                 echo -e "${CYAN}Instalando DWM Window Manager...${NC}"
-                arch-chroot /mnt /bin/bash -c "pacman -S git base-devel --noconfirm"
-                # Compilar dwm desde AUR (simplificado)
-                arch-chroot /mnt /bin/bash -c "su - $USER -c 'git clone https://aur.archlinux.org/dwm.git /tmp/dwm'"
-                arch-chroot /mnt /bin/bash -c "su - $USER -c 'cd /tmp/dwm && makepkg -si --noconfirm'"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S git --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S base-devel --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dwm --noeditmenu --noconfirm --needed"
                 ;;
             "QTILE")
                 echo -e "${CYAN}Instalando Qtile Window Manager...${NC}"
-                arch-chroot /mnt /bin/bash -c "pacman -S qtile --noconfirm"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S qtile --noeditmenu --noconfirm --needed"
                 # Crear configuración básica de qtile
                 mkdir -p /mnt/home/$USER/.config/qtile
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
@@ -1626,7 +1756,10 @@ case "$INSTALLATION_TYPE" in
             *)
                 echo -e "${YELLOW}Gestor de ventanas no reconocido: $WINDOW_MANAGER${NC}"
                 echo -e "${CYAN}Instalando i3 como alternativa...${NC}"
-                arch-chroot /mnt /bin/bash -c "pacman -S i3-wm i3status i3lock i3blocks --noconfirm"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3-wm --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3status --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3lock --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noeditmenu --noconfirm --needed"
                 mkdir -p /mnt/home/$USER/.config/i3
                 echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
@@ -1635,7 +1768,11 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar herramientas adicionales para gestores de ventanas
         echo -e "${CYAN}Instalando herramientas adicionales...${NC}"
-        arch-chroot /mnt /bin/bash -c "pacman -S firefox thunar alacritty foot kitty --noconfirm"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S firefox --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S thunar --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S alacritty --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S foot --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S kitty --noeditmenu --noconfirm --needed"
 
         # Configurar terminales con configuraciones básicas
         echo -e "${CYAN}Configurando terminales...${NC}"
@@ -2217,6 +2354,7 @@ sleep 2
 clear
 
 echo -e "${GREEN}✓ Tipografías instaladas${NC}"
+arch-chroot /mnt pacman -S noto-fonts --noconfirm
 arch-chroot /mnt pacman -S noto-fonts-emoji --noconfirm
 arch-chroot /mnt pacman -S adobe-source-code-pro-fonts --noconfirm
 arch-chroot /mnt pacman -S ttf-cascadia-code --noconfirm
@@ -2227,13 +2365,23 @@ arch-chroot /mnt pacman -S gnu-free-fonts --noconfirm
 sleep 2
 clear
 
-# Configuración del layout de teclado para Xorg y Wayland
+# Configuración completa del layout de teclado para Xorg y Wayland
 echo -e "${GREEN}| Configurando layout de teclado: $KEYBOARD_LAYOUT |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
-# Configuración para Xorg (X11)
-echo -e "${CYAN}Configurando teclado para Xorg...${NC}"
+# 1. Configuración con localectl (método universal y permanente)
+echo -e "${CYAN}1. Configurando con localectl (permanente para ambos Xorg y Wayland)...${NC}"
+arch-chroot /mnt localectl set-keymap $KEYBOARD_LAYOUT
+arch-chroot /mnt localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" ""
+
+# También ejecutar como usuario para configuración por usuario
+echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
+arch-chroot /mnt su - $USER -c "localectl set-keymap $KEYBOARD_LAYOUT" 2>/dev/null || true
+arch-chroot /mnt su - $USER -c "localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" 2>/dev/null || true
+
+# 2. Configuración para Xorg (X11)
+echo -e "${CYAN}2. Configurando teclado para Xorg (X11)...${NC}"
 mkdir -p /mnt/etc/X11/xorg.conf.d
 cat > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf << EOF
 Section "InputClass"
@@ -2246,8 +2394,8 @@ Section "InputClass"
 EndSection
 EOF
 
-# Configuración para Wayland
-echo -e "${CYAN}Configurando teclado para Wayland...${NC}"
+# 3. Configuración para Wayland
+echo -e "${CYAN}3. Configurando teclado para Wayland...${NC}"
 mkdir -p /mnt/etc/xdg/wlroots
 cat > /mnt/etc/xdg/wlroots/wlr.conf << EOF
 [keyboard]
@@ -2263,83 +2411,140 @@ kb_variant=
 kb_options=grp:alt_shift_toggle
 EOF
 
-# Configuración adicional para el usuario
-echo -e "${CYAN}Configurando teclado para el usuario...${NC}"
-mkdir -p /mnt/home/$USER/.config
-echo "export XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT" >> /mnt/home/$USER/.profile
-echo "export XKB_DEFAULT_MODEL=pc105" >> /mnt/home/$USER/.profile
+# 4. Configuración persistente del archivo /etc/default/keyboard
+echo -e "${CYAN}4. Configurando archivo /etc/default/keyboard...${NC}"
+cat > /mnt/etc/default/keyboard << EOF
+XKBMODEL="pc105"
+XKBLAYOUT="$KEYBOARD_LAYOUT"
+XKBVARIANT=""
+XKBOPTIONS="grp:alt_shift_toggle"
+EOF
 
-# Configuración para diferentes entornos de escritorio
-case "$INSTALLATION_TYPE" in
-    "DESKTOP")
-        case "$DESKTOP_ENVIRONMENT" in
-            "GNOME")
-                # GNOME usa gsettings, se configurará en el primer arranque
-                echo -e "${CYAN}GNOME detectado - El layout se configurará automáticamente${NC}"
-                ;;
-            "KDE")
-                # KDE/Plasma configuración
-                mkdir -p /mnt/home/$USER/.config
-                cat > /mnt/home/$USER/.config/kxkbrc << EOF
-[Layout]
-DisplayNames=
-LayoutList=$KEYBOARD_LAYOUT
-Model=pc105
-Options=grp:alt_shift_toggle
-ResetOldOptions=true
-Use=true
+# 5. Configuración de la consola virtual (vconsole.conf)
+echo -e "${CYAN}5. Configurando consola virtual...${NC}"
+echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
+echo "FONT=lat0-16" >> /mnt/etc/vconsole.conf
+
+# 6. Configuración para GNOME (si se usa)
+echo -e "${CYAN}6. Configurando para GNOME...${NC}"
+mkdir -p /mnt/etc/dconf/db/local.d
+cat > /mnt/etc/dconf/db/local.d/00-keyboard << EOF
+[org/gnome/desktop/input-sources]
+sources=[('xkb', '$KEYBOARD_LAYOUT')]
 EOF
-                ;;
-            "XFCE4"|"DEEPIN")
-                # XFCE4/Deepin configuración
-                mkdir -p /mnt/home/$USER/.config/xfce4/xfconf/xfce-perchannel-xml
-                cat > /mnt/home/$USER/.config/xfce4/xfconf/xfce-perchannel-xml/keyboard.xml << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<channel name="keyboard" version="1.0">
-  <property name="Default" type="empty">
-    <property name="XkbLayout" type="string" value="$KEYBOARD_LAYOUT"/>
-    <property name="XkbModel" type="string" value="pc105"/>
-    <property name="XkbOptions" type="empty">
-      <property name="Group" type="string" value="grp:alt_shift_toggle"/>
-    </property>
-  </property>
-</channel>
+
+# 7. Configuración adicional para el usuario
+echo -e "${CYAN}7. Configurando variables de entorno para el usuario...${NC}"
+cat >> /mnt/home/$USER/.profile << EOF
+
+# Configuración de teclado
+export XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT
+export XKB_DEFAULT_MODEL=pc105
+export XKB_DEFAULT_OPTIONS=grp:alt_shift_toggle
 EOF
-                ;;
-        esac
-        ;;
-    "WINDOW_MANAGER")
-        # Para gestores de ventanas, crear script de autostart
-        mkdir -p /mnt/home/$USER/.config/autostart
-        cat > /mnt/home/$USER/.config/autostart/keyboard-layout.desktop << EOF
+
+# 8. Script de configuración automática para el arranque
+echo -e "${CYAN}8. Creando script de configuración automática...${NC}"
+mkdir -p /mnt/usr/local/bin
+cat > /mnt/usr/local/bin/setup-keyboard.sh << 'EOF'
+#!/bin/bash
+# Script de configuración automática del teclado
+
+KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"
+
+# Detectar si estamos en X11 o Wayland
+if [ -n "$DISPLAY" ] && command -v setxkbmap >/dev/null 2>&1; then
+    # Estamos en X11
+    setxkbmap $KEYBOARD_LAYOUT
+elif [ -n "$WAYLAND_DISPLAY" ] && command -v gsettings >/dev/null 2>&1; then
+    # Estamos en Wayland con GNOME
+    gsettings set org.gnome.desktop.input-sources sources "[('xkb', '$KEYBOARD_LAYOUT')]"
+fi
+EOF
+
+chmod +x /mnt/usr/local/bin/setup-keyboard.sh
+
+# 9. Configuración para autostart en sesiones gráficas
+echo -e "${CYAN}9. Configurando autostart para sesiones gráficas...${NC}"
+mkdir -p /mnt/etc/xdg/autostart
+cat > /mnt/etc/xdg/autostart/keyboard-setup.desktop << EOF
 [Desktop Entry]
 Type=Application
-Name=Keyboard Layout
-Exec=setxkbmap $KEYBOARD_LAYOUT
+Name=Keyboard Layout Setup
+Exec=/usr/local/bin/setup-keyboard.sh
 Hidden=false
-NoDisplay=false
+NoDisplay=true
 X-GNOME-Autostart-enabled=true
 EOF
 
-        # También agregar a .xinitrc para respaldo
-        echo "setxkbmap $KEYBOARD_LAYOUT &" >> /mnt/home/$USER/.xinitrc || true
-        ;;
-esac
+# 10. Establecer permisos correctos
+echo -e "${CYAN}10. Estableciendo permisos correctos...${NC}"
+arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.profile" 2>/dev/null || true
+arch-chroot /mnt chmod 755 /usr/local/bin/setup-keyboard.sh
+arch-chroot /mnt chmod 644 /etc/xdg/autostart/keyboard-setup.desktop
 
-# Configuración del locale del sistema para el teclado
-echo -e "${CYAN}Configurando locale del sistema...${NC}"
-echo "KEYMAP=$KEYMAP_TTY" >> /mnt/etc/vconsole.conf
+# 11. Actualizar base de datos dconf si existe
+echo -e "${CYAN}11. Actualizando configuraciones del sistema...${NC}"
+arch-chroot /mnt dconf update 2>/dev/null || true
 
-# Establecer permisos correctos
-arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config" 2>/dev/null || true
-arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.profile" 2>/dev/null || true
-arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.xinitrc" 2>/dev/null || true
+# 12. Aplicar configuración de teclado inmediatamente en el LiveCD actual
+echo -e "${CYAN}12. Aplicando configuración al sistema actual...${NC}"
+localectl set-keymap $KEYMAP_TTY 2>/dev/null || true
+localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" "" 2>/dev/null || true
 
-echo -e "${GREEN}✓ Layout de teclado configurado para Xorg y Wayland${NC}"
+echo -e "${GREEN}✓ Configuración completa del teclado finalizada${NC}"
 echo -e "${CYAN}  • Layout: $KEYBOARD_LAYOUT${NC}"
+echo -e "${CYAN}  • Keymap TTY: $KEYMAP_TTY${NC}"
 echo -e "${CYAN}  • Modelo: pc105${NC}"
 echo -e "${CYAN}  • Cambio de layout: Alt+Shift${NC}"
+echo -e "${CYAN}  • Métodos configurados: localectl, Xorg, Wayland, GNOME, vconsole${NC}"
+echo -e "${YELLOW}  • La configuración será efectiva después del reinicio${NC}"
 
+sleep 4
+clear
+
+# Instalación de programas adicionales según configuración
+if [ "$UTILITIES_ENABLED" = "true" ] && [ ${#UTILITIES_APPS[@]} -gt 0 ]; then
+    echo ""
+    echo -e "${GREEN}| Instalando programas de utilidades seleccionados |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    for app in "${UTILITIES_APPS[@]}"; do
+        echo -e "${CYAN}Instalando: $app${NC}"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S $app --noeditmenu --noconfirm --needed" || {
+            echo -e "${YELLOW}⚠ No se pudo instalar $app, continuando...${NC}"
+        }
+    done
+
+    echo -e "${GREEN}✓ Instalación de programas de utilidades completada${NC}"
+    echo ""
+    sleep 2
+fi
+
+if [ "$PROGRAM_EXTRA" = "true" ] && [ ${#EXTRA_PROGRAMS[@]} -gt 0 ]; then
+    echo ""
+    echo -e "${GREEN}| Instalando programas extra seleccionados |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    for program in "${EXTRA_PROGRAMS[@]}"; do
+        echo -e "${CYAN}Instalando: $program${NC}"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S $program --noeditmenu --noconfirm --needed" || {
+            echo -e "${YELLOW}⚠ No se pudo instalar $program, continuando...${NC}"
+        }
+    done
+
+    echo -e "${GREEN}✓ Instalación de programas extra completada${NC}"
+    echo ""
+    sleep 2
+fi
+
+sleep 3
+clear
+cp /usr/share/arcrisgui/data/config/pacman-chroot.conf /mnt/etc/pacman.conf
+arch-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+arch-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
 sleep 3
 clear
 

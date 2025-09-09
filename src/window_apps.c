@@ -15,11 +15,11 @@ WindowAppsData* window_apps_new(void)
     if (global_apps_data) {
         return global_apps_data;
     }
-    
+
     WindowAppsData *data = g_new0(WindowAppsData, 1);
     data->is_initialized = FALSE;
     data->selected_apps = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
-    
+
     global_apps_data = data;
     return data;
 }
@@ -27,37 +27,37 @@ WindowAppsData* window_apps_new(void)
 void window_apps_init(WindowAppsData *data)
 {
     if (!data || data->is_initialized) return;
-    
+
     LOG_INFO("Inicializando ventana de utilities apps");
-    
+
     // Crear builder y cargar UI
     data->builder = gtk_builder_new();
     GError *error = NULL;
-    
+
     if (!gtk_builder_add_from_resource(data->builder, "/org/gtk/arcris/window_apps.ui", &error)) {
         LOG_ERROR("Error cargando UI de utilities apps: %s", error ? error->message : "Unknown error");
         if (error) g_error_free(error);
         return;
     }
-    
+
     // Cargar widgets
     window_apps_load_widgets_from_builder(data);
-    
+
     // Configurar widgets
     window_apps_setup_widgets(data);
-    
+
     // Configurar búsqueda
     window_apps_setup_search(data);
-    
+
     // Conectar señales
     window_apps_connect_signals(data);
-    
+
     // Conectar botones de información
     window_apps_connect_info_buttons(data);
-    
+
     // Cargar aplicaciones guardadas
     window_apps_load_selected_apps_from_file(data);
-    
+
     data->is_initialized = TRUE;
     LOG_INFO("Ventana de utilities apps inicializada correctamente");
 }
@@ -65,62 +65,62 @@ void window_apps_init(WindowAppsData *data)
 void window_apps_cleanup(WindowAppsData *data)
 {
     if (!data) return;
-    
+
     LOG_INFO("Limpiando ventana de utilities apps");
-    
+
     if (data->selected_apps) {
         g_hash_table_destroy(data->selected_apps);
         data->selected_apps = NULL;
     }
-    
+
     if (data->builder) {
         g_object_unref(data->builder);
         data->builder = NULL;
     }
-    
+
     if (data->window) {
         gtk_window_destroy(data->window);
         data->window = NULL;
     }
-    
+
     data->is_initialized = FALSE;
 }
 
 void window_apps_show(WindowAppsData *data, GtkWindow *parent)
 {
     if (!data) return;
-    
+
     if (!data->is_initialized) {
         window_apps_init(data);
     }
-    
+
     if (!data->window) {
         LOG_ERROR("No se pudo mostrar la ventana de utilities apps: ventana no inicializada");
         return;
     }
-    
+
     // Configurar ventana padre
     if (parent) {
         gtk_window_set_transient_for(data->window, parent);
         gtk_window_set_modal(data->window, TRUE);
     }
-    
+
     // Cargar aplicaciones seleccionadas actuales
     window_apps_load_selected_apps_from_file(data);
-    
+
     // Aplicar selecciones a los checkboxes
     window_apps_apply_selections_to_checkboxes(data);
-    
+
     // Mostrar la ventana
     gtk_window_present(data->window);
-    
+
     LOG_INFO("Ventana de utilities apps mostrada");
 }
 
 void window_apps_hide(WindowAppsData *data)
 {
     if (!data || !data->window) return;
-    
+
     gtk_widget_set_visible(GTK_WIDGET(data->window), FALSE);
     LOG_INFO("Ventana de utilities apps ocultada");
 }
@@ -128,88 +128,88 @@ void window_apps_hide(WindowAppsData *data)
 void window_apps_load_widgets_from_builder(WindowAppsData *data)
 {
     if (!data || !data->builder) return;
-    
+
     // Cargar ventana principal
     data->window = GTK_WINDOW(gtk_builder_get_object(data->builder, "ProgramExtraWindow"));
     if (!data->window) {
         LOG_ERROR("No se pudo cargar la ventana principal de utilities apps");
         return;
     }
-    
+
     // Cargar botones
     data->close_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "close_button"));
     data->save_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "save_button"));
-    
+
     // Cargar entrada de búsqueda
     data->search_entry = GTK_SEARCH_ENTRY(gtk_builder_get_object(data->builder, "searchApp"));
-    
+
     // Cargar expanderes
     data->browsers_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "browsers_expander"));
     data->graphics_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "graphics_expander"));
     data->video_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "video_expander"));
-    
+
     if (!data->close_button) LOG_WARNING("No se pudo cargar close_button");
     if (!data->save_button) LOG_WARNING("No se pudo cargar save_button");
     if (!data->search_entry) LOG_WARNING("No se pudo cargar searchApp");
     if (!data->browsers_expander) LOG_WARNING("No se pudo cargar browsers_expander");
     if (!data->graphics_expander) LOG_WARNING("No se pudo cargar graphics_expander");
     if (!data->video_expander) LOG_WARNING("No se pudo cargar video_expander");
-    
+
     LOG_INFO("Widgets de ventana de utilities apps cargados desde builder");
 }
 
 void window_apps_setup_widgets(WindowAppsData *data)
 {
     if (!data) return;
-    
+
     // Configurar ventana
     if (data->window) {
         gtk_window_set_title(data->window, "Utilities Apps");
         gtk_window_set_default_size(data->window, 900, 630);
         gtk_window_set_resizable(data->window, FALSE);
     }
-    
+
     LOG_INFO("Widgets de ventana de utilities apps configurados");
 }
 
 void window_apps_setup_search(WindowAppsData *data)
 {
     if (!data || !data->search_entry) return;
-    
+
     // Configurar propiedades de la entrada de búsqueda
     gtk_search_entry_set_placeholder_text(data->search_entry, "Busca tu aplicación");
-    
+
     LOG_INFO("Búsqueda de utilities apps configurada");
 }
 
 void window_apps_connect_signals(WindowAppsData *data)
 {
     if (!data) return;
-    
+
     // Conectar señales de botones
     if (data->close_button) {
-        g_signal_connect(data->close_button, "clicked", 
+        g_signal_connect(data->close_button, "clicked",
                         G_CALLBACK(on_apps_close_button_clicked), data);
     }
-    
+
     if (data->save_button) {
-        g_signal_connect(data->save_button, "clicked", 
+        g_signal_connect(data->save_button, "clicked",
                         G_CALLBACK(on_apps_save_button_clicked), data);
     }
-    
+
     // Conectar señales de búsqueda
     if (data->search_entry) {
-        g_signal_connect(data->search_entry, "search-changed", 
+        g_signal_connect(data->search_entry, "search-changed",
                         G_CALLBACK(on_apps_search_changed), data);
     }
-    
+
     LOG_INFO("Señales de ventana de utilities apps conectadas");
 }
 
 void window_apps_connect_info_buttons(WindowAppsData *data)
 {
     if (!data || !data->builder) return;
-    
+
     // Definir todos los botones de información con sus URLs
     struct {
         const char *button_id;
@@ -221,7 +221,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"chromium_info", "https://www.chromium.org/"},
         {"firefox_info", "https://www.mozilla.org/firefox/"},
         {"opera_info", "https://www.opera.com/"},
-        
+
         // Graphics
         {"gimp_info", "https://www.gimp.org/"},
         {"inkscape_info", "https://inkscape.org/"},
@@ -232,7 +232,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"freecad_info", "https://www.freecadweb.org/"},
         {"ristretto_info", "https://docs.xfce.org/apps/ristretto/start"},
         {"viewnior_info", "http://siyanpanayotov.com/project/viewnior/"},
-        
+
         // Video
         {"baka_info", "https://github.com/u8sand/Baka-MPlayer"},
         {"dragon_info", "https://github.com/mwh/dragon"},
@@ -247,14 +247,14 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"clapper_info", "https://rafostar.github.io/clapper/"},
         {"lmms_info", "https://lmms.io/"},
         {"simplescreenrecorder_info", "https://www.maartenbaert.be/simplescreenrecorder/"},
-        
+
         // Audio
         {"audacious_info", "https://audacious-media-player.org/"},
         {"clementine_info", "https://www.clementine-player.org/"},
         {"audacity_info", "https://www.audacityteam.org/"},
         {"ardour_info", "https://ardour.org/"},
         {"elisa_info", "https://apps.kde.org/elisa/"},
-        
+
         // Communications
         {"telegram_info", "https://telegram.org/"},
         {"element_info", "https://element.io/"},
@@ -264,7 +264,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"whatsapp_info", "https://github.com/eneshecan/whatsapp-for-linux"},
         {"evolution_info", "https://wiki.gnome.org/Apps/Evolution"},
         {"fractal_info", "https://wiki.gnome.org/Apps/Fractal"},
-        
+
         // Development
         {"vscode_info", "https://code.visualstudio.com/"},
         {"vscodium_info", "https://vscodium.com/"},
@@ -276,7 +276,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"pycharm_info", "https://www.jetbrains.com/pycharm/"},
         {"intellij_info", "https://www.jetbrains.com/idea/"},
         {"netbeans_info", "https://netbeans.apache.org/"},
-        
+
         // Office
         {"libreoffice_info", "https://www.libreoffice.org/"},
         {"onlyoffice_info", "https://www.onlyoffice.com/"},
@@ -286,7 +286,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"evince_info", "https://wiki.gnome.org/Apps/Evince"},
         {"okular_info", "https://okular.kde.org/"},
         {"paperwork_info", "https://openpaper.work/"},
-        
+
         // Gaming
         {"steam_info", "https://store.steampowered.com/"},
         {"lutris_info", "https://lutris.net/"},
@@ -295,7 +295,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"wine_info", "https://www.winehq.org/"},
         {"playonlinux_info", "https://www.playonlinux.com/"},
         {"supertux_info", "https://www.supertux.org/"},
-        
+
         // Others
         {"octopi_info", "https://tintaescura.com/projects/octopi/"},
         {"pamac_info", "https://gitlab.manjaro.org/applications/pamac"},
@@ -313,10 +313,10 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"neovim_info", "https://neovim.io/"},
         {"timeshift_info", "https://github.com/teejee2008/timeshift"},
         {"keepassxc_info", "https://keepassxc.org/"},
-        
+
         {NULL, NULL} // Terminador
     };
-    
+
     // Conectar cada botón de información
     for (int i = 0; info_buttons[i].button_id != NULL; i++) {
         GtkButton *button = GTK_BUTTON(gtk_builder_get_object(data->builder, info_buttons[i].button_id));
@@ -325,26 +325,26 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
             InfoButtonData *button_data = g_new0(InfoButtonData, 1);
             button_data->url = g_strdup(info_buttons[i].url);
             button_data->window = data->window;
-            
-            g_signal_connect_data(button, "clicked", 
-                                G_CALLBACK(on_info_button_clicked), 
+
+            g_signal_connect_data(button, "clicked",
+                                G_CALLBACK(on_info_button_clicked),
                                 button_data,
                                 (GClosureNotify)window_apps_free_info_button_data,
                                 0);
-            
+
             LOG_INFO("Conectado botón de información: %s -> %s", info_buttons[i].button_id, info_buttons[i].url);
         } else {
             LOG_WARNING("No se pudo encontrar el botón: %s", info_buttons[i].button_id);
         }
     }
-    
+
     LOG_INFO("Botones de información conectados");
 }
 
 void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
 {
     if (!data || !data->builder) return;
-    
+
     // Lista de todas las filas de aplicaciones con sus nombres para buscar
     struct {
         const char *row_id;
@@ -354,11 +354,11 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
     } app_rows[] = {
         // Browsers
         {"chrome_check", "google-chrome", "navegador web google", "browsers_expander"},
-        {"brave_check", "brave-browser", "navegador privado brave", "browsers_expander"},
+        {"brave_check", "brave-bin", "navegador privado brave", "browsers_expander"},
         {"chromium_check", "chromium", "navegador chromium", "browsers_expander"},
         {"firefox_check", "firefox", "navegador firefox mozilla", "browsers_expander"},
         {"opera_check", "opera", "navegador opera", "browsers_expander"},
-        
+
         // Graphics
         {"gimp_check", "gimp", "editor de imágenes gimp gnu", "graphics_expander"},
         {"inkscape_check", "inkscape", "editor vectorial inkscape", "graphics_expander"},
@@ -369,7 +369,7 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"freecad_check", "freecad", "cad 3d freecad", "graphics_expander"},
         {"ristretto_check", "ristretto", "visor imágenes ristretto xfce", "graphics_expander"},
         {"viewnior_check", "viewnior", "visor imágenes viewnior", "graphics_expander"},
-        
+
         // Video
         {"baka_check", "baka-mplayer", "reproductor multimedia baka", "video_expander"},
         {"dragon_check", "dragon", "reproductor dragon simple", "video_expander"},
@@ -384,24 +384,24 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"clapper_check", "clapper", "reproductor multimedia clapper gnome", "video_expander"},
         {"lmms_check", "lmms", "audio digital lmms", "video_expander"},
         {"simplescreenrecorder_check", "simplescreenrecorder", "grabador pantalla simple", "video_expander"},
-        
+
         // Audio
         {"audacious_check", "audacious", "reproductor audio audacious", "audio_expander"},
-        {"clementine_check", "clementine", "reproductor música clementine", "audio_expander"},
+        {"clementine_check", "clementine-git", "reproductor música clementine", "audio_expander"},
         {"audacity_check", "audacity", "editor audio audacity", "audio_expander"},
         {"ardour_check", "ardour", "audio digital ardour profesional", "audio_expander"},
         {"elisa_check", "elisa", "reproductor música elisa kde", "audio_expander"},
-        
+
         // Communications
         {"telegram_check", "telegram-desktop", "mensajería telegram", "mail_expander"},
         {"element_check", "element-desktop", "mensajería matrix element", "mail_expander"},
         {"discord_check", "discord", "comunicación discord gamers", "mail_expander"},
         {"thunderbird_check", "thunderbird", "correo thunderbird mozilla", "mail_expander"},
         {"signal_check", "signal-desktop", "mensajería signal privada", "mail_expander"},
-        {"whatsapp_check", "whatsapp-for-linux", "whatsapp linux", "mail_expander"},
+        {"whatsapp_check", "whatsapp-for-linux-git", "whatsapp linux", "mail_expander"},
         {"evolution_check", "evolution", "correo evolution gnome", "mail_expander"},
         {"fractal_check", "fractal", "matrix fractal gnome", "mail_expander"},
-        
+
         // Development
         {"vscode_check", "visual-studio-code-bin", "editor código vscode microsoft", "developers_expander"},
         {"vscodium_check", "vscodium-bin", "editor código vscodium libre", "developers_expander"},
@@ -410,10 +410,10 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"sublime_check", "sublime-text-4", "editor sublime text", "developers_expander"},
         {"emacs_check", "emacs", "editor emacs extensible", "developers_expander"},
         {"docker_check", "docker", "contenedores docker", "developers_expander"},
-        {"pycharm_check", "pycharm-community-edition", "ide python pycharm", "developers_expander"},
-        {"intellij_check", "intellij-idea-community-edition", "ide java intellij", "developers_expander"},
+        {"pycharm_check", "pycharm-community-edition-bin", "ide python pycharm", "developers_expander"},
+        {"intellij_check", "intellij-idea-community-edition-bin", "ide java intellij", "developers_expander"},
         {"netbeans_check", "netbeans", "ide netbeans apache", "developers_expander"},
-        
+
         // Office
         {"libreoffice_check", "libreoffice-fresh", "suite ofimática libreoffice", "office_expander"},
         {"onlyoffice_check", "onlyoffice-bin", "suite ofimática onlyoffice", "office_expander"},
@@ -423,7 +423,7 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"evince_check", "evince", "visor documentos evince pdf", "office_expander"},
         {"okular_check", "okular", "visor documentos okular kde", "office_expander"},
         {"paperwork_check", "paperwork", "gestor documentos paperwork ocr", "office_expander"},
-        
+
         // Gaming
         {"steam_check", "steam", "gaming steam videojuegos", "gamming_expander"},
         {"lutris_check", "lutris", "gaming lutris linux", "gamming_expander"},
@@ -432,7 +432,7 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"wine_check", "wine", "compatibilidad wine windows", "gamming_expander"},
         {"playonlinux_check", "playonlinux", "wine playonlinux frontend", "gamming_expander"},
         {"supertux_check", "supertux", "juego supertux plataformas", "gamming_expander"},
-        
+
         // Others
         {"octopi_check", "octopi", "gestor paquetes octopi pacman", "other_expander"},
         {"pamac_check", "pamac-aur", "gestor paquetes pamac aur", "other_expander"},
@@ -450,76 +450,76 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"neovim_check", "neovim", "editor neovim vim", "other_expander"},
         {"timeshift_check", "timeshift", "backup timeshift sistema", "other_expander"},
         {"keepassxc_check", "keepassxc", "gestor contraseñas keepassxc", "other_expander"},
-        
+
         {NULL, NULL, NULL, NULL} // Terminador
     };
-    
+
     gboolean has_search = (search_text && strlen(search_text) > 0);
     gchar *search_lower = has_search ? g_utf8_strdown(search_text, -1) : NULL;
-    
+
     // Rastrear qué categorías tienen coincidencias
     GHashTable *categories_with_matches = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, NULL);
-    
+
     // Filtrar cada fila de aplicación
     for (int i = 0; app_rows[i].row_id != NULL; i++) {
         GObject *check_obj = gtk_builder_get_object(data->builder, app_rows[i].row_id);
         if (check_obj) {
             GtkWidget *check_widget = GTK_WIDGET(check_obj);
             GtkWidget *row_widget = gtk_widget_get_parent(check_widget);
-            
+
             // Buscar el AdwActionRow que contiene el checkbox
             while (row_widget && !ADW_IS_ACTION_ROW(row_widget)) {
                 row_widget = gtk_widget_get_parent(row_widget);
             }
-            
+
             if (row_widget) {
                 gboolean should_show = TRUE;
-                
+
                 if (has_search) {
                     // Buscar en nombre de app y descripción
                     gchar *app_name_lower = g_utf8_strdown(app_rows[i].app_name, -1);
                     gchar *description_lower = g_utf8_strdown(app_rows[i].description, -1);
-                    
+
                     should_show = (strstr(app_name_lower, search_lower) != NULL ||
                                  strstr(description_lower, search_lower) != NULL);
-                    
+
                     // Si hay coincidencia, marcar la categoría
                     if (should_show && app_rows[i].category_expander) {
                         g_hash_table_add(categories_with_matches, (gpointer)app_rows[i].category_expander);
                     }
-                    
+
                     g_free(app_name_lower);
                     g_free(description_lower);
                 }
-                
+
                 gtk_widget_set_visible(row_widget, should_show);
             }
         }
     }
-    
+
     // Expandir/contraer categorías según coincidencias
     const char *expander_ids[] = {
-        "browsers_expander", "graphics_expander", "video_expander", 
+        "browsers_expander", "graphics_expander", "video_expander",
         "audio_expander", "mail_expander", "developers_expander",
         "office_expander", "gamming_expander", "other_expander", NULL
     };
-    
+
     for (int i = 0; expander_ids[i] != NULL; i++) {
         AdwExpanderRow *expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, expander_ids[i]));
         if (expander) {
-            gboolean should_expand = has_search ? 
+            gboolean should_expand = has_search ?
                 g_hash_table_contains(categories_with_matches, expander_ids[i]) : FALSE;
             adw_expander_row_set_expanded(expander, should_expand);
         }
     }
-    
+
     // Limpiar
     g_hash_table_destroy(categories_with_matches);
-    
+
     if (search_lower) {
         g_free(search_lower);
     }
-    
+
     if (has_search && strlen(search_text) > 0) {
         LOG_INFO("Filtrando apps con texto: %s", search_text);
     } else {
@@ -531,15 +531,15 @@ void on_info_button_clicked(GtkButton *button, gpointer user_data)
 {
     InfoButtonData *data = (InfoButtonData*)user_data;
     if (!data || !data->url) return;
-    
+
     LOG_INFO("Abriendo URL: %s", data->url);
-    
+
     GError *error = NULL;
-    
+
     // Intentar abrir la URL con el navegador predeterminado
     if (!g_app_info_launch_default_for_uri(data->url, NULL, &error)) {
         LOG_ERROR("Error abriendo URL %s: %s", data->url, error ? error->message : "Unknown error");
-        
+
         // Mostrar diálogo de error
         if (data->window) {
             gchar *message = g_strdup_printf(
@@ -547,20 +547,20 @@ void on_info_button_clicked(GtkButton *button, gpointer user_data)
                 data->url,
                 error ? error->message : "Navegador no encontrado"
             );
-            
+
             AdwDialog *dialog = adw_alert_dialog_new(
                 "Error al abrir URL",
                 message
             );
-            
+
             adw_alert_dialog_add_response(ADW_ALERT_DIALOG(dialog), "ok", "Aceptar");
             adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "ok");
-            
+
             adw_dialog_present(dialog, GTK_WIDGET(data->window));
-            
+
             g_free(message);
         }
-        
+
         if (error) g_error_free(error);
     } else {
         LOG_INFO("URL abierta exitosamente: %s", data->url);
@@ -570,27 +570,27 @@ void on_info_button_clicked(GtkButton *button, gpointer user_data)
 void window_apps_free_info_button_data(InfoButtonData *data)
 {
     if (!data) return;
-    
+
     if (data->url) {
         g_free(data->url);
         data->url = NULL;
     }
-    
+
     g_free(data);
 }
 
 gboolean window_apps_load_selected_apps_from_file(WindowAppsData *data)
 {
     if (!data || !data->selected_apps) return FALSE;
-    
+
     GError *error = NULL;
     gchar *content = NULL;
     gsize length;
-    
+
     if (g_file_get_contents(VARIABLES_FILE_PATH, &content, &length, &error)) {
         // Buscar la línea UTILITIES_APPS=
         gchar **lines = g_strsplit(content, "\n", -1);
-        
+
         for (int i = 0; lines[i] != NULL; i++) {
             gchar *line = g_strstrip(lines[i]);
             if (g_str_has_prefix(line, "UTILITIES_APPS=(")) {
@@ -600,13 +600,13 @@ gboolean window_apps_load_selected_apps_from_file(WindowAppsData *data)
                 if (start && end && end > start) {
                     start++; // Saltar el '('
                     *end = '\0'; // Terminar en ')'
-                    
+
                     // Convertir array bash a hash table
                     gchar **apps = g_strsplit(start, " ", -1);
-                    
+
                     // Limpiar hash table anterior
                     g_hash_table_remove_all(data->selected_apps);
-                    
+
                     for (int j = 0; apps[j] != NULL; j++) {
                         gchar *app = g_strstrip(apps[j]);
                         // Remover comillas si las hay
@@ -618,13 +618,13 @@ gboolean window_apps_load_selected_apps_from_file(WindowAppsData *data)
                             g_hash_table_insert(data->selected_apps, g_strdup(app), g_strdup("selected"));
                         }
                     }
-                    
+
                     g_strfreev(apps);
                 }
                 break;
             }
         }
-        
+
         g_strfreev(lines);
         g_free(content);
         LOG_INFO("Utilities apps cargadas desde variables.sh");
@@ -641,26 +641,26 @@ gboolean window_apps_load_selected_apps_from_file(WindowAppsData *data)
 gboolean window_apps_save_selected_apps_to_file(WindowAppsData *data)
 {
     if (!data || !data->selected_apps) return FALSE;
-    
+
     // Leer archivo variables.sh actual
     GError *error = NULL;
     gchar *content = NULL;
     gsize length;
-    
+
     if (!g_file_get_contents(VARIABLES_FILE_PATH, &content, &length, &error)) {
         LOG_ERROR("No se pudo leer variables.sh: %s", error ? error->message : "Unknown error");
         if (error) g_error_free(error);
         return FALSE;
     }
-    
+
     // Crear contenido del array
     GString *array_content = g_string_new("UTILITIES_APPS=(");
-    
+
     if (g_hash_table_size(data->selected_apps) > 0) {
         GHashTableIter iter;
         gpointer key, value;
         gboolean first = TRUE;
-        
+
         g_hash_table_iter_init(&iter, data->selected_apps);
         while (g_hash_table_iter_next(&iter, &key, &value)) {
             if (!first) g_string_append(array_content, " ");
@@ -668,14 +668,14 @@ gboolean window_apps_save_selected_apps_to_file(WindowAppsData *data)
             first = FALSE;
         }
     }
-    
+
     g_string_append(array_content, ")");
-    
+
     // Buscar y reemplazar línea UTILITIES_APPS o agregarla
     gchar **lines = g_strsplit(content, "\n", -1);
     GString *new_content = g_string_new("");
     gboolean found = FALSE;
-    
+
     for (int i = 0; lines[i] != NULL; i++) {
         if (g_str_has_prefix(g_strstrip(lines[i]), "UTILITIES_APPS=")) {
             g_string_append_printf(new_content, "%s\n", array_content->str);
@@ -684,28 +684,28 @@ gboolean window_apps_save_selected_apps_to_file(WindowAppsData *data)
             g_string_append_printf(new_content, "%s\n", lines[i]);
         }
     }
-    
+
     // Si no se encontró, agregar al final
     if (!found) {
         g_string_append_printf(new_content, "\n# Utilities apps seleccionadas por el usuario\n%s\n", array_content->str);
     }
-    
+
     // Guardar archivo actualizado
     gboolean success = g_file_set_contents(VARIABLES_FILE_PATH, new_content->str, -1, &error);
-    
+
     if (success) {
         LOG_INFO("Utilities apps guardadas como array en variables.sh");
     } else {
         LOG_ERROR("Error guardando en variables.sh: %s", error ? error->message : "Unknown error");
         if (error) g_error_free(error);
     }
-    
+
     // Limpiar memoria
     g_string_free(array_content, TRUE);
     g_string_free(new_content, TRUE);
     g_strfreev(lines);
     g_free(content);
-    
+
     return success;
 }
 
@@ -718,11 +718,11 @@ GHashTable* window_apps_get_selected_apps(WindowAppsData *data)
 void window_apps_set_selected_apps(WindowAppsData *data, GHashTable *apps)
 {
     if (!data || !apps) return;
-    
+
     if (data->selected_apps) {
         g_hash_table_destroy(data->selected_apps);
     }
-    
+
     data->selected_apps = g_hash_table_ref(apps);
 }
 
@@ -732,7 +732,7 @@ void on_apps_close_button_clicked(GtkButton *button, gpointer user_data)
 {
     WindowAppsData *data = (WindowAppsData*)user_data;
     if (!data) return;
-    
+
     LOG_INFO("Cerrando ventana de utilities apps");
     window_apps_hide(data);
 }
@@ -741,12 +741,12 @@ void on_apps_save_button_clicked(GtkButton *button, gpointer user_data)
 {
     WindowAppsData *data = (WindowAppsData*)user_data;
     if (!data) return;
-    
+
     LOG_INFO("Guardando utilities apps seleccionadas");
-    
+
     // Recopilar aplicaciones seleccionadas de los checkboxes
     window_apps_collect_selected_apps_from_checkboxes(data);
-    
+
     if (window_apps_save_selected_apps_to_file(data)) {
         LOG_INFO("Utilities apps guardadas exitosamente");
         // Cerrar ventana después de guardar
@@ -760,7 +760,7 @@ void on_apps_search_changed(GtkSearchEntry *entry, gpointer user_data)
 {
     WindowAppsData *data = (WindowAppsData*)user_data;
     if (!data) return;
-    
+
     const gchar *search_text = gtk_editable_get_text(GTK_EDITABLE(entry));
     window_apps_filter_apps(data, search_text);
 }
@@ -768,7 +768,7 @@ void on_apps_search_changed(GtkSearchEntry *entry, gpointer user_data)
 void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
 {
     if (!data || !data->builder || !data->selected_apps) return;
-    
+
     // Lista de todos los checkboxes con sus nombres de paquete
     struct {
         const char *checkbox_id;
@@ -776,11 +776,11 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
     } checkboxes[] = {
         // Browsers
         {"chrome_check", "google-chrome"},
-        {"brave_check", "brave-browser"},
+        {"brave_check", "brave-bin"},
         {"chromium_check", "chromium"},
         {"firefox_check", "firefox"},
         {"opera_check", "opera"},
-        
+
         // Graphics
         {"gimp_check", "gimp"},
         {"inkscape_check", "inkscape"},
@@ -791,7 +791,7 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"freecad_check", "freecad"},
         {"ristretto_check", "ristretto"},
         {"viewnior_check", "viewnior"},
-        
+
         // Video
         {"baka_check", "baka-mplayer"},
         {"dragon_check", "dragon"},
@@ -806,24 +806,24 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"clapper_check", "clapper"},
         {"lmms_check", "lmms"},
         {"simplescreenrecorder_check", "simplescreenrecorder"},
-        
+
         // Audio
         {"audacious_check", "audacious"},
-        {"clementine_check", "clementine"},
+        {"clementine_check", "clementine-git"},
         {"audacity_check", "audacity"},
         {"ardour_check", "ardour"},
         {"elisa_check", "elisa"},
-        
+
         // Communications
         {"telegram_check", "telegram-desktop"},
         {"element_check", "element-desktop"},
         {"discord_check", "discord"},
         {"thunderbird_check", "thunderbird"},
         {"signal_check", "signal-desktop"},
-        {"whatsapp_check", "whatsapp-for-linux"},
+        {"whatsapp_check", "whatsapp-for-linux-git"},
         {"evolution_check", "evolution"},
         {"fractal_check", "fractal"},
-        
+
         // Development
         {"vscode_check", "visual-studio-code-bin"},
         {"vscodium_check", "vscodium-bin"},
@@ -832,10 +832,10 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"sublime_check", "sublime-text-4"},
         {"emacs_check", "emacs"},
         {"docker_check", "docker"},
-        {"pycharm_check", "pycharm-community-edition"},
-        {"intellij_check", "intellij-idea-community-edition"},
+        {"pycharm_check", "pycharm-community-edition-bin"},
+        {"intellij_check", "intellij-idea-community-edition-bin"},
         {"netbeans_check", "netbeans"},
-        
+
         // Office
         {"libreoffice_check", "libreoffice-fresh"},
         {"onlyoffice_check", "onlyoffice-bin"},
@@ -845,7 +845,7 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"evince_check", "evince"},
         {"okular_check", "okular"},
         {"paperwork_check", "paperwork"},
-        
+
         // Gaming
         {"steam_check", "steam"},
         {"lutris_check", "lutris"},
@@ -854,7 +854,7 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"wine_check", "wine"},
         {"playonlinux_check", "playonlinux"},
         {"supertux_check", "supertux"},
-        
+
         // Others
         {"octopi_check", "octopi"},
         {"pamac_check", "pamac-aur"},
@@ -872,21 +872,21 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"neovim_check", "neovim"},
         {"timeshift_check", "timeshift"},
         {"keepassxc_check", "keepassxc"},
-        
+
         {NULL, NULL} // Terminador
     };
-    
+
     // Limpiar hash table anterior
     g_hash_table_remove_all(data->selected_apps);
-    
+
     // Recorrer todos los checkboxes y verificar cuáles están seleccionados
     for (int i = 0; checkboxes[i].checkbox_id != NULL; i++) {
         GtkCheckButton *checkbox = GTK_CHECK_BUTTON(gtk_builder_get_object(data->builder, checkboxes[i].checkbox_id));
         if (checkbox) {
             gboolean is_active = gtk_check_button_get_active(checkbox);
             if (is_active) {
-                g_hash_table_insert(data->selected_apps, 
-                                  g_strdup(checkboxes[i].package_name), 
+                g_hash_table_insert(data->selected_apps,
+                                  g_strdup(checkboxes[i].package_name),
                                   g_strdup("selected"));
                 LOG_INFO("App seleccionada: %s", checkboxes[i].package_name);
             }
@@ -894,14 +894,14 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
             LOG_WARNING("No se pudo encontrar checkbox: %s", checkboxes[i].checkbox_id);
         }
     }
-    
+
     LOG_INFO("Total de apps seleccionadas: %d", g_hash_table_size(data->selected_apps));
 }
 
 void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
 {
     if (!data || !data->builder || !data->selected_apps) return;
-    
+
     // Lista de todos los checkboxes con sus nombres de paquete
     struct {
         const char *checkbox_id;
@@ -909,11 +909,11 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
     } checkboxes[] = {
         // Browsers
         {"chrome_check", "google-chrome"},
-        {"brave_check", "brave-browser"},
+        {"brave_check", "brave-bin"},
         {"chromium_check", "chromium"},
         {"firefox_check", "firefox"},
         {"opera_check", "opera"},
-        
+
         // Graphics
         {"gimp_check", "gimp"},
         {"inkscape_check", "inkscape"},
@@ -924,7 +924,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"freecad_check", "freecad"},
         {"ristretto_check", "ristretto"},
         {"viewnior_check", "viewnior"},
-        
+
         // Video
         {"baka_check", "baka-mplayer"},
         {"dragon_check", "dragon"},
@@ -939,24 +939,24 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"clapper_check", "clapper"},
         {"lmms_check", "lmms"},
         {"simplescreenrecorder_check", "simplescreenrecorder"},
-        
+
         // Audio
         {"audacious_check", "audacious"},
-        {"clementine_check", "clementine"},
+        {"clementine_check", "clementine-git"},
         {"audacity_check", "audacity"},
         {"ardour_check", "ardour"},
         {"elisa_check", "elisa"},
-        
+
         // Communications
         {"telegram_check", "telegram-desktop"},
         {"element_check", "element-desktop"},
         {"discord_check", "discord"},
         {"thunderbird_check", "thunderbird"},
         {"signal_check", "signal-desktop"},
-        {"whatsapp_check", "whatsapp-for-linux"},
+        {"whatsapp_check", "whatsapp-for-linux-git"},
         {"evolution_check", "evolution"},
         {"fractal_check", "fractal"},
-        
+
         // Development
         {"vscode_check", "visual-studio-code-bin"},
         {"vscodium_check", "vscodium-bin"},
@@ -965,10 +965,10 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"sublime_check", "sublime-text-4"},
         {"emacs_check", "emacs"},
         {"docker_check", "docker"},
-        {"pycharm_check", "pycharm-community-edition"},
-        {"intellij_check", "intellij-idea-community-edition"},
+        {"pycharm_check", "pycharm-community-edition-bin"},
+        {"intellij_check", "intellij-idea-community-edition-bin"},
         {"netbeans_check", "netbeans"},
-        
+
         // Office
         {"libreoffice_check", "libreoffice-fresh"},
         {"onlyoffice_check", "onlyoffice-bin"},
@@ -978,7 +978,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"evince_check", "evince"},
         {"okular_check", "okular"},
         {"paperwork_check", "paperwork"},
-        
+
         // Gaming
         {"steam_check", "steam"},
         {"lutris_check", "lutris"},
@@ -987,7 +987,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"wine_check", "wine"},
         {"playonlinux_check", "playonlinux"},
         {"supertux_check", "supertux"},
-        
+
         // Others
         {"octopi_check", "octopi"},
         {"pamac_check", "pamac-aur"},
@@ -1005,10 +1005,10 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"neovim_check", "neovim"},
         {"timeshift_check", "timeshift"},
         {"keepassxc_check", "keepassxc"},
-        
+
         {NULL, NULL} // Terminador
     };
-    
+
     // Recorrer todos los checkboxes y activar los que están en la selección
     int applied_count = 0;
     for (int i = 0; checkboxes[i].checkbox_id != NULL; i++) {
@@ -1024,7 +1024,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
             LOG_WARNING("No se pudo encontrar checkbox: %s", checkboxes[i].checkbox_id);
         }
     }
-    
+
     LOG_INFO("Selecciones aplicadas a checkboxes: %d", applied_count);
 }
 
@@ -1033,11 +1033,11 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
 void window_apps_reset_to_defaults(WindowAppsData *data)
 {
     if (!data) return;
-    
+
     if (data->selected_apps) {
         g_hash_table_remove_all(data->selected_apps);
     }
-    
+
     LOG_INFO("Ventana de utilities apps reiniciada a valores por defecto");
 }
 
