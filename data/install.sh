@@ -81,13 +81,13 @@ echo -e "${GREEN}| Configurando LiveCD |${NC}"
 echo ""
 
 # Configuración de zona horaria
-timedatectl set-timezone $TIMEZONE
+sudo timedatectl set-timezone $TIMEZONE
 sudo hwclock -w
 sudo hwclock --systohc --rtc=/dev/rtc0
 
 # Configuración de locale
 echo "$LOCALE.UTF-8 UTF-8" > /etc/locale.gen
-locale-gen
+sudo locale-gen
 export LANG=$LOCALE.UTF-8
 
 sleep 2
@@ -95,6 +95,11 @@ timedatectl status
 echo ""
 date +' %A, %B %d, %Y - %r'
 sleep 5
+clear
+# 12. Aplicar configuración de teclado inmediatamente en el LiveCD actual
+echo -e "${CYAN}12. Aplicando configuración al sistema actual...${NC}"
+sudo localectl set-keymap $KEYMAP_TTY 2>/dev/null || true
+sudo localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" "" 2>/dev/null || true
 clear
 
 # Actualización de keys
@@ -957,9 +962,12 @@ echo "root:$PASSWORD_ROOT" | arch-chroot /mnt /bin/bash -c "chpasswd"
 arch-chroot /mnt /bin/bash -c "useradd -m -G wheel,audio,video,optical,storage -s /bin/bash $USER"
 echo "$USER:$PASSWORD_USER" | arch-chroot /mnt /bin/bash -c "chpasswd"
 
+
 # Configurar sudo
 arch-chroot /mnt /bin/bash -c "pacman -S sudo --noconfirm"
-echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
+
+# Configuración temporal NOPASSWD para instalaciones
+echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL" > /mnt/etc/sudoers.d/temp-install
 clear
 
 
@@ -2566,10 +2574,7 @@ arch-chroot /mnt chmod 644 /etc/xdg/autostart/keyboard-setup.desktop
 echo -e "${CYAN}11. Actualizando configuraciones del sistema...${NC}"
 arch-chroot /mnt dconf update 2>/dev/null || true
 
-# 12. Aplicar configuración de teclado inmediatamente en el LiveCD actual
-echo -e "${CYAN}12. Aplicando configuración al sistema actual...${NC}"
-sudo localectl set-keymap $KEYMAP_TTY 2>/dev/null || true
-sudo localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" "" 2>/dev/null || true
+
 
 echo -e "${GREEN}✓ Configuración completa del teclado finalizada${NC}"
 echo -e "${CYAN}  • Layout: $KEYBOARD_LAYOUT${NC}"
@@ -2630,6 +2635,11 @@ clear
 echo ""
 ls /mnt/home/$USER/
 sleep 5
+clear
+# Revertir a configuración normal
+arch-chroot /mnt /bin/bash -c "rm -f /etc/sudoers.d/temp-install"
+echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
+
 clear
 
 # Mostrar resumen final
