@@ -1285,11 +1285,11 @@ echo ""
 
 # Instalar os-prober para detectar otros sistemas
 echo -e "${CYAN}Instalando os-prober...${NC}"
-arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S os-prober --noeditmenu --noconfirm --needed"
+arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S os-prober --noansweredit --noconfirm --needed"
 
 # Instalar ntfs-3g para mejor soporte de particiones Windows
 echo -e "${CYAN}Instalando ntfs-3g para soporte Windows...${NC}"
-arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ntfs-3g --noeditmenu --noconfirm --needed"
+arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ntfs-3g --noansweredit --noconfirm --needed"
 
 # Habilitar os-prober en GRUB
 echo -e "${CYAN}Habilitando os-prober en configuración GRUB...${NC}"
@@ -1410,67 +1410,67 @@ case "$DRIVER_VIDEO" in
     "nvidia")
         echo "Instalando driver NVIDIA para kernel linux"
         arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noansweredit --noconfirm --needed"
 
         ;;
     "nvidia-lts")
         echo "Instalando driver NVIDIA para kernel LTS"
         arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-lts --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-lts --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noansweredit --noconfirm --needed"
         ;;
     "nvidia-dkms")
         echo "Instalando driver NVIDIA DKMS"
         arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-dkms --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-dkms --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noansweredit --noconfirm --needed"
         ;;
     "nvidia-470xx-dkms")
         echo "Instalando driver NVIDIA serie 470.xx con DKMS"
         arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-dkms --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-utils --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia-470xx --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-settings --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-470xx-utils --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia-470xx --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mhwd-nvidia-470xx --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-dkms --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-utils --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia-470xx --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-settings --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-470xx-utils --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia-470xx --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mhwd-nvidia-470xx --noansweredit --noconfirm --needed"
         ;;
     "nvidia-390xx-dkms")
         echo "Instalando driver NVIDIA serie 390.xx con DKMS (hardware antiguo)"
         arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-dkms --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-utils --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia-390xx --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-390xx-utils --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia-390xx --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-settings --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mhwd-nvidia-390xx --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-dkms --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-utils --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia-390xx --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-390xx-utils --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia-390xx --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-settings --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mhwd-nvidia-390xx --noansweredit --noconfirm --needed"
         ;;
     "AMD Private")
         echo "Instalando drivers privativos de AMD"
         arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu mesa lib32-mesa --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S radeontop --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S amf-amdgpu-pro --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S amdgpu-pro-oglp --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-amdgpu-pro-oglp --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vulkan-amdgpu-pro --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-vulkan-amdgpu-pro --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-amd --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S amf-amdgpu-pro --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S amdgpu-pro-oglp --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-amdgpu-pro-oglp --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vulkan-amdgpu-pro --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-vulkan-amdgpu-pro --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-amd --noansweredit --noconfirm --needed"
         ;;
     "Intel Private")
         echo "Instalando drivers privativos de Intel"
@@ -1481,11 +1481,11 @@ case "$DRIVER_VIDEO" in
         arch-chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S intel-gpu-tools --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-media-driver --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S libva-intel-driver --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-compute-runtime --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-hybrid-codec-driver-git --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vpl-gpu-rt --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-media-driver --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S libva-intel-driver --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-compute-runtime --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-hybrid-codec-driver-git --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vpl-gpu-rt --noansweredit --noconfirm --needed"
         ;;
     "Máquina Virtual")
         if lspci | grep -i virtualbox > /dev/null; then
@@ -1559,9 +1559,9 @@ case "$DRIVER_WIFI" in
         arch-chroot /mnt /bin/bash -c "pacman -S wpa_supplicant --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S wireless_tools --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S iw --noconfirm"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtl8821cu-dkms-git --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtl8821ce-dkms-git --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtw88-dkms-git --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtl8821cu-dkms-git --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtl8821ce-dkms-git --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtw88-dkms-git --noansweredit --noconfirm --needed"
         ;;
 esac
 
@@ -1730,54 +1730,54 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar X.org como base para todos los escritorios
         echo -e "${CYAN}Instalando servidor X.org...${NC}"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
 
         case "$DESKTOP_ENVIRONMENT" in
             "GNOME")
                 echo -e "${CYAN}Instalando GNOME Desktop...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-extra --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdm --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-extra --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable gdm"
                 ;;
             "KDE")
                 echo -e "${CYAN}Instalando KDE Plasma Desktop...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-wayland-session --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S kde-applications --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-wayland-session --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S kde-applications --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
                 ;;
             "XFCE4")
                 echo -e "${CYAN}Instalando XFCE4 Desktop...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4 --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4-goodies --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S light-locker --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4 --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4-goodies --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S light-locker --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
                 ;;
             "DEEPIN")
                 echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin-extra --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin-extra --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
                 ;;
             *)
                 echo -e "${YELLOW}Entorno de escritorio no reconocido: $DESKTOP_ENVIRONMENT${NC}"
                 echo -e "${CYAN}Instalando XFCE4 como alternativa...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4 --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4-goodies --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4 --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4-goodies --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
                 ;;
         esac
@@ -1787,24 +1787,24 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar X.org y dependencias base para gestores de ventanas
         echo -e "${CYAN}Instalando servidor X.org y dependencias base...${NC}"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xterm --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dmenu --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xterm --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dmenu --noansweredit --noconfirm --needed"
 
         # Instalar Ly display manager
         echo -e "${CYAN}Instalando Ly display manager...${NC}"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ly --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ly --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "systemctl enable ly"
 
         case "$WINDOW_MANAGER" in
             "I3")
                 echo -e "${CYAN}Instalando i3 Window Manager...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3-wm --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3status --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3lock --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3-wm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3status --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3lock --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noansweredit --noconfirm --needed"
                 # Crear configuración básica de i3
                 mkdir -p /mnt/home/$USER/.config/i3
                 echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
@@ -1812,8 +1812,8 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "BSPWM")
                 echo -e "${CYAN}Instalando BSPWM Window Manager...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S bspwm --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sxhkd --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S bspwm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sxhkd --noansweredit --noconfirm --needed"
                 # Crear configuración básica de bspwm
                 mkdir -p /mnt/home/$USER/.config/bspwm
                 mkdir -p /mnt/home/$USER/.config/sxhkd
@@ -1821,13 +1821,13 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "DWM")
                 echo -e "${CYAN}Instalando DWM Window Manager...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S git --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S base-devel --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dwm --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S git --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S base-devel --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dwm --noansweredit --noconfirm --needed"
                 ;;
             "QTILE")
                 echo -e "${CYAN}Instalando Qtile Window Manager...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S qtile --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S qtile --noansweredit --noconfirm --needed"
                 # Crear configuración básica de qtile
                 mkdir -p /mnt/home/$USER/.config/qtile
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
@@ -1835,10 +1835,10 @@ case "$INSTALLATION_TYPE" in
             *)
                 echo -e "${YELLOW}Gestor de ventanas no reconocido: $WINDOW_MANAGER${NC}"
                 echo -e "${CYAN}Instalando i3 como alternativa...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3-wm --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3status --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3lock --noeditmenu --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noeditmenu --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3-wm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3status --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3lock --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noansweredit --noconfirm --needed"
                 mkdir -p /mnt/home/$USER/.config/i3
                 echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
@@ -1847,11 +1847,11 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar herramientas adicionales para gestores de ventanas
         echo -e "${CYAN}Instalando herramientas adicionales...${NC}"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S firefox --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S thunar --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S alacritty --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S foot --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S kitty --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S firefox --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S thunar --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S alacritty --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S foot --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S kitty --noansweredit --noconfirm --needed"
 
         # Configurar terminales con configuraciones básicas
         echo -e "${CYAN}Configurando terminales...${NC}"
@@ -2568,8 +2568,8 @@ arch-chroot /mnt dconf update 2>/dev/null || true
 
 # 12. Aplicar configuración de teclado inmediatamente en el LiveCD actual
 echo -e "${CYAN}12. Aplicando configuración al sistema actual...${NC}"
-localectl set-keymap $KEYMAP_TTY 2>/dev/null || true
-localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" "" 2>/dev/null || true
+sudo localectl set-keymap $KEYMAP_TTY 2>/dev/null || true
+sudo localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" "" 2>/dev/null || true
 
 echo -e "${GREEN}✓ Configuración completa del teclado finalizada${NC}"
 echo -e "${CYAN}  • Layout: $KEYBOARD_LAYOUT${NC}"
@@ -2591,7 +2591,7 @@ if [ "$UTILITIES_ENABLED" = "true" ] && [ ${#UTILITIES_APPS[@]} -gt 0 ]; then
 
     for app in "${UTILITIES_APPS[@]}"; do
         echo -e "${CYAN}Instalando: $app${NC}"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S $app --noeditmenu --noconfirm --needed" || {
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S $app --noansweredit --noconfirm --needed" || {
             echo -e "${YELLOW}⚠ No se pudo instalar $app, continuando...${NC}"
         }
     done
@@ -2609,7 +2609,7 @@ if [ "$PROGRAM_EXTRA" = "true" ] && [ ${#EXTRA_PROGRAMS[@]} -gt 0 ]; then
 
     for program in "${EXTRA_PROGRAMS[@]}"; do
         echo -e "${CYAN}Instalando: $program${NC}"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S $program --noeditmenu --noconfirm --needed" || {
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S $program --noansweredit --noconfirm --needed" || {
             echo -e "${YELLOW}⚠ No se pudo instalar $program, continuando...${NC}"
         }
     done
