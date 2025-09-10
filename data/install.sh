@@ -88,7 +88,7 @@ verify_lvm_devices() {
     cryptsetup status cryptlvm 2>/dev/null || echo "  cryptlvm no está activo"
 
     # Esperar a que el sistema detecte los dispositivos
-    sleep 3
+    sleep 4
 
     # Verificar que cryptlvm esté disponible
     if [ ! -b "/dev/mapper/cryptlvm" ]; then
@@ -112,13 +112,17 @@ verify_lvm_devices() {
     fi
 
     # Esperar un poco más para que los dispositivos estén disponibles
-    sleep 2
+    sleep 4
 
     # Verificar que los dispositivos LVM existan
-    local max_attempts=10
+    local max_attempts=15
     local attempt=1
 
     while [ $attempt -le $max_attempts ]; do
+        # Forzar actualización de dispositivos
+        udevadm settle
+        vgchange -ay vg0 2>/dev/null || true
+
         if [ -b "/dev/vg0/root" ] && [ -b "/dev/vg0/swap" ]; then
             echo -e "${GREEN}✓ Dispositivos LVM verificados correctamente${NC}"
             echo -e "${CYAN}Información final:${NC}"
@@ -140,8 +144,14 @@ verify_lvm_devices() {
             ls -la /dev/vg0/ 2>/dev/null || echo "  Directorio /dev/vg0/ no existe"
         fi
 
-        sleep 2
-        vgchange -ay vg0 2>/dev/null || true
+        if [ $attempt -eq 10 ]; then
+            echo -e "${YELLOW}Intentando reactivar volume groups...${NC}"
+            vgchange -an vg0 2>/dev/null || true
+            sleep 2
+            vgchange -ay vg0 2>/dev/null || true
+        fi
+
+        sleep 4
         attempt=$((attempt + 1))
     done
 
@@ -250,6 +260,7 @@ partition_auto() {
         sgdisk --zap-all $SELECTED_DISK
         sleep 2
         partprobe $SELECTED_DISK
+        wipefs -af $SELECTED_DISK
 
         # Crear tabla de particiones GPT
         parted $SELECTED_DISK --script --align optimal mklabel gpt
@@ -293,6 +304,7 @@ partition_auto() {
         sgdisk --zap-all $SELECTED_DISK
         sleep 2
         partprobe $SELECTED_DISK
+        wipefs -af $SELECTED_DISK
 
         # Crear tabla de particiones MBR
         parted $SELECTED_DISK --script --align optimal mklabel msdos
@@ -340,6 +352,7 @@ partition_auto_btrfs() {
         sgdisk --zap-all $SELECTED_DISK
         sleep 2
         partprobe $SELECTED_DISK
+        wipefs -af $SELECTED_DISK
 
         # Crear tabla de particiones GPT
         parted $SELECTED_DISK --script --align optimal mklabel gpt
@@ -397,6 +410,7 @@ partition_auto_btrfs() {
         sgdisk --zap-all $SELECTED_DISK
         sleep 2
         partprobe $SELECTED_DISK
+        wipefs -af $SELECTED_DISK
 
         # Crear tabla de particiones MBR
         parted $SELECTED_DISK --script --align optimal mklabel msdos
@@ -462,8 +476,9 @@ partition_cifrado() {
         # Borrar completamente el disco
         echo -e "${CYAN}Limpiando disco completamente...${NC}"
         sgdisk --zap-all $SELECTED_DISK
-        sleep 2
+        sleep 4
         partprobe $SELECTED_DISK
+        wipefs -af $SELECTED_DISK
 
         # Crear tabla de particiones GPT
         parted $SELECTED_DISK --script --align optimal mklabel gpt
@@ -479,21 +494,34 @@ partition_cifrado() {
         parted $SELECTED_DISK --script --align optimal mkpart primary 1537MiB 100%
 
         # Formatear particiones
-        mkfs.fat -F32 -v ${SELECTED_DISK}1
+        mkfs.fat -F32 ${SELECTED_DISK}1
         mkfs.ext4 -F ${SELECTED_DISK}2
 
+        # Sincronizar y esperar reconocimiento de particiones
+        echo -e "${CYAN}Sincronizando sistema de archivos...${NC}"
+        sync
+        partprobe $SELECTED_DISK
+        sleep 4
+
         # Configurar LUKS en la partición principal
+        # Aplicar cifrado LUKS
         echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
+
+        # Limpiar firmas de sistemas de archivos existentes
+        echo -e "${CYAN}Limpiando firmas de sistemas de archivos...${NC}"
+        wipefs -af ${SELECTED_DISK}3 2>/dev/null || true
+        dd if=/dev/zero of=${SELECTED_DISK}3 bs=1M count=10 2>/dev/null || true
+
         echo -e "${CYAN}Aplicando cifrado LUKS a ${SELECTED_DISK}3...${NC}"
         echo -e "${YELLOW}IMPORTANTE: Esto puede tomar unos minutos dependiendo del tamaño del disco${NC}"
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}3 -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase ${SELECTED_DISK}3 -; then
             echo -e "${RED}ERROR: Falló el cifrado LUKS de la partición${NC}"
             exit 1
         fi
 
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}3 cryptlvm -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode ${SELECTED_DISK}3 cryptlvm -; then
             echo -e "${RED}ERROR: No se pudo abrir el dispositivo cifrado${NC}"
             exit 1
         fi
@@ -542,6 +570,12 @@ partition_cifrado() {
         echo -e "${GREEN}  • Volume Group: vg0${NC}"
         echo -e "${GREEN}  • Swap: 8GB (/dev/vg0/swap)${NC}"
         echo -e "${GREEN}  • Root: Resto del espacio (/dev/vg0/root)${NC}"
+
+        # Sincronizar antes de verificar LVM
+        echo -e "${CYAN}Sincronizando dispositivos del sistema...${NC}"
+        sync
+        udevadm settle
+        sleep 4
 
         # Verificar que los volúmenes LVM estén disponibles
         if ! verify_lvm_devices; then
@@ -631,8 +665,9 @@ partition_cifrado() {
         # Borrar completamente el disco
         echo -e "${CYAN}Limpiando disco completamente...${NC}"
         sgdisk --zap-all $SELECTED_DISK
-        sleep 2
+        sleep 4
         partprobe $SELECTED_DISK
+        wipefs -af $SELECTED_DISK
 
         # Crear tabla de particiones MBR
         parted $SELECTED_DISK --script --align optimal mklabel msdos
@@ -645,18 +680,31 @@ partition_cifrado() {
         parted $SELECTED_DISK --script --align optimal mkpart primary 513MiB 100%
 
         # Formatear partición boot
-        mkfs.ext4 -F ${SELECTED_DISK}1
+        mkfs.ext4 -F ${SELECTED_DISK}2
+
+        # Sincronizar y esperar reconocimiento de particiones
+        echo -e "${CYAN}Sincronizando sistema de archivos...${NC}"
+        sync
+        partprobe $SELECTED_DISK
+        sleep 4
 
         # Configurar LUKS en la partición principal
+        # Configurar cifrado LUKS
         echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -; then
+
+        # Limpiar firmas de sistemas de archivos existentes
+        echo -e "${CYAN}Limpiando firmas de sistemas de archivos...${NC}"
+        wipefs -af ${SELECTED_DISK}2 2>/dev/null || true
+        dd if=/dev/zero of=${SELECTED_DISK}2 bs=1M count=10 2>/dev/null || true
+
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase ${SELECTED_DISK}2 -; then
             echo -e "${RED}ERROR: Falló el cifrado LUKS de la partición${NC}"
             exit 1
         fi
 
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptlvm -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode ${SELECTED_DISK}2 cryptlvm -; then
             echo -e "${RED}ERROR: No se pudo abrir el dispositivo cifrado${NC}"
             exit 1
         fi
@@ -705,6 +753,12 @@ partition_cifrado() {
         echo -e "${GREEN}  • Volume Group: vg0${NC}"
         echo -e "${GREEN}  • Swap: 8GB (/dev/vg0/swap)${NC}"
         echo -e "${GREEN}  • Root: Resto del espacio (/dev/vg0/root)${NC}"
+
+        # Sincronizar antes de verificar LVM
+        echo -e "${CYAN}Sincronizando dispositivos del sistema...${NC}"
+        sync
+        udevadm settle
+        sleep 4
 
         # Verificar que los volúmenes LVM estén disponibles
         if ! verify_lvm_devices; then
