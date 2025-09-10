@@ -88,7 +88,7 @@ verify_lvm_devices() {
     cryptsetup status cryptlvm 2>/dev/null || echo "  cryptlvm no está activo"
 
     # Esperar a que el sistema detecte los dispositivos
-    sleep 4
+    sleep 5
 
     # Verificar que cryptlvm esté disponible
     if [ ! -b "/dev/mapper/cryptlvm" ]; then
@@ -112,7 +112,7 @@ verify_lvm_devices() {
     fi
 
     # Esperar un poco más para que los dispositivos estén disponibles
-    sleep 4
+    sleep 3
 
     # Verificar que los dispositivos LVM existan
     local max_attempts=15
@@ -151,7 +151,7 @@ verify_lvm_devices() {
             vgchange -ay vg0 2>/dev/null || true
         fi
 
-        sleep 4
+        sleep 3
         attempt=$((attempt + 1))
     done
 
@@ -575,7 +575,7 @@ partition_cifrado() {
         echo -e "${CYAN}Sincronizando dispositivos del sistema...${NC}"
         sync
         udevadm settle
-        sleep 4
+        sleep 2
 
         # Verificar que los volúmenes LVM estén disponibles
         if ! verify_lvm_devices; then
@@ -665,7 +665,7 @@ partition_cifrado() {
         # Borrar completamente el disco
         echo -e "${CYAN}Limpiando disco completamente...${NC}"
         sgdisk --zap-all $SELECTED_DISK
-        sleep 4
+        sleep 2
         partprobe $SELECTED_DISK
         wipefs -af $SELECTED_DISK
 
@@ -686,7 +686,7 @@ partition_cifrado() {
         echo -e "${CYAN}Sincronizando sistema de archivos...${NC}"
         sync
         partprobe $SELECTED_DISK
-        sleep 4
+        sleep 3
 
         # Configurar LUKS en la partición principal
         # Configurar cifrado LUKS
@@ -758,7 +758,7 @@ partition_cifrado() {
         echo -e "${CYAN}Sincronizando dispositivos del sistema...${NC}"
         sync
         udevadm settle
-        sleep 4
+        sleep 2
 
         # Verificar que los volúmenes LVM estén disponibles
         if ! verify_lvm_devices; then

@@ -810,6 +810,8 @@ void save_page6_switches_to_file(void)
     gchar *extra_programs_value = NULL;
     gchar *utilities_apps_value = NULL;
     gchar *program_extra_value = NULL;
+    gchar *encryption_enabled_value = NULL;
+    gchar *encryption_password_value = NULL;
 
     FILE *read_file = fopen(bash_file_path, "r");
     if (read_file) {
@@ -1048,6 +1050,26 @@ void save_page6_switches_to_file(void)
                 line[strcspn(line, "\n")] = 0;
                 program_extra_value = g_strdup(line + 14); // Guardar todo después de "PROGRAM_EXTRA="
             }
+            else if (g_str_has_prefix(line, "ENCRYPTION_ENABLED=")) {
+                char *value = line + 19;
+                line[strcspn(line, "\n")] = 0;
+                value = line + 19;
+                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                    value[strlen(value)-1] = 0;
+                    value++;
+                }
+                encryption_enabled_value = g_strdup(value);
+            }
+            else if (g_str_has_prefix(line, "ENCRYPTION_PASSWORD=")) {
+                char *value = line + 20;
+                line[strcspn(line, "\n")] = 0;
+                value = line + 20;
+                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
+                    value[strlen(value)-1] = 0;
+                    value++;
+                }
+                encryption_password_value = g_strdup(value);
+            }
         }
         fclose(read_file);
     }
@@ -1200,14 +1222,24 @@ void save_page6_switches_to_file(void)
         LOG_INFO("EXTRA_PROGRAMS preservado: %s", extra_programs_value);
     }
 
+    // Preservar variables de cifrado
+    if (encryption_enabled_value || encryption_password_value) {
+        if (encryption_enabled_value) {
+            fprintf(file, "ENCRYPTION_ENABLED=\"%s\"\n", encryption_enabled_value);
+            LOG_INFO("ENCRYPTION_ENABLED preservado: %s", encryption_enabled_value);
+        }
+        if (encryption_password_value) {
+            fprintf(file, "ENCRYPTION_PASSWORD=\"%s\"\n", encryption_password_value);
+            LOG_INFO("ENCRYPTION_PASSWORD preservado: %s", encryption_password_value);
+        }
+    }
+
     // Preservar utilidades seleccionadas
     if (utilities_apps_value) {
         fprintf(file, "\n# Utilidades seleccionadas\n");
         fprintf(file, "UTILITIES_APPS=%s\n", utilities_apps_value);
         LOG_INFO("UTILITIES_APPS preservado: %s", utilities_apps_value);
     }
-
-
 
     fclose(file);
 
@@ -1238,6 +1270,8 @@ void save_page6_switches_to_file(void)
     g_free(extra_programs_value);
     g_free(utilities_apps_value);
     g_free(program_extra_value);
+    g_free(encryption_enabled_value);
+    g_free(encryption_password_value);
 
     LOG_INFO("Variables de página 6 guardadas exitosamente en data/variables.sh");
     LOG_INFO("=== save_page6_switches_to_file FINALIZADO ===");
