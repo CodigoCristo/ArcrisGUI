@@ -76,6 +76,92 @@ echo "╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  �
 echo -e "${NC}"
 echo ""
 
+# Función para verificar disponibilidad de dispositivos LVM
+verify_lvm_devices() {
+    echo -e "${CYAN}Verificando disponibilidad de dispositivos LVM...${NC}"
+
+    # Mostrar información de debugging inicial
+    echo -e "${CYAN}Estado actual del sistema:${NC}"
+    echo "• Dispositivos de mapeo:"
+    ls -la /dev/mapper/ 2>/dev/null || echo "  No hay dispositivos en /dev/mapper/"
+    echo "• Información de cryptsetup:"
+    cryptsetup status cryptlvm 2>/dev/null || echo "  cryptlvm no está activo"
+
+    # Esperar a que el sistema detecte los dispositivos
+    sleep 3
+
+    # Verificar que cryptlvm esté disponible
+    if [ ! -b "/dev/mapper/cryptlvm" ]; then
+        echo -e "${RED}ERROR: /dev/mapper/cryptlvm no está disponible${NC}"
+        echo -e "${YELLOW}Información de debugging:${NC}"
+        echo "• Dispositivos en /dev/mapper/:"
+        ls -la /dev/mapper/ 2>/dev/null
+        return 1
+    fi
+
+    # Activar volume groups
+    echo -e "${CYAN}Activando volume groups...${NC}"
+    if ! vgchange -ay vg0; then
+        echo -e "${RED}ERROR: No se pudieron activar los volúmenes LVM${NC}"
+        echo -e "${YELLOW}Información de debugging:${NC}"
+        echo "• Volume Groups disponibles:"
+        vgs 2>/dev/null || echo "  No hay volume groups"
+        echo "• Physical Volumes:"
+        pvs 2>/dev/null || echo "  No hay physical volumes"
+        return 1
+    fi
+
+    # Esperar un poco más para que los dispositivos estén disponibles
+    sleep 2
+
+    # Verificar que los dispositivos LVM existan
+    local max_attempts=10
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        if [ -b "/dev/vg0/root" ] && [ -b "/dev/vg0/swap" ]; then
+            echo -e "${GREEN}✓ Dispositivos LVM verificados correctamente${NC}"
+            echo -e "${CYAN}Información final:${NC}"
+            echo "• Volume Groups:"
+            vgs 2>/dev/null
+            echo "• Logical Volumes:"
+            lvs 2>/dev/null
+            echo "• Estructura de bloques:"
+            lsblk -o NAME,FSTYPE,SIZE,MOUNTPOINT 2>/dev/null | head -20
+            return 0
+        fi
+
+        echo -e "${YELLOW}Intento $attempt/$max_attempts: Esperando dispositivos LVM...${NC}"
+        if [ $attempt -eq 5 ]; then
+            echo -e "${YELLOW}Información intermedia de debugging:${NC}"
+            echo "• Logical Volumes disponibles:"
+            lvs 2>/dev/null || echo "  No hay logical volumes"
+            echo "• Dispositivos en /dev/vg0/:"
+            ls -la /dev/vg0/ 2>/dev/null || echo "  Directorio /dev/vg0/ no existe"
+        fi
+
+        sleep 2
+        vgchange -ay vg0 2>/dev/null || true
+        attempt=$((attempt + 1))
+    done
+
+    echo -e "${RED}ERROR: Los dispositivos LVM no están disponibles después de $max_attempts intentos${NC}"
+    echo -e "${RED}Información completa de debugging:${NC}"
+    echo -e "${RED}  • /dev/vg0/root existe: $([ -b '/dev/vg0/root' ] && echo 'SÍ' || echo 'NO')${NC}"
+    echo -e "${RED}  • /dev/vg0/swap existe: $([ -b '/dev/vg0/swap' ] && echo 'SÍ' || echo 'NO')${NC}"
+    echo -e "${RED}  • Volume Groups:${NC}"
+    vgs 2>/dev/null || echo "    No hay volume groups disponibles"
+    echo -e "${RED}  • Logical Volumes:${NC}"
+    lvs 2>/dev/null || echo "    No hay logical volumes disponibles"
+    echo -e "${RED}  • Physical Volumes:${NC}"
+    pvs 2>/dev/null || echo "    No hay physical volumes disponibles"
+    echo -e "${RED}  • Dispositivos de mapeo:${NC}"
+    ls -la /dev/mapper/ 2>/dev/null || echo "    No hay dispositivos de mapeo"
+    echo -e "${RED}  • Estructura actual de bloques:${NC}"
+    lsblk 2>/dev/null | head -20 || echo "    No se puede mostrar lsblk"
+    return 1
+}
+
 # Configuración inicial del LiveCD
 echo -e "${GREEN}| Configurando LiveCD |${NC}"
 echo ""
@@ -159,6 +245,12 @@ partition_auto() {
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
 
+        # Borrar completamente el disco
+        echo -e "${CYAN}Limpiando disco completamente...${NC}"
+        sgdisk --zap-all $SELECTED_DISK
+        sleep 2
+        partprobe $SELECTED_DISK
+
         # Crear tabla de particiones GPT
         parted $SELECTED_DISK --script --align optimal mklabel gpt
 
@@ -195,6 +287,12 @@ partition_auto() {
         echo -e "${GREEN}| Configurando particiones para BIOS Legacy |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
+
+        # Borrar completamente el disco
+        echo -e "${CYAN}Limpiando disco completamente...${NC}"
+        sgdisk --zap-all $SELECTED_DISK
+        sleep 2
+        partprobe $SELECTED_DISK
 
         # Crear tabla de particiones MBR
         parted $SELECTED_DISK --script --align optimal mklabel msdos
@@ -236,6 +334,12 @@ partition_auto_btrfs() {
         echo -e "${GREEN}| Configurando particiones BTRFS para UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
+
+        # Borrar completamente el disco
+        echo -e "${CYAN}Limpiando disco completamente...${NC}"
+        sgdisk --zap-all $SELECTED_DISK
+        sleep 2
+        partprobe $SELECTED_DISK
 
         # Crear tabla de particiones GPT
         parted $SELECTED_DISK --script --align optimal mklabel gpt
@@ -287,6 +391,12 @@ partition_auto_btrfs() {
         echo -e "${GREEN}| Configurando particiones BTRFS para BIOS Legacy |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
+
+        # Borrar completamente el disco
+        echo -e "${CYAN}Limpiando disco completamente...${NC}"
+        sgdisk --zap-all $SELECTED_DISK
+        sleep 2
+        partprobe $SELECTED_DISK
 
         # Crear tabla de particiones MBR
         parted $SELECTED_DISK --script --align optimal mklabel msdos
@@ -349,6 +459,12 @@ partition_cifrado() {
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
 
+        # Borrar completamente el disco
+        echo -e "${CYAN}Limpiando disco completamente...${NC}"
+        sgdisk --zap-all $SELECTED_DISK
+        sleep 2
+        partprobe $SELECTED_DISK
+
         # Crear tabla de particiones GPT
         parted $SELECTED_DISK --script --align optimal mklabel gpt
 
@@ -372,8 +488,21 @@ partition_cifrado() {
         echo ""
         echo -e "${CYAN}Aplicando cifrado LUKS a ${SELECTED_DISK}3...${NC}"
         echo -e "${YELLOW}IMPORTANTE: Esto puede tomar unos minutos dependiendo del tamaño del disco${NC}"
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}3 -
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}3 cryptlvm -
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}3 -; then
+            echo -e "${RED}ERROR: Falló el cifrado LUKS de la partición${NC}"
+            exit 1
+        fi
+
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}3 cryptlvm -; then
+            echo -e "${RED}ERROR: No se pudo abrir el dispositivo cifrado${NC}"
+            exit 1
+        fi
+
+        # Verificar que el dispositivo cifrado esté disponible
+        if [ ! -b "/dev/mapper/cryptlvm" ]; then
+            echo -e "${RED}ERROR: El dispositivo /dev/mapper/cryptlvm no está disponible${NC}"
+            exit 1
+        fi
 
         # Crear backup del header LUKS (recomendación de seguridad)
         echo -e "${CYAN}Creando backup del header LUKS...${NC}"
@@ -386,32 +515,62 @@ partition_cifrado() {
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
         echo -e "${CYAN}Creando Physical Volume sobre dispositivo cifrado...${NC}"
-        pvcreate /dev/mapper/cryptlvm
+        if ! pvcreate /dev/mapper/cryptlvm; then
+            echo -e "${RED}ERROR: No se pudo crear el Physical Volume${NC}"
+            exit 1
+        fi
+
         echo -e "${CYAN}Creando Volume Group 'vg0'...${NC}"
-        vgcreate vg0 /dev/mapper/cryptlvm
+        if ! vgcreate vg0 /dev/mapper/cryptlvm; then
+            echo -e "${RED}ERROR: No se pudo crear el Volume Group vg0${NC}"
+            exit 1
+        fi
+
         echo -e "${CYAN}Creando Logical Volume 'swap' de 8GB...${NC}"
-        lvcreate -L 8G vg0 -n swap
+        if ! lvcreate -L 8G vg0 -n swap; then
+            echo -e "${RED}ERROR: No se pudo crear el Logical Volume swap${NC}"
+            exit 1
+        fi
+
         echo -e "${CYAN}Creando Logical Volume 'root' con el espacio restante...${NC}"
-        lvcreate -l 100%FREE vg0 -n root
+        if ! lvcreate -l 100%FREE vg0 -n root; then
+            echo -e "${RED}ERROR: No se pudo crear el Logical Volume root${NC}"
+            exit 1
+        fi
 
         echo -e "${GREEN}✓ Configuración LVM completada:${NC}"
         echo -e "${GREEN}  • Volume Group: vg0${NC}"
         echo -e "${GREEN}  • Swap: 8GB (/dev/vg0/swap)${NC}"
         echo -e "${GREEN}  • Root: Resto del espacio (/dev/vg0/root)${NC}"
 
-        # Verificar que el volumen LVM esté disponible
-        sleep 2
-        vgchange -ay vg0
+        # Verificar que los volúmenes LVM estén disponibles
+        if ! verify_lvm_devices; then
+            echo -e "${RED}FALLO CRÍTICO: No se pudieron verificar los dispositivos LVM${NC}"
+            exit 1
+        fi
 
         # Formatear volúmenes LVM
         echo -e "${CYAN}Formateando volúmenes LVM...${NC}"
-        mkfs.ext4 -F /dev/vg0/root
-        mkswap /dev/vg0/swap
+        if ! mkfs.ext4 -F /dev/vg0/root; then
+            echo -e "${RED}ERROR: No se pudo formatear /dev/vg0/root${NC}"
+            exit 1
+        fi
+
+        if ! mkswap /dev/vg0/swap; then
+            echo -e "${RED}ERROR: No se pudo formatear /dev/vg0/swap${NC}"
+            exit 1
+        fi
 
         # Montar sistema de archivos root
         echo -e "${CYAN}Montando sistema raíz...${NC}"
-        mount /dev/vg0/root /mnt
-        swapon /dev/vg0/swap
+        if ! mount /dev/vg0/root /mnt; then
+            echo -e "${RED}ERROR: No se pudo montar /dev/vg0/root en /mnt${NC}"
+            exit 1
+        fi
+
+        if ! swapon /dev/vg0/swap; then
+            echo -e "${YELLOW}ADVERTENCIA: No se pudo activar el swap${NC}"
+        fi
 
         # Verificar que las particiones existan antes de montar
         echo -e "${CYAN}Verificando particiones antes del montaje...${NC}"
@@ -469,6 +628,12 @@ partition_cifrado() {
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
 
+        # Borrar completamente el disco
+        echo -e "${CYAN}Limpiando disco completamente...${NC}"
+        sgdisk --zap-all $SELECTED_DISK
+        sleep 2
+        partprobe $SELECTED_DISK
+
         # Crear tabla de particiones MBR
         parted $SELECTED_DISK --script --align optimal mklabel msdos
 
@@ -486,8 +651,21 @@ partition_cifrado() {
         echo -e "${GREEN}| Configurando cifrado LUKS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -
-        echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptlvm -
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat ${SELECTED_DISK}2 -; then
+            echo -e "${RED}ERROR: Falló el cifrado LUKS de la partición${NC}"
+            exit 1
+        fi
+
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open ${SELECTED_DISK}2 cryptlvm -; then
+            echo -e "${RED}ERROR: No se pudo abrir el dispositivo cifrado${NC}"
+            exit 1
+        fi
+
+        # Verificar que el dispositivo cifrado esté disponible
+        if [ ! -b "/dev/mapper/cryptlvm" ]; then
+            echo -e "${RED}ERROR: El dispositivo /dev/mapper/cryptlvm no está disponible${NC}"
+            exit 1
+        fi
 
         # Crear backup del header LUKS (recomendación de seguridad)
         echo -e "${CYAN}Creando backup del header LUKS...${NC}"
@@ -500,32 +678,62 @@ partition_cifrado() {
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
         echo -e "${CYAN}Creando Physical Volume sobre dispositivo cifrado...${NC}"
-        pvcreate /dev/mapper/cryptlvm
+        if ! pvcreate /dev/mapper/cryptlvm; then
+            echo -e "${RED}ERROR: No se pudo crear el Physical Volume${NC}"
+            exit 1
+        fi
+
         echo -e "${CYAN}Creando Volume Group 'vg0'...${NC}"
-        vgcreate vg0 /dev/mapper/cryptlvm
+        if ! vgcreate vg0 /dev/mapper/cryptlvm; then
+            echo -e "${RED}ERROR: No se pudo crear el Volume Group vg0${NC}"
+            exit 1
+        fi
+
         echo -e "${CYAN}Creando Logical Volume 'swap' de 8GB...${NC}"
-        lvcreate -L 8G vg0 -n swap
+        if ! lvcreate -L 8G vg0 -n swap; then
+            echo -e "${RED}ERROR: No se pudo crear el Logical Volume swap${NC}"
+            exit 1
+        fi
+
         echo -e "${CYAN}Creando Logical Volume 'root' con el espacio restante...${NC}"
-        lvcreate -l 100%FREE vg0 -n root
+        if ! lvcreate -l 100%FREE vg0 -n root; then
+            echo -e "${RED}ERROR: No se pudo crear el Logical Volume root${NC}"
+            exit 1
+        fi
 
         echo -e "${GREEN}✓ Configuración LVM completada:${NC}"
         echo -e "${GREEN}  • Volume Group: vg0${NC}"
         echo -e "${GREEN}  • Swap: 8GB (/dev/vg0/swap)${NC}"
         echo -e "${GREEN}  • Root: Resto del espacio (/dev/vg0/root)${NC}"
 
-        # Verificar que el volumen LVM esté disponible
-        sleep 2
-        vgchange -ay vg0
+        # Verificar que los volúmenes LVM estén disponibles
+        if ! verify_lvm_devices; then
+            echo -e "${RED}FALLO CRÍTICO: No se pudieron verificar los dispositivos LVM${NC}"
+            exit 1
+        fi
 
         # Formatear volúmenes LVM
         echo -e "${CYAN}Formateando volúmenes LVM...${NC}"
-        mkfs.ext4 -F /dev/vg0/root
-        mkswap /dev/vg0/swap
+        if ! mkfs.ext4 -F /dev/vg0/root; then
+            echo -e "${RED}ERROR: No se pudo formatear /dev/vg0/root${NC}"
+            exit 1
+        fi
+
+        if ! mkswap /dev/vg0/swap; then
+            echo -e "${RED}ERROR: No se pudo formatear /dev/vg0/swap${NC}"
+            exit 1
+        fi
 
         # Montar sistema de archivos root
         echo -e "${CYAN}Montando sistema raíz...${NC}"
-        mount /dev/vg0/root /mnt
-        swapon /dev/vg0/swap
+        if ! mount /dev/vg0/root /mnt; then
+            echo -e "${RED}ERROR: No se pudo montar /dev/vg0/root en /mnt${NC}"
+            exit 1
+        fi
+
+        if ! swapon /dev/vg0/swap; then
+            echo -e "${YELLOW}ADVERTENCIA: No se pudo activar el swap${NC}"
+        fi
 
         # Verificar que la partición boot exista
         echo -e "${CYAN}Verificando partición boot antes del montaje...${NC}"
