@@ -1120,6 +1120,26 @@
                                                   </object>
                                                 </child>
 
+                                                <!-- Android Studio -->
+                                                <child>
+                                                  <object class="AdwActionRow">
+                                                    <property name="title">android-studio</property>
+                                                    <property name="subtitle">IDE oficial para desarrollo Android por Google</property>
+                                                    <child type="prefix">
+                                                      <object class="GtkCheckButton" id="android_studio_check">
+                                                        <property name="active">false</property>
+                                                      </object>
+                                                    </child>
+                                                    <child type="suffix">
+                                                      <object class="GtkButton" id="android_studio_info">
+                                                        <property name="icon-name">dialog-information-symbolic</property>
+                                                        <property name="has-frame">false</property>
+                                                        <property name="tooltip-text">https://developer.android.com/studio/</property>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+
                                                 <!-- NetBeans -->
                                                 <child>
                                                   <object class="AdwActionRow">
@@ -1563,6 +1583,26 @@
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
                                         <property name="tooltip-text">https://www.virtualbox.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Genymotion -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">genymotion</property>
+                                    <property name="subtitle">Emulador de Android rápido y fácil de usar</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="genymotion_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="genymotion_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.genymotion.com/</property>
                                       </object>
                                     </child>
                                   </object>

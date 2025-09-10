@@ -276,6 +276,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"docker_info", "https://www.docker.com/"},
         {"pycharm_info", "https://www.jetbrains.com/pycharm/"},
         {"intellij_info", "https://www.jetbrains.com/idea/"},
+        {"android_studio_info", "https://developer.android.com/studio/"},
         {"netbeans_info", "https://netbeans.apache.org/"},
 
         // Office
@@ -303,6 +304,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"gnome_boxes_info", "https://wiki.gnome.org/Apps/Boxes"},
         {"virt_manager_info", "https://www.qemu.org/"},
         {"virtualbox_info", "https://www.virtualbox.org/"},
+        {"genymotion_info", "https://www.genymotion.com/"},
         {"gufw_info", "https://gufw.org/"},
         {"brasero_info", "https://wiki.gnome.org/Apps/Brasero"},
         {"transmission_info", "https://transmissionbt.com/"},
@@ -414,6 +416,7 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"docker_check", "docker", "contenedores docker", "developers_expander"},
         {"pycharm_check", "pycharm-community-edition-bin", "ide python pycharm", "developers_expander"},
         {"intellij_check", "intellij-idea-community-edition-bin", "ide java intellij", "developers_expander"},
+        {"android_studio_check", "android-studio", "ide android studio google", "developers_expander"},
         {"netbeans_check", "netbeans", "ide netbeans apache", "developers_expander"},
 
         // Office
@@ -441,6 +444,7 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"gnome_boxes_check", "gnome-boxes", "virtualización boxes gnome", "other_expander"},
         {"virt_manager_check", "qemu-full", "virtualización virt manager qemu", "other_expander"},
         {"virtualbox_check", "virtualbox", "virtualización virtualbox", "other_expander"},
+        {"genymotion_check", "genymotion", "emulador android genymotion", "other_expander"},
         {"gufw_check", "gufw", "firewall gufw ufw", "other_expander"},
         {"brasero_check", "brasero", "grabación cd dvd brasero", "other_expander"},
         {"transmission_check", "transmission-gtk", "torrent transmission", "other_expander"},
@@ -837,6 +841,7 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"docker_check", "docker"},
         {"pycharm_check", "pycharm-community-edition-bin"},
         {"intellij_check", "intellij-idea-community-edition-bin"},
+        {"android_studio_check", "android-studio"},
         {"netbeans_check", "netbeans"},
 
         // Office
@@ -864,6 +869,7 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"gnome_boxes_check", "gnome-boxes"},
         {"virt_manager_check", "qemu-full"},
         {"virtualbox_check", "virtualbox"},
+        {"genymotion_check", "genymotion"},
         {"gufw_check", "gufw"},
         {"brasero_check", "brasero"},
         {"transmission_check", "transmission-gtk"},
@@ -971,6 +977,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"docker_check", "docker"},
         {"pycharm_check", "pycharm-community-edition-bin"},
         {"intellij_check", "intellij-idea-community-edition-bin"},
+        {"android_studio_check", "android-studio"},
         {"netbeans_check", "netbeans"},
 
         // Office
@@ -998,6 +1005,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"gnome_boxes_check", "gnome-boxes"},
         {"virt_manager_check", "qemu-full"},
         {"virtualbox_check", "virtualbox"},
+        {"genymotion_check", "genymotion"},
         {"gufw_check", "gufw"},
         {"brasero_check", "brasero"},
         {"transmission_check", "transmission-gtk"},

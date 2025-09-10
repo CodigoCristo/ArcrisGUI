@@ -758,7 +758,9 @@ pacstrap /mnt base-devel
 pacstrap /mnt reflector python3 rsync
 pacstrap /mnt nano
 pacstrap /mnt xdg-user-dirs
-pacstrap /mnt fastfetch
+pacstrap /mnt curl
+pacstrap /mnt wget
+pacstrap /mnt git
 
 
 # Actualización de mirrors en el sistema instalado
@@ -1747,6 +1749,15 @@ case "$INSTALLATION_TYPE" in
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbnailer --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S freetype2 --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S poppler-glib --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S libgsf --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S raw-thumbnailer --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noeditmenu --noconfirm --needed"
 
         case "$DESKTOP_ENVIRONMENT" in
             "GNOME")
@@ -1865,6 +1876,16 @@ case "$INSTALLATION_TYPE" in
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S feh --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S networkmanager  --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
+
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbnailer --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S freetype2 --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S poppler-glib --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S libgsf --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S raw-thumbnailer --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noeditmenu --noconfirm --needed"
 
         # Instalar herramientas adicionales para gestores de ventanas
         echo -e "${CYAN}Instalando Terminales...${NC}"
@@ -2552,11 +2573,9 @@ if [ "${COMPRESSION_ENABLED:-false}" = "true" ]; then
     arch-chroot /mnt /bin/bash -c "pacman -S unarj --noconfirm"
     arch-chroot /mnt /bin/bash -c "pacman -S dpkg --noconfirm"
 
-    # Instalar RAR desde AUR (requiere compilación)
+    # Instalar RAR desde AUR
     echo -e "${CYAN}Instalando RAR desde AUR...${NC}"
-    arch-chroot /mnt /bin/bash -c "pacman -S git --noconfirm"
-    arch-chroot /mnt /bin/bash -c "su - $USER -c 'git clone https://aur.archlinux.org/rar.git /tmp/rar'"
-    arch-chroot /mnt /bin/bash -c "su - $USER -c 'cd /tmp/rar && makepkg -si --noconfirm'" || echo -e "${YELLOW}⚠ No se pudo instalar RAR desde AUR${NC}"
+    arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rar --noansweredit --noconfirm --needed"
 
     echo -e "${GREEN}✓ Herramientas de compresión instaladas${NC}"
 fi
