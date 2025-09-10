@@ -1052,10 +1052,12 @@ if true; then
         fi
         echo -e "${GREEN}✓ Sistema en modo UEFI confirmado${NC}"
 
+        sleep 4
         # Limpiar entradas UEFI previas que puedan causar conflictos
         # echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
         # efibootmgr | awk '/grub/i {gsub(/Boot|\*.*/, ""); system("efibootmgr -b " $1 " -B 2>/dev/null")}'
-        # efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
+        efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
+        sleep 4
 
         # Limpiar directorio EFI previo si existe
         if [ -d "/mnt/boot/efi/EFI/GRUB" ]; then
@@ -1220,11 +1222,15 @@ if true; then
             echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
         fi
 
+        sleep 4
+
         echo -e "${CYAN}Instalando GRUB en disco...${NC}"
         if ! arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK --recheck"; then
             echo -e "${RED}ERROR: Falló la instalación de GRUB BIOS${NC}"
             exit 1
         fi
+
+        sleep 4
 
         echo -e "${CYAN}Generando configuración de GRUB...${NC}"
         if ! arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
