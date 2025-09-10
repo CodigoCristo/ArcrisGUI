@@ -10,33 +10,55 @@ static Page5Data *g_page5_data = NULL;
 // Nombres de los entornos de escritorio
 static const char* DE_NAMES[] = {
     "GNOME",
+    "BUDGIE",
+    "CINNAMON",
+    "DEEPIN",
+    "ENLIGHTENMENT",
     "KDE",
-    "XFCE4",
-    "Deepin"
+    "LXDE",
+    "LXQT",
+    "MATE",
+    "XFCE4"
 };
 
 // Nombres de los gestores de ventanas
 static const char* WM_NAMES[] = {
-    "i3",
-    "Bspwm",
-    "dwm",
-    "Qtile"
+    "I3WM",
+    "AWESOME",
+    "BSPWM",
+    "DWM",
+    "HYPRLAND",
+    "OPENBOX",
+    "QTITLE",
+    "SWAY",
+    "XMONAD"
 };
 
 // Recursos de imágenes para DE
 static const char* DE_IMAGE_RESOURCES[] = {
     "/org/gtk/arcris/GNOME.png",
+    "/org/gtk/arcris/BUDGIE.png",
+    "/org/gtk/arcris/CINNAMON.png",
+    "/org/gtk/arcris/DEEPIN.png",
+    "/org/gtk/arcris/ENLIGHTENMENT.png",
     "/org/gtk/arcris/KDE.png",
-    "/org/gtk/arcris/XFCE4.png",
-    "/org/gtk/arcris/Deepin.png"
+    "/org/gtk/arcris/LXDE.png",
+    "/org/gtk/arcris/LXQT.png",
+    "/org/gtk/arcris/MATE.png",
+    "/org/gtk/arcris/XFCE4.png"
 };
 
 // Recursos de imágenes para WM
 static const char* WM_IMAGE_RESOURCES[] = {
-    "/org/gtk/arcris/i3wm.png",
-    "/org/gtk/arcris/Bspwm.png",
-    "/org/gtk/arcris/dwm.png",
-    "/org/gtk/arcris/Qtile.png"
+    "/org/gtk/arcris/I3WM.png",
+    "/org/gtk/arcris/AWESOME.png",
+    "/org/gtk/arcris/BSPWM.png",
+    "/org/gtk/arcris/DWM.png",
+    "/org/gtk/arcris/HYPRLAND.png",
+    "/org/gtk/arcris/OPENBOX.png",
+    "/org/gtk/arcris/QTITLE.png",
+    "/org/gtk/arcris/SWAY.png",
+    "/org/gtk/arcris/XMONAD.png"
 };
 
 // Declaración forward de funciones
@@ -230,7 +252,7 @@ void page5_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     // Configurar valores por defecto
     g_page5_data->current_type = INSTALL_TYPE_TERMINAL;
     g_page5_data->current_de = DE_TYPE_GNOME;
-    g_page5_data->current_wm = WM_TYPE_I3;
+    g_page5_data->current_wm = WM_TYPE_I3WM;
 
     // Realizar configuraciones iniciales
     page5_setup_widgets(g_page5_data);
@@ -448,14 +470,32 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
         case DE_TYPE_GNOME:
             de_name = g_strdup("GNOME");
             break;
-        case DE_TYPE_KDE:
-            de_name = g_strdup("KDE");
+        case DE_TYPE_BUDGIE:
+            de_name = g_strdup("BUDGIE");
             break;
-        case DE_TYPE_XFCE4:
-            de_name = g_strdup("XFCE4");
+        case DE_TYPE_CINNAMON:
+            de_name = g_strdup("CINNAMON");
             break;
         case DE_TYPE_DEEPIN:
             de_name = g_strdup("DEEPIN");
+            break;
+        case DE_TYPE_ENLIGHTENMENT:
+            de_name = g_strdup("ENLIGHTENMENT");
+            break;
+        case DE_TYPE_KDE:
+            de_name = g_strdup("KDE");
+            break;
+        case DE_TYPE_LXDE:
+            de_name = g_strdup("LXDE");
+            break;
+        case DE_TYPE_LXQT:
+            de_name = g_strdup("LXQT");
+            break;
+        case DE_TYPE_MATE:
+            de_name = g_strdup("MATE");
+            break;
+        case DE_TYPE_XFCE4:
+            de_name = g_strdup("XFCE4");
             break;
         default:
             de_name = g_strdup("GNOME");
@@ -532,8 +572,11 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
     // Obtener el nombre del WM
     gchar *wm_name = NULL;
     switch (wm) {
-        case WM_TYPE_I3:
-            wm_name = g_strdup("I3");
+        case WM_TYPE_I3WM:
+            wm_name = g_strdup("I3WM");
+            break;
+        case WM_TYPE_AWESOME:
+            wm_name = g_strdup("AWESOME");
             break;
         case WM_TYPE_BSPWM:
             wm_name = g_strdup("BSPWM");
@@ -541,11 +584,23 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
         case WM_TYPE_DWM:
             wm_name = g_strdup("DWM");
             break;
-        case WM_TYPE_QTILE:
-            wm_name = g_strdup("QTILE");
+        case WM_TYPE_HYPRLAND:
+            wm_name = g_strdup("HYPRLAND");
+            break;
+        case WM_TYPE_OPENBOX:
+            wm_name = g_strdup("OPENBOX");
+            break;
+        case WM_TYPE_QTITLE:
+            wm_name = g_strdup("QTITLE");
+            break;
+        case WM_TYPE_SWAY:
+            wm_name = g_strdup("SWAY");
+            break;
+        case WM_TYPE_XMONAD:
+            wm_name = g_strdup("XMONAD");
             break;
         default:
-            wm_name = g_strdup("I3");
+            wm_name = g_strdup("I3WM");
             break;
     }
 
@@ -862,7 +917,7 @@ void page5_set_window_manager(Page5Data *data, WindowManagerType wm)
 // Función para obtener el gestor de ventanas
 WindowManagerType page5_get_window_manager(Page5Data *data)
 {
-    if (!data) return WM_TYPE_I3;
+    if (!data) return WM_TYPE_I3WM;
     return data->current_wm;
 }
 
@@ -1269,7 +1324,7 @@ const char* page5_get_wm_image_resource(WindowManagerType wm)
     if (wm >= 0 && wm < G_N_ELEMENTS(WM_IMAGE_RESOURCES)) {
         return WM_IMAGE_RESOURCES[wm];
     }
-    return WM_IMAGE_RESOURCES[0]; // i3 por defecto
+    return WM_IMAGE_RESOURCES[0]; // I3WM por defecto
 }
 
 const char* page5_get_de_name(DesktopEnvironmentType de)
@@ -1285,7 +1340,7 @@ const char* page5_get_wm_name(WindowManagerType wm)
     if (wm >= 0 && wm < G_N_ELEMENTS(WM_NAMES)) {
         return WM_NAMES[wm];
     }
-    return WM_NAMES[0]; // i3 por defecto
+    return WM_NAMES[0]; // I3WM por defecto
 }
 
 // Función para guardar configuración
@@ -1346,7 +1401,7 @@ WindowManagerType page5_index_to_wm_type(guint index)
     if (index < G_N_ELEMENTS(WM_NAMES)) {
         return (WindowManagerType)index;
     }
-    return WM_TYPE_I3;
+    return WM_TYPE_I3WM;
 }
 
 guint page5_de_type_to_index(DesktopEnvironmentType de)

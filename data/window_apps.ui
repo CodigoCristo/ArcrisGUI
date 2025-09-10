@@ -740,6 +740,26 @@
                                     </child>
                                   </object>
                                 </child>
+
+                                <!-- Euphonica -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">euphonica</property>
+                                    <property name="subtitle">Reproductor de audio avanzado con funciones profesionales</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="euphonica_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="euphonica_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/htkhiem/euphonica/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
                               </object>
                             </child>
 

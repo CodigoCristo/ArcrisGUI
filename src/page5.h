@@ -15,17 +15,28 @@ typedef enum {
 // Enumeración para entornos de escritorio
 typedef enum {
     DE_TYPE_GNOME,
+    DE_TYPE_BUDGIE,
+    DE_TYPE_CINNAMON,
+    DE_TYPE_DEEPIN,
+    DE_TYPE_ENLIGHTENMENT,
     DE_TYPE_KDE,
-    DE_TYPE_XFCE4,
-    DE_TYPE_DEEPIN
+    DE_TYPE_LXDE,
+    DE_TYPE_LXQT,
+    DE_TYPE_MATE,
+    DE_TYPE_XFCE4
 } DesktopEnvironmentType;
 
 // Enumeración para gestores de ventanas
 typedef enum {
-    WM_TYPE_I3,
+    WM_TYPE_I3WM,
+    WM_TYPE_AWESOME,
     WM_TYPE_BSPWM,
     WM_TYPE_DWM,
-    WM_TYPE_QTILE
+    WM_TYPE_HYPRLAND,
+    WM_TYPE_OPENBOX,
+    WM_TYPE_QTITLE,
+    WM_TYPE_SWAY,
+    WM_TYPE_XMONAD
 } WindowManagerType;
 
 // Estructura para datos de la página 5

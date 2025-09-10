@@ -1750,6 +1750,38 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable gdm"
                 ;;
+            "BUDGIE")
+                echo -e "${CYAN}Instalando Budgie Desktop...${NC}"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S budgie-desktop --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S budgie-extras --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                ;;
+            "CINNAMON")
+                echo -e "${CYAN}Instalando Cinnamon Desktop...${NC}"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S cinnamon --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S cinnamon-translations --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                ;;
+            "DEEPIN")
+                echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin-extra --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                ;;
+            "ENLIGHTENMENT")
+                echo -e "${CYAN}Instalando Enlightenment Desktop...${NC}"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S enlightenment --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S terminology --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                ;;
             "KDE")
                 echo -e "${CYAN}Instalando KDE Plasma Desktop...${NC}"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma --noansweredit --noconfirm --needed"
@@ -1757,6 +1789,29 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S kde-applications --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
+                ;;
+            "LXDE")
+                echo -e "${CYAN}Instalando LXDE Desktop...${NC}"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxde --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxde-common --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                ;;
+            "LXQT")
+                echo -e "${CYAN}Instalando LXQt Desktop...${NC}"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze-icons --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
+                ;;
+            "MATE")
+                echo -e "${CYAN}Instalando MATE Desktop...${NC}"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-extra --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
                 ;;
             "XFCE4")
                 echo -e "${CYAN}Instalando XFCE4 Desktop...${NC}"
@@ -1769,14 +1824,6 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S light-locker --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
-                ;;
-            "DEEPIN")
-                echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin-extra --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
                 ;;
             *)
@@ -1800,6 +1847,24 @@ case "$INSTALLATION_TYPE" in
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xterm --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dmenu --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rofi --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S pcmanfm --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dunst --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gedit  --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nano  --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vim --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S pulseaudio  --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S pavucontrol --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nitrogen  --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S feh --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S networkmanager  --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
+
+        # Instalar herramientas adicionales para gestores de ventanas
+        echo -e "${CYAN}Instalando Terminales...${NC}"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S alacritty --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S foot --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S kitty --noansweredit --noconfirm --needed"
 
         # Instalar Ly display manager
         echo -e "${CYAN}Instalando Ly display manager...${NC}"
@@ -1807,7 +1872,7 @@ case "$INSTALLATION_TYPE" in
         arch-chroot /mnt /bin/bash -c "systemctl enable ly"
 
         case "$WINDOW_MANAGER" in
-            "I3")
+            "I3WM"|"I3")
                 echo -e "${CYAN}Instalando i3 Window Manager...${NC}"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3-wm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3status --noansweredit --noconfirm --needed"
@@ -1816,6 +1881,14 @@ case "$INSTALLATION_TYPE" in
                 # Crear configuración básica de i3
                 mkdir -p /mnt/home/$USER/.config/i3
                 echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
+                arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                ;;
+            "AWESOME")
+                echo -e "${CYAN}Instalando Awesome Window Manager...${NC}"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S awesome --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vicious --noansweredit --noconfirm --needed"
+                # Crear configuración básica de awesome
+                mkdir -p /mnt/home/$USER/.config/awesome
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "BSPWM")
@@ -1833,11 +1906,48 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S base-devel --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dwm --noansweredit --noconfirm --needed"
                 ;;
-            "QTILE")
+            "HYPRLAND")
+                echo -e "${CYAN}Instalando Hyprland Window Manager...${NC}"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprland --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S waybar --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S wofi --noansweredit --noconfirm --needed"
+                # Crear configuración básica de hyprland
+                mkdir -p /mnt/home/$USER/.config/hypr
+                arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                ;;
+            "OPENBOX")
+                echo -e "${CYAN}Instalando Openbox Window Manager...${NC}"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S openbox --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S obmenu --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S obconf --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S tint2 --noansweredit --noconfirm --needed"
+                # Crear configuración básica de openbox
+                mkdir -p /mnt/home/$USER/.config/openbox
+                arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                ;;
+            "QTITLE"|"QTILE")
                 echo -e "${CYAN}Instalando Qtile Window Manager...${NC}"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S qtile --noansweredit --noconfirm --needed"
                 # Crear configuración básica de qtile
                 mkdir -p /mnt/home/$USER/.config/qtile
+                arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                ;;
+            "SWAY")
+                echo -e "${CYAN}Instalando Sway Window Manager...${NC}"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sway --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S swaylock --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S swayidle --noansweredit --noconfirm --needed"
+                # Crear configuración básica de sway
+                mkdir -p /mnt/home/$USER/.config/sway
+                arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                ;;
+            "XMONAD")
+                echo -e "${CYAN}Instalando XMonad Window Manager...${NC}"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmonad --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmonad-contrib --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmobar --noansweredit --noconfirm --needed"
+                # Crear configuración básica de xmonad
+                mkdir -p /mnt/home/$USER/.config/xmonad
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             *)
@@ -1853,13 +1963,7 @@ case "$INSTALLATION_TYPE" in
                 ;;
         esac
 
-        # Instalar herramientas adicionales para gestores de ventanas
-        echo -e "${CYAN}Instalando herramientas adicionales...${NC}"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S firefox --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S thunar --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S alacritty --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S foot --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S kitty --noansweredit --noconfirm --needed"
+
 
         # Configurar terminales con configuraciones básicas
         echo -e "${CYAN}Configurando terminales...${NC}"
@@ -2212,7 +2316,7 @@ EOF
 
         # Crear archivos .desktop para cada window manager
         case "$WINDOW_MANAGER" in
-            "I3")
+            "I3WM"|"I3")
                 cat > /mnt/usr/share/xsessions/i3.desktop << EOF
 [Desktop Entry]
 Name=i3
@@ -2222,6 +2326,19 @@ TryExec=i3
 Type=Application
 X-LightDM-DesktopName=i3
 DesktopNames=i3
+Keywords=tiling;wm;windowmanager;window;manager;
+EOF
+                ;;
+            "AWESOME")
+                cat > /mnt/usr/share/xsessions/awesome.desktop << EOF
+[Desktop Entry]
+Name=awesome
+Comment=Highly configurable framework window manager
+Exec=awesome
+TryExec=awesome
+Type=Application
+X-LightDM-DesktopName=awesome
+DesktopNames=awesome
 Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;
@@ -2251,7 +2368,29 @@ DesktopNames=dwm
 Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;
-            "QTILE")
+            "HYPRLAND")
+                cat > /mnt/usr/share/wayland-sessions/hyprland.desktop << EOF
+[Desktop Entry]
+Name=Hyprland
+Comment=An intelligent dynamic tiling Wayland compositor
+Exec=Hyprland
+Type=Application
+EOF
+                ;;
+            "OPENBOX")
+                cat > /mnt/usr/share/xsessions/openbox.desktop << EOF
+[Desktop Entry]
+Name=Openbox
+Comment=A highly configurable, next generation window manager
+Exec=openbox-session
+TryExec=openbox
+Type=Application
+X-LightDM-DesktopName=Openbox
+DesktopNames=Openbox
+Keywords=wm;windowmanager;window;manager;
+EOF
+                ;;
+            "QTITLE"|"QTILE")
                 cat > /mnt/usr/share/xsessions/qtile.desktop << EOF
 [Desktop Entry]
 Name=Qtile
@@ -2261,6 +2400,28 @@ TryExec=qtile
 Type=Application
 X-LightDM-DesktopName=Qtile
 DesktopNames=Qtile
+Keywords=tiling;wm;windowmanager;window;manager;
+EOF
+                ;;
+            "SWAY")
+                cat > /mnt/usr/share/wayland-sessions/sway.desktop << EOF
+[Desktop Entry]
+Name=Sway
+Comment=An i3-compatible Wayland compositor
+Exec=sway
+Type=Application
+EOF
+                ;;
+            "XMONAD")
+                cat > /mnt/usr/share/xsessions/xmonad.desktop << EOF
+[Desktop Entry]
+Name=XMonad
+Comment=Lightweight tiling window manager
+Exec=xmonad
+TryExec=xmonad
+Type=Application
+X-LightDM-DesktopName=XMonad
+DesktopNames=XMonad
 Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;

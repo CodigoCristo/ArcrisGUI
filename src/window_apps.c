@@ -254,6 +254,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"audacity_info", "https://www.audacityteam.org/"},
         {"ardour_info", "https://ardour.org/"},
         {"elisa_info", "https://apps.kde.org/elisa/"},
+        {"euphonica_info", "https://github.com/htkhiem/euphonica/"},
 
         // Communications
         {"telegram_info", "https://telegram.org/"},
@@ -391,6 +392,7 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"audacity_check", "audacity", "editor audio audacity", "audio_expander"},
         {"ardour_check", "ardour", "audio digital ardour profesional", "audio_expander"},
         {"elisa_check", "elisa", "reproductor música elisa kde", "audio_expander"},
+        {"euphonica_check", "euphonica", "An MPD frontend with delusions of grandeur", "audio_expander"},
 
         // Communications
         {"telegram_check", "telegram-desktop", "mensajería telegram", "mail_expander"},
@@ -813,6 +815,7 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"audacity_check", "audacity"},
         {"ardour_check", "ardour"},
         {"elisa_check", "elisa"},
+        {"euphonica_check", "euphonica"},
 
         // Communications
         {"telegram_check", "telegram-desktop"},
@@ -946,6 +949,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"audacity_check", "audacity"},
         {"ardour_check", "ardour"},
         {"elisa_check", "elisa"},
+        {"euphonica_check", "euphonica"},
 
         // Communications
         {"telegram_check", "telegram-desktop"},

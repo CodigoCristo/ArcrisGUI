@@ -28,15 +28,26 @@
     <file alias="carousel-image3.png">img/carousel/image3.png</file>
     <file alias="carousel-image4.png">img/carousel/image4.png</file>
 
-    <file alias="XFCE4.png">img/DE/XFCE4.png</file>
-    <file alias="Deepin.png">img/DE/Deepin.png</file>
+    <file alias="BUDGIE.png">img/DE/BUDGIE.png</file>
+    <file alias="CINNAMON.png">img/DE/CINNAMON.png</file>
+    <file alias="DEEPIN.png">img/DE/DEEPIN.png</file>
+    <file alias="ENLIGHTENMENT.png">img/DE/ENLIGHTENMENT.png</file>
     <file alias="GNOME.png">img/DE/GNOME.png</file>
     <file alias="KDE.png">img/DE/KDE.png</file>
+    <file alias="LXDE.png">img/DE/LXDE.png</file>
+    <file alias="LXQT.png">img/DE/LXQT.png</file>
+    <file alias="MATE.png">img/DE/MATE.png</file>
+    <file alias="XFCE4.png">img/DE/XFCE4.png</file>
 
-    <file alias="Bspwm.png">img/WM/Bspwm.png</file>
-    <file alias="Qtile.png">img/WM/Qtile.png</file>
-    <file alias="dwm.png">img/WM/dwm.png</file>
-    <file alias="i3wm.png">img/WM/i3wm.png</file>
+    <file alias="I3WM.png">img/WM/I3WM.png</file>
+    <file alias="AWESOME.png">img/WM/AWESOME.png</file>
+    <file alias="BSPWM.png">img/WM/BSPWM.png</file>
+    <file alias="DWM.png">img/WM/DWM.png</file>
+    <file alias="HYPRLAND.png">img/WM/HYPRLAND.png</file>
+    <file alias="OPENBOX.png">img/WM/OPENBOX.png</file>
+    <file alias="QTITLE.png">img/WM/QTITLE.png</file>
+    <file alias="SWAY.png">img/WM/SWAY.png</file>
+    <file alias="XMONAD.png">img/WM/XMONAD.png</file>
 
     <file alias="org.gtk.arcris.png">img/org.gtk.arcris.png</file>
 
