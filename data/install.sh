@@ -1668,15 +1668,19 @@ case "$DRIVER_VIDEO" in
             arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
         elif echo "$VGA_LINE" | grep -i intel > /dev/null; then
             echo "Detectado hardware Intel - Instalando driver open source intel"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-intel --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S vulkan-intel lib32-vulkan-intel --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
-            arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S intel-media-driver --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S libva-intel-driver --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
-            arch-chroot /mnt /bin/bash -c "pacman -S libva-intel-driver intel-media-driver --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S intel-gpu-tools --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
+            arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-compute-runtime --noansweredit --noconfirm --needed"
+            arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-hybrid-codec-driver-git --noansweredit --noconfirm --needed"
+            arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vpl-gpu-rt --noansweredit --noconfirm --needed"
+
         elif echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
             echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa xf86-video-qxl qemu-guest-agent mesa --noconfirm"
@@ -1756,20 +1760,18 @@ case "$DRIVER_VIDEO" in
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-vulkan-amdgpu-pro --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-amd --noansweredit --noconfirm --needed"
         ;;
-    "Intel Private")
-        echo "Instalando drivers privativos de Intel"
+    "Intel Gen(4-9)")
+        echo "Instalando drivers Modernos de Intel"
+        arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-intel --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S vulkan-intel lib32-vulkan-intel --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
-        arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S intel-media-driver --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S libva-intel-driver --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S intel-gpu-tools --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-media-driver --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S libva-intel-driver --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-compute-runtime --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-hybrid-codec-driver-git --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vpl-gpu-rt --noansweredit --noconfirm --needed"
         ;;
     "Máquina Virtual")
         if lspci | grep -i virtualbox > /dev/null; then
