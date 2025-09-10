@@ -2631,8 +2631,8 @@ arch-chroot /mnt localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" ""
 
 # También ejecutar como usuario para configuración por usuario
 echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
-arch-chroot /mnt su - $USER -c "localectl set-keymap $KEYBOARD_LAYOUT" 2>/dev/null || true
-arch-chroot /mnt su - $USER -c "localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" 2>/dev/null || true
+arch-chroot /mnt /bin/bash -c "sudo -u $USER localectl set-keymap $KEYBOARD_LAYOUT" || echo "Warning: No se pudo configurar keymap para usuario $USER"
+arch-chroot /mnt /bin/bash -c "sudo -u $USER localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" || echo "Warning: No se pudo configurar X11 keymap para usuario $USER"
 
 # 2. Configuración para Xorg (X11)
 echo -e "${CYAN}2. Configurando teclado para Xorg (X11)...${NC}"

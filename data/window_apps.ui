@@ -1528,10 +1528,10 @@
                                   </object>
                                 </child>
 
-                                <!-- Virt-Manager -->
+                                <!-- QEMU-Full -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">virt-manager</property>
+                                    <property name="title">qemu-full</property>
                                     <property name="subtitle">Gestor de máquinas virtuales para KVM/QEMU</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="virt_manager_check">
@@ -1542,7 +1542,7 @@
                                       <object class="GtkButton" id="virt_manager_info">
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
-                                        <property name="tooltip-text">https://virt-manager.org/</property>
+                                        <property name="tooltip-text">https://www.qemu.org/</property>
                                       </object>
                                     </child>
                                   </object>
