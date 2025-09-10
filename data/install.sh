@@ -1187,21 +1187,27 @@ echo ""
 case "$SELECTED_KERNEL" in
     "linux")
         arch-chroot /mnt /bin/bash -c "pacman -S linux --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
         ;;
     "linux-hardened")
         arch-chroot /mnt /bin/bash -c "pacman -S linux-hardened --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
         ;;
     "linux-lts")
         arch-chroot /mnt /bin/bash -c "pacman -S linux-lts --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
         ;;
     "linux-rt-lts")
         arch-chroot /mnt /bin/bash -c "pacman -S linux-rt-lts --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
         ;;
     "linux-zen")
         arch-chroot /mnt /bin/bash -c "pacman -S linux-zen --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
         ;;
     *)
         arch-chroot /mnt /bin/bash -c "pacman -S linux --noconfirm"
+        arch-chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
         ;;
 esac
 
@@ -2011,15 +2017,15 @@ case "$INSTALLATION_TYPE" in
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbnailer --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S freetype2 --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S poppler-glib --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S libgsf --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S raw-thumbnailer --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbnailer --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S freetype2 --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S poppler-glib --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S libgsf --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S raw-thumbnailer --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noansweredit --noconfirm --needed"
 
         case "$DESKTOP_ENVIRONMENT" in
             "GNOME")
@@ -2139,15 +2145,15 @@ case "$INSTALLATION_TYPE" in
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S networkmanager  --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
 
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbnailer --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S freetype2 --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S poppler-glib --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S libgsf --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S raw-thumbnailer --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noeditmenu --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noeditmenu --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbnailer --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S freetype2 --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S poppler-glib --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S libgsf --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S raw-thumbnailer --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noansweredit --noconfirm --needed"
 
         # Instalar herramientas adicionales para gestores de ventanas
         echo -e "${CYAN}Instalando Terminales...${NC}"
@@ -2911,9 +2917,9 @@ arch-chroot /mnt localectl set-keymap $KEYBOARD_LAYOUT
 arch-chroot /mnt localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" ""
 
 # También ejecutar como usuario para configuración por usuario
-echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
-arch-chroot /mnt /bin/bash -c "sudo -u $USER localectl set-keymap $KEYBOARD_LAYOUT" || echo "Warning: No se pudo configurar keymap para usuario $USER"
-arch-chroot /mnt /bin/bash -c "sudo -u $USER localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" || echo "Warning: No se pudo configurar X11 keymap para usuario $USER"
+# echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
+# arch-chroot /mnt /bin/bash -c "sudo -u $USER localectl set-keymap $KEYBOARD_LAYOUT" || echo "Warning: No se pudo configurar keymap para usuario $USER"
+# arch-chroot /mnt /bin/bash -c "sudo -u $USER localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" || echo "Warning: No se pudo configurar X11 keymap para usuario $USER"
 
 # 2. Configuración para Xorg (X11)
 echo -e "${CYAN}2. Configurando teclado para Xorg (X11)...${NC}"
