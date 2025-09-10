@@ -980,6 +980,78 @@ partition_manual() {
     sleep 3
 }
 
+# Desmontar particiones existentes del disco seleccionado
+unmount_selected_disk_partitions() {
+    echo -e "${CYAN}Desmontando particiones existentes del disco: $SELECTED_DISK${NC}"
+    sleep 3
+    # Obtener el dispositivo donde está montada la ISO (sistema live)
+    LIVE_DEVICE=$(findmnt -n -o SOURCE / 2>/dev/null | head -1)
+    if [ -z "$LIVE_DEVICE" ]; then
+        # Buscar dispositivos con sistema de archivos de solo lectura (típico de ISO live)
+        LIVE_DEVICE=$(findmnt -n -o SOURCE -t squashfs,iso9660 2>/dev/null | head -1)
+    fi
+
+    echo -e "${YELLOW}Sistema live detectado en: ${LIVE_DEVICE:-"no detectado"}${NC}"
+    sleep 3
+    # Desactivar swap del disco seleccionado
+    echo -e "${CYAN}Desactivando swap del disco seleccionado...${NC}"
+    for swap_device in $(swapon --show=NAME --noheadings 2>/dev/null | grep "^$SELECTED_DISK"); do
+        echo -e "${YELLOW}Desactivando swap: $swap_device${NC}"
+        swapoff "$swap_device" 2>/dev/null || true
+    done
+    sleep 3
+    # Obtener todas las particiones montadas del disco seleccionado
+    echo -e "${CYAN}Desmontando particiones montadas del disco seleccionado...${NC}"
+    sleep 3
+    # Listar particiones del disco seleccionado que están montadas (en orden inverso para desmontar correctamente)
+    MOUNTED_PARTITIONS=$(findmnt -rn -o TARGET,SOURCE | grep "$SELECTED_DISK" | sort -r | while read -r mountpoint source; do
+        # Excluir puntos de montaje del sistema live
+        if [[ "$source" != *"$LIVE_DEVICE"* ]] && [[ "$mountpoint" != "/" ]] && [[ "$mountpoint" != "/run/archiso"* ]] && [[ "$mountpoint" != "/boot"* ]] && [[ "$source" == "$SELECTED_DISK"* ]]; then
+            echo "$mountpoint"
+        fi
+    done)
+    sleep 3
+    # Desmontar cada partición encontrada
+    echo "$MOUNTED_PARTITIONS" | while IFS= read -r mountpoint; do
+        if [ -n "$mountpoint" ]; then
+            echo -e "${YELLOW}Desmontando: $mountpoint${NC}"
+            umount "$mountpoint" 2>/dev/null || umount -l "$mountpoint" 2>/dev/null || true
+        fi
+    done
+    sleep 3
+    # Cerrar dispositivos LVM/LUKS relacionados con el disco seleccionado
+    echo -e "${CYAN}Cerrando dispositivos cifrados/LVM relacionados...${NC}"
+    sleep 3
+    # Cerrar dispositivos LUKS que usen particiones del disco seleccionado
+    if command -v cryptsetup >/dev/null 2>&1; then
+        for luks_device in $(ls /dev/mapper/ 2>/dev/null | grep -E "(crypt|luks)"); do
+            if cryptsetup status "$luks_device" 2>/dev/null | grep -q "$SELECTED_DISK"; then
+                echo -e "${YELLOW}Cerrando dispositivo LUKS: $luks_device${NC}"
+                cryptsetup close "$luks_device" 2>/dev/null || true
+            fi
+        done
+    fi
+    sleep 3
+    # Desactivar grupos de volúmenes LVM relacionados
+    if command -v vgchange >/dev/null 2>&1; then
+        for vg in $(vgs --noheadings -o vg_name 2>/dev/null); do
+            if pvs --noheadings -o pv_name,vg_name 2>/dev/null | grep "$SELECTED_DISK" | grep -q "$vg"; then
+                echo -e "${YELLOW}Desactivando grupo de volúmenes LVM: $vg${NC}"
+                vgchange -an "$vg" 2>/dev/null || true
+            fi
+        done
+    fi
+
+    # Esperar un momento para que el sistema procese los cambios
+    sleep 3
+
+    echo -e "${GREEN}✓ Limpieza de particiones completada para: $SELECTED_DISK${NC}"
+    echo ""
+}
+
+# Ejecutar limpieza de particiones
+unmount_selected_disk_partitions
+
 # Ejecutar particionado según el modo seleccionado
 case "$PARTITION_MODE" in
     "auto")
