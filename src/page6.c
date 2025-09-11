@@ -812,6 +812,7 @@ void save_page6_switches_to_file(void)
     gchar *program_extra_value = NULL;
     gchar *encryption_enabled_value = NULL;
     gchar *encryption_password_value = NULL;
+    gchar *partitions_array_value = NULL;
 
     FILE *read_file = fopen(bash_file_path, "r");
     if (read_file) {
@@ -1070,6 +1071,30 @@ void save_page6_switches_to_file(void)
                 }
                 encryption_password_value = g_strdup(value);
             }
+            else if (g_str_has_prefix(line, "PARTITIONS=(")) {
+                // Leer array PARTITIONS completo (múltiples líneas)
+                GString *partitions_content = g_string_new("");
+                g_string_append(partitions_content, line);
+                
+                // Si no termina con ), leer las siguientes líneas
+                if (!strstr(line, ")")) {
+                    char array_line[1024];
+                    while (fgets(array_line, sizeof(array_line), read_file)) {
+                        g_string_append(partitions_content, array_line);
+                        if (strstr(array_line, ")")) {
+                            break;
+                        }
+                    }
+                }
+                
+                // Remover salto de línea final si existe
+                if (partitions_content->str[partitions_content->len - 1] == '\n') {
+                    g_string_truncate(partitions_content, partitions_content->len - 1);
+                }
+                
+                partitions_array_value = g_strdup(partitions_content->str);
+                g_string_free(partitions_content, TRUE);
+            }
         }
         fclose(read_file);
     }
@@ -1154,12 +1179,19 @@ void save_page6_switches_to_file(void)
     }
 
     // Preservar variables de disco y partición
+    // Preservar variables de disco
     if (selected_disk_value) {
         fprintf(file, "\n# Configuración de disco\n");
         fprintf(file, "SELECTED_DISK=\"%s\"\n", selected_disk_value);
     }
     if (partition_mode_value) {
         fprintf(file, "PARTITION_MODE=\"%s\"\n", partition_mode_value);
+    }
+    
+    // Preservar array PARTITIONS
+    if (partitions_array_value) {
+        fprintf(file, "%s\n", partitions_array_value);
+        LOG_INFO("PARTITIONS array preservado desde page6");
     }
 
     // Preservar variables de usuario
@@ -1272,6 +1304,7 @@ void save_page6_switches_to_file(void)
     g_free(program_extra_value);
     g_free(encryption_enabled_value);
     g_free(encryption_password_value);
+    g_free(partitions_array_value);
 
     LOG_INFO("Variables de página 6 guardadas exitosamente en data/variables.sh");
     LOG_INFO("=== save_page6_switches_to_file FINALIZADO ===");
