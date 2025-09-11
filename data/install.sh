@@ -1682,7 +1682,84 @@ else
     echo -e "${GREEN}✓ os-prober ya estaba habilitado${NC}"
 fi
 
-# Crear directorios de montaje temporales
+# Detectar y montar automáticamente particiones EFI System para os-prober
+echo -e "${CYAN}Detectando particiones EFI System...${NC}"
+
+# Crear directorio base de montaje temporal
+mkdir -p /mnt/mnt 2>/dev/null || true
+
+# Buscar todas las particiones EFI System y almacenarlas en un array
+echo -e "${CYAN}  • Método 1: Detectando con lsblk...${NC}"
+readarray -t EFI_PARTITIONS < <(lsblk -no NAME,PARTTYPE | grep -i "c12a7328-f81f-11d2-ba4b-00a0c93ec93b\|EFI.*System" | awk '{print $1}' | sed 's/[├─└│ ]//g' | grep -v "^$")
+
+# Si no se encontraron particiones con lsblk, intentar con fdisk como respaldo
+if [ ${#EFI_PARTITIONS[@]} -eq 0 ]; then
+    echo -e "${CYAN}  • Método 2: Detectando con fdisk como respaldo...${NC}"
+
+    # Obtener todos los discos disponibles
+    DISKS=$(lsblk -dno NAME | grep -v "loop\|sr\|rom" | grep -E "^(sd|nvme|vd|hd)" || true)
+
+    # Buscar particiones EFI en cada disco
+    for disk in $DISKS; do
+        if [ -b "/dev/$disk" ]; then
+            # Buscar particiones EFI usando fdisk
+            DISK_EFI=$(fdisk -l "/dev/$disk" 2>/dev/null | grep -i "EFI System\|EFI.*System" | awk '{print $1}' | sed 's|/dev/||' || true)
+            if [ -n "$DISK_EFI" ]; then
+                while IFS= read -r partition; do
+                    if [ -n "$partition" ]; then
+                        EFI_PARTITIONS+=("$partition")
+                    fi
+                done <<< "$DISK_EFI"
+            fi
+        fi
+    done
+fi
+
+# Si aún no hay particiones, intentar método alternativo con blkid
+if [ ${#EFI_PARTITIONS[@]} -eq 0 ]; then
+    echo -e "${CYAN}  • Método 3: Detectando con blkid...${NC}"
+    readarray -t EFI_PARTITIONS < <(blkid -t PARTLABEL="EFI System Partition" -o device 2>/dev/null | sed 's|/dev/||' | grep -v "^$" || true)
+fi
+
+if [ ${#EFI_PARTITIONS[@]} -gt 0 ]; then
+    echo -e "${GREEN}✓ ${#EFI_PARTITIONS[@]} particiones EFI detectadas:${NC}"
+    MOUNT_COUNTER=1
+
+    for partition in "${EFI_PARTITIONS[@]}"; do
+        if [ -n "$partition" ]; then
+            # Agregar /dev/ si no está presente
+            if [[ ! "$partition" =~ ^/dev/ ]]; then
+                partition="/dev/$partition"
+            fi
+
+            # Verificar si la partición ya está montada
+            if mount | grep -q "^$partition "; then
+                EXISTING_MOUNT=$(mount | grep "^$partition " | awk '{print $3}' | head -1)
+                echo -e "${GREEN}  • $partition ya está montada en $EXISTING_MOUNT${NC}"
+            else
+                echo -e "${CYAN}  • Montando $partition${NC}"
+
+                # Crear directorio de montaje específico
+                mount_point="/mnt/mnt/efi_$MOUNT_COUNTER"
+                mkdir -p "$mount_point" 2>/dev/null || true
+
+                # Montar la partición EFI
+                if mount "$partition" "$mount_point" 2>/dev/null; then
+                    echo -e "${GREEN}    ✓ Montada en $mount_point${NC}"
+                else
+                    echo -e "${YELLOW}    ⚠ No se pudo montar $partition${NC}"
+                    rmdir "$mount_point" 2>/dev/null || true
+                fi
+            fi
+
+            MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
+        fi
+    done
+else
+    echo -e "${YELLOW}⚠ No se detectaron particiones EFI System adicionales${NC}"
+fi
+
+# Crear directorios adicionales para otros tipos de sistemas
 mkdir -p /mnt/mnt/windows 2>/dev/null || true
 mkdir -p /mnt/mnt/other 2>/dev/null || true
 
@@ -1710,10 +1787,26 @@ else
     echo -e "${CYAN}  • Solo se encontró el sistema Arcris Linux actual${NC}"
 fi
 
-# Limpiar directorios temporales
+# Limpiar montajes y directorios temporales
+echo -e "${CYAN}Limpiando montajes temporales...${NC}"
+
+# Desmontar todas las particiones EFI temporales
+for mount_point in /mnt/mnt/efi_*; do
+    if [ -d "$mount_point" ]; then
+        if mountpoint -q "$mount_point" 2>/dev/null; then
+            echo -e "${CYAN}  • Desmontando $mount_point${NC}"
+            umount "$mount_point" 2>/dev/null || true
+        fi
+        rmdir "$mount_point" 2>/dev/null || true
+    fi
+done
+
+# Limpiar directorios restantes
 rmdir /mnt/mnt/windows 2>/dev/null || true
 rmdir /mnt/mnt/other 2>/dev/null || true
 rmdir /mnt/mnt 2>/dev/null || true
+
+echo -e "${GREEN}✓ Limpieza de montajes temporales completada${NC}"
 
 echo -e "${GREEN}✓ Detección de sistemas operativos completada${NC}"
 echo ""
