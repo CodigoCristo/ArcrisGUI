@@ -1762,24 +1762,7 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
     echo -e "${CYAN}Instalando os-prober...${NC}"
     arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S os-prober --noansweredit --noconfirm --needed"
 
-    # Instalar ntfs-3g para mejor soporte de particiones Windows
-    echo -e "${CYAN}Instalando ntfs-3g para soporte Windows...${NC}"
-    arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ntfs-3g --noansweredit --noconfirm --needed"
-
-    # Habilitar os-prober en GRUB
-    echo -e "${CYAN}Habilitando os-prober en configuración GRUB...${NC}"
-    if ! grep -q "GRUB_DISABLE_OS_PROBER=false" /mnt/etc/default/grub; then
-        # Si la línea está comentada, descomentarla
-        if grep -q "#GRUB_DISABLE_OS_PROBER=false" /mnt/etc/default/grub; then
-            sed -i 's/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/' /mnt/etc/default/grub
-        else
-            # Si no existe, agregarla
-            echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
-        fi
-        echo -e "${GREEN}✓ os-prober habilitado en GRUB${NC}"
-    else
-        echo -e "${GREEN}✓ os-prober ya estaba habilitado${NC}"
-    fi
+    echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
 
     # Crear directorio base de montaje temporal
     mkdir -p /mnt/mnt 2>/dev/null || true
