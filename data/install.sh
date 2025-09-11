@@ -1658,6 +1658,13 @@ clear
 echo -e "${GREEN}| Detectando otros sistemas operativos |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
+# Instalar os-prober para detectar otros sistemas
+echo -e "${CYAN}Instalando os-prober...${NC}"
+arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S os-prober --noansweredit --noconfirm --needed"
+arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ntfs-3g --noansweredit --noconfirm --needed"
+echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
+sleep 2
+clear
 
 # Detectar tipo de firmware y múltiples sistemas operativos
 echo -e "${CYAN}Detectando tipo de firmware y sistemas operativos...${NC}"
@@ -1731,10 +1738,19 @@ else
         OS_COUNT=$((OS_COUNT + 1))
     fi
 
-    # Método 3: Detectar otras particiones Linux (ext4, ext3, etc.)
-    LINUX_PARTITIONS=$(blkid -t TYPE=ext4 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
+    # Método 3: Detectar otras particiones Linux (ext4, ext3, btrfs, xfs)
+    EXT4_PARTITIONS=$(blkid -t TYPE=ext4 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
+    EXT3_PARTITIONS=$(blkid -t TYPE=ext3 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
+    BTRFS_PARTITIONS=$(blkid -t TYPE=btrfs 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
+    XFS_PARTITIONS=$(blkid -t TYPE=xfs 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
+    LINUX_PARTITIONS=$((EXT4_PARTITIONS + EXT3_PARTITIONS + BTRFS_PARTITIONS + XFS_PARTITIONS))
+
     if [ $LINUX_PARTITIONS -gt 0 ]; then
         echo -e "${CYAN}  • Otras particiones Linux detectadas: $LINUX_PARTITIONS${NC}"
+        [ $EXT4_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - ext4: $EXT4_PARTITIONS${NC}"
+        [ $EXT3_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - ext3: $EXT3_PARTITIONS${NC}"
+        [ $BTRFS_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - btrfs: $BTRFS_PARTITIONS${NC}"
+        [ $XFS_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - xfs: $XFS_PARTITIONS${NC}"
         OS_COUNT=$((OS_COUNT + 1))
     fi
 
@@ -1757,12 +1773,6 @@ fi
 # Solo proceder con os-prober si se detectaron múltiples sistemas operativos
 if [ "$MULTIPLE_OS_DETECTED" = true ]; then
     echo -e "${GREEN}✓ ${#EFI_PARTITIONS[@]} particiones EFI detectadas - Iniciando detección de múltiples sistemas${NC}"
-
-    # Instalar os-prober para detectar otros sistemas
-    echo -e "${CYAN}Instalando os-prober...${NC}"
-    arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S os-prober --noansweredit --noconfirm --needed"
-
-    echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
 
     # Crear directorio base de montaje temporal
     mkdir -p /mnt/mnt 2>/dev/null || true
@@ -1822,6 +1832,78 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
                 fi
             fi
         done < <(blkid -t TYPE=ntfs -o device 2>/dev/null)
+
+        # Montar particiones Linux (ext4) si existen
+        while IFS= read -r ext4_partition; do
+            if [ -n "$ext4_partition" ]; then
+                partition_name=$(basename "$ext4_partition")
+                # Evitar montar la partición root actual del sistema live
+                if ! mount | grep -q "^$ext4_partition " && [[ "$ext4_partition" != "$(findmnt -n -o SOURCE /)" ]]; then
+                    mount_point="/mnt/mnt/ext4_$MOUNT_COUNTER"
+                    mkdir -p "$mount_point" 2>/dev/null || true
+                    if mount "$ext4_partition" "$mount_point" 2>/dev/null; then
+                        echo -e "${GREEN}    ✓ Linux partition (ext4) $ext4_partition montada en $mount_point${NC}"
+                    else
+                        rmdir "$mount_point" 2>/dev/null || true
+                    fi
+                    MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
+                fi
+            fi
+        done < <(blkid -t TYPE=ext4 -o device 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)")
+
+        # Montar particiones Linux (ext3) si existen
+        while IFS= read -r ext3_partition; do
+            if [ -n "$ext3_partition" ]; then
+                partition_name=$(basename "$ext3_partition")
+                # Evitar montar la partición root actual del sistema live
+                if ! mount | grep -q "^$ext3_partition " && [[ "$ext3_partition" != "$(findmnt -n -o SOURCE /)" ]]; then
+                    mount_point="/mnt/mnt/ext3_$MOUNT_COUNTER"
+                    mkdir -p "$mount_point" 2>/dev/null || true
+                    if mount "$ext3_partition" "$mount_point" 2>/dev/null; then
+                        echo -e "${GREEN}    ✓ Linux partition (ext3) $ext3_partition montada en $mount_point${NC}"
+                    else
+                        rmdir "$mount_point" 2>/dev/null || true
+                    fi
+                    MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
+                fi
+            fi
+        done < <(blkid -t TYPE=ext3 -o device 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)")
+
+        # Montar particiones Linux (btrfs) si existen
+        while IFS= read -r btrfs_partition; do
+            if [ -n "$btrfs_partition" ]; then
+                partition_name=$(basename "$btrfs_partition")
+                # Evitar montar la partición root actual del sistema live
+                if ! mount | grep -q "^$btrfs_partition " && [[ "$btrfs_partition" != "$(findmnt -n -o SOURCE /)" ]]; then
+                    mount_point="/mnt/mnt/btrfs_$MOUNT_COUNTER"
+                    mkdir -p "$mount_point" 2>/dev/null || true
+                    if mount "$btrfs_partition" "$mount_point" 2>/dev/null; then
+                        echo -e "${GREEN}    ✓ Linux partition (btrfs) $btrfs_partition montada en $mount_point${NC}"
+                    else
+                        rmdir "$mount_point" 2>/dev/null || true
+                    fi
+                    MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
+                fi
+            fi
+        done < <(blkid -t TYPE=btrfs -o device 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)")
+
+        # Montar particiones Linux (xfs) si existen
+        while IFS= read -r xfs_partition; do
+            if [ -n "$xfs_partition" ]; then
+                partition_name=$(basename "$xfs_partition")
+                # Evitar montar la partición root actual del sistema live
+                if ! mount | grep -q "^$xfs_partition " && [[ "$xfs_partition" != "$(findmnt -n -o SOURCE /)" ]]; then
+                    mount_point="/mnt/mnt/xfs_$MOUNT_COUNTER"
+                    mkdir -p "$mount_point" 2>/dev/null || true
+                    if mount "$xfs_partition" "$mount_point" 2>/dev/null; then
+                        echo -e "${GREEN}    ✓ Linux partition (xfs) $xfs_partition montada en $mount_point${NC}"
+                    else
+                        rmdir "$mount_point" 2>/dev/null || true
+                    fi
+                    MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
+                fi
+            fi
+        done < <(blkid -t TYPE=xfs -o device 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)")
     fi
 
     # Crear directorios adicionales para otros tipos de sistemas
@@ -1881,6 +1963,22 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
             fi
             rmdir "$mount_point" 2>/dev/null || true
         fi
+    done
+
+    # Desmontar todas las particiones Linux temporales (BIOS Legacy)
+    for fs_type in ext4 ext3 btrfs xfs; do
+        for mount_point in /mnt/mnt/${fs_type}_*; do
+            if [ -d "$mount_point" ]; then
+                if mountpoint -q "$mount_point" 2>/dev/null; then
+                    echo -e "${CYAN}  • Desmontando $mount_point${NC}"
+                    if ! umount "$mount_point" 2>/dev/null; then
+                        echo -e "${YELLOW}    ⚠ Forzando desmontaje de $mount_point${NC}"
+                        umount -l "$mount_point" 2>/dev/null || true
+                    fi
+                fi
+                rmdir "$mount_point" 2>/dev/null || true
+            fi
+        done
     done
 
     # Limpiar cualquier otro montaje temporal bajo /mnt/mnt
