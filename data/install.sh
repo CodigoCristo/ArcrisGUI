@@ -993,6 +993,26 @@ unmount_selected_disk_partitions() {
 
     echo -e "${YELLOW}Sistema live detectado en: ${LIVE_DEVICE:-"no detectado"}${NC}"
     sleep 3
+
+    # Verificar si hay particiones montadas del disco seleccionado
+    echo -e "${CYAN}Verificando particiones montadas en: $SELECTED_DISK${NC}"
+    MOUNTED_PARTITIONS_CHECK=$(findmnt -rn -o TARGET,SOURCE | grep "$SELECTED_DISK" | while read -r mountpoint source; do
+        # Excluir puntos de montaje del sistema live
+        if [[ "$source" != *"$LIVE_DEVICE"* ]] && [[ "$mountpoint" != "/" ]] && [[ "$mountpoint" != "/run/archiso"* ]] && [[ "$mountpoint" != "/boot"* ]] && [[ "$source" == "$SELECTED_DISK"* ]]; then
+            echo "$mountpoint"
+        fi
+    done)
+
+    if [ -z "$MOUNTED_PARTITIONS_CHECK" ]; then
+        echo -e "${GREEN}✓ No se encontraron particiones montadas en: $SELECTED_DISK${NC}"
+        echo -e "${YELLOW}Continuando con el script sin necesidad de desmontar particiones...${NC}"
+        echo ""
+        return 0
+    fi
+
+    echo -e "${YELLOW}Se encontraron particiones montadas. Procediendo con el desmontaje...${NC}"
+    sleep 3
+
     # Desactivar swap del disco seleccionado
     echo -e "${CYAN}Desactivando swap del disco seleccionado...${NC}"
     for swap_device in $(swapon --show=NAME --noheadings 2>/dev/null | grep "^$SELECTED_DISK"); do
@@ -1726,6 +1746,7 @@ case "$DRIVER_VIDEO" in
             arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver lib32-libva-mesa-driver --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
+
         elif echo "$VGA_LINE" | grep -i "amd\|radeon" > /dev/null; then
             echo "Detectado hardware AMD/Radeon - Instalando driver open source amdgpu"
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu --noconfirm"
@@ -1738,6 +1759,7 @@ case "$DRIVER_VIDEO" in
             arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver lib32-libva-mesa-driver --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
+
         elif echo "$VGA_LINE" | grep -i intel > /dev/null; then
             echo "Detectado hardware Intel - Instalando driver open source intel"
             arch-chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
@@ -1754,17 +1776,71 @@ case "$DRIVER_VIDEO" in
             arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vpl-gpu-rt --noansweredit --noconfirm --needed"
 
         elif echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
+
             echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa xf86-video-qxl qemu-guest-agent mesa --noconfirm"
-        elif lspci | grep -i virtualbox > /dev/null; then
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
+
+            arch-chroot /mnt /bin/bash -c "pacman -S spice-vdagent --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
+            arch-chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent"
+
+
+
+        elif echo "$VGA_LINE" | grep -i virtualbox > /dev/null; then
             echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
-            arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils xf86-video-vmware mesa --noconfirm"
-        elif lspci | grep -i vmware > /dev/null; then
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
+
+            arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
+            arch-chroot /mnt /bin/bash -c "systemctl enable vboxservice"
+
+        elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
             echo "Detectado VMware - Instalando open-vm-tools y driver vmware"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vmware open-vm-tools mesa --noconfirm"
+            echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
+
+            arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
+            arch-chroot /mnt /bin/bash -c "systemctl enable vboxservice"
+
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
         fi
         ;;
     "nvidia")
@@ -1821,7 +1897,7 @@ case "$DRIVER_VIDEO" in
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mhwd-nvidia-390xx --noansweredit --noconfirm --needed"
         ;;
     "AMD Private")
-        echo "Instalando drivers privativos de AMD"
+        echo "Instalando drivers privativos de AMDGPUPRO"
         arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu mesa lib32-mesa --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S radeontop --noconfirm"
         arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
@@ -1846,18 +1922,76 @@ case "$DRIVER_VIDEO" in
         arch-chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
         ;;
     "Máquina Virtual")
-        if lspci | grep -i virtualbox > /dev/null; then
+
+    # Detección automática de hardware de video usando VGA controller
+    VGA_LINE=$(lspci | grep -i "vga compatible controller")
+    echo -e "${CYAN}Tarjeta de video detectada: $VGA_LINE${NC}"
+
+        if  echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
+            echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
+
+            arch-chroot /mnt /bin/bash -c "pacman -S spice-vdagent --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
+            arch-chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent"
+
+
+
+        elif echo "$VGA_LINE" | grep -i virtualbox > /dev/null; then
             echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
-            arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils xf86-video-vmware mesa lib32-mesa --noconfirm"
-        elif lspci | grep -i vmware > /dev/null; then
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
+
+            arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
+            arch-chroot /mnt /bin/bash -c "systemctl enable vboxservice"
+
+        elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
             echo "Detectado VMware - Instalando open-vm-tools y driver vmware"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vmware open-vm-tools mesa lib32-mesa --noconfirm"
-        elif lspci | grep -i qemu > /dev/null || lspci | grep -i "Red Hat.*Virtio" > /dev/null || lspci | grep -i virtio > /dev/null; then
-            echo "Detectado QEMU/KVM/Virtio - Instalando driver qxl y guest agent"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl qemu-guest-agent mesa lib32-mesa --noconfirm"
+            echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
+
+            arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
+            arch-chroot /mnt /bin/bash -c "systemctl enable vboxservice"
+
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa mesa lib32-mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S mesa-vdpau --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
         fi
         ;;
 esac
