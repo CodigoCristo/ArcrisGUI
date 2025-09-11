@@ -1860,16 +1860,58 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
         if [ -d "$mount_point" ]; then
             if mountpoint -q "$mount_point" 2>/dev/null; then
                 echo -e "${CYAN}  • Desmontando $mount_point${NC}"
-                umount "$mount_point" 2>/dev/null || true
+                if ! umount "$mount_point" 2>/dev/null; then
+                    echo -e "${YELLOW}    ⚠ Forzando desmontaje de $mount_point${NC}"
+                    umount -l "$mount_point" 2>/dev/null || true
+                fi
             fi
             rmdir "$mount_point" 2>/dev/null || true
         fi
     done
 
+    # Desmontar todas las particiones Windows temporales (BIOS Legacy)
+    for mount_point in /mnt/mnt/windows_*; do
+        if [ -d "$mount_point" ]; then
+            if mountpoint -q "$mount_point" 2>/dev/null; then
+                echo -e "${CYAN}  • Desmontando $mount_point${NC}"
+                if ! umount "$mount_point" 2>/dev/null; then
+                    echo -e "${YELLOW}    ⚠ Forzando desmontaje de $mount_point${NC}"
+                    umount -l "$mount_point" 2>/dev/null || true
+                fi
+            fi
+            rmdir "$mount_point" 2>/dev/null || true
+        fi
+    done
+
+    # Limpiar cualquier otro montaje temporal bajo /mnt/mnt
+    if [ -d "/mnt/mnt" ]; then
+        for mount_point in /mnt/mnt/*; do
+            if [ -d "$mount_point" ] && [[ "$(basename "$mount_point")" != "windows" ]] && [[ "$(basename "$mount_point")" != "other" ]]; then
+                if mountpoint -q "$mount_point" 2>/dev/null; then
+                    echo -e "${CYAN}  • Desmontando montaje adicional $mount_point${NC}"
+                    if ! umount "$mount_point" 2>/dev/null; then
+                        echo -e "${YELLOW}    ⚠ Forzando desmontaje de $mount_point${NC}"
+                        umount -l "$mount_point" 2>/dev/null || true
+                    fi
+                fi
+                rmdir "$mount_point" 2>/dev/null || true
+            fi
+        done
+    fi
+
     # Limpiar directorios restantes
     rmdir /mnt/mnt/windows 2>/dev/null || true
     rmdir /mnt/mnt/other 2>/dev/null || true
-    rmdir /mnt/mnt 2>/dev/null || true
+
+    # Verificar que no queden montajes en /mnt/mnt antes de eliminar el directorio
+    if [ -d "/mnt/mnt" ]; then
+        remaining_mounts=$(find /mnt/mnt -type d -exec mountpoint -q {} \; -print 2>/dev/null || true)
+        if [ -z "$remaining_mounts" ]; then
+            rmdir /mnt/mnt 2>/dev/null || true
+        else
+            echo -e "${YELLOW}    ⚠ Algunos montajes permanecen en /mnt/mnt${NC}"
+        fi
+    fi
 
     echo -e "${GREEN}✓ Limpieza de montajes temporales completada${NC}"
     echo -e "${GREEN}✓ Detección de múltiples sistemas operativos completada${NC}"
@@ -2452,6 +2494,7 @@ case "$INSTALLATION_TYPE" in
                 echo -e "${CYAN}Instalando KDE Plasma Desktop...${NC}"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-wayland-session --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-x11-session --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S kde-applications --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
