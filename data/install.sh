@@ -1659,44 +1659,103 @@ echo -e "${GREEN}| Detectando otros sistemas operativos |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
-# Detectar particiones EFI System para determinar si hay múltiples sistemas operativos
-echo -e "${CYAN}Detectando particiones EFI System...${NC}"
+# Detectar tipo de firmware y múltiples sistemas operativos
+echo -e "${CYAN}Detectando tipo de firmware y sistemas operativos...${NC}"
 
-# Buscar todas las particiones EFI System y almacenarlas en un array
-echo -e "${CYAN}  • Método 1: Detectando con lsblk...${NC}"
-readarray -t EFI_PARTITIONS < <(lsblk -no NAME,PARTTYPE | grep -i "c12a7328-f81f-11d2-ba4b-00a0c93ec93b\|EFI.*System" | awk '{print $1}' | sed 's/[├─└│ ]//g' | grep -v "^$")
+# Detectar si es sistema UEFI o BIOS Legacy
+MULTIPLE_OS_DETECTED=false
+SYSTEM_TYPE=""
 
-# Si no se encontraron particiones con lsblk, intentar con fdisk como respaldo
-if [ ${#EFI_PARTITIONS[@]} -eq 0 ]; then
-    echo -e "${CYAN}  • Método 2: Detectando con fdisk como respaldo...${NC}"
+if [ -d "/sys/firmware/efi" ]; then
+    SYSTEM_TYPE="UEFI"
+    echo -e "${GREEN}✓ Sistema UEFI detectado${NC}"
 
-    # Obtener todos los discos disponibles
-    DISKS=$(lsblk -dno NAME | grep -v "loop\|sr\|rom" | grep -E "^(sd|nvme|vd|hd)" || true)
+    # Detectar particiones EFI System
+    echo -e "${CYAN}  • Método 1: Detectando particiones EFI con lsblk...${NC}"
+    readarray -t EFI_PARTITIONS < <(lsblk -no NAME,PARTTYPE | grep -i "c12a7328-f81f-11d2-ba4b-00a0c93ec93b\|EFI.*System" | awk '{print $1}' | sed 's/[├─└│ ]//g' | grep -v "^$")
 
-    # Buscar particiones EFI en cada disco
-    for disk in $DISKS; do
-        if [ -b "/dev/$disk" ]; then
-            # Buscar particiones EFI usando fdisk
-            DISK_EFI=$(fdisk -l "/dev/$disk" 2>/dev/null | grep -i "EFI System\|EFI.*System" | awk '{print $1}' | sed 's|/dev/||' || true)
-            if [ -n "$DISK_EFI" ]; then
-                while IFS= read -r partition; do
-                    if [ -n "$partition" ]; then
-                        EFI_PARTITIONS+=("$partition")
-                    fi
-                done <<< "$DISK_EFI"
+    # Si no se encontraron particiones con lsblk, intentar con fdisk como respaldo
+    if [ ${#EFI_PARTITIONS[@]} -eq 0 ]; then
+        echo -e "${CYAN}  • Método 2: Detectando EFI con fdisk como respaldo...${NC}"
+
+        # Obtener todos los discos disponibles
+        DISKS=$(lsblk -dno NAME | grep -v "loop\|sr\|rom" | grep -E "^(sd|nvme|vd|hd)" || true)
+
+        # Buscar particiones EFI en cada disco
+        for disk in $DISKS; do
+            if [ -b "/dev/$disk" ]; then
+                # Buscar particiones EFI usando fdisk
+                DISK_EFI=$(fdisk -l "/dev/$disk" 2>/dev/null | grep -i "EFI System\|EFI.*System" | awk '{print $1}' | sed 's|/dev/||' || true)
+                if [ -n "$DISK_EFI" ]; then
+                    while IFS= read -r partition; do
+                        if [ -n "$partition" ]; then
+                            EFI_PARTITIONS+=("$partition")
+                        fi
+                    done <<< "$DISK_EFI"
+                fi
             fi
-        fi
-    done
+        done
+    fi
+
+    # Si aún no hay particiones, intentar método alternativo con blkid
+    if [ ${#EFI_PARTITIONS[@]} -eq 0 ]; then
+        echo -e "${CYAN}  • Método 3: Detectando EFI con blkid...${NC}"
+        readarray -t EFI_PARTITIONS < <(blkid -t PARTLABEL="EFI System Partition" -o device 2>/dev/null | sed 's|/dev/||' | grep -v "^$" || true)
+    fi
+
+    # Para UEFI: múltiples sistemas si hay más de 1 partición EFI
+    if [ ${#EFI_PARTITIONS[@]} -gt 1 ]; then
+        MULTIPLE_OS_DETECTED=true
+        echo -e "${GREEN}✓ ${#EFI_PARTITIONS[@]} particiones EFI detectadas - Múltiples sistemas UEFI${NC}"
+    else
+        echo -e "${YELLOW}⚠ Solo ${#EFI_PARTITIONS[@]} partición EFI detectada - Sistema UEFI único${NC}"
+    fi
+
+else
+    SYSTEM_TYPE="BIOS_Legacy"
+    echo -e "${GREEN}✓ Sistema BIOS Legacy detectado${NC}"
+
+    # Para BIOS Legacy: detectar múltiples sistemas usando otros métodos
+    echo -e "${CYAN}  • Detectando múltiples sistemas en BIOS Legacy...${NC}"
+
+    OS_COUNT=0
+
+    # Método 1: Contar particiones bootables
+    BOOTABLE_PARTITIONS=$(fdisk -l 2>/dev/null | grep -c "^\*" || echo "0")
+    echo -e "${CYAN}  • Particiones bootables detectadas: $BOOTABLE_PARTITIONS${NC}"
+
+    # Método 2: Detectar particiones Windows (NTFS)
+    WINDOWS_PARTITIONS=$(blkid -t TYPE=ntfs 2>/dev/null | wc -l || echo "0")
+    if [ $WINDOWS_PARTITIONS -gt 0 ]; then
+        echo -e "${CYAN}  • Particiones Windows (NTFS) detectadas: $WINDOWS_PARTITIONS${NC}"
+        OS_COUNT=$((OS_COUNT + 1))
+    fi
+
+    # Método 3: Detectar otras particiones Linux (ext4, ext3, etc.)
+    LINUX_PARTITIONS=$(blkid -t TYPE=ext4 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
+    if [ $LINUX_PARTITIONS -gt 0 ]; then
+        echo -e "${CYAN}  • Otras particiones Linux detectadas: $LINUX_PARTITIONS${NC}"
+        OS_COUNT=$((OS_COUNT + 1))
+    fi
+
+    # Método 4: Buscar particiones con indicadores de SO
+    OTHER_OS=$(blkid 2>/dev/null | grep -E "LABEL.*Windows|LABEL.*Microsoft|TYPE.*fat32" | wc -l || echo "0")
+    if [ $OTHER_OS -gt 0 ]; then
+        echo -e "${CYAN}  • Otras particiones de SO detectadas: $OTHER_OS${NC}"
+        OS_COUNT=$((OS_COUNT + 1))
+    fi
+
+    # Considerar múltiples sistemas si hay más indicadores de OS o más de 1 partición bootable
+    if [ $OS_COUNT -gt 0 ] || [ $BOOTABLE_PARTITIONS -gt 1 ]; then
+        MULTIPLE_OS_DETECTED=true
+        echo -e "${GREEN}✓ Múltiples sistemas operativos detectados en BIOS Legacy${NC}"
+    else
+        echo -e "${YELLOW}⚠ Solo se detectó un sistema operativo en BIOS Legacy${NC}"
+    fi
 fi
 
-# Si aún no hay particiones, intentar método alternativo con blkid
-if [ ${#EFI_PARTITIONS[@]} -eq 0 ]; then
-    echo -e "${CYAN}  • Método 3: Detectando con blkid...${NC}"
-    readarray -t EFI_PARTITIONS < <(blkid -t PARTLABEL="EFI System Partition" -o device 2>/dev/null | sed 's|/dev/||' | grep -v "^$" || true)
-fi
-
-# Solo proceder con os-prober si hay múltiples particiones EFI (indicando múltiples sistemas)
-if [ ${#EFI_PARTITIONS[@]} -gt 1 ]; then
+# Solo proceder con os-prober si se detectaron múltiples sistemas operativos
+if [ "$MULTIPLE_OS_DETECTED" = true ]; then
     echo -e "${GREEN}✓ ${#EFI_PARTITIONS[@]} particiones EFI detectadas - Iniciando detección de múltiples sistemas${NC}"
 
     # Instalar os-prober para detectar otros sistemas
@@ -1707,41 +1766,80 @@ if [ ${#EFI_PARTITIONS[@]} -gt 1 ]; then
     echo -e "${CYAN}Instalando ntfs-3g para soporte Windows...${NC}"
     arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ntfs-3g --noansweredit --noconfirm --needed"
 
+    # Habilitar os-prober en GRUB
+    echo -e "${CYAN}Habilitando os-prober en configuración GRUB...${NC}"
+    if ! grep -q "GRUB_DISABLE_OS_PROBER=false" /mnt/etc/default/grub; then
+        # Si la línea está comentada, descomentarla
+        if grep -q "#GRUB_DISABLE_OS_PROBER=false" /mnt/etc/default/grub; then
+            sed -i 's/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/' /mnt/etc/default/grub
+        else
+            # Si no existe, agregarla
+            echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
+        fi
+        echo -e "${GREEN}✓ os-prober habilitado en GRUB${NC}"
+    else
+        echo -e "${GREEN}✓ os-prober ya estaba habilitado${NC}"
+    fi
+
     # Crear directorio base de montaje temporal
     mkdir -p /mnt/mnt 2>/dev/null || true
     MOUNT_COUNTER=1
 
-    # Montar todas las particiones EFI detectadas
-    for partition in "${EFI_PARTITIONS[@]}"; do
-        if [ -n "$partition" ]; then
-            # Agregar /dev/ si no está presente
-            if [[ ! "$partition" =~ ^/dev/ ]]; then
-                partition="/dev/$partition"
-            fi
+    # Para sistemas UEFI: Montar todas las particiones EFI detectadas
+    if [ "$SYSTEM_TYPE" = "UEFI" ] && [ ${#EFI_PARTITIONS[@]} -gt 0 ]; then
+        for partition in "${EFI_PARTITIONS[@]}"; do
+            if [ -n "$partition" ]; then
+                # Agregar /dev/ si no está presente
+                if [[ ! "$partition" =~ ^/dev/ ]]; then
+                    partition="/dev/$partition"
+                fi
 
-            # Verificar si la partición ya está montada
-            if mount | grep -q "^$partition "; then
-                EXISTING_MOUNT=$(mount | grep "^$partition " | awk '{print $3}' | head -1)
-                echo -e "${GREEN}  • $partition ya está montada en $EXISTING_MOUNT${NC}"
-            else
-                echo -e "${CYAN}  • Montando $partition${NC}"
-
-                # Crear directorio de montaje específico
-                mount_point="/mnt/mnt/efi_$MOUNT_COUNTER"
-                mkdir -p "$mount_point" 2>/dev/null || true
-
-                # Montar la partición EFI
-                if mount "$partition" "$mount_point" 2>/dev/null; then
-                    echo -e "${GREEN}    ✓ Montada en $mount_point${NC}"
+                # Verificar si la partición ya está montada
+                if mount | grep -q "^$partition "; then
+                    EXISTING_MOUNT=$(mount | grep "^$partition " | awk '{print $3}' | head -1)
+                    echo -e "${GREEN}  • $partition ya está montada en $EXISTING_MOUNT${NC}"
                 else
-                    echo -e "${YELLOW}    ⚠ No se pudo montar $partition${NC}"
-                    rmdir "$mount_point" 2>/dev/null || true
+                    echo -e "${CYAN}  • Montando $partition${NC}"
+
+                    # Crear directorio de montaje específico
+                    mount_point="/mnt/mnt/efi_$MOUNT_COUNTER"
+                    mkdir -p "$mount_point" 2>/dev/null || true
+
+                    # Montar la partición EFI
+                    if mount "$partition" "$mount_point" 2>/dev/null; then
+                        echo -e "${GREEN}    ✓ Montada en $mount_point${NC}"
+                    else
+                        echo -e "${YELLOW}    ⚠ No se pudo montar $partition${NC}"
+                        rmdir "$mount_point" 2>/dev/null || true
+                    fi
+                fi
+
+                MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
+            fi
+        done
+    fi
+
+    # Para sistemas BIOS Legacy: Montar particiones relevantes para detección
+    if [ "$SYSTEM_TYPE" = "BIOS_Legacy" ]; then
+        echo -e "${CYAN}  • Montando particiones para detección en BIOS Legacy...${NC}"
+
+        # Montar particiones Windows (NTFS) si existen
+        while IFS= read -r ntfs_partition; do
+            if [ -n "$ntfs_partition" ]; then
+                partition_name=$(basename "$ntfs_partition")
+                if ! mount | grep -q "^$ntfs_partition "; then
+                    mount_point="/mnt/mnt/windows_$MOUNT_COUNTER"
+                    mkdir -p "$mount_point" 2>/dev/null || true
+                    if mount "$ntfs_partition" "$mount_point" 2>/dev/null; then
+                        echo -e "${GREEN}    ✓ Windows partition $ntfs_partition montada en $mount_point${NC}"
+                    else
+                        rmdir "$mount_point" 2>/dev/null || true
+                    fi
+                    MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
                 fi
             fi
-
-            MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
-        fi
-    done
+        done < <(blkid -t TYPE=ntfs -o device 2>/dev/null)
+    fi
 
     # Crear directorios adicionales para otros tipos de sistemas
     mkdir -p /mnt/mnt/windows 2>/dev/null || true
@@ -1793,24 +1891,15 @@ if [ ${#EFI_PARTITIONS[@]} -gt 1 ]; then
     echo -e "${GREEN}✓ Limpieza de montajes temporales completada${NC}"
     echo -e "${GREEN}✓ Detección de múltiples sistemas operativos completada${NC}"
 else
-    echo -e "${YELLOW}⚠ Solo se detectó ${#EFI_PARTITIONS[@]} partición EFI - Sistema único${NC}"
+    if [ "$SYSTEM_TYPE" = "UEFI" ]; then
+        echo -e "${YELLOW}⚠ Solo se detectó 1 partición EFI - Sistema UEFI único${NC}"
+    else
+        echo -e "${YELLOW}⚠ Solo se detectó un sistema operativo - Sistema BIOS Legacy único${NC}"
+    fi
     echo -e "${CYAN}  • No es necesario instalar os-prober para un solo sistema${NC}"
 fi
 
-# Siempre habilitar os-prober en GRUB (independientemente del número de particiones EFI)
-echo -e "${CYAN}Habilitando os-prober en configuración GRUB...${NC}"
-if ! grep -q "GRUB_DISABLE_OS_PROBER=false" /mnt/etc/default/grub; then
-    # Si la línea está comentada, descomentarla
-    if grep -q "#GRUB_DISABLE_OS_PROBER=false" /mnt/etc/default/grub; then
-        sed -i 's/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/' /mnt/etc/default/grub
-    else
-        # Si no existe, agregarla
-        echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
-    fi
-    echo -e "${GREEN}✓ os-prober habilitado en GRUB${NC}"
-else
-    echo -e "${GREEN}✓ os-prober ya estaba habilitado${NC}"
-fi
+
 
 echo -e "${GREEN}✓ Configuración de detección de sistemas operativos completada${NC}"
 echo ""
