@@ -1659,34 +1659,8 @@ echo -e "${GREEN}| Detectando otros sistemas operativos |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
-# Instalar os-prober para detectar otros sistemas
-echo -e "${CYAN}Instalando os-prober...${NC}"
-arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S os-prober --noansweredit --noconfirm --needed"
-
-# Instalar ntfs-3g para mejor soporte de particiones Windows
-echo -e "${CYAN}Instalando ntfs-3g para soporte Windows...${NC}"
-arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ntfs-3g --noansweredit --noconfirm --needed"
-
-# Habilitar os-prober en GRUB
-echo -e "${CYAN}Habilitando os-prober en configuración GRUB...${NC}"
-if ! grep -q "GRUB_DISABLE_OS_PROBER=false" /mnt/etc/default/grub; then
-    # Si la línea está comentada, descomentarla
-    if grep -q "#GRUB_DISABLE_OS_PROBER=false" /mnt/etc/default/grub; then
-        sed -i 's/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/' /mnt/etc/default/grub
-    else
-        # Si no existe, agregarla
-        echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
-    fi
-    echo -e "${GREEN}✓ os-prober habilitado en GRUB${NC}"
-else
-    echo -e "${GREEN}✓ os-prober ya estaba habilitado${NC}"
-fi
-
-# Detectar y montar automáticamente particiones EFI System para os-prober
+# Detectar particiones EFI System para determinar si hay múltiples sistemas operativos
 echo -e "${CYAN}Detectando particiones EFI System...${NC}"
-
-# Crear directorio base de montaje temporal
-mkdir -p /mnt/mnt 2>/dev/null || true
 
 # Buscar todas las particiones EFI System y almacenarlas en un array
 echo -e "${CYAN}  • Método 1: Detectando con lsblk...${NC}"
@@ -1721,10 +1695,23 @@ if [ ${#EFI_PARTITIONS[@]} -eq 0 ]; then
     readarray -t EFI_PARTITIONS < <(blkid -t PARTLABEL="EFI System Partition" -o device 2>/dev/null | sed 's|/dev/||' | grep -v "^$" || true)
 fi
 
-if [ ${#EFI_PARTITIONS[@]} -gt 0 ]; then
-    echo -e "${GREEN}✓ ${#EFI_PARTITIONS[@]} particiones EFI detectadas:${NC}"
+# Solo proceder con os-prober si hay múltiples particiones EFI (indicando múltiples sistemas)
+if [ ${#EFI_PARTITIONS[@]} -gt 1 ]; then
+    echo -e "${GREEN}✓ ${#EFI_PARTITIONS[@]} particiones EFI detectadas - Iniciando detección de múltiples sistemas${NC}"
+
+    # Instalar os-prober para detectar otros sistemas
+    echo -e "${CYAN}Instalando os-prober...${NC}"
+    arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S os-prober --noansweredit --noconfirm --needed"
+
+    # Instalar ntfs-3g para mejor soporte de particiones Windows
+    echo -e "${CYAN}Instalando ntfs-3g para soporte Windows...${NC}"
+    arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ntfs-3g --noansweredit --noconfirm --needed"
+
+    # Crear directorio base de montaje temporal
+    mkdir -p /mnt/mnt 2>/dev/null || true
     MOUNT_COUNTER=1
 
+    # Montar todas las particiones EFI detectadas
     for partition in "${EFI_PARTITIONS[@]}"; do
         if [ -n "$partition" ]; then
             # Agregar /dev/ si no está presente
@@ -1755,60 +1742,77 @@ if [ ${#EFI_PARTITIONS[@]} -gt 0 ]; then
             MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
         fi
     done
-else
-    echo -e "${YELLOW}⚠ No se detectaron particiones EFI System adicionales${NC}"
-fi
 
-# Crear directorios adicionales para otros tipos de sistemas
-mkdir -p /mnt/mnt/windows 2>/dev/null || true
-mkdir -p /mnt/mnt/other 2>/dev/null || true
+    # Crear directorios adicionales para otros tipos de sistemas
+    mkdir -p /mnt/mnt/windows 2>/dev/null || true
+    mkdir -p /mnt/mnt/other 2>/dev/null || true
 
-# Ejecutar os-prober para detectar otros sistemas
-echo -e "${CYAN}Ejecutando os-prober para detectar otros sistemas...${NC}"
-DETECTED_SYSTEMS=$(arch-chroot /mnt /bin/bash -c "os-prober" 2>/dev/null || true)
+    # Ejecutar os-prober para detectar otros sistemas
+    echo -e "${CYAN}Ejecutando os-prober para detectar otros sistemas...${NC}"
+    DETECTED_SYSTEMS=$(arch-chroot /mnt /bin/bash -c "os-prober" 2>/dev/null || true)
 
-if [ -n "$DETECTED_SYSTEMS" ]; then
-    echo -e "${GREEN}✓ Sistemas detectados:${NC}"
-    echo "$DETECTED_SYSTEMS" | while IFS= read -r line; do
-        if [ -n "$line" ]; then
-            echo -e "${CYAN}  • $line${NC}"
+    if [ -n "$DETECTED_SYSTEMS" ]; then
+        echo -e "${GREEN}✓ Sistemas detectados:${NC}"
+        echo "$DETECTED_SYSTEMS" | while IFS= read -r line; do
+            if [ -n "$line" ]; then
+                echo -e "${CYAN}  • $line${NC}"
+            fi
+        done
+
+        # Regenerar configuración de GRUB con los sistemas detectados
+        echo -e "${CYAN}Regenerando configuración de GRUB con sistemas detectados...${NC}"
+        arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
+
+        # Verificar que se agregaron entradas
+        GRUB_ENTRIES=$(arch-chroot /mnt /bin/bash -c "grep -c 'menuentry' /boot/grub/grub.cfg" 2>/dev/null || echo "0")
+        echo -e "${GREEN}✓ Configuración GRUB actualizada (${GRUB_ENTRIES} entradas de menú)${NC}"
+    else
+        echo -e "${YELLOW}⚠ No se detectaron otros sistemas operativos${NC}"
+        echo -e "${CYAN}  • Solo se encontró el sistema Arcris Linux actual${NC}"
+    fi
+
+    # Limpiar montajes y directorios temporales
+    echo -e "${CYAN}Limpiando montajes temporales...${NC}"
+
+    # Desmontar todas las particiones EFI temporales
+    for mount_point in /mnt/mnt/efi_*; do
+        if [ -d "$mount_point" ]; then
+            if mountpoint -q "$mount_point" 2>/dev/null; then
+                echo -e "${CYAN}  • Desmontando $mount_point${NC}"
+                umount "$mount_point" 2>/dev/null || true
+            fi
+            rmdir "$mount_point" 2>/dev/null || true
         fi
     done
 
-    # Regenerar configuración de GRUB con los sistemas detectados
-    echo -e "${CYAN}Regenerando configuración de GRUB con sistemas detectados...${NC}"
-    arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
+    # Limpiar directorios restantes
+    rmdir /mnt/mnt/windows 2>/dev/null || true
+    rmdir /mnt/mnt/other 2>/dev/null || true
+    rmdir /mnt/mnt 2>/dev/null || true
 
-    # Verificar que se agregaron entradas
-    GRUB_ENTRIES=$(arch-chroot /mnt /bin/bash -c "grep -c 'menuentry' /boot/grub/grub.cfg" 2>/dev/null || echo "0")
-    echo -e "${GREEN}✓ Configuración GRUB actualizada (${GRUB_ENTRIES} entradas de menú)${NC}"
+    echo -e "${GREEN}✓ Limpieza de montajes temporales completada${NC}"
+    echo -e "${GREEN}✓ Detección de múltiples sistemas operativos completada${NC}"
 else
-    echo -e "${YELLOW}⚠ No se detectaron otros sistemas operativos${NC}"
-    echo -e "${CYAN}  • Solo se encontró el sistema Arcris Linux actual${NC}"
+    echo -e "${YELLOW}⚠ Solo se detectó ${#EFI_PARTITIONS[@]} partición EFI - Sistema único${NC}"
+    echo -e "${CYAN}  • No es necesario instalar os-prober para un solo sistema${NC}"
 fi
 
-# Limpiar montajes y directorios temporales
-echo -e "${CYAN}Limpiando montajes temporales...${NC}"
-
-# Desmontar todas las particiones EFI temporales
-for mount_point in /mnt/mnt/efi_*; do
-    if [ -d "$mount_point" ]; then
-        if mountpoint -q "$mount_point" 2>/dev/null; then
-            echo -e "${CYAN}  • Desmontando $mount_point${NC}"
-            umount "$mount_point" 2>/dev/null || true
-        fi
-        rmdir "$mount_point" 2>/dev/null || true
+# Siempre habilitar os-prober en GRUB (independientemente del número de particiones EFI)
+echo -e "${CYAN}Habilitando os-prober en configuración GRUB...${NC}"
+if ! grep -q "GRUB_DISABLE_OS_PROBER=false" /mnt/etc/default/grub; then
+    # Si la línea está comentada, descomentarla
+    if grep -q "#GRUB_DISABLE_OS_PROBER=false" /mnt/etc/default/grub; then
+        sed -i 's/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/' /mnt/etc/default/grub
+    else
+        # Si no existe, agregarla
+        echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
     fi
-done
+    echo -e "${GREEN}✓ os-prober habilitado en GRUB${NC}"
+else
+    echo -e "${GREEN}✓ os-prober ya estaba habilitado${NC}"
+fi
 
-# Limpiar directorios restantes
-rmdir /mnt/mnt/windows 2>/dev/null || true
-rmdir /mnt/mnt/other 2>/dev/null || true
-rmdir /mnt/mnt 2>/dev/null || true
-
-echo -e "${GREEN}✓ Limpieza de montajes temporales completada${NC}"
-
-echo -e "${GREEN}✓ Detección de sistemas operativos completada${NC}"
+echo -e "${GREEN}✓ Configuración de detección de sistemas operativos completada${NC}"
 echo ""
 
 
