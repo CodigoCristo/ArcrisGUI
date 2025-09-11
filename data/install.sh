@@ -1778,6 +1778,7 @@ case "$DRIVER_VIDEO" in
         elif echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
 
             echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
+
             arch-chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
@@ -1798,6 +1799,7 @@ case "$DRIVER_VIDEO" in
 
         elif echo "$VGA_LINE" | grep -i virtualbox > /dev/null; then
             echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
+
             arch-chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
@@ -1813,8 +1815,9 @@ case "$DRIVER_VIDEO" in
             arch-chroot /mnt /bin/bash -c "systemctl enable vboxservice"
 
         elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
-            echo "Detectado VMware - Instalando open-vm-tools y driver vmware"
+            echo "Detectado VMware - Instalando driver vmware"
             echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
+
             arch-chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
@@ -1831,7 +1834,10 @@ case "$DRIVER_VIDEO" in
 
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"
+            arch-chroot /mnt /bin/bash -c "pacman -S xorg-server --noconfirm"
+            arch-chroot /mnt /bin/bash -c "pacman -S xorg-xinit --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa --noconfirm"
+
             arch-chroot /mnt /bin/bash -c "pacman -S mesa --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils --noconfirm"
@@ -1964,8 +1970,7 @@ case "$DRIVER_VIDEO" in
             arch-chroot /mnt /bin/bash -c "systemctl enable vboxservice"
 
         elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
-            echo "Detectado VMware - Instalando open-vm-tools y driver vmware"
-            echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
+            echo "Detectado VMware - Instalando driver vmware"
             arch-chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
@@ -1982,7 +1987,6 @@ case "$DRIVER_VIDEO" in
 
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"
-            arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S mesa --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S lib32-mesa --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S mesa-utils --noconfirm"
@@ -3048,11 +3052,6 @@ if [ "${COMPRESSION_ENABLED:-false}" = "true" ]; then
     arch-chroot /mnt /bin/bash -c "pacman -S zip --noconfirm"
     arch-chroot /mnt /bin/bash -c "pacman -S unarj --noconfirm"
     arch-chroot /mnt /bin/bash -c "pacman -S dpkg --noconfirm"
-
-    # Instalar RAR desde AUR
-    echo -e "${CYAN}Instalando RAR desde AUR...${NC}"
-    arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rar --noansweredit --noconfirm --needed"
-
     echo -e "${GREEN}✓ Herramientas de compresión instaladas${NC}"
 fi
 

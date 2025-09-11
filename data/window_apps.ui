@@ -760,6 +760,26 @@
                                     </child>
                                   </object>
                                 </child>
+
+                                <!-- Spotify Launcher -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">spotify-launcher</property>
+                                    <property name="subtitle">Lanzador de Spotify para Linux</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="spotify_launcher_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="spotify_launcher_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/kpcyrd/spotify-launcher</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
                               </object>
                             </child>
 

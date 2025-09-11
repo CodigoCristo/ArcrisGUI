@@ -395,6 +395,7 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"ardour_check", "ardour", "audio digital ardour profesional", "audio_expander"},
         {"elisa_check", "elisa", "reproductor música elisa kde", "audio_expander"},
         {"euphonica_check", "euphonica", "An MPD frontend with delusions of grandeur", "audio_expander"},
+        {"spotify_launcher_check", "spotify-launcher", "lanzador spotify reproductor música", "audio_expander"},
 
         // Communications
         {"telegram_check", "telegram-desktop", "mensajería telegram", "mail_expander"},
@@ -820,6 +821,7 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"ardour_check", "ardour"},
         {"elisa_check", "elisa"},
         {"euphonica_check", "euphonica"},
+        {"spotify_launcher_check", "spotify-launcher"},
 
         // Communications
         {"telegram_check", "telegram-desktop"},
@@ -956,6 +958,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"ardour_check", "ardour"},
         {"elisa_check", "elisa"},
         {"euphonica_check", "euphonica"},
+        {"spotify_launcher_check", "spotify-launcher"},
 
         // Communications
         {"telegram_check", "telegram-desktop"},
