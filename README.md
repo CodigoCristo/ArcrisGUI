@@ -9,6 +9,15 @@
   [![GTK4](https://img.shields.io/badge/GTK-4.0-green.svg)](https://gtk.org/)
   [![Libadwaita](https://img.shields.io/badge/Libadwaita-1.0-purple.svg)](https://gitlab.gnome.org/GNOME/libadwaita)
   [![Arch Linux](https://img.shields.io/badge/Arch-Linux-1793D1.svg)](https://archlinux.org/)
+
+  ## 📥 Descargas
+
+  **Descarga la ISO con Arcris preinstalado:**
+  
+  [![Google Drive](https://img.shields.io/badge/Descargar%20ISO-Google%20Drive-4285f4.svg)](https://drive.google.com/file/d/133wLf7G4p7mkwJoZzZMS7UbTjKRHILoq)
+  
+  [![SourceForge](https://img.shields.io/badge/Proyecto-SourceForge-ff6600.svg)](https://sourceforge.net/projects/arcrisgui/)
+
 </div>
 
 ## 📋 Descripción
