@@ -1329,8 +1329,45 @@ echo "$USER:$PASSWORD_USER" | arch-chroot /mnt /bin/bash -c "chpasswd"
 arch-chroot /mnt /bin/bash -c "pacman -S sudo --noconfirm"
 
 # Configuración temporal NOPASSWD para instalaciones
-echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL" > /mnt/etc/sudoers.d/temp-install
-clear
+echo -e "${GREEN}| Configurando permisos sudo temporales |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+# Detectar usuarios existentes en el sistema
+USUARIOS_EXISTENTES=$(awk -F':' '$3 >= 1000 && $3 != 65534 {print $1}' /mnt/etc/passwd 2>/dev/null)
+
+if [[ -n "$USUARIOS_EXISTENTES" ]]; then
+    echo "✓ Usuarios detectados en el sistema:"
+    echo "$USUARIOS_EXISTENTES" | while read -r usuario; do
+        echo "  - $usuario"
+    done
+    echo ""
+
+    # Configurar sudo para todos los usuarios encontrados
+    {
+        echo "# Configuración temporal para instalaciones"
+        echo "$USUARIOS_EXISTENTES" | while read -r usuario_encontrado; do
+            echo "$usuario_encontrado ALL=(ALL:ALL) NOPASSWD: ALL"
+        done
+        echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL"
+    } > /mnt/etc/sudoers.d/temp-install
+
+    echo "✓ Configuración sudo aplicada para usuarios existentes y grupo wheel"
+else
+    echo "⚠️  No se encontraron usuarios existentes en el sistema"
+    echo "   Usando variable \$USER: $USER"
+
+    # Usar la variable USER proporcionada
+    {
+        echo "# Configuración temporal para instalaciones"
+        echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL"
+    } > /mnt/etc/sudoers.d/temp-install
+
+    echo "✓ Configuración sudo aplicada para usuario: $USER"
+fi
+
+# Establecer permisos correctos para el archivo sudoers
+chmod 440 /mnt/etc/sudoers.d/temp-install
 
 
 
