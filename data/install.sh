@@ -2543,7 +2543,6 @@ case "$INSTALLATION_TYPE" in
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S freetype2 --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S poppler-glib --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S libgsf --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S raw-thumbnailer --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noansweredit --noconfirm --needed"
@@ -3608,8 +3607,35 @@ ls /mnt/home/$USER/
 sleep 5
 clear
 # Revertir a configuración normal
-arch-chroot /mnt /bin/bash -c "rm -f /etc/sudoers.d/temp-install"
-echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
+
+# Revertir a configuración sudo normal
+echo -e "${GREEN}| Revirtiendo configuración sudo temporal |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+# Eliminar configuración temporal
+if [[ -f "/mnt/etc/sudoers.d/temp-install" ]]; then
+    arch-chroot /mnt /bin/bash -c "rm -f /etc/sudoers.d/temp-install"
+    echo "✓ Configuración temporal eliminada"
+else
+    echo "⚠️  Archivo temporal no encontrado (ya fue eliminado)"
+fi
+
+# Verificar si ya existe la configuración wheel en sudoers
+if ! arch-chroot /mnt /bin/bash -c "grep -q '^%wheel.*ALL.*ALL' /etc/sudoers" 2>/dev/null; then
+    echo "# Configuración normal del grupo wheel" >> /mnt/etc/sudoers
+    echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
+    echo "✓ Configuración wheel añadida al archivo sudoers"
+else
+    echo "✓ Configuración wheel ya existe en sudoers"
+fi
+
+# Verificar configuración final
+echo ""
+echo "Configuración sudo actual:"
+arch-chroot /mnt /bin/bash -c "grep -E '^%wheel|^[^#]*ALL.*ALL' /etc/sudoers /etc/sudoers.d/* 2>/dev/null || echo 'No se encontraron reglas sudo activas'"
+
+clear
 
 clear
 
