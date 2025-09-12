@@ -1340,6 +1340,9 @@ if [[ -n "$USUARIOS_EXISTENTES" ]]; then
     echo "✓ Usuarios detectados en el sistema:"
     echo "$USUARIOS_EXISTENTES" | while read -r usuario; do
         echo "  - $usuario"
+        arch-chroot /mnt /bin/bash -c "userdel $usuario"
+        arch-chroot /mnt /bin/bash -c "useradd -m -G wheel,audio,video,optical,storage -s /bin/bash $USER"
+        echo "$USER:$PASSWORD_USER" | arch-chroot /mnt /bin/bash -c "chpasswd"
     done
     echo ""
 
