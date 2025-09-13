@@ -14,7 +14,7 @@
 
   **Descarga la ISO con Arcris preinstalado:**
   
-  [![Google Drive](https://img.shields.io/badge/Descargar%20ISO-Google%20Drive-4285f4.svg)](https://drive.google.com/file/d/133wLf7G4p7mkwJoZzZMS7UbTjKRHILoq)
+  [![Google Drive](https://img.shields.io/badge/Descargar%20ISO-Google%20Drive-4285f4.svg)](https://drive.google.com/drive/folders/1Jcgjpbpem3Gir171_45vvCmgg39p7mIs?usp=sharing)
   
   [![SourceForge](https://img.shields.io/badge/Proyecto-SourceForge-ff6600.svg)](https://sourceforge.net/projects/arcrisgui/)
 
