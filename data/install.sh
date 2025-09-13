@@ -2645,86 +2645,86 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
 
-                arch-chroot /mnt chmod +x /usr/bin/deepin-anything-monitor
-                arch-chroot /mnt chmod +x /usr/bin/deepin-anything-tool
-                arch-chroot /mnt chmod +x /usr/bin/deepin-anything-tool-ionice
-                arch-chroot /mnt chmod +x /usr/bin/dde-open
-                arch-chroot /mnt chmod +x /usr/bin/dde-dconfig
-                arch-chroot /mnt chmod +x /usr/bin/dde-dconfig-daemon
-                arch-chroot /mnt chmod +x /usr/bin/dde-dconfig-editor
-                arch-chroot /mnt chmod +x /usr/bin/dde-fakewm
-                arch-chroot /mnt chmod +x /usr/bin/app-identifier
-                arch-chroot /mnt chmod +x /usr/bin/dde-am
-                arch-chroot /mnt chmod +x /usr/bin/dde-application-manager
-                arch-chroot /mnt chmod +x /usr/bin/dde-calendar
-                arch-chroot /mnt chmod +x /usr/bin/dde-control-center
-                arch-chroot /mnt chmod +x /usr/bin/dde-desktop
-                arch-chroot /mnt chmod +x /usr/bin/dde-file-dialog
-                arch-chroot /mnt chmod +x /usr/bin/dde-file-manager
-                arch-chroot /mnt chmod +x /usr/bin/dde-file-manager-daemon
-                arch-chroot /mnt chmod +x /usr/bin/dde-file-manager-pkexec
-                arch-chroot /mnt chmod +x /usr/bin/dde-file-manager-server
-                arch-chroot /mnt chmod +x /usr/bin/dde-property-dialog
-                arch-chroot /mnt chmod +x /usr/bin/dde-select-dialog-wayland
-                arch-chroot /mnt chmod +x /usr/bin/dde-select-dialog-x11
-                arch-chroot /mnt chmod +x /usr/bin/dfm-open.sh
-                arch-chroot /mnt chmod +x /usr/bin/file-manager.sh
-                arch-chroot /mnt chmod +x /usr/bin/deepin-image-viewer
-                arch-chroot /mnt chmod +x /usr/bin/deepin-menu
-                arch-chroot /mnt chmod +x /usr/bin/pwd-conf-update
-                arch-chroot /mnt chmod +x /usr/bin/deepin-screensaver
-                arch-chroot /mnt chmod +x /usr/bin/dde-keyring-checker
-                arch-chroot /mnt chmod +x /usr/bin/dde-login-reminder
-                arch-chroot /mnt chmod +x /usr/bin/dde-session
-                arch-chroot /mnt chmod +x /usr/bin/dde-version-checker
-                arch-chroot /mnt chmod +x /usr/bin/dde-xsettings-checker
-                arch-chroot /mnt chmod +x /usr/bin/dde-lock
-                arch-chroot /mnt chmod +x /usr/bin/deepin-greeter
-                arch-chroot /mnt chmod +x /usr/bin/lightdm-deepin-greeter
-                arch-chroot /mnt chmod +x /usr/bin/dde-hints-dialog
-                arch-chroot /mnt chmod +x /usr/bin/dde-license-dialog
-                arch-chroot /mnt chmod +x /usr/bin/dde-pixmix
-                arch-chroot /mnt chmod +x /usr/bin/dde-switchtogreeter
-                arch-chroot /mnt chmod +x /usr/bin/dde-wm-chooser
-                arch-chroot /mnt chmod +x /usr/bin/dde-shell
-                arch-chroot /mnt chmod +x /usr/bin/deepin-system-monitor
-                arch-chroot /mnt chmod +x /usr/bin/deepin-system-monitor-plugin-popup
-                arch-chroot /mnt chmod +x /usr/bin/deepin-system-monitor-server
-                arch-chroot /mnt chmod +x /usr/bin/deepin-turbo-invoker
-                arch-chroot /mnt chmod +x /usr/bin/deepin-turbo-single-instance
-                arch-chroot /mnt chmod +x /usr/bin/dde-widgets
-                arch-chroot /mnt chmod +x /usr/bin/dde-wloutput-daemon
-                arch-chroot /mnt chmod +x /usr/bin/deepin-fix-xauthority-perm
-                arch-chroot /mnt chmod +x /usr/bin/startdde
-                arch-chroot /mnt chmod +x /usr/bin/deepin-kwin_wayland
-                arch-chroot /mnt chmod +x /usr/bin/deepin-kwin_wayland_wrapper
-                arch-chroot /mnt chmod +x /usr/bin/deepin-kwin_x11
-                arch-chroot /mnt chmod +x /usr/bin/kwin_no_scale
-                arch-chroot /mnt chmod +x /usr/bin/deepin-boot-maker
-                arch-chroot /mnt chmod +x /usr/bin/deepin-calculator
-                arch-chroot /mnt chmod +x /usr/bin/deepin-camera
-                arch-chroot /mnt chmod +x /usr/bin/dde-clipboard
-                arch-chroot /mnt chmod +x /usr/bin/dde-clipboard-daemon
-                arch-chroot /mnt chmod +x /usr/bin/deepin-clone
-                arch-chroot /mnt chmod +x /usr/bin/deepin-clone-honest
-                arch-chroot /mnt chmod +x /usr/bin/deepin-clone-ionice
-                arch-chroot /mnt chmod +x /usr/bin/deepin-clone-pkexec
-                arch-chroot /mnt chmod +x /usr/bin/deepin-compressor
-                arch-chroot /mnt chmod +x /usr/bin/dde-device-formatter
-                arch-chroot /mnt chmod +x /usr/bin/deepin-draw
-                arch-chroot /mnt chmod +x /usr/bin/deepin-editor
-                arch-chroot /mnt chmod +x /usr/bin/deepin-font-manager
-                arch-chroot /mnt chmod +x /usr/bin/dde-grand-search
-                arch-chroot /mnt chmod +x /usr/bin/dde-grand-search-daemon
-                arch-chroot /mnt chmod +x /usr/bin/deepin-lianliankan
-                arch-chroot /mnt chmod +x /usr/bin/deepin-movie
-                arch-chroot /mnt chmod +x /usr/bin/deepin-picker
-                arch-chroot /mnt chmod +x /usr/bin/dde-printer
-                arch-chroot /mnt chmod +x /usr/bin/dde-printer-helper
-                arch-chroot /mnt chmod +x /usr/bin/deepin-pin-screenshots
-                arch-chroot /mnt chmod +x /usr/bin/deepin-screen-recorder
-                arch-chroot /mnt chmod +x /usr/bin/deepin-terminal
-                arch-chroot /mnt chmod +x /usr/bin/deepin-voice-note
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-anything-monitor"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-anything-tool"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-anything-tool-ionice"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-open"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-dconfig"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-dconfig-daemon"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-dconfig-editor"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-fakewm"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/app-identifier"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-am"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-application-manager"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-calendar"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-control-center"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-desktop"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-file-dialog"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-file-manager"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-file-manager-daemon"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-file-manager-pkexec"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-file-manager-server"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-property-dialog"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-select-dialog-wayland"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-select-dialog-x11"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dfm-open.sh"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/file-manager.sh"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-image-viewer"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-menu"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/pwd-conf-update"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-screensaver"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-keyring-checker"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-login-reminder"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-session"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-version-checker"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-xsettings-checker"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-lock"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-greeter"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/lightdm-deepin-greeter"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-hints-dialog"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-license-dialog"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-pixmix"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-switchtogreeter"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-wm-chooser"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-shell"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-system-monitor"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-system-monitor-plugin-popup"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-system-monitor-server"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-turbo-invoker"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-turbo-single-instance"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-widgets"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-wloutput-daemon"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-fix-xauthority-perm"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/startdde"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-kwin_wayland"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-kwin_wayland_wrapper"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-kwin_x11"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/kwin_no_scale"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-boot-maker"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-calculator"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-camera"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-clipboard"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-clipboard-daemon"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-clone"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-clone-honest"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-clone-ionice"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-clone-pkexec"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-compressor"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-device-formatter"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-draw"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-editor"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-font-manager"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-grand-search"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-grand-search-daemon"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-lianliankan"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-movie"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-picker"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-printer"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/dde-printer-helper"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-pin-screenshots"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-screen-recorder"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-terminal"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER chmod +x /usr/bin/deepin-voice-note"
 
                 arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
                 ;;
