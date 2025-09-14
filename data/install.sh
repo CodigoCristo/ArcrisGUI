@@ -612,8 +612,8 @@ partition_cifrado() {
             echo -e "${RED}ERROR: Partición EFI ${SELECTED_DISK}1 no existe${NC}"
             exit 1
         fi
-        if [ ! -b "${SELECTED_DISK}2" ]; then
-            echo -e "${RED}ERROR: Partición boot ${SELECTED_DISK}2 no existe${NC}"
+        if [ ! -b "${SELECTED_DISK}1" ]; then
+            echo -e "${RED}ERROR: Partición boot ${SELECTED_DISK}1 no existe${NC}"
             exit 1
         fi
 
@@ -625,7 +625,7 @@ partition_cifrado() {
         mkdir -p /mnt/boot
 
         echo -e "${CYAN}Montando partición boot...${NC}"
-        if ! mount ${SELECTED_DISK}2 /mnt/boot; then
+        if ! mount ${SELECTED_DISK}1 /mnt/boot; then
             echo -e "${RED}ERROR: Falló el montaje de la partición boot${NC}"
             exit 1
         fi
@@ -680,7 +680,7 @@ partition_cifrado() {
         parted $SELECTED_DISK --script --align optimal mkpart primary 513MiB 100%
 
         # Formatear partición boot
-        mkfs.ext4 -F ${SELECTED_DISK}2
+        mkfs.ext4 -F ${SELECTED_DISK}1
 
         # Sincronizar y esperar reconocimiento de particiones
         echo -e "${CYAN}Sincronizando sistema de archivos...${NC}"
@@ -2821,7 +2821,6 @@ case "$INSTALLATION_TYPE" in
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rofi --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S pcmanfm --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dunst --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gedit  --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nano  --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vim --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S pulseaudio  --noansweredit --noconfirm --needed"
