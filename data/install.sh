@@ -1648,7 +1648,7 @@ if true; then
         sleep 4
 
         echo -e "${CYAN}Instalando GRUB en disco...${NC}"
-        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK --recheck"; then
+        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK"; then
             echo -e "${RED}ERROR: Falló la instalación de GRUB BIOS${NC}"
             exit 1
         fi
