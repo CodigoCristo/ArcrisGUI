@@ -1648,7 +1648,7 @@ if true; then
         sleep 4
 
         echo -e "${CYAN}Instalando GRUB en disco...${NC}"
-        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK"; then
+        if ! arch-chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK --recheck"; then
             echo -e "${RED}ERROR: Falló la instalación de GRUB BIOS${NC}"
             exit 1
         fi
@@ -2816,9 +2816,9 @@ case "$INSTALLATION_TYPE" in
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xsetroot --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xterm --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dmenu --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S rofi --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S pcmanfm --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dunst --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nano  --noansweredit --noconfirm --needed"
@@ -2842,8 +2842,8 @@ case "$INSTALLATION_TYPE" in
         # Instalar herramientas adicionales para gestores de ventanas
         echo -e "${CYAN}Instalando Terminales...${NC}"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S alacritty --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S foot --noansweredit --noconfirm --needed"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S kitty --noansweredit --noconfirm --needed"
+
 
         # Instalar Ly display manager
         echo -e "${CYAN}Instalando Ly display manager...${NC}"
@@ -2859,7 +2859,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noansweredit --noconfirm --needed"
                 # Crear configuración básica de i3
                 mkdir -p /mnt/home/$USER/.config/i3
-                echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
+                arch-chroot /mnt /bin/bash -c "install -Dm644 /etc/i3/config /home/$USER/.config/i3/config"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "AWESOME")
@@ -2868,30 +2868,39 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vicious --noansweredit --noconfirm --needed"
                 # Crear configuración básica de awesome
                 mkdir -p /mnt/home/$USER/.config/awesome
+                arch-chroot /mnt /bin/bash -c "install -Dm755 /etc/xdg/awesome/rc.lua /home/$USER/.config/awesome/rc.lua"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "BSPWM")
                 echo -e "${CYAN}Instalando BSPWM Window Manager...${NC}"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S bspwm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sxhkd --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S polybar --noansweredit --noconfirm --needed"
                 # Crear configuración básica de bspwm
                 mkdir -p /mnt/home/$USER/.config/bspwm
                 mkdir -p /mnt/home/$USER/.config/sxhkd
+                mkdir -p /mnt/home/$USER/.config/polybar/
+                arch-chroot /mnt /bin/bash -c "install -Dm755 /usr/share/doc/bspwm/examples/bspwmrc /home/$USER/.config/bspwm/bspwmrc"
+                arch-chroot /mnt /bin/bash -c "install -Dm644 /usr/share/doc/bspwm/examples/sxhkdrc /home/$USER/.config/sxhkd/sxhkdrc"
+                arch-chroot /mnt /bin/bash -c "install -Dm644 /etc/polybar/config.ini /home/$USER/.config/polybar/config.ini"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "DWM")
                 echo -e "${CYAN}Instalando DWM Window Manager...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S git --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S base-devel --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dwm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S st --noansweredit --noconfirm --needed"
                 ;;
             "HYPRLAND")
                 echo -e "${CYAN}Instalando Hyprland Window Manager...${NC}"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprland --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S waybar --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S wofi --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S aquamarine --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nwg-displays --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-gtk --noansweredit --noconfirm --needed"
                 # Crear configuración básica de hyprland
                 mkdir -p /mnt/home/$USER/.config/hypr
+                arch-chroot /mnt /bin/bash -c "install -Dm644 /usr/share/hypr/hyprland.conf /home/$USER/.config/hypr/hyprland.conf"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "OPENBOX")
@@ -2947,111 +2956,6 @@ case "$INSTALLATION_TYPE" in
         # Configurar terminales con configuraciones básicas
         echo -e "${CYAN}Configurando terminales...${NC}"
 
-        # Configuración básica para Foot
-        mkdir -p /mnt/home/$USER/.config/foot
-        cat > /mnt/home/$USER/.config/foot/foot.ini << 'EOF'
-[main]
-term=xterm-256color
-login-shell=no
-
-[bell]
-urgent=no
-notify=no
-visual=no
-
-[scrollback]
-lines=1000
-
-[url]
-launch=xdg-open ${url}
-label-letters=sadfjklewcmpgh
-osc8-underline=url-mode
-protocols=http, https, ftp, ftps, file, gemini, gopher
-
-[cursor]
-style=block
-unfocused-style=hollow
-
-[mouse]
-hide-when-typing=no
-
-[colors]
-foreground=cdd6f4
-background=1e1e2e
-regular0=45475a
-regular1=f38ba8
-regular2=a6e3a1
-regular3=f9e2af
-regular4=89b4fa
-regular5=f5c2e7
-regular6=94e2d5
-regular7=bac2de
-bright0=585b70
-bright1=f38ba8
-bright2=a6e3a1
-bright3=f9e2af
-bright4=89b4fa
-bright5=f5c2e7
-bright6=94e2d5
-bright7=a6adc8
-
-[key-bindings]
-scrollback-up-page=Shift+Page_Up
-scrollback-up-half-page=none
-scrollback-up-line=none
-scrollback-down-page=Shift+Page_Down
-scrollback-down-half-page=none
-scrollback-down-line=none
-clipboard-copy=Control+Shift+c XF86Copy
-clipboard-paste=Control+Shift+v XF86Paste
-primary-paste=Shift+Insert
-search-start=Control+Shift+f
-font-increase=Control+plus Control+equal Control+KP_Add
-font-decrease=Control+minus Control+KP_Subtract
-font-reset=Control+0 Control+KP_0
-spawn-terminal=Control+Shift+n
-minimize=none
-maximize=none
-fullscreen=F11
-pipe-visible=[sh -c "xurls | fuzzel | xargs -r firefox"] none
-pipe-scrollback=[sh -c "xurls | fuzzel | xargs -r firefox"] none
-pipe-selected=[xargs -r firefox] none
-show-urls-launch=Control+Shift+u
-show-urls-copy=none
-show-urls-persistent=none
-prompt-prev=Control+Shift+z
-prompt-next=Control+Shift+x
-unicode-input=Control+Shift+u
-noop=none
-
-[search-bindings]
-cancel=Control+g Control+c Escape
-commit=Return
-find-prev=Control+r
-find-next=Control+s
-cursor-left=Left Control+b
-cursor-left-word=Control+Left Mod1+b
-cursor-right=Right Control+f
-cursor-right-word=Control+Right Mod1+f
-cursor-home=Home Control+a
-cursor-end=End Control+e
-delete-prev=BackSpace
-delete-prev-word=Mod1+BackSpace Control+BackSpace
-delete-next=Delete
-delete-next-word=Mod1+d Control+Delete
-extend-to-word-boundary=Control+w
-extend-to-next-whitespace=Control+Shift+w
-clipboard-paste=Control+v Control+Shift+v Control+y XF86Paste
-primary-paste=Shift+Insert
-unicode-input=none
-
-[url-bindings]
-cancel=Control+g Control+c Control+d Escape
-toggle-url-visible=t
-
-[text-bindings]
-\x03=Mod4+c
-EOF
 
         # Configuración básica para Kitty
         mkdir -p /mnt/home/$USER/.config/kitty
@@ -3286,7 +3190,6 @@ map kitty_mod+e combine : clear_terminal scroll active : send_text normal,applic
 EOF
 
         # Establecer permisos correctos para las configuraciones
-        arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config/foot"
         arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config/kitty"
 
         # Configurar Ly para reconocer los window managers
@@ -3812,6 +3715,8 @@ if arch-chroot /mnt /usr/bin/visudo -c -f /etc/sudoers >/dev/null 2>&1; then
 else
     echo "❌ Error en sintaxis del sudoers detectado"
 fi
+
+echo "$USER ALL=(ALL) ALL" >> /mnt/etc/sudoers
 
 clear
 
