@@ -2909,6 +2909,9 @@ case "$INSTALLATION_TYPE" in
                 # Crear configuración básica de hyprland
                 mkdir -p /mnt/home/$USER/.config/hypr
                 arch-chroot /mnt /bin/bash -c "install -Dm644 /usr/share/hypr/hyprland.conf /home/$USER/.config/hypr/hyprland.conf"
+                arch-chroot /mnt /bin/bash -c "echo exec-once = waybar >> /home/$USER/.config/hypr/hyprland.conf"
+                arch-chroot /mnt /bin/bash -c "echo exec-once = systemctl --user start hyprpolkitagent >> /home/$USER/.config/hypr/hyprland.conf"
+                arch-chroot /mnt hyprctl keyword input:kb_layout $KEYBOARD_LAYOUT
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "OPENBOX")
