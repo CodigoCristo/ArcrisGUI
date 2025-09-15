@@ -142,7 +142,6 @@ myStartupHook :: X ()
 myStartupHook = do
     spawnOnce "nitrogen --restore &"  -- Wallpaper
     spawnOnce "picom &"              -- Compositor
-    spawnOnce "setxkbmap es &"       -- Distribución de teclado español
 
 -- Atajos de teclado personalizados
 myKeys :: [(String, X ())]
@@ -346,6 +345,7 @@ EOF
 
     # Hacer .xinitrc ejecutable
     chmod +x "$USER_HOME/.xinitrc"
+
 
     # Ajustar permisos
     echo "Ajustando permisos..."
@@ -3262,6 +3262,7 @@ case "$INSTALLATION_TYPE" in
                 # Crear configuración básica de xmonad
                 mkdir -p /mnt/home/$USER/.config/xmonad
                 guardar_configuraciones_xmonad
+                arch-chroot /mnt /bin/bash -c "xmonad --recompile /home/$USER/.config/xmonad/xmonad.hs"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             *)
