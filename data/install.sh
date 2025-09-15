@@ -3233,8 +3233,12 @@ case "$INSTALLATION_TYPE" in
             "OPENBOX")
                 echo -e "${CYAN}Instalando Openbox Window Manager...${NC}"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S openbox --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S obmenu --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S obconf --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxappearance-obconf --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxinput --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxrandr --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S archlinux-xdg-menu --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S menumaker --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S obmenu-generator --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S tint2 --noansweredit --noconfirm --needed"
                 # Crear configuración básica de openbox
                 mkdir -p /mnt/home/$USER/.config/openbox
