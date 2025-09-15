@@ -2883,24 +2883,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "install -Dm755 /usr/share/doc/bspwm/examples/bspwmrc /home/$USER/.config/bspwm/bspwmrc"
                 arch-chroot /mnt /bin/bash -c "install -Dm644 /usr/share/doc/bspwm/examples/sxhkdrc /home/$USER/.config/sxhkd/sxhkdrc"
                 arch-chroot /mnt /bin/bash -c "install -Dm644 /etc/polybar/config.ini /home/$USER/.config/polybar/config.ini"
-
-                # Agregar configuración de polybar al final del bspwmrc
-                cat >> /mnt/home/$USER/.config/bspwm/bspwmrc << 'EOF'
-
-                # === POLYBAR CONFIGURATION ===
-                # Matar polybar existente
-                killall -q polybar
-
-                # Esperar a que terminen los procesos
-                while pgrep -u $UID -x polybar >/dev/null; do sleep 1; done
-
-                # Lanzar polybar
-                polybar main 2>&1 | tee -a /tmp/polybar.log & disown
-
-                # Ajustar padding para la barra
-                bspc config top_padding 30
-                EOF
-
+                arch-chroot /mnt /bin/bash -c "echo "killall -q polybar; exec polybar" >> /home/$USER/.config/bspwm/bspwmrc"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "DWM")
@@ -2985,7 +2968,6 @@ case "$INSTALLATION_TYPE" in
 
         # Configurar terminales con configuraciones básicas
         echo -e "${CYAN}Configurando terminales...${NC}"
-
 
         # Configuración básica para Kitty
         mkdir -p /mnt/home/$USER/.config/kitty
