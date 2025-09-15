@@ -61,6 +61,309 @@ barra_progreso() {
     echo -e "\n${GREEN}✓ Completado!${NC}\n"
 }
 
+
+guardar_configuraciones_xmonad() {
+    echo "=== Configurando XMonad para Arch Linux ==="
+
+    # Variables
+    USER_HOME="/mnt/home/$USER"
+    XMONAD_DIR="$USER_HOME/.config/xmonad"
+    XMOBAR_DIR="$USER_HOME/.config/xmobar"
+
+    # Crear directorios necesarios
+    echo "Creando directorios de configuración..."
+    mkdir -p "$XMONAD_DIR"
+    mkdir -p "$XMOBAR_DIR"
+
+    # Crear configuración de XMonad
+    echo "Creando configuración de XMonad..."
+    cat > "$XMONAD_DIR/xmonad.hs" << 'EOF'
+import XMonad
+import XMonad.Config.Desktop
+import XMonad.Hooks.DynamicLog
+import XMonad.Hooks.ManageDocks
+import XMonad.Hooks.StatusBar
+import XMonad.Hooks.StatusBar.PP
+import XMonad.Layout.Spacing
+import XMonad.Layout.ThreeColumns
+import XMonad.Util.EZConfig
+import XMonad.Util.Loggers
+import XMonad.Util.Ungrab
+import XMonad.Util.SpawnOnce
+
+-- Configuración principal
+main :: IO ()
+main = xmonad
+     . withEasySB (statusBarProp "xmobar" (pure myXmobarPP)) defToggleStrutsKey
+     $ myConfig
+
+myConfig = def
+    { modMask            = mod4Mask      -- Usar Super/Windows como mod
+    , layoutHook         = myLayout
+    , manageHook         = myManageHook
+    , startupHook        = myStartupHook
+    , terminal           = myTerminal
+    , focusFollowsMouse  = myFocusFollowsMouse
+    , clickJustFocuses   = myClickJustFocuses
+    , borderWidth        = myBorderWidth
+    , normalBorderColor  = myNormalBorderColor
+    , focusedBorderColor = myFocusedBorderColor
+    } `additionalKeysP` myKeys
+
+-- Variables de configuración
+myTerminal           = "alacritty"
+myFocusFollowsMouse  = True
+myClickJustFocuses   = False
+myBorderWidth        = 2
+myNormalBorderColor  = "#dddddd"
+myFocusedBorderColor = "#ff0000"
+
+-- Layouts
+myLayout = avoidStruts $ spacingRaw True (Border 4 4 4 4) True (Border 4 4 4 4) True $
+           tiled ||| Mirror tiled ||| Full ||| threeCol
+  where
+    tiled    = Tall nmaster delta ratio
+    nmaster  = 1      -- Ventanas en el panel principal
+    ratio    = 1/2    -- Proporción del panel principal
+    delta    = 3/100  -- Incremento para redimensionar
+    threeCol = ThreeColMid nmaster delta (1/3)
+
+-- Reglas de manejo de ventanas
+myManageHook :: ManageHook
+myManageHook = composeAll
+    [ className =? "MPlayer"        --> doFloat
+    , className =? "Gimp"           --> doFloat
+    , resource  =? "desktop_window" --> doIgnore
+    , resource  =? "kdesktop"       --> doIgnore
+    ]
+
+-- Aplicaciones de inicio
+myStartupHook :: X ()
+myStartupHook = do
+    spawnOnce "nitrogen --restore &"  -- Wallpaper
+    spawnOnce "picom &"              -- Compositor
+    spawnOnce "setxkbmap es &"       -- Distribución de teclado español
+
+-- Atajos de teclado personalizados
+myKeys :: [(String, X ())]
+myKeys =
+    -- Lanzadores
+    [ ("M-p", spawn "dmenu_run")
+    , ("M-<Return>", spawn myTerminal)
+    , ("M-S-q", kill)
+
+    -- Navegación
+    , ("M-j", windows W.focusDown)
+    , ("M-k", windows W.focusUp)
+    , ("M-m", windows W.focusMaster)
+    , ("M-S-j", windows W.swapDown)
+    , ("M-S-k", windows W.swapUp)
+    , ("M-S-m", windows W.swapMaster)
+
+    -- Redimensionado
+    , ("M-h", sendMessage Shrink)
+    , ("M-l", sendMessage Expand)
+    , ("M-t", withFocused $ windows . W.sink)
+
+    -- Layouts
+    , ("M-<Space>", sendMessage NextLayout)
+    , ("M-S-<Space>", setLayout $ XMonad.layoutHook conf)
+
+    -- Sistema
+    , ("M-S-r", spawn "xmonad --recompile; xmonad --restart")
+    , ("M-S-e", io exitSuccess)
+
+    -- Multimedia (requiere paquetes de audio)
+    , ("<XF86AudioMute>", spawn "amixer -q sset Master toggle")
+    , ("<XF86AudioLowerVolume>", spawn "amixer -q sset Master 5%-")
+    , ("<XF86AudioRaiseVolume>", spawn "amixer -q sset Master 5%+")
+    ]
+
+-- Configuración de XMobar
+myXmobarPP :: PP
+myXmobarPP = def
+    { ppSep             = magenta " • "
+    , ppTitleSanitize   = xmobarStrip
+    , ppCurrent         = wrap " " "" . xmobarBorder "Top" "#8be9fd" 2
+    , ppVisible         = white . wrap " " ""
+    , ppHidden          = white . wrap " " ""
+    , ppHiddenNoWindows = lowWhite . wrap " " ""
+    , ppUrgent          = red . wrap (yellow "!") (yellow "!")
+    , ppOrder           = \[ws, l, _, wins] -> [ws, l, wins]
+    , ppExtras          = [logTitles formatFocused formatUnfocused]
+    }
+  where
+    formatFocused   = wrap "[" "]" . magenta . ppWindow
+    formatUnfocused = wrap " " " " . blue    . ppWindow
+
+    ppWindow :: String -> String
+    ppWindow = xmobarRaw . (\w -> if null w then "untitled" else w) . shorten 30
+
+    blue, lowWhite, magenta, red, white, yellow :: String -> String
+    magenta  = xmobarColor "#ff79c6" ""
+    blue     = xmobarColor "#bd93f9" ""
+    white    = xmobarColor "#f8f8f2" ""
+    yellow   = xmobarColor "#f1fa8c" ""
+    red      = xmobarColor "#ff5555" ""
+    lowWhite = xmobarColor "#bbbbbb" ""
+EOF
+
+    # Crear configuración de XMobar
+    echo "Creando configuración de XMobar..."
+    cat > "$XMOBAR_DIR/xmobarrc" << 'EOF'
+Config {
+   -- Apariencia
+     font            = "xft:Ubuntu Mono:weight=bold:pixelsize=11:antialias=true:hinting=true"
+   , additionalFonts = [ "xft:Mononoki Nerd Font:pixelsize=11:antialias=true:hinting=true"
+                       , "xft:Font Awesome 6 Free Solid:pixelsize=12"
+                       ]
+   , borderColor     = "black"
+   , border          = TopB
+   , bgColor         = "#282c34"
+   , fgColor         = "#abb2bf"
+   , alpha           = 255
+   , position        = Top
+   , textOffset      = -1
+   , iconOffset      = -1
+   , lowerOnStart    = True
+   , pickBroadest    = False
+   , persistent      = False
+   , hideOnStart     = False
+   , iconRoot        = "."
+   , allDesktops     = True
+   , overrideRedirect = True
+
+   -- Layout
+   , sepChar  = "%"   -- carácter delineador
+   , alignSep = "}{"  -- separador izquierda y derecha
+   , template = "%XMonadLog% }{ %multicpu% | %coretemp% | %memory% | %dynnetwork% | %date% || %kbd% "
+
+   -- Plugins general
+   , commands =
+
+        -- información del tiempo cada 36000 (10hrs)
+        [ Run Weather "RJTT" [ "--template", "<skyCondition> | <fc=#4682B4><tempC></fc>°C | <fc=#4682B4><rh></fc>% | <fc=#4682B4><pressure></fc>hPa"
+                             ] 36000
+
+        -- uso de red (eth0)
+        , Run DynNetwork     [ "--template" , "<dev>: <tx>kB/s|<rx>kB/s"
+                             , "--Low"      , "1000"       -- unidades: B/s
+                             , "--High"     , "5000"       -- unidades: B/s
+                             , "--low"      , "darkgreen"
+                             , "--normal"   , "darkorange"
+                             , "--high"     , "darkred"
+                             ] 10
+
+        -- uso de cpu
+        , Run MultiCpu       [ "--template" , "Cpu: <total0>%|<total1>%"
+                             , "--Low"      , "50"         -- unidades: %
+                             , "--High"     , "85"         -- unidades: %
+                             , "--low"      , "darkgreen"
+                             , "--normal"   , "darkorange"
+                             , "--high"     , "darkred"
+                             ] 10
+
+        -- temperatura del cpu
+        , Run CoreTemp       [ "--template" , "Temp: <core0>°C|<core1>°C"
+                             , "--Low"      , "70"        -- unidades: °C
+                             , "--High"     , "80"        -- unidades: °C
+                             , "--low"      , "darkgreen"
+                             , "--normal"   , "darkorange"
+                             , "--high"     , "darkred"
+                             ] 50
+
+        -- uso de memoria
+        , Run Memory         [ "--template" ,"Mem: <usedratio>%"
+                             , "--Low"      , "20"        -- unidades: %
+                             , "--High"     , "90"        -- unidades: %
+                             , "--low"      , "darkgreen"
+                             , "--normal"   , "darkorange"
+                             , "--high"     , "darkred"
+                             ] 10
+
+        -- batería
+        , Run Battery        [ "--template" , "Batt: <acstatus>"
+                             , "--Low"      , "10"        -- unidades: %
+                             , "--High"     , "80"        -- unidades: %
+                             , "--low"      , "darkred"
+                             , "--normal"   , "darkorange"
+                             , "--high"     , "darkgreen"
+
+                             , "--" -- opciones específicas de batería
+                                       -- desconectado: show del %
+                                       , "-o"	, "<left>% (<timeleft>)"
+                                       -- en AC, cargando
+                                       , "-O"	, "<fc=#dAA520>Charging</fc>"
+                                       -- en AC, cargado
+                                       , "-i"	, "<fc=#006000>Charged</fc>"
+                             ] 50
+
+        -- hora
+        , Run Date           "<fc=#ABABAB>%F (%a) %T</fc>" "date" 10
+
+        -- layout del teclado
+        , Run Kbd            [ ("us(dvorak)" , "<fc=#00008B>DV</fc>")
+                             , ("us"         , "<fc=#8B0000>US</fc>")
+                             ]
+
+        -- XMonad log
+        , Run XMonadLog
+        ]
+   }
+EOF
+
+    # Crear .xinitrc
+    echo "Creando archivo .xinitrc..."
+    cat > "$USER_HOME/.xinitrc" << 'EOF'
+#!/bin/sh
+
+# Cargar recursos de X
+userresources=$HOME/.Xresources
+usermodmap=$HOME/.Xmodmap
+sysresources=/etc/X11/xinit/.Xresources
+sysmodmap=/etc/X11/xinit/.Xmodmap
+
+# merge in defaults and keymaps
+if [ -f $sysresources ]; then
+    xrdb -merge $sysresources
+fi
+
+if [ -f $sysmodmap ]; then
+    xmodmap $sysmodmap
+fi
+
+if [ -f "$userresources" ]; then
+    xrdb -merge "$userresources"
+fi
+
+if [ -f "$usermodmap" ]; then
+    xmodmap "$usermodmap"
+fi
+
+# Iniciar XMonad
+exec xmonad
+EOF
+
+    # Hacer .xinitrc ejecutable
+    chmod +x "$USER_HOME/.xinitrc"
+
+
+    # Ajustar permisos
+    echo "Ajustando permisos..."
+    if [ -n "$USER" ] && getent passwd "$USER" > /dev/null 2>&1; then
+        USER_ID=$(id -u "$USER" 2>/dev/null || echo "1000")
+        GROUP_ID=$(id -g "$USER" 2>/dev/null || echo "1000")
+        chown -R "$USER_ID:$GROUP_ID" "$USER_HOME/.config" 2>/dev/null || echo "Usuario $USER no encontrado, ajustar permisos manualmente"
+        chown "$USER_ID:$GROUP_ID" "$USER_HOME/.xinitrc" 2>/dev/null || echo "Usuario $USER no encontrado, ajustar permisos manualmente"
+    else
+        echo "Advertencia: Usuario $USER no encontrado. Ajustar permisos manualmente después del chroot."
+    fi
+
+    echo "=== Configuración de XMonad completada ==="
+    echo ""
+}
+
+
 clear
 echo ""
 echo ""
@@ -2911,7 +3214,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "install -Dm644 /usr/share/hypr/hyprland.conf /home/$USER/.config/hypr/hyprland.conf"
                 arch-chroot /mnt /bin/bash -c "echo exec-once = waybar >> /home/$USER/.config/hypr/hyprland.conf"
                 arch-chroot /mnt /bin/bash -c "echo exec-once = systemctl --user start hyprpolkitagent >> /home/$USER/.config/hypr/hyprland.conf"
-                arch-chroot /mnt hyprctl keyword input:kb_layout $KEYBOARD_LAYOUT
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER hyprctl keyword input:kb_layout $KEYBOARD_LAYOUT"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "OPENBOX")
@@ -2950,8 +3253,11 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmonad --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmonad-contrib --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmobar --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ghc --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S cabal-install --noansweredit --noconfirm --needed"
                 # Crear configuración básica de xmonad
                 mkdir -p /mnt/home/$USER/.config/xmonad
+                guardar_configuraciones_xmonad
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             *)
