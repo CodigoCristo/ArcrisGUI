@@ -78,133 +78,147 @@ guardar_configuraciones_xmonad() {
     # Crear configuración de XMonad
     echo "Creando configuración de XMonad..."
     cat > "$XMONAD_DIR/xmonad.hs" << 'EOF'
-import XMonad
-import XMonad.Config.Desktop
-import XMonad.Hooks.DynamicLog
-import XMonad.Hooks.ManageDocks
-import XMonad.Hooks.StatusBar
-import XMonad.Hooks.StatusBar.PP
-import XMonad.Layout.Spacing
-import XMonad.Layout.ThreeColumns
-import XMonad.Util.EZConfig
-import XMonad.Util.Loggers
-import XMonad.Util.Ungrab
-import XMonad.Util.SpawnOnce
+    import XMonad
+    import XMonad.Config.Desktop
+    import XMonad.Hooks.DynamicLog
+    import XMonad.Hooks.ManageDocks
+    import XMonad.Hooks.StatusBar
+    import XMonad.Hooks.StatusBar.PP
+    import XMonad.Layout.Spacing
+    import XMonad.Layout.ThreeColumns
+    import XMonad.Util.EZConfig
+    import XMonad.Util.Loggers
+    import XMonad.Util.SpawnOnce
+    import qualified XMonad.StackSet as W   -- necesario para focusDown, swapUp, etc.
+    import System.Exit (exitSuccess)
 
--- Configuración principal
-main :: IO ()
-main = xmonad
-     . withEasySB (statusBarProp "xmobar" (pure myXmobarPP)) defToggleStrutsKey
-     $ myConfig
+    -- ============================================================
+    -- VARIABLES DE CONFIGURACIÓN
+    -- ============================================================
+    myTerminal           = "alacritty"
+    myFocusFollowsMouse  = True
+    myClickJustFocuses   = False
+    myBorderWidth        = 2
+    myNormalBorderColor  = "#dddddd"
+    myFocusedBorderColor = "#ff0000"
 
-myConfig = def
-    { modMask            = mod4Mask      -- Usar Super/Windows como mod
-    , layoutHook         = myLayout
-    , manageHook         = myManageHook
-    , startupHook        = myStartupHook
-    , terminal           = myTerminal
-    , focusFollowsMouse  = myFocusFollowsMouse
-    , clickJustFocuses   = myClickJustFocuses
-    , borderWidth        = myBorderWidth
-    , normalBorderColor  = myNormalBorderColor
-    , focusedBorderColor = myFocusedBorderColor
-    } `additionalKeysP` myKeys
+    -- ============================================================
+    -- LAYOUTS
+    -- ============================================================
+    myLayout = avoidStruts $
+               spacingRaw True (Border 4 4 4 4) True (Border 4 4 4 4) True $
+               tiled ||| Mirror tiled ||| Full ||| threeCol
+      where
+        tiled    = Tall nmaster delta ratio
+        nmaster  = 1
+        ratio    = 1/2
+        delta    = 3/100
+        threeCol = ThreeColMid nmaster delta (1/3)
 
--- Variables de configuración
-myTerminal           = "alacritty"
-myFocusFollowsMouse  = True
-myClickJustFocuses   = False
-myBorderWidth        = 2
-myNormalBorderColor  = "#dddddd"
-myFocusedBorderColor = "#ff0000"
+    -- ============================================================
+    -- MANEJO DE VENTANAS
+    -- ============================================================
+    myManageHook :: ManageHook
+    myManageHook = composeAll
+        [ className =? "MPlayer"        --> doFloat
+        , className =? "Gimp"           --> doFloat
+        , resource  =? "desktop_window" --> doIgnore
+        , resource  =? "kdesktop"       --> doIgnore
+        ]
 
--- Layouts
-myLayout = avoidStruts $ spacingRaw True (Border 4 4 4 4) True (Border 4 4 4 4) True $
-           tiled ||| Mirror tiled ||| Full ||| threeCol
-  where
-    tiled    = Tall nmaster delta ratio
-    nmaster  = 1      -- Ventanas en el panel principal
-    ratio    = 1/2    -- Proporción del panel principal
-    delta    = 3/100  -- Incremento para redimensionar
-    threeCol = ThreeColMid nmaster delta (1/3)
+    -- ============================================================
+    -- STARTUP
+    -- ============================================================
+    myStartupHook :: X ()
+    myStartupHook = do
+        spawnOnce "nitrogen --restore &"
+        spawnOnce "picom &"
+        spawnOnce "setxkbmap es &"
 
--- Reglas de manejo de ventanas
-myManageHook :: ManageHook
-myManageHook = composeAll
-    [ className =? "MPlayer"        --> doFloat
-    , className =? "Gimp"           --> doFloat
-    , resource  =? "desktop_window" --> doIgnore
-    , resource  =? "kdesktop"       --> doIgnore
-    ]
+    -- ============================================================
+    -- ATAJOS DE TECLADO
+    -- ============================================================
+    myKeys :: [(String, X ())]
+    myKeys =
+        -- Lanzadores
+        [ ("M-p", spawn "dmenu_run")
+        , ("M-<Return>", spawn myTerminal)
+        , ("M-S-q", kill)
 
--- Aplicaciones de inicio
-myStartupHook :: X ()
-myStartupHook = do
-    spawnOnce "nitrogen --restore &"  -- Wallpaper
-    spawnOnce "picom &"              -- Compositor
+        -- Navegación
+        , ("M-j", windows W.focusDown)
+        , ("M-k", windows W.focusUp)
+        , ("M-m", windows W.focusMaster)
+        , ("M-S-j", windows W.swapDown)
+        , ("M-S-k", windows W.swapUp)
+        , ("M-S-m", windows W.swapMaster)
 
--- Atajos de teclado personalizados
-myKeys :: [(String, X ())]
-myKeys =
-    -- Lanzadores
-    [ ("M-p", spawn "dmenu_run")
-    , ("M-<Return>", spawn myTerminal)
-    , ("M-S-q", kill)
+        -- Redimensionado
+        , ("M-h", sendMessage Shrink)
+        , ("M-l", sendMessage Expand)
+        , ("M-t", withFocused $ windows . W.sink)
 
-    -- Navegación
-    , ("M-j", windows W.focusDown)
-    , ("M-k", windows W.focusUp)
-    , ("M-m", windows W.focusMaster)
-    , ("M-S-j", windows W.swapDown)
-    , ("M-S-k", windows W.swapUp)
-    , ("M-S-m", windows W.swapMaster)
+        -- Layouts
+        , ("M-<Space>", sendMessage NextLayout)
 
-    -- Redimensionado
-    , ("M-h", sendMessage Shrink)
-    , ("M-l", sendMessage Expand)
-    , ("M-t", withFocused $ windows . W.sink)
+        -- Sistema
+        , ("M-S-r", spawn "xmonad --recompile; xmonad --restart")
+        , ("M-S-e", io exitSuccess)
+        ]
 
-    -- Layouts
-    , ("M-<Space>", sendMessage NextLayout)
-    , ("M-S-<Space>", setLayout $ XMonad.layoutHook conf)
+    -- ============================================================
+    -- XMOBAR CONFIG
+    -- ============================================================
+    myXmobarPP :: PP
+    myXmobarPP = def
+        { ppSep             = magenta " • "
+        , ppTitleSanitize   = xmobarStrip
+        , ppCurrent         = wrap " " "" . xmobarBorder "Top" "#8be9fd" 2
+        , ppVisible         = white . wrap " " ""
+        , ppHidden          = white . wrap " " ""
+        , ppHiddenNoWindows = lowWhite . wrap " " ""
+        , ppUrgent          = red . wrap (yellow "!") (yellow "!")
+        , ppOrder           = \[ws, l, _, wins] -> [ws, l, wins]
+        , ppExtras          = [logTitles formatFocused formatUnfocused]
+        }
+      where
+        formatFocused   = wrap "[" "]" . magenta . ppWindow
+        formatUnfocused = wrap " " " " . blue    . ppWindow
 
-    -- Sistema
-    , ("M-S-r", spawn "xmonad --recompile; xmonad --restart")
-    , ("M-S-e", io exitSuccess)
+        ppWindow :: String -> String
+        ppWindow = xmobarRaw . (\w -> if null w then "untitled" else w) . shorten 30
 
-    -- Multimedia (requiere paquetes de audio)
-    , ("<XF86AudioMute>", spawn "amixer -q sset Master toggle")
-    , ("<XF86AudioLowerVolume>", spawn "amixer -q sset Master 5%-")
-    , ("<XF86AudioRaiseVolume>", spawn "amixer -q sset Master 5%+")
-    ]
+        blue, lowWhite, magenta, red, white, yellow :: String -> String
+        magenta  = xmobarColor "#ff79c6" ""
+        blue     = xmobarColor "#bd93f9" ""
+        white    = xmobarColor "#f8f8f2" ""
+        yellow   = xmobarColor "#f1fa8c" ""
+        red      = xmobarColor "#ff5555" ""
+        lowWhite = xmobarColor "#bbbbbb" ""
 
--- Configuración de XMobar
-myXmobarPP :: PP
-myXmobarPP = def
-    { ppSep             = magenta " • "
-    , ppTitleSanitize   = xmobarStrip
-    , ppCurrent         = wrap " " "" . xmobarBorder "Top" "#8be9fd" 2
-    , ppVisible         = white . wrap " " ""
-    , ppHidden          = white . wrap " " ""
-    , ppHiddenNoWindows = lowWhite . wrap " " ""
-    , ppUrgent          = red . wrap (yellow "!") (yellow "!")
-    , ppOrder           = \[ws, l, _, wins] -> [ws, l, wins]
-    , ppExtras          = [logTitles formatFocused formatUnfocused]
-    }
-  where
-    formatFocused   = wrap "[" "]" . magenta . ppWindow
-    formatUnfocused = wrap " " " " . blue    . ppWindow
+    -- ============================================================
+    -- CONFIGURACIÓN PRINCIPAL
+    -- ============================================================
+    myConfig = def
+        { modMask            = mod4Mask
+        , layoutHook         = myLayout
+        , manageHook         = myManageHook
+        , startupHook        = myStartupHook
+        , terminal           = myTerminal
+        , focusFollowsMouse  = myFocusFollowsMouse
+        , clickJustFocuses   = myClickJustFocuses
+        , borderWidth        = myBorderWidth
+        , normalBorderColor  = myNormalBorderColor
+        , focusedBorderColor = myFocusedBorderColor
+        } `additionalKeysP` myKeys
 
-    ppWindow :: String -> String
-    ppWindow = xmobarRaw . (\w -> if null w then "untitled" else w) . shorten 30
-
-    blue, lowWhite, magenta, red, white, yellow :: String -> String
-    magenta  = xmobarColor "#ff79c6" ""
-    blue     = xmobarColor "#bd93f9" ""
-    white    = xmobarColor "#f8f8f2" ""
-    yellow   = xmobarColor "#f1fa8c" ""
-    red      = xmobarColor "#ff5555" ""
-    lowWhite = xmobarColor "#bbbbbb" ""
+    -- ============================================================
+    -- MAIN
+    -- ============================================================
+    main :: IO ()
+    main = xmonad
+         . withEasySB (statusBarProp "xmobar" (pure myXmobarPP)) defToggleStrutsKey
+         $ myConfig
 EOF
 
     # Crear configuración de XMobar
@@ -3259,10 +3273,11 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S cabal-install --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nitrogen --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S picom --noansweredit --noconfirm --needed"
+                xorg-xmessage
                 # Crear configuración básica de xmonad
                 mkdir -p /mnt/home/$USER/.config/xmonad
                 guardar_configuraciones_xmonad
-                arch-chroot /mnt /bin/bash -c "xmonad --recompile /home/$USER/.config/xmonad/xmonad.hs"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER xmonad --recompile /home/$USER/.config/xmonad/xmonad.hs"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             *)
