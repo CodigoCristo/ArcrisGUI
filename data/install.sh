@@ -3731,7 +3731,8 @@ else
     echo "❌ Error en sintaxis del sudoers detectado"
 fi
 
-echo "$USER ALL=(ALL) ALL" >> /mnt/etc/sudoers
+sudo sed -i '$d' /mnt/etc/sudoers
+echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
 
 clear
 
