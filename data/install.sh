@@ -78,206 +78,438 @@ guardar_configuraciones_xmonad() {
     # Crear configuración de XMonad
     echo "Creando configuración de XMonad..."
     cat > "$XMONAD_DIR/xmonad.hs" << 'EOF'
-    import XMonad
-    import XMonad.Config.Desktop
-    import XMonad.Hooks.DynamicLog
-    import XMonad.Hooks.ManageDocks
-    import XMonad.Hooks.StatusBar
-    import XMonad.Hooks.StatusBar.PP
-    import XMonad.Layout.Spacing
-    import XMonad.Layout.ThreeColumns
-    import XMonad.Util.EZConfig
-    import XMonad.Util.Loggers
-    import XMonad.Util.SpawnOnce
-    import qualified XMonad.StackSet as W   -- necesario para focusDown, swapUp, etc.
-    import System.Exit (exitSuccess)
+-- xmonad.hs
+-- xmonad example config file.
+--
+-- A template showing all available configuration hooks,
+-- and how to override the defaults in your own xmonad.hs conf file.
+--
+-- Normally, you'd only override those defaults you care about.
+--
 
-    -- ============================================================
-    -- VARIABLES DE CONFIGURACIÓN
-    -- ============================================================
-    myTerminal           = "alacritty"
-    myFocusFollowsMouse  = True
-    myClickJustFocuses   = False
-    myBorderWidth        = 2
-    myNormalBorderColor  = "#dddddd"
-    myFocusedBorderColor = "#ff0000"
+import XMonad
+import Data.Monoid
+import System.Exit
+import Graphics.X11.ExtraTypes.XF86
+import XMonad.Hooks.DynamicLog
 
-    -- ============================================================
-    -- LAYOUTS
-    -- ============================================================
-    myLayout = avoidStruts $
-               spacingRaw True (Border 4 4 4 4) True (Border 4 4 4 4) True $
-               tiled ||| Mirror tiled ||| Full ||| threeCol
-      where
-        tiled    = Tall nmaster delta ratio
-        nmaster  = 1
-        ratio    = 1/2
-        delta    = 3/100
-        threeCol = ThreeColMid nmaster delta (1/3)
 
-    -- ============================================================
-    -- MANEJO DE VENTANAS
-    -- ============================================================
-    myManageHook :: ManageHook
-    myManageHook = composeAll
-        [ className =? "MPlayer"        --> doFloat
-        , className =? "Gimp"           --> doFloat
-        , resource  =? "desktop_window" --> doIgnore
-        , resource  =? "kdesktop"       --> doIgnore
-        ]
+import qualified XMonad.StackSet as W
+import qualified Data.Map        as M
 
-    -- ============================================================
-    -- STARTUP
-    -- ============================================================
-    myStartupHook :: X ()
-    myStartupHook = do
-        spawnOnce "nitrogen --restore &"
-        spawnOnce "picom &"
-        spawnOnce "setxkbmap $KEYBOARD_LAYOUT &"
+-- The preferred terminal program, which is used in a binding below and by
+-- certain contrib modules.
+--
+myTerminal      = "alacritty"
 
-    -- ============================================================
-    -- ATAJOS DE TECLADO
-    -- ============================================================
-    myKeys :: [(String, X ())]
-    myKeys =
-        -- Lanzadores
-        [ ("M-p", spawn "dmenu_run")
-        , ("M-<Return>", spawn myTerminal)
-        , ("M-S-q", kill)
+-- Whether focus follows the mouse pointer.
+myFocusFollowsMouse :: Bool
+myFocusFollowsMouse = True
 
-        -- Navegación
-        , ("M-j", windows W.focusDown)
-        , ("M-k", windows W.focusUp)
-        , ("M-m", windows W.focusMaster)
-        , ("M-S-j", windows W.swapDown)
-        , ("M-S-k", windows W.swapUp)
-        , ("M-S-m", windows W.swapMaster)
+-- Whether clicking on a window to focus also passes the click to the window
+myClickJustFocuses :: Bool
+myClickJustFocuses = False
 
-        -- Redimensionado
-        , ("M-h", sendMessage Shrink)
-        , ("M-l", sendMessage Expand)
-        , ("M-t", withFocused $ windows . W.sink)
+-- Width of the window border in pixels.
+--
+myBorderWidth   = 1
 
-        -- Layouts
-        , ("M-<Space>", sendMessage NextLayout)
+-- modMask lets you specify which modkey you want to use. The default
+-- is mod1Mask ("left alt").  You may also consider using mod3Mask
+-- ("right alt"), which does not conflict with emacs keybindings. The
+-- "windows key" is usually mod4Mask.
+--
+myModMask       = mod4Mask
 
-        -- Sistema
-        , ("M-S-r", spawn "xmonad --recompile; xmonad --restart")
-        , ("M-S-e", io exitSuccess)
-        ]
+-- The default number of workspaces (virtual screens) and their names.
+-- By default we use numeric strings, but any string may be used as a
+-- workspace name. The number of workspaces is determined by the length
+-- of this list.
+--
+-- A tagging example:
+--
+-- > workspaces = ["web", "irc", "code" ] ++ map show [4..9]
+--
+myWorkspaces    = ["1","2","3","4","5","6","7","8","9"]
 
-    -- ============================================================
-    -- XMOBAR CONFIG
-    -- ============================================================
-    myXmobarPP :: PP
-    myXmobarPP = def
-        { ppSep             = magenta " • "
-        , ppTitleSanitize   = xmobarStrip
-        , ppCurrent         = wrap " " "" . xmobarBorder "Top" "#8be9fd" 2
-        , ppVisible         = white . wrap " " ""
-        , ppHidden          = white . wrap " " ""
-        , ppHiddenNoWindows = lowWhite . wrap " " ""
-        , ppUrgent          = red . wrap (yellow "!") (yellow "!")
-        , ppOrder           = \[ws, l, _, wins] -> [ws, l, wins]
-        , ppExtras          = [logTitles formatFocused formatUnfocused]
-        }
-      where
-        formatFocused   = wrap "[" "]" . magenta . ppWindow
-        formatUnfocused = wrap " " " " . blue    . ppWindow
+-- Border colors for unfocused and focused windows, respectively.
+--
+myNormalBorderColor  = "#dddddd"
+myFocusedBorderColor = "#ff0000"
 
-        ppWindow :: String -> String
-        ppWindow = xmobarRaw . (\w -> if null w then "untitled" else w) . shorten 30
+------------------------------------------------------------------------
+-- Key bindings. Add, modify or remove key bindings here.
+--
+myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
 
-        blue, lowWhite, magenta, red, white, yellow :: String -> String
-        magenta  = xmobarColor "#ff79c6" ""
-        blue     = xmobarColor "#bd93f9" ""
-        white    = xmobarColor "#f8f8f2" ""
-        yellow   = xmobarColor "#f1fa8c" ""
-        red      = xmobarColor "#ff5555" ""
-        lowWhite = xmobarColor "#bbbbbb" ""
+    -- launch a terminal
+    [ ((modm .|. shiftMask, xK_Return), spawn $ XMonad.terminal conf)
 
-    -- ============================================================
-    -- CONFIGURACIÓN PRINCIPAL
-    -- ============================================================
-    myConfig = def
-        { modMask            = mod4Mask
-        , layoutHook         = myLayout
-        , manageHook         = myManageHook
-        , startupHook        = myStartupHook
-        , terminal           = myTerminal
-        , focusFollowsMouse  = myFocusFollowsMouse
-        , clickJustFocuses   = myClickJustFocuses
-        , borderWidth        = myBorderWidth
-        , normalBorderColor  = myNormalBorderColor
-        , focusedBorderColor = myFocusedBorderColor
-        } `additionalKeysP` myKeys
+    -- volume keys
+    , ((0, xF86XK_AudioMute), spawn "pactl set-sink-mute @DEFAULT_SINK@ toggle")
+    , ((0, xF86XK_AudioLowerVolume), spawn "pactl set-sink-volume @DEFAULT_SINK@ -10%")
+    , ((0, xF86XK_AudioRaiseVolume), spawn "pactl set-sink-volume @DEFAULT_SINK@ +10%")
 
-    -- ============================================================
-    -- MAIN
-    -- ============================================================
-    main :: IO ()
-    main = xmonad
-         . withEasySB (statusBarProp "xmobar" (pure myXmobarPP)) defToggleStrutsKey
-         $ myConfig
+    -- launch dmenu
+    , ((modm,               xK_p     ), spawn "dmenu_run")
+
+    -- launch gmrun
+    , ((modm .|. shiftMask, xK_p     ), spawn "gmrun")
+
+    -- close focused window
+    , ((modm .|. shiftMask, xK_c     ), kill)
+
+        -- Rotate through the available layout algorithms
+    , ((modm,               xK_space ), sendMessage NextLayout)
+
+    --  Reset the layouts on the current workspace to default
+    , ((modm .|. shiftMask, xK_space ), setLayout $ XMonad.layoutHook conf)
+
+    -- Resize viewed windows to the correct size
+    , ((modm,               xK_n     ), refresh)
+
+    -- Move focus to the next window
+    , ((modm,               xK_Tab   ), windows W.focusDown)
+
+    -- Move focus to the next window
+    , ((modm,               xK_j     ), windows W.focusDown)
+
+    -- Move focus to the previous window
+    , ((modm,               xK_k     ), windows W.focusUp  )
+
+    -- Move focus to the master window
+    , ((modm,               xK_m     ), windows W.focusMaster  )
+
+    -- Swap the focused window and the master window
+    , ((modm,               xK_Return), windows W.swapMaster)
+
+    -- Swap the focused window with the next window
+    , ((modm .|. shiftMask, xK_j     ), windows W.swapDown  )
+
+    -- Swap the focused window with the previous window
+    , ((modm .|. shiftMask, xK_k     ), windows W.swapUp    )
+
+    -- Shrink the master area
+    , ((modm,               xK_h     ), sendMessage Shrink)
+
+    -- Expand the master area
+    , ((modm,               xK_l     ), sendMessage Expand)
+
+    -- Push window back into tiling
+    , ((modm,               xK_t     ), withFocused $ windows . W.sink)
+
+    -- Increment the number of windows in the master area
+    , ((modm              , xK_comma ), sendMessage (IncMasterN 1))
+
+    -- Deincrement the number of windows in the master area
+    , ((modm              , xK_period), sendMessage (IncMasterN (-1)))
+
+    -- Toggle the status bar gap
+    -- Use this binding with avoidStruts from Hooks.ManageDocks.
+    -- See also the statusBar function from Hooks.DynamicLog.
+    --
+    -- , ((modm              , xK_b     ), sendMessage ToggleStruts)
+
+    -- Quit xmonad
+    , ((modm .|. shiftMask, xK_q     ), io (exitWith ExitSuccess))
+
+    -- Restart xmonad
+    , ((modm              , xK_q     ), spawn "xmonad --recompile; xmonad --restart")
+
+    -- Run xmessage with a summary of the default keybindings (useful for beginners)
+    , ((modm .|. shiftMask, xK_slash ), spawn ("echo \"" ++ help ++ "\" | xmessage -file -"))
+    ]
+    ++
+
+    --
+    -- mod-[1..9], Switch to workspace N
+    -- mod-shift-[1..9], Move client to workspace N
+    --
+    [((m .|. modm, k), windows $ f i)
+        | (i, k) <- zip (XMonad.workspaces conf) [xK_1 .. xK_9]
+        , (f, m) <- [(W.greedyView, 0), (W.shift, shiftMask)]]
+    ++
+
+    --
+    -- mod-{w,e,r}, Switch to physical/Xinerama screens 1, 2, or 3
+    -- mod-shift-{w,e,r}, Move client to screen 1, 2, or 3
+    --
+    [((m .|. modm, key), screenWorkspace sc >>= flip whenJust (windows . f))
+        | (key, sc) <- zip [xK_w, xK_e, xK_r] [0..]
+        , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
+
+
+------------------------------------------------------------------------
+-- Mouse bindings: default actions bound to mouse events
+--
+myMouseBindings (XConfig {XMonad.modMask = modm}) = M.fromList $
+
+    -- mod-button1, Set the window to floating mode and move by dragging
+    [ ((modm, button1), (\w -> focus w >> mouseMoveWindow w
+                                        >> windows W.shiftMaster))
+
+    -- mod-button2, Raise the window to the top of the stack
+    , ((modm, button2), (\w -> focus w >> windows W.shiftMaster))
+
+    -- mod-button3, Set the window to floating mode and resize by dragging
+    , ((modm, button3), (\w -> focus w >> mouseResizeWindow w
+                                        >> windows W.shiftMaster))
+
+    -- you may also bind events to the mouse scroll wheel (button4 and button5)
+    ]
+
+------------------------------------------------------------------------
+-- Layouts:
+
+-- You can specify and transform your layouts by modifying these values.
+-- If you change layout bindings be sure to use 'mod-shift-space' after
+-- restarting (with 'mod-q') to reset your layout state to the new
+-- defaults, as xmonad preserves your old layout settings by default.
+--
+-- The available layouts.  Note that each layout is separated by |||,
+-- which denotes layout choice.
+--
+myLayout = tiled ||| Mirror tiled ||| Full
+    where
+        -- default tiling algorithm partitions the screen into two panes
+        tiled   = Tall nmaster delta ratio
+
+        -- The default number of windows in the master pane
+        nmaster = 1
+
+        -- Default proportion of screen occupied by master pane
+        ratio   = 1/2
+
+        -- Percent of screen to increment by when resizing panes
+        delta   = 3/100
+
+------------------------------------------------------------------------
+-- Window rules:
+
+-- Execute arbitrary actions and WindowSet manipulations when managing
+-- a new window. You can use this to, for example, always float a
+-- particular program, or have a client always appear on a particular
+-- workspace.
+--
+-- To find the property name associated with a program, use
+-- > xprop | grep WM_CLASS
+-- and click on the client you're interested in.
+--
+-- To match on the WM_NAME, you can use 'title' in the same way that
+-- 'className' and 'resource' are used below.
+--
+myManageHook = composeAll
+    [ className =? "MPlayer"        --> doFloat
+    , className =? "Gimp"           --> doFloat
+    , resource  =? "desktop_window" --> doIgnore
+    , resource  =? "kdesktop"       --> doIgnore ]
+
+------------------------------------------------------------------------
+-- Event handling
+
+-- * EwmhDesktops users should change this to ewmhDesktopsEventHook
+--
+-- Defines a custom handler function for X Events. The function should
+-- return (All True) if the default handler is to be run afterwards. To
+-- combine event hooks use mappend or mconcat from Data.Monoid.
+--
+myEventHook = mempty
+
+------------------------------------------------------------------------
+-- Status bars and logging
+
+-- Perform an arbitrary action on each internal state change or X event.
+-- See the 'XMonad.Hooks.DynamicLog' extension for examples.
+--
+myLogHook = return ()
+
+------------------------------------------------------------------------
+-- Startup hook
+
+-- Perform an arbitrary action each time xmonad starts or is restarted
+-- with mod-q.  Used by, e.g., XMonad.Layout.PerWorkspace to initialize
+-- per-workspace layout choices.
+--
+-- By default, do nothing.
+myStartupHook = return ()
+
+------------------------------------------------------------------------
+-- Command to launch the bar.
+myBar = "xmobar"
+
+-- Custom PP, configure it as you like. It determines what is being written to the bar.
+myPP = xmobarPP { ppCurrent = xmobarColor "#2986cc" "" . wrap "[" "]"
+                , ppTitle   = xmobarColor "#2986cc" "" . shorten 60
+                }
+
+-- Key binding to toggle the gap for the bar.
+toggleStrutsKey XConfig {XMonad.modMask = modMask} = (modMask, xK_b)
+
+------------------------------------------------------------------------
+-- Now run xmonad with all the defaults we set up.
+
+-- Run xmonad with the settings you specify. No need to modify this.
+--
+main = xmonad =<< statusBar myBar myPP toggleStrutsKey defaults
+
+-- A structure containing your configuration settings, overriding
+-- fields in the default config. Any you don't override, will
+-- use the defaults defined in xmonad/XMonad/Config.hs
+--
+-- No need to modify this.
+--
+defaults = def {
+        -- simple stuff
+        terminal           = myTerminal,
+        focusFollowsMouse  = myFocusFollowsMouse,
+        clickJustFocuses   = myClickJustFocuses,
+        borderWidth        = myBorderWidth,
+        modMask            = myModMask,
+        workspaces         = myWorkspaces,
+        normalBorderColor  = myNormalBorderColor,
+        focusedBorderColor = myFocusedBorderColor,
+
+        -- key bindings
+        keys               = myKeys,
+        mouseBindings      = myMouseBindings,
+
+        -- hooks, layouts
+        layoutHook         = myLayout,
+        manageHook         = myManageHook,
+        handleEventHook    = myEventHook,
+        logHook            = myLogHook,
+        startupHook        = myStartupHook
+    }
+
+-- | Finally, a copy of the default bindings in simple textual tabular format.
+help :: String
+help = unlines ["The default modifier key is 'alt'. Default keybindings:",
+    "",
+    "-- launching and killing programs",
+    "mod-Shift-Enter  Launch xterminal",
+    "mod-p            Launch dmenu",
+    "mod-Shift-p      Launch gmrun",
+    "mod-Shift-c      Close/kill the focused window",
+    "mod-Space        Rotate through the available layout algorithms",
+    "mod-Shift-Space  Reset the layouts on the current workSpace to default",
+    "mod-n            Resize/refresh viewed windows to the correct size",
+    "",
+    "-- move focus up or down the window stack",
+    "mod-Tab        Move focus to the next window",
+    "mod-Shift-Tab  Move focus to the previous window",
+    "mod-j          Move focus to the next window",
+    "mod-k          Move focus to the previous window",
+    "mod-m          Move focus to the master window",
+    "",
+    "-- modifying the window order",
+    "mod-Return   Swap the focused window and the master window",
+    "mod-Shift-j  Swap the focused window with the next window",
+    "mod-Shift-k  Swap the focused window with the previous window",
+    "",
+    "-- resizing the master/slave ratio",
+    "mod-h  Shrink the master area",
+    "mod-l  Expand the master area",
+    "",
+    "-- floating layer support",
+    "mod-t  Push window back into tiling; unfloat and re-tile it",
+    "",
+    "-- increase or decrease number of windows in the master area",
+    "mod-comma  (mod-,)   Increment the number of windows in the master area",
+    "mod-period (mod-.)   Deincrement the number of windows in the master area",
+    "",
+    "-- quit, or restart",
+    "mod-Shift-q  Quit xmonad",
+    "mod-q        Restart xmonad",
+    "mod-[1..9]   Switch to workSpace N",
+    "",
+    "-- Workspaces & screens",
+    "mod-Shift-[1..9]   Move client to workspace N",
+    "mod-{w,e,r}        Switch to physical/Xinerama screens 1, 2, or 3",
+    "mod-Shift-{w,e,r}  Move client to screen 1, 2, or 3",
+    "",
+    "-- Mouse bindings: default actions bound to mouse events",
+    "mod-button1  Set the window to floating mode and move by dragging",
+    "mod-button2  Raise the window to the top of the stack",
+    "mod-button3  Set the window to floating mode and resize by dragging"]
 EOF
 
     # Crear configuración de XMobar
     echo "Creando configuración de XMobar..."
     cat > "$XMOBAR_DIR/xmobarrc" << 'EOF'
 Config {
-    -- Apariencia
-        font            = "xft:Cascadia Code:weight=bold:pixelsize=12:antialias=true:hinting=true"
-    , additionalFonts = [ "xft:Noto Color Emoji:pixelsize=12"
-                        , "xft:Ubuntu:weight=bold:pixelsize=11:antialias=true:hinting=true"
-                        ]
-    , borderColor     = "#1e1e2e"
-    , border          = TopB
-    , bgColor         = "#282c34"
-    , fgColor         = "#abb2bf"
-    , alpha           = 255
-    , position        = TopH 30
-    , textOffset      = -1
-    , iconOffset      = -1
-    , lowerOnStart    = True
-    , pickBroadest    = False
-    , persistent      = False
-    , hideOnStart     = False
-    , iconRoot        = "."
-    , allDesktops     = True
-    , overrideRedirect = True
 
-    -- Layout - estructura de la barra
-    , sepChar  = "%"
-    , alignSep = "}{"
-    , template = " <fn=1>🐧</fn> %XMonadLog% }{ <fn=1>🔥</fn> CPU: %multicpu%% | <fn=1>🧠</fn> RAM: %memory%% | <fn=1>💾</fn> %disku% | <fn=1>🔊</fn> %alsa:default:Master% | <fn=1>📅</fn> %date% "
+    -- appearance
+        font =         "xft:Bitstream Vera Sans Mono:size=9:bold:antialias=true"
+    , bgColor =      "black"
+    , fgColor =      "#ABABAB"
+    , position =     Top
+    , border =       BottomB
+    , borderColor =  "#646464"
 
-    -- Plugins y comandos
+    -- layout
+    , sepChar =  "%"   -- delineator between plugin names and straight text
+    , alignSep = "}{"  -- separator between left-right alignment
+    , template = "<fc=#ABABAB>%StdinReader%</fc>  }{ | %multicpu% | %memory% | <fn=1>💾</fn> %disku% | <fn=1>🔊</fn> %alsa:default:Master% | <fn=1>📦</fn> %pacman% | %date% || %kbd% "
+
+    -- general behavior
+    , lowerOnStart =     True    -- send to bottom of window stack on start
+    , hideOnStart =      False   -- start with window unmapped (hidden)
+    , allDesktops =      True    -- show on all desktops
+    , overrideRedirect = True    -- set the Override Redirect flag (Xlib)
+    , pickBroadest =     False   -- choose widest display (multi-monitor)
+    , persistent =       True    -- enable/disable hiding (True = disabled)
+
+    -- plugins
+    --   Numbers can be automatically colored according to their value. xmobar
+    --   decides color based on a three-tier/two-cutoff system, controlled by
+    --   command options:
+    --     --Low sets the low cutoff
+    --     --High sets the high cutoff
+    --
+    --     --low sets the color below --Low cutoff
+    --     --normal sets the color between --Low and --High cutoffs
+    --     --High sets the color above --High cutoff
+    --
+    --   The --template option controls how the plugin is displayed. Text
+    --   color can be set by enclosing in <fc></fc> tags. For more details
+    --   see http://projects.haskell.org/xmobar/#system-monitor-plugins.
     , commands =
-        -- Log de XMonad (espacios de trabajo)
-        [ Run XMonadLog
 
-        -- Uso de CPU con colores
-        , Run MultiCpu      [ "--template" , "<total>"
-                            , "--Low"      , "50"         -- límite bajo
-                            , "--High"     , "85"         -- límite alto
-                            , "--low"      , "#a6e3a1"   -- verde
-                            , "--normal"   , "#f9e2af"   -- amarillo
-                            , "--high"     , "#f38ba8"   -- rojo
-                            , "--width"    , "2"
-                            ] 10
+        -- weather monitor
+        [ Run Weather "RJTT" [ "--template", "<skyCondition> | <fc=#4682B4><tempC></fc>°C | <fc=#4682B4><rh></fc>% | <fc=#4682B4><pressure></fc>hPa"
+                                ] 36000
 
-        -- Uso de memoria RAM
-        , Run Memory        [ "--template" ,"<usedratio>"
-                            , "--Low"      , "20"        -- límite bajo
-                            , "--High"     , "90"        -- límite alto
-                            , "--low"      , "#a6e3a1"   -- verde
-                            , "--normal"   , "#f9e2af"   -- amarillo
-                            , "--high"     , "#f38ba8"   -- rojo
-                            , "--width"    , "2"
-                            ] 10
+, Run StdinReader
+
+        -- network activity monitor (dynamic interface resolution)
+        , Run DynNetwork     [ "--template" , "<dev>: <tx>kB/s|<rx>kB/s"
+                                , "--Low"      , "1000"       -- units: B/s
+                                , "--High"     , "5000"       -- units: B/s
+                                , "--low"      , "darkgreen"
+                                , "--normal"   , "darkorange"
+                                , "--high"     , "darkred"
+                                ] 10
+
+        -- cpu activity monitor
+        , Run MultiCpu       [ "--template" , "CPU: <total0>%|<total1>%"
+                                , "--Low"      , "50"         -- units: %
+                                , "--High"     , "85"         -- units: %
+                                , "--low"      , "#a6e3a1"
+                                , "--normal"   , "darkorange"
+                                , "--high"     , "darkred"
+                                ] 10
+
+        -- cpu core temperature monitor
+        , Run CoreTemp       [ "--template" , "Temp: <core0>°C|<core1>°C"
+                                , "--Low"      , "70"        -- units: °C
+                                , "--High"     , "80"        -- units: °C
+                                , "--low"      , "darkgreen"
+                                , "--normal"   , "darkorange"
+                                , "--high"     , "darkred"
+                                ] 50
 
         -- Espacio libre en disco (raíz)
-        , Run DiskU         [("/", "<free> (<freep>%)")]
+        , Run DiskU         [("/", "<free> (<freep><fc=#a6e3a1>%</fc>)")]
                             [ "--Low"      , "20"        -- límite bajo (%)
                             , "--High"     , "50"        -- límite alto (%)
                             , "--low"      , "#f38ba8"   -- rojo (poco espacio)
@@ -287,7 +519,7 @@ Config {
 
         -- Volumen del sistema
         , Run Alsa "default" "Master"
-                            [ "--template", "<volume>% <status>"
+                            [ "--template", "<fc=#ABABAB><volume></fc> <status>"
                             , "--suffix"  , "True"
                             , "--"
                                     , "--on", ""
@@ -296,8 +528,44 @@ Config {
                                     , "--offc", "#f38ba8"
                             ]
 
-        -- Fecha y hora
-        , Run Date          "%a %d/%m/%Y 🕐 %H:%M:%S" "date" 10
+-- Updates de Pacman disponibles
+        , Run Com "sh" ["-c", "updates=$(checkupdates 2>/dev/null | wc -l); if [ $updates -eq 0 ]; then echo \"<fc=#a6e3a1>✓ 0</fc>\"; elif [ $updates -le 5 ]; then echo \"<fc=#f9e2af>$updates</fc>\"; else echo \"<fc=#f38ba8>$updates</fc>\"; fi"] "pacman" 300
+
+
+        -- memory usage monitor
+        , Run Memory         [ "--template" ,"RAM: <usedratio>%"
+                                , "--Low"      , "20"        -- units: %
+                                , "--High"     , "90"        -- units: %
+                                , "--low"      , "#a6e3a1"
+                                , "--normal"   , "darkorange"
+                                , "--high"     , "darkred"
+                                ] 10
+
+        -- battery monitor
+        , Run Battery        [ "--template" , "Batt: <acstatus>"
+                                , "--Low"      , "10"        -- units: %
+                                , "--High"     , "80"        -- units: %
+                                , "--low"      , "darkred"
+                                , "--normal"   , "darkorange"
+                                , "--high"     , "darkgreen"
+
+                                , "--" -- battery specific options
+                                        -- discharging status
+                                        , "-o"	, "<left>% (<timeleft>)"
+                                        -- AC "on" status
+                                        , "-O"	, "<fc=#dAA520>Charging</fc>"
+                                        -- charged status
+                                        , "-i"	, "<fc=#006000>Charged</fc>"
+                                ] 50
+
+        -- time and date indicator
+        --   (%F = y-m-d date, %a = day of week, %T = h:m:s time)
+        , Run Date          "<fc=#ABABAB>%a %d/%m/%Y 🕐 %H:%M:%S</fc>" "date" 10
+
+        -- keyboard layout indicator
+        , Run Kbd            [ ("us(dvorak)" , "<fc=#00008B>DV</fc>")
+                                , ("us"         , "<fc=#8B0000>US</fc>")
+                                ]
         ]
     }
 EOF
@@ -3254,8 +3522,6 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ghc --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S cabal-install --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nitrogen --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S picom --noansweredit --noconfirm --needed"
-                xorg-xmessage
                 # Crear configuración básica de xmonad
                 mkdir -p /mnt/home/$USER/.config/xmonad
                 guardar_configuraciones_xmonad
