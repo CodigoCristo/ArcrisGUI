@@ -3177,7 +3177,6 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-settings-daemon --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-shell --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-control-center --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-extra --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nautilus --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs gvfs-goa --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
