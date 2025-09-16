@@ -133,7 +133,7 @@ guardar_configuraciones_xmonad() {
     myStartupHook = do
         spawnOnce "nitrogen --restore &"
         spawnOnce "picom &"
-        spawnOnce "setxkbmap es &"
+        spawnOnce "setxkbmap $KEYBOARD_LAYOUT &"
 
     -- ============================================================
     -- ATAJOS DE TECLADO
@@ -224,105 +224,132 @@ EOF
     # Crear configuración de XMobar
     echo "Creando configuración de XMobar..."
     cat > "$XMOBAR_DIR/xmobarrc" << 'EOF'
-Config {
-   -- Apariencia
-     font            = "xft:Ubuntu Mono:weight=bold:pixelsize=11:antialias=true:hinting=true"
-   , additionalFonts = [ "xft:Mononoki Nerd Font:pixelsize=11:antialias=true:hinting=true"
-                       , "xft:Font Awesome 6 Free Solid:pixelsize=12"
-                       ]
-   , borderColor     = "black"
-   , border          = TopB
-   , bgColor         = "#282c34"
-   , fgColor         = "#abb2bf"
-   , alpha           = 255
-   , position        = Top
-   , textOffset      = -1
-   , iconOffset      = -1
-   , lowerOnStart    = True
-   , pickBroadest    = False
-   , persistent      = False
-   , hideOnStart     = False
-   , iconRoot        = "."
-   , allDesktops     = True
-   , overrideRedirect = True
+    Config {
+       -- Apariencia
+         font            = "xft:JetBrains Mono:weight=bold:pixelsize=12:antialias=true:hinting=true"
+       , additionalFonts = [ "xft:Font Awesome 6 Free Solid:pixelsize=12"
+                           , "xft:Font Awesome 6 Brands:pixelsize=12"
+                           ]
+       , borderColor     = "#1e1e2e"
+       , border          = TopB
+       , bgColor         = "#1e1e2e"
+       , fgColor         = "#cdd6f4"
+       , alpha           = 255
+       , position        = TopH 30
+       , textOffset      = -1
+       , iconOffset      = -1
+       , lowerOnStart    = True
+       , pickBroadest    = False
+       , persistent      = False
+       , hideOnStart     = False
+       , iconRoot        = "."
+       , allDesktops     = True
+       , overrideRedirect = True
 
-   -- Layout
-   , sepChar  = "%"   -- carácter delineador
-   , alignSep = "}{"  -- separador izquierda y derecha
-   , template = "%XMonadLog% }{ %multicpu% | %coretemp% | %memory% | %dynnetwork% | %date% || %kbd% "
+       -- Layout - estructura de la barra
+       , sepChar  = "%"
+       , alignSep = "}{"
+       , template = " <fn=1>🐧</fn> %XMonadLog% }{ <fn=1>🔥</fn> CPU: %cpu%% | <fn=1>🧠</fn> RAM: %memory%% | <fn=1>💾</fn> %disku% | <fn=1>🔊</fn> %alsa:default:Master% | <fn=1>📦</fn> %pacman% | <fn=1>📅</fn> %date% "
 
-   -- Plugins general
-   , commands =
+       -- Plugins y comandos
+       , commands =
+            -- Log de XMonad (espacios de trabajo)
+            [ Run XMonadLog
 
-        -- información del tiempo cada 36000 (10hrs)
-        [ Run Weather "RJTT" [ "--template", "<skyCondition> | <fc=#4682B4><tempC></fc>°C | <fc=#4682B4><rh></fc>% | <fc=#4682B4><pressure></fc>hPa"
-                             ] 36000
+            -- Uso de CPU con emoji
+            , Run Cpu           [ "--template" , "<total>"
+                                , "--Low"      , "3"         -- límite bajo
+                                , "--High"     , "50"        -- límite alto
+                                , "--low"      , "#a6e3a1"   -- verde
+                                , "--normal"   , "#f9e2af"   -- amarillo
+                                , "--high"     , "#f38ba8"   -- rojo
+                                , "--width"    , "2"
+                                ] 10
 
-        -- uso de red (eth0)
-        , Run DynNetwork     [ "--template" , "<dev>: <tx>kB/s|<rx>kB/s"
-                             , "--Low"      , "1000"       -- unidades: B/s
-                             , "--High"     , "5000"       -- unidades: B/s
-                             , "--low"      , "darkgreen"
-                             , "--normal"   , "darkorange"
-                             , "--high"     , "darkred"
-                             ] 10
+            -- Uso de memoria RAM con emoji
+            , Run Memory        [ "--template" ,"<usedratio>"
+                                , "--Low"      , "20"        -- límite bajo
+                                , "--High"     , "90"        -- límite alto
+                                , "--low"      , "#a6e3a1"   -- verde
+                                , "--normal"   , "#f9e2af"   -- amarillo
+                                , "--high"     , "#f38ba8"   -- rojo
+                                , "--width"    , "2"
+                                ] 10
 
-        -- uso de cpu
-        , Run MultiCpu       [ "--template" , "Cpu: <total0>%|<total1>%"
-                             , "--Low"      , "50"         -- unidades: %
-                             , "--High"     , "85"         -- unidades: %
-                             , "--low"      , "darkgreen"
-                             , "--normal"   , "darkorange"
-                             , "--high"     , "darkred"
-                             ] 10
+            -- Espacio libre en disco con emoji
+            , Run DiskU         [("/", "<free> (<freep>%)")]
+                                [ "--Low"      , "20"        -- límite bajo (%)
+                                , "--High"     , "50"        -- límite alto (%)
+                                , "--low"      , "#f38ba8"   -- rojo (poco espacio)
+                                , "--normal"   , "#f9e2af"   -- amarillo
+                                , "--high"     , "#a6e3a1"   -- verde (mucho espacio)
+                                ] 20
 
-        -- temperatura del cpu
-        , Run CoreTemp       [ "--template" , "Temp: <core0>°C|<core1>°C"
-                             , "--Low"      , "70"        -- unidades: °C
-                             , "--High"     , "80"        -- unidades: °C
-                             , "--low"      , "darkgreen"
-                             , "--normal"   , "darkorange"
-                             , "--high"     , "darkred"
-                             ] 50
+            -- Updates de Pacman con emoji
+            , Run Com "sh" ["-c", "updates=$(checkupdates 2>/dev/null | wc -l); if [ $updates -eq 0 ]; then echo \"<fc=#a6e3a1>✓ 0</fc>\"; elif [ $updates -le 5 ]; then echo \"<fc=#f9e2af>$updates</fc>\"; else echo \"<fc=#f38ba8>$updates</fc>\"; fi"] "pacman" 300
 
-        -- uso de memoria
-        , Run Memory         [ "--template" ,"Mem: <usedratio>%"
-                             , "--Low"      , "20"        -- unidades: %
-                             , "--High"     , "90"        -- unidades: %
-                             , "--low"      , "darkgreen"
-                             , "--normal"   , "darkorange"
-                             , "--high"     , "darkred"
-                             ] 10
+            -- Fecha y hora con emojis
+            , Run Date          "%a %d/%m/%Y 🕐 %H:%M:%S" "date" 10
 
-        -- batería
-        , Run Battery        [ "--template" , "Batt: <acstatus>"
-                             , "--Low"      , "10"        -- unidades: %
-                             , "--High"     , "80"        -- unidades: %
-                             , "--low"      , "darkred"
-                             , "--normal"   , "darkorange"
-                             , "--high"     , "darkgreen"
+            -- Información adicional del sistema (opcional)
+            , Run Uptime        [ "--template" , "<fn=1></fn> Up: <days>d <hours>h"
+                                ] 360
 
-                             , "--" -- opciones específicas de batería
-                                       -- desconectado: show del %
-                                       , "-o"	, "<left>% (<timeleft>)"
-                                       -- en AC, cargando
-                                       , "-O"	, "<fc=#dAA520>Charging</fc>"
-                                       -- en AC, cargado
-                                       , "-i"	, "<fc=#006000>Charged</fc>"
-                             ] 50
+            -- Batería (si es laptop)
+            , Run Battery       [ "--template" , "<fn=1></fn> <acstatus>"
+                                , "--Low"      , "10"
+                                , "--High"     , "80"
+                                , "--low"      , "#f38ba8"
+                                , "--normal"   , "#f9e2af"
+                                , "--high"     , "#a6e3a1"
+                                , "--"
+                                        , "-o" , "<left>% (<timeleft>)"  -- desconectado
+                                        , "-O" , "<fc=#f9e2af>Cargando</fc>" -- cargando
+                                        , "-i" , "<fc=#a6e3a1>Cargado</fc>"  -- completo
+                                ] 50
 
-        -- hora
-        , Run Date           "<fc=#ABABAB>%F (%a) %T</fc>" "date" 10
+            -- Volumen del sistema con emoji
+            , Run Alsa "default" "Master"
+                                [ "--template", "<volume>% <status>"
+                                , "--suffix"  , "True"
+                                , "--"
+                                        , "--on", ""
+                                        , "--off", "<fc=#f38ba8>MUTE</fc>"
+                                        , "--onc", "#a6e3a1"
+                                        , "--offc", "#f38ba8"
+                                ]
 
-        -- layout del teclado
-        , Run Kbd            [ ("us(dvorak)" , "<fc=#00008B>DV</fc>")
-                             , ("us"         , "<fc=#8B0000>US</fc>")
-                             ]
+            -- Conexión WiFi
+            , Run Wireless "wlan0" [ "--template" , "<fn=1></fn> <essid> <quality>%"
+                                   , "--Low"      , "50"
+                                   , "--High"     , "80"
+                                   , "--low"      , "#f38ba8"
+                                   , "--normal"   , "#f9e2af"
+                                   , "--high"     , "#a6e3a1"
+                                   ] "wi" 10
 
-        -- XMonad log
-        , Run XMonadLog
-        ]
-   }
+            -- Padding para el system tray
+            , Run Com "echo" ["<fc=#1e1e2e>.</fc>"] "trayerpad" 3600
+
+            -- Temperatura del CPU (requiere lm_sensors)
+            , Run CoreTemp      [ "--template" , "<fn=1></fn> <core0>°C"
+                                , "--Low"      , "70"
+                                , "--High"     , "80"
+                                , "--low"      , "#a6e3a1"
+                                , "--normal"   , "#f9e2af"
+                                , "--high"     , "#f38ba8"
+                                ] 50
+
+            -- Red (conexión activa)
+            , Run DynNetwork    [ "--template" , "<fn=1></fn> <dev>: <rx>KB/s <fn=1></fn> <tx>KB/s"
+                                , "--Low"      , "1000"
+                                , "--High"     , "5000"
+                                , "--low"      , "#a6e3a1"
+                                , "--normal"   , "#f9e2af"
+                                , "--high"     , "#f38ba8"
+                                ] 10
+            ]
+    }
 EOF
 
     # Crear .xinitrc
@@ -1595,7 +1622,7 @@ echo ""
 case "$SELECTED_KERNEL" in
     "linux")
         arch-chroot /mnt /bin/bash -c "pacman -S linux --noconfirm"
-        arch-chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        # arch-chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
         ;;
     "linux-hardened")
         arch-chroot /mnt /bin/bash -c "pacman -S linux-hardened --noconfirm"
@@ -4060,7 +4087,8 @@ if arch-chroot /mnt /usr/bin/visudo -c -f /etc/sudoers >/dev/null 2>&1; then
 else
     echo "❌ Error en sintaxis del sudoers detectado"
 fi
-
+sleep 5
+clear
 sudo sed -i '$d' /mnt/etc/sudoers
 echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
 
