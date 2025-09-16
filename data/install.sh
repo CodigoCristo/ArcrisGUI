@@ -3172,10 +3172,72 @@ case "$INSTALLATION_TYPE" in
         case "$DESKTOP_ENVIRONMENT" in
             "GNOME")
                 echo -e "${CYAN}Instalando GNOME Desktop...${NC}"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-extra --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-session --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-settings-daemon --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-shell --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-control-center --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-extra --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nautilus --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs gvfs-goa --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-text-editor --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-calculator --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-system-monitor --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-disk-utility --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S devhelp --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S dconf-editor --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-themes-extra --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-tweaks --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-backgrounds --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-user-docs --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-software --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-gnome --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-shell-extensions --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-browser-connector --noansweredit --noconfirm --needed"
+                echo "Installing extension-manager..."
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S extension-manager --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5 --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5-configtool --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5-gtk --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5-qt --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "systemctl enable gdm"
+                # Después de las instalaciones de fcitx5...
+                echo -e "${CYAN}Configurando fcitx5 con keyboard layout: ${KEYBOARD_LAYOUT}${NC}"
+
+                # Configurar variables de entorno para fcitx5
+                arch-chroot /mnt /bin/bash -c "cat >> /etc/environment << 'EOF'
+                GTK_IM_MODULE=fcitx
+                QT_IM_MODULE=fcitx
+                XMODIFIERS=@im=fcitx
+                INPUT_METHOD=fcitx
+                SDL_IM_MODULE=fcitx
+                GLFW_IM_MODULE=ibus
+                EOF"
+
+                # Crear directorio de configuración
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/fcitx5"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/autostart"
+
+                # Usar directamente la variable
+                FCITX_LAYOUT="keyboard-$KEYBOARD_LAYOUT"
+
+                # Crear configuración de profile
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER cat > /home/$USER/.config/fcitx5/profile << EOF
+                [Groups/0]
+                Name=Default
+                Default Layout=$KEYBOARD_LAYOUT
+                DefaultIM=$FCITX_LAYOUT
+
+                [Groups/0/Items/0]
+                Name=$FCITX_LAYOUT
+                Layout=
+
+                [GroupOrder]
+                0=Default
+                EOF"
+
                 ;;
             "BUDGIE")
                 echo -e "${CYAN}Instalando Budgie Desktop...${NC}"
