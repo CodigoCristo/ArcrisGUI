@@ -3289,6 +3289,8 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-framework5 --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S kwin --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S systemsettings --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S discover --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S flatpak --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S polkit-kde-agent --noansweredit --noconfirm --needed"
