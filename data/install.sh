@@ -36,8 +36,7 @@ print_color() {
 barra_progreso() {
     local duration=5
     local steps=50
-    local step_duration
-    step_duration=$(echo "scale=3; $duration/$steps" | bc -l 2>/dev/null || echo "0.1")
+    local step_duration=$(echo "scale=3; $duration/$steps" | bc -l 2>/dev/null || echo "0.1")
 
     echo -e "\n${CYAN}${titulo_progreso:-Cargando...}${NC}"
     printf "["
@@ -49,7 +48,7 @@ barra_progreso() {
         # Mostrar barra
         printf "\r["
         for ((j=0; j<i; j++)); do
-            printf "%s█%s" "${GREEN}" "${NC}"
+            printf "${GREEN}█${NC}"
         done
         for ((j=i; j<steps; j++)); do
             printf " "
@@ -57,7 +56,7 @@ barra_progreso() {
         printf "] ${YELLOW}%d%%${NC} " "$percent"
 
         # Esperar
-        sleep "$(echo "$step_duration" | bc -l 2>/dev/null || echo "0.1")"
+        sleep $(echo "$step_duration" | bc -l 2>/dev/null || echo "0.1")
     done
     echo -e "\n${GREEN}✓ Completado!${NC}\n"
 }
@@ -2722,7 +2721,7 @@ case "$DRIVER_VIDEO" in
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
-            arch-chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent"
+            arch-chroot /mnt systemctl enable qemu-guest-agent || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
 
 
@@ -2741,7 +2740,7 @@ case "$DRIVER_VIDEO" in
 
             arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
-            arch-chroot /mnt /bin/bash -c "systemctl enable vboxservice"
+            arch-chroot /mnt systemctl enable vboxservice || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
             echo "Detectado VMware - Instalando driver vmware"
@@ -2759,7 +2758,7 @@ case "$DRIVER_VIDEO" in
 
             arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
-            arch-chroot /mnt /bin/bash -c "systemctl enable vboxservice"
+            arch-chroot /mnt systemctl enable vboxservice || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"
@@ -2878,7 +2877,7 @@ case "$DRIVER_VIDEO" in
             arch-chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
-            arch-chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent"
+            arch-chroot /mnt systemctl enable qemu-guest-agent || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
 
 
@@ -2896,7 +2895,7 @@ case "$DRIVER_VIDEO" in
 
             arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
-            arch-chroot /mnt /bin/bash -c "systemctl enable vboxservice"
+            arch-chroot /mnt systemctl enable vboxservice || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
             echo "Detectado VMware - Instalando driver vmware"
@@ -2912,7 +2911,7 @@ case "$DRIVER_VIDEO" in
 
             arch-chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
-            arch-chroot /mnt /bin/bash -c "systemctl enable vboxservice"
+            arch-chroot /mnt systemctl enable vboxservice || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"
@@ -3003,11 +3002,11 @@ case "$DRIVER_BLUETOOTH" in
         ;;
     "bluetoothctl (terminal)")
         arch-chroot /mnt /bin/bash -c "pacman -S bluez bluez-utils --noconfirm"
-        arch-chroot /mnt /bin/bash -c "systemctl enable bluetooth"
+        arch-chroot /mnt systemctl enable bluetooth || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
         ;;
     "blueman (Graphical)")
         arch-chroot /mnt /bin/bash -c "pacman -S bluez bluez-utils blueman --noconfirm"
-        arch-chroot /mnt /bin/bash -c "systemctl enable bluetooth"
+        arch-chroot /mnt systemctl enable bluetooth || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
         ;;
 esac
 
@@ -3021,8 +3020,8 @@ printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 arch-chroot /mnt /bin/bash -c "pacman -S dhcp dhcpcd dhclient networkmanager wpa_supplicant --noconfirm"
 # Deshabilitar dhcpcd para evitar conflictos con NetworkManager
-arch-chroot /mnt /bin/bash -c "systemctl disable dhcpcd"
-arch-chroot /mnt /bin/bash -c "systemctl enable NetworkManager"
+arch-chroot /mnt systemctl disable dhcpcd || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+arch-chroot /mnt systemctl enable NetworkManager || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 clear
 
 # Copiado de archivos de configuración
@@ -3073,7 +3072,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     { echo "activation {"; echo "    udev_sync = 1"; echo "    udev_rules = 1"; echo "}"; } >> /mnt/etc/lvm/lvm.conf.local
 
     # Verificar que los servicios LVM estén habilitados
-    arch-chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service"
+    arch-chroot /mnt systemctl enable lvm2-monitor.service || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
     # Configuración adicional para reducir timeouts de cifrado y LVM
     echo -e "${CYAN}Aplicando optimizaciones para sistema cifrado...${NC}"
@@ -3117,13 +3116,13 @@ if [ "$PARTITION_MODE" = "btrfs" ]; then
     echo ""
 
     # Habilitar servicios de mantenimiento BTRFS
-    arch-chroot /mnt /bin/bash -c "systemctl enable btrfs-scrub@-.timer"
-    arch-chroot /mnt /bin/bash -c "systemctl enable fstrim.timer"
+    arch-chroot /mnt systemctl enable btrfs-scrub@-.timer || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+    arch-chroot /mnt systemctl enable fstrim.timer || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
     # Configurar snapshots automáticos si snapper está disponible
     if arch-chroot /mnt /bin/bash -c "pacman -Qq snapper" 2>/dev/null; then
         arch-chroot /mnt /bin/bash -c "snapper -c root create-config /"
-        arch-chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer snapper-cleanup.timer"
+        arch-chroot /mnt systemctl enable snapper-timeline.timer snapper-cleanup.timer || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
     fi
 
     # Optimizar fstab para BTRFS
@@ -3198,7 +3197,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5-configtool --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5-gtk --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5-qt --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "systemctl enable gdm"
+                arch-chroot /mnt systemctl enable gdm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 # Después de las instalaciones de fcitx5...
                 echo -e "${CYAN}Configurando fcitx5 con keyboard layout: ${KEYBOARD_LAYOUT}${NC}"
 
@@ -3249,9 +3248,10 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-guest --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter-mint-theme --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noansweredit --noconfirm --needed"
+                arch-chroot /mnt systemctl enable lightdm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "CINNAMON")
                 echo -e "${CYAN}Instalando Cinnamon Desktop...${NC}"
@@ -3272,7 +3272,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-screenshot --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-guest --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter-mint-theme --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                arch-chroot /mnt systemctl enable lightdm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "DEEPIN")
                 echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
@@ -3281,7 +3281,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin-extra --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                arch-chroot /mnt systemctl enable lightdm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "ENLIGHTENMENT")
                 echo -e "${CYAN}Instalando Enlightenment Desktop...${NC}"
@@ -3291,7 +3291,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S econnman --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                arch-chroot /mnt systemctl enable lightdm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "KDE")
                 echo -e "${CYAN}Instalando KDE Plasma Desktop...${NC}"
@@ -3330,7 +3330,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-x11-session --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm-kcm --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
+                arch-chroot /mnt systemctl enable sddm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "LXDE")
                 echo -e "${CYAN}Instalando LXDE Desktop...${NC}"
@@ -3342,7 +3342,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxpanel --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                arch-chroot /mnt systemctl enable lightdm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "LXQT")
                 echo -e "${CYAN}Instalando LXQt Desktop...${NC}"
@@ -3351,7 +3351,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nm-tray --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt-wayland-session --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "systemctl enable sddm"
+                arch-chroot /mnt systemctl enable sddm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "MATE")
                 echo -e "${CYAN}Instalando MATE Desktop...${NC}"
@@ -3370,7 +3370,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                arch-chroot /mnt systemctl enable lightdm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "XFCE4")
                 echo -e "${CYAN}Instalando XFCE4 Desktop...${NC}"
@@ -3385,7 +3385,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S light-locker --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                arch-chroot /mnt systemctl enable lightdm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             *)
                 echo -e "${YELLOW}Entorno de escritorio no reconocido: $DESKTOP_ENVIRONMENT${NC}"
@@ -3394,7 +3394,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4-goodies --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "systemctl enable lightdm"
+                arch-chroot /mnt systemctl enable lightdm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
         esac
         ;;
@@ -3439,7 +3439,7 @@ case "$INSTALLATION_TYPE" in
         # Instalar Ly display manager
         echo -e "${CYAN}Instalando Ly display manager...${NC}"
         arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S ly --noansweredit --noconfirm --needed"
-        arch-chroot /mnt /bin/bash -c "systemctl enable ly"
+        arch-chroot /mnt systemctl enable ly || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         case "$WINDOW_MANAGER" in
             "I3WM"|"I3")
