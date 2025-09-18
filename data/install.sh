@@ -3254,8 +3254,9 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "mkdir -p /tmp/aur-build && cd /tmp/aur-build && git clone https://aur.archlinux.org/lightdm-guest.git && chown -R $USER:$USER lightdm-guest && cd lightdm-guest && sudo -u $USER makepkg -si --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "mkdir -p /tmp/aur-build && cd /tmp/aur-build && git clone https://aur.archlinux.org/lightdm-slick-greeter-mint-theme.git && chown -R $USER:$USER lightdm-slick-greeter-mint-theme && cd lightdm-slick-greeter-mint-theme && sudo -u $USER makepkg -si --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noansweredit --noconfirm --needed"
                 arch-chroot /mnt systemctl --root=/mnt enable lightdm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "CINNAMON")
@@ -3275,8 +3276,9 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-screenshot --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-guest --noansweredit --noconfirm --needed"
-                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter-mint-theme --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noansweredit --noconfirm --needed"
                 arch-chroot /mnt systemctl --root=/mnt enable lightdm || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "DEEPIN")
