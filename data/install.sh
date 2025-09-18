@@ -17,7 +17,7 @@ fi
 RED='\033[0;31m'
 BOLD_RED='\033[1;31m'
 GREEN='\033[0;32m'
-BLUE='\033[0;34m'
+
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
@@ -36,7 +36,8 @@ print_color() {
 barra_progreso() {
     local duration=5
     local steps=50
-    local step_duration=$(echo "scale=3; $duration/$steps" | bc -l 2>/dev/null || echo "0.1")
+    local step_duration
+    step_duration=$(echo "scale=3; $duration/$steps" | bc -l 2>/dev/null || echo "0.1")
 
     echo -e "\n${CYAN}${titulo_progreso:-Cargando...}${NC}"
     printf "["
@@ -48,7 +49,7 @@ barra_progreso() {
         # Mostrar barra
         printf "\r["
         for ((j=0; j<i; j++)); do
-            printf "${GREEN}█${NC}"
+            printf "%s█%s" "${GREEN}" "${NC}"
         done
         for ((j=i; j<steps; j++)); do
             printf " "
@@ -56,7 +57,7 @@ barra_progreso() {
         printf "] ${YELLOW}%d%%${NC} " "$percent"
 
         # Esperar
-        sleep $(echo "$step_duration" | bc -l 2>/dev/null || echo "0.1")
+        sleep "$(echo "$step_duration" | bc -l 2>/dev/null || echo "0.1")"
     done
     echo -e "\n${GREEN}✓ Completado!${NC}\n"
 }
@@ -738,7 +739,7 @@ echo -e "${GREEN}| Configurando LiveCD |${NC}"
 echo ""
 
 # Configuración de zona horaria
-sudo timedatectl set-timezone $TIMEZONE
+sudo timedatectl set-timezone "$TIMEZONE"
 sudo hwclock -w
 sudo hwclock --systohc --rtc=/dev/rtc0
 
@@ -755,8 +756,8 @@ sleep 5
 clear
 # 12. Aplicar configuración de teclado inmediatamente en el LiveCD actual
 echo -e "${CYAN}12. Aplicando configuración al sistema actual...${NC}"
-sudo localectl set-keymap $KEYMAP_TTY 2>/dev/null || true
-sudo localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" "" 2>/dev/null || true
+sudo localectl set-keymap "$KEYMAP_TTY" 2>/dev/null || true
+sudo localectl set-x11-keymap "$KEYBOARD_LAYOUT" pc105 "" "" 2>/dev/null || true
 clear
 
 # Actualización de keys
@@ -818,41 +819,41 @@ partition_auto() {
 
         # Borrar completamente el disco
         echo -e "${CYAN}Limpiando disco completamente...${NC}"
-        sgdisk --zap-all $SELECTED_DISK
+        sgdisk --zap-all "$SELECTED_DISK"
         sleep 2
-        partprobe $SELECTED_DISK
-        wipefs -af $SELECTED_DISK
+        partprobe "$SELECTED_DISK"
+        wipefs -af "$SELECTED_DISK"
 
         # Crear tabla de particiones GPT
-        parted $SELECTED_DISK --script --align optimal mklabel gpt
+        parted "$SELECTED_DISK" --script --align optimal mklabel gpt
 
         # Crear partición EFI (512MB)
-        parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
-        parted $SELECTED_DISK --script set 1 esp on
+        parted "$SELECTED_DISK" --script --align optimal mkpart ESP fat32 1MiB 513MiB
+        parted "$SELECTED_DISK" --script set 1 esp on
 
         # Crear partición swap (8GB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 513MiB 8705MiB
+        parted "$SELECTED_DISK" --script --align optimal mkpart primary linux-swap 513MiB 8705MiB
 
         # Crear partición root (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 8705MiB 100%
+        parted "$SELECTED_DISK" --script --align optimal mkpart primary ext4 8705MiB 100%
 
         # Formatear particiones
         echo -e "${GREEN}| Formateando particiones UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkfs.fat -F32 -v ${SELECTED_DISK}1
-        mkswap ${SELECTED_DISK}2
-        mkfs.ext4 -F ${SELECTED_DISK}3
+        mkfs.fat -F32 -v "${SELECTED_DISK}"1
+        mkswap "${SELECTED_DISK}"2
+        mkfs.ext4 -F "${SELECTED_DISK}"3
         sleep 2
 
         # Montar particiones
         echo -e "${GREEN}| Montando particiones UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount ${SELECTED_DISK}3 /mnt
-        swapon ${SELECTED_DISK}2
+        mount "${SELECTED_DISK}"3 /mnt
+        swapon "${SELECTED_DISK}"2
         mkdir -p /mnt/boot/efi
-        mount ${SELECTED_DISK}1 /mnt/boot/efi
+        mount "${SELECTED_DISK}"1 /mnt/boot/efi
 
     else
         # Configuración para BIOS Legacy
@@ -862,35 +863,35 @@ partition_auto() {
 
         # Borrar completamente el disco
         echo -e "${CYAN}Limpiando disco completamente...${NC}"
-        sgdisk --zap-all $SELECTED_DISK
+        sgdisk --zap-all "$SELECTED_DISK"
         sleep 2
-        partprobe $SELECTED_DISK
-        wipefs -af $SELECTED_DISK
+        partprobe "$SELECTED_DISK"
+        wipefs -af "$SELECTED_DISK"
 
         # Crear tabla de particiones MBR
-        parted $SELECTED_DISK --script --align optimal mklabel msdos
+        parted "$SELECTED_DISK" --script --align optimal mklabel msdos
 
         # Crear partición swap (8GB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1MiB 8193MiB
+        parted "$SELECTED_DISK" --script --align optimal mkpart primary linux-swap 1MiB 8193MiB
 
         # Crear partición root (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 8193MiB 100%
-        parted $SELECTED_DISK --script set 2 boot on
+        parted "$SELECTED_DISK" --script --align optimal mkpart primary ext4 8193MiB 100%
+        parted "$SELECTED_DISK" --script set 2 boot on
 
         # Formatear particiones
         echo -e "${GREEN}| Formateando particiones BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkswap ${SELECTED_DISK}1
-        mkfs.ext4 -F ${SELECTED_DISK}2
+        mkswap "${SELECTED_DISK}"1
+        mkfs.ext4 -F "${SELECTED_DISK}"2
         sleep 2
 
         # Montar particiones
         echo -e "${GREEN}| Montando particiones BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount ${SELECTED_DISK}2 /mnt
-        swapon ${SELECTED_DISK}1
+        mount "${SELECTED_DISK}"2 /mnt
+        swapon "${SELECTED_DISK}"1
         mkdir -p /mnt/boot
     fi
 }
@@ -910,38 +911,38 @@ partition_auto_btrfs() {
 
         # Borrar completamente el disco
         echo -e "${CYAN}Limpiando disco completamente...${NC}"
-        sgdisk --zap-all $SELECTED_DISK
+        sgdisk --zap-all "$SELECTED_DISK"
         sleep 2
-        partprobe $SELECTED_DISK
-        wipefs -af $SELECTED_DISK
+        partprobe "$SELECTED_DISK"
+        wipefs -af "$SELECTED_DISK"
 
         # Crear tabla de particiones GPT
-        parted $SELECTED_DISK --script --align optimal mklabel gpt
+        parted "$SELECTED_DISK" --script --align optimal mklabel gpt
 
         # Crear partición EFI (512MB)
-        parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
-        parted $SELECTED_DISK --script set 1 esp on
+        parted "$SELECTED_DISK" --script --align optimal mkpart ESP fat32 1MiB 513MiB
+        parted "$SELECTED_DISK" --script set 1 esp on
 
         # Crear partición swap (8GB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 513MiB 8705MiB
+        parted "$SELECTED_DISK" --script --align optimal mkpart primary linux-swap 513MiB 8705MiB
 
         # Crear partición root (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 8705MiB 100%
+        parted "$SELECTED_DISK" --script --align optimal mkpart primary btrfs 8705MiB 100%
 
         # Formatear particiones
         echo -e "${GREEN}| Formateando particiones BTRFS UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkfs.fat -F32 -v ${SELECTED_DISK}1
-        mkswap ${SELECTED_DISK}2
-        mkfs.btrfs -f ${SELECTED_DISK}3
+        mkfs.fat -F32 -v "${SELECTED_DISK}"1
+        mkswap "${SELECTED_DISK}"2
+        mkfs.btrfs -f "${SELECTED_DISK}"3
         sleep 2
 
         # Montar y crear subvolúmenes BTRFS
         echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount ${SELECTED_DISK}3 /mnt
+        mount "${SELECTED_DISK}"3 /mnt
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
         btrfs subvolume create /mnt/@var
@@ -949,13 +950,13 @@ partition_auto_btrfs() {
         umount /mnt
 
         # Montar subvolúmenes
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}3 /mnt
-        swapon ${SELECTED_DISK}2
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ "${SELECTED_DISK}"3 /mnt
+        swapon "${SELECTED_DISK}"2
         mkdir -p /mnt/{boot/efi,home,var,tmp}
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}3 /mnt/home
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}3 /mnt/var
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
-        mount ${SELECTED_DISK}1 /mnt/boot/efi
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "${SELECTED_DISK}"3 /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var "${SELECTED_DISK}"3 /mnt/var
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "${SELECTED_DISK}"3 /mnt/tmp
+        mount "${SELECTED_DISK}"1 /mnt/boot/efi
 
         # Instalar herramientas específicas para BTRFS
         pacstrap /mnt btrfs-progs
@@ -968,34 +969,34 @@ partition_auto_btrfs() {
 
         # Borrar completamente el disco
         echo -e "${CYAN}Limpiando disco completamente...${NC}"
-        sgdisk --zap-all $SELECTED_DISK
+        sgdisk --zap-all "$SELECTED_DISK"
         sleep 2
-        partprobe $SELECTED_DISK
-        wipefs -af $SELECTED_DISK
+        partprobe "$SELECTED_DISK"
+        wipefs -af "$SELECTED_DISK"
 
         # Crear tabla de particiones MBR
-        parted $SELECTED_DISK --script --align optimal mklabel msdos
+        parted "$SELECTED_DISK" --script --align optimal mklabel msdos
 
         # Crear partición swap (8GB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1MiB 8193MiB
+        parted "$SELECTED_DISK" --script --align optimal mkpart primary linux-swap 1MiB 8193MiB
 
         # Crear partición root (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 8193MiB 100%
-        parted $SELECTED_DISK --script set 2 boot on
+        parted "$SELECTED_DISK" --script --align optimal mkpart primary btrfs 8193MiB 100%
+        parted "$SELECTED_DISK" --script set 2 boot on
 
         # Formatear particiones
         echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkswap ${SELECTED_DISK}1
-        mkfs.btrfs -f ${SELECTED_DISK}2
+        mkswap "${SELECTED_DISK}"1
+        mkfs.btrfs -f "${SELECTED_DISK}"2
         sleep 2
 
         # Montar y crear subvolúmenes BTRFS
         echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount ${SELECTED_DISK}2 /mnt
+        mount "${SELECTED_DISK}"2 /mnt
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
         btrfs subvolume create /mnt/@var
@@ -1003,12 +1004,12 @@ partition_auto_btrfs() {
         umount /mnt
 
         # Montar subvolúmenes
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}2 /mnt
-        swapon ${SELECTED_DISK}1
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ "${SELECTED_DISK}"2 /mnt
+        swapon "${SELECTED_DISK}"1
         mkdir -p /mnt/{boot,home,var,tmp}
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}2 /mnt/home
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}2 /mnt/var
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}2 /mnt/tmp
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "${SELECTED_DISK}"2 /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var "${SELECTED_DISK}"2 /mnt/var
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "${SELECTED_DISK}"2 /mnt/tmp
 
         # Instalar herramientas específicas para BTRFS
         pacstrap /mnt btrfs-progs
@@ -1036,32 +1037,32 @@ partition_cifrado() {
 
         # Borrar completamente el disco
         echo -e "${CYAN}Limpiando disco completamente...${NC}"
-        sgdisk --zap-all $SELECTED_DISK
+        sgdisk --zap-all "$SELECTED_DISK"
         sleep 4
-        partprobe $SELECTED_DISK
-        wipefs -af $SELECTED_DISK
+        partprobe "$SELECTED_DISK"
+        wipefs -af "$SELECTED_DISK"
 
         # Crear tabla de particiones GPT
-        parted $SELECTED_DISK --script --align optimal mklabel gpt
+        parted "$SELECTED_DISK" --script --align optimal mklabel gpt
 
         # Crear partición EFI (512MB)
-        parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
-        parted $SELECTED_DISK --script set 1 esp on
+        parted "$SELECTED_DISK" --script --align optimal mkpart ESP fat32 1MiB 513MiB
+        parted "$SELECTED_DISK" --script set 1 esp on
 
         # Crear partición boot sin cifrar (1GB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 513MiB 1537MiB
+        parted "$SELECTED_DISK" --script --align optimal mkpart primary ext4 513MiB 1537MiB
 
         # Crear partición principal cifrada (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary 1537MiB 100%
+        parted "$SELECTED_DISK" --script --align optimal mkpart primary 1537MiB 100%
 
         # Formatear particiones
-        mkfs.fat -F32 ${SELECTED_DISK}1
-        mkfs.ext4 -F ${SELECTED_DISK}2
+        mkfs.fat -F32 "${SELECTED_DISK}"1
+        mkfs.ext4 -F "${SELECTED_DISK}"2
 
         # Sincronizar y esperar reconocimiento de particiones
         echo -e "${CYAN}Sincronizando sistema de archivos...${NC}"
         sync
-        partprobe $SELECTED_DISK
+        partprobe "$SELECTED_DISK"
         sleep 4
 
         # Configurar LUKS en la partición principal
@@ -1072,17 +1073,17 @@ partition_cifrado() {
 
         # Limpiar firmas de sistemas de archivos existentes
         echo -e "${CYAN}Limpiando firmas de sistemas de archivos...${NC}"
-        wipefs -af ${SELECTED_DISK}3 2>/dev/null || true
-        dd if=/dev/zero of=${SELECTED_DISK}3 bs=1M count=10 2>/dev/null || true
+        wipefs -af "${SELECTED_DISK}"3 2>/dev/null || true
+        dd if=/dev/zero of="${SELECTED_DISK}"3 bs=1M count=10 2>/dev/null || true
 
         echo -e "${CYAN}Aplicando cifrado LUKS a ${SELECTED_DISK}3...${NC}"
         echo -e "${YELLOW}IMPORTANTE: Esto puede tomar unos minutos dependiendo del tamaño del disco${NC}"
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase ${SELECTED_DISK}3 -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase "${SELECTED_DISK}"3 -; then
             echo -e "${RED}ERROR: Falló el cifrado LUKS de la partición${NC}"
             exit 1
         fi
 
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode ${SELECTED_DISK}3 cryptlvm -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode "${SELECTED_DISK}"3 cryptlvm -; then
             echo -e "${RED}ERROR: No se pudo abrir el dispositivo cifrado${NC}"
             exit 1
         fi
@@ -1095,7 +1096,7 @@ partition_cifrado() {
 
         # Crear backup del header LUKS (recomendación de seguridad)
         echo -e "${CYAN}Creando backup del header LUKS...${NC}"
-        cryptsetup luksHeaderBackup ${SELECTED_DISK}3 --header-backup-file /tmp/luks-header-backup
+        cryptsetup luksHeaderBackup "${SELECTED_DISK}"3 --header-backup-file /tmp/luks-header-backup
         echo -e "${GREEN}✓ Backup del header LUKS guardado en /tmp/luks-header-backup${NC}"
         echo -e "${YELLOW}IMPORTANTE: Copia este archivo a un lugar seguro después de la instalación${NC}"
 
@@ -1186,7 +1187,7 @@ partition_cifrado() {
         mkdir -p /mnt/boot
 
         echo -e "${CYAN}Montando partición boot...${NC}"
-        if ! mount ${SELECTED_DISK}1 /mnt/boot; then
+        if ! mount "${SELECTED_DISK}"1 /mnt/boot; then
             echo -e "${RED}ERROR: Falló el montaje de la partición boot${NC}"
             exit 1
         fi
@@ -1195,7 +1196,7 @@ partition_cifrado() {
         mkdir -p /mnt/boot/efi
 
         echo -e "${CYAN}Montando partición EFI...${NC}"
-        if ! mount ${SELECTED_DISK}1 /mnt/boot/efi; then
+        if ! mount "${SELECTED_DISK}"1 /mnt/boot/efi; then
             echo -e "${RED}ERROR: Falló el montaje de la partición EFI${NC}"
             exit 1
         fi
@@ -1225,28 +1226,28 @@ partition_cifrado() {
 
         # Borrar completamente el disco
         echo -e "${CYAN}Limpiando disco completamente...${NC}"
-        sgdisk --zap-all $SELECTED_DISK
+        sgdisk --zap-all "$SELECTED_DISK"
         sleep 2
-        partprobe $SELECTED_DISK
-        wipefs -af $SELECTED_DISK
+        partprobe "$SELECTED_DISK"
+        wipefs -af "$SELECTED_DISK"
 
         # Crear tabla de particiones MBR
-        parted $SELECTED_DISK --script --align optimal mklabel msdos
+        parted "$SELECTED_DISK" --script --align optimal mklabel msdos
 
         # Crear partición de boot sin cifrar (512MB) - mínima necesaria
-        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 513MiB
-        parted $SELECTED_DISK --script set 1 boot on
+        parted "$SELECTED_DISK" --script --align optimal mkpart primary ext4 1MiB 513MiB
+        parted "$SELECTED_DISK" --script set 1 boot on
 
         # Crear partición cifrada (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary 513MiB 100%
+        parted "$SELECTED_DISK" --script --align optimal mkpart primary 513MiB 100%
 
         # Formatear partición boot
-        mkfs.ext4 -F ${SELECTED_DISK}1
+        mkfs.ext4 -F "${SELECTED_DISK}"1
 
         # Sincronizar y esperar reconocimiento de particiones
         echo -e "${CYAN}Sincronizando sistema de archivos...${NC}"
         sync
-        partprobe $SELECTED_DISK
+        partprobe "$SELECTED_DISK"
         sleep 3
 
         # Configurar LUKS en la partición principal
@@ -1257,15 +1258,15 @@ partition_cifrado() {
 
         # Limpiar firmas de sistemas de archivos existentes
         echo -e "${CYAN}Limpiando firmas de sistemas de archivos...${NC}"
-        wipefs -af ${SELECTED_DISK}2 2>/dev/null || true
-        dd if=/dev/zero of=${SELECTED_DISK}2 bs=1M count=10 2>/dev/null || true
+        wipefs -af "${SELECTED_DISK}"2 2>/dev/null || true
+        dd if=/dev/zero of="${SELECTED_DISK}"2 bs=1M count=10 2>/dev/null || true
 
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase ${SELECTED_DISK}2 -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase "${SELECTED_DISK}"2 -; then
             echo -e "${RED}ERROR: Falló el cifrado LUKS de la partición${NC}"
             exit 1
         fi
 
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode ${SELECTED_DISK}2 cryptlvm -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode "${SELECTED_DISK}"2 cryptlvm -; then
             echo -e "${RED}ERROR: No se pudo abrir el dispositivo cifrado${NC}"
             exit 1
         fi
@@ -1278,7 +1279,7 @@ partition_cifrado() {
 
         # Crear backup del header LUKS (recomendación de seguridad)
         echo -e "${CYAN}Creando backup del header LUKS...${NC}"
-        cryptsetup luksHeaderBackup ${SELECTED_DISK}2 --header-backup-file /tmp/luks-header-backup
+        cryptsetup luksHeaderBackup "${SELECTED_DISK}"2 --header-backup-file /tmp/luks-header-backup
         echo -e "${GREEN}✓ Backup del header LUKS guardado en /tmp/luks-header-backup${NC}"
         echo -e "${YELLOW}IMPORTANTE: Copia este archivo a un lugar seguro después de la instalación${NC}"
 
@@ -1366,7 +1367,7 @@ partition_cifrado() {
         mkdir -p /mnt/boot
 
         echo -e "${CYAN}Montando partición boot...${NC}"
-        if ! mount ${SELECTED_DISK}1 /mnt/boot; then
+        if ! mount "${SELECTED_DISK}"1 /mnt/boot; then
             echo -e "${RED}ERROR: Falló el montaje de la partición boot${NC}"
             exit 1
         fi
@@ -1405,41 +1406,41 @@ partition_manual() {
                 echo -e "${CYAN}Sin formatear: $device${NC}"
                 ;;
             "mkfs.ext4")
-                mkfs.ext4 -F $device
+                mkfs.ext4 -F "$device"
                 ;;
             "mkfs.ext3")
-                mkfs.ext3 -F $device
+                mkfs.ext3 -F "$device"
                 ;;
             "mkfs.ext2")
-                mkfs.ext2 -F $device
+                mkfs.ext2 -F "$device"
                 ;;
             "mkfs.btrfs")
-                mkfs.btrfs -f $device
+                mkfs.btrfs -f "$device"
                 ;;
             "mkfs.xfs")
-                mkfs.xfs -f $device
+                mkfs.xfs -f "$device"
                 ;;
             "mkfs.f2fs")
-                mkfs.f2fs -f $device
+                mkfs.f2fs -f "$device"
                 ;;
             "mkfs.fat32")
-                mkfs.fat -F32 -v $device
+                mkfs.fat -F32 -v "$device"
                 ;;
             "mkfs.fat16")
-                mkfs.fat -F16 -v $device
+                mkfs.fat -F16 -v "$device"
                 ;;
             "mkfs.ntfs")
-                mkfs.ntfs -f $device
+                mkfs.ntfs -f "$device"
                 ;;
             "mkfs.reiserfs")
-                mkfs.reiserfs -f $device
+                mkfs.reiserfs -f "$device"
                 ;;
             "mkfs.jfs")
-                mkfs.jfs -f $device
+                mkfs.jfs -f "$device"
                 ;;
             "mkswap")
-                mkswap $device
-                swapon $device
+                mkswap "$device"
+                swapon "$device"
                 ;;
             *)
                 echo -e "${RED}| Formato no reconocido: $format |${NC}"
@@ -1495,7 +1496,7 @@ partition_manual() {
         IFS=' ' read -r device format mountpoint <<< "$partition_config"
         if [ "$mountpoint" = "/" ]; then
             echo -e "${GREEN}| Montando raíz: $device -> /mnt |${NC}"
-            mount $device /mnt
+            mount "$device" /mnt
             break
         fi
     done
@@ -1506,7 +1507,7 @@ partition_manual() {
         if [ "$mountpoint" = "/boot" ]; then
             echo -e "${GREEN}| Montando /boot: $device -> /mnt/boot |${NC}"
             mkdir -p /mnt/boot
-            mount $device /mnt/boot
+            mount "$device" /mnt/boot
             break
         fi
     done
@@ -1517,7 +1518,7 @@ partition_manual() {
         if [ "$mountpoint" = "/boot/EFI" ]; then
             echo -e "${GREEN}| Montando EFI: $device -> /mnt/boot/efi |${NC}"
             mkdir -p /mnt/boot/efi
-            mount $device /mnt/boot/efi
+            mount "$device" /mnt/boot/efi
             echo -e "${CYAN}Partición EFI montada en /mnt/boot/efi${NC}"
             break
         fi
@@ -1533,8 +1534,8 @@ partition_manual() {
         fi
 
         echo -e "${GREEN}| Montando: $device -> /mnt$mountpoint |${NC}"
-        mkdir -p /mnt$mountpoint
-        mount $device /mnt$mountpoint
+        mkdir -p /mnt"$mountpoint"
+        mount "$device" /mnt"$mountpoint"
     done
 
     lsblk -o NAME,FSTYPE,SIZE,MOUNTPOINT
@@ -1605,7 +1606,9 @@ unmount_selected_disk_partitions() {
     sleep 3
     # Cerrar dispositivos LUKS que usen particiones del disco seleccionado
     if command -v cryptsetup >/dev/null 2>&1; then
-        for luks_device in $(ls /dev/mapper/ 2>/dev/null | grep -E "(crypt|luks)"); do
+        for luks_device in /dev/mapper/*crypt* /dev/mapper/*luks*; do
+            [ -e "$luks_device" ] || continue
+            luks_device=$(basename "$luks_device")
             if cryptsetup status "$luks_device" 2>/dev/null | grep -q "$SELECTED_DISK"; then
                 echo -e "${YELLOW}Cerrando dispositivo LUKS: $luks_device${NC}"
                 cryptsetup close "$luks_device" 2>/dev/null || true
@@ -1712,7 +1715,7 @@ if [ "$PARTITION_MODE" = "manual" ]; then
 
         # Para particiones no formateadas (none), detectar el sistema de archivos existente
         if [ "$format" = "none" ]; then
-            DETECTED_FS=$(blkid -s TYPE -o value $device)
+            DETECTED_FS=$(blkid -s TYPE -o value "$device")
             if [ -z "$DETECTED_FS" ]; then
                 echo -e "${YELLOW}ADVERTENCIA: No se pudo detectar sistema de archivos en $device, omitiendo del fstab${NC}"
                 continue
@@ -1725,7 +1728,7 @@ if [ "$PARTITION_MODE" = "manual" ]; then
         fi
 
         # Obtener UUID de la partición
-        PART_UUID=$(blkid -s UUID -o value $device)
+        PART_UUID=$(blkid -s UUID -o value "$device")
         if [ -n "$PART_UUID" ]; then
             # Determinar el tipo de sistema de archivos
             case $format_for_fstab in
@@ -1785,7 +1788,7 @@ if [ "$PARTITION_MODE" = "manual" ]; then
         IFS=' ' read -r device format mountpoint <<< "$partition_config"
 
         if [ "$mountpoint" = "swap" ]; then
-            SWAP_UUID=$(blkid -s UUID -o value $device)
+            SWAP_UUID=$(blkid -s UUID -o value "$device")
             if [ -n "$SWAP_UUID" ]; then
                 echo "UUID=$SWAP_UUID none swap defaults 0 0" >> /mnt/etc/fstab
             fi
@@ -2021,7 +2024,7 @@ if true; then
             echo "- Montajes actuales:"
             mount | grep "/mnt"
             echo "- Particiones disponibles:"
-            lsblk ${SELECTED_DISK}
+            lsblk "${SELECTED_DISK}"
             exit 1
         fi
         echo -e "${GREEN}✓ Partición EFI montada correctamente en /mnt/boot/efi${NC}"
@@ -2061,15 +2064,15 @@ if true; then
             echo -e "${CYAN}Obteniendo UUID de la partición cifrada...${NC}"
             sleep 2
             sync
-            partprobe $SELECTED_DISK 2>/dev/null || true
+            partprobe "$SELECTED_DISK" 2>/dev/null || true
             sleep 1
 
-            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+            CRYPT_UUID=$(blkid -s UUID -o value "${SELECTED_DISK}"3)
             # Reintentar si no se obtuvo UUID
             if [ -z "$CRYPT_UUID" ]; then
                 echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
                 sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+                CRYPT_UUID=$(blkid -s UUID -o value "${SELECTED_DISK}"3)
             fi
 
             if [ -z "$CRYPT_UUID" ]; then
@@ -2168,15 +2171,15 @@ if true; then
             echo -e "${CYAN}Obteniendo UUID de la partición cifrada...${NC}"
             sleep 2
             sync
-            partprobe $SELECTED_DISK 2>/dev/null || true
+            partprobe "$SELECTED_DISK" 2>/dev/null || true
             sleep 1
 
-            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+            CRYPT_UUID=$(blkid -s UUID -o value "${SELECTED_DISK}"2)
             # Reintentar si no se obtuvo UUID
             if [ -z "$CRYPT_UUID" ]; then
                 echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
                 sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+                CRYPT_UUID=$(blkid -s UUID -o value "${SELECTED_DISK}"2)
             fi
 
             if [ -z "$CRYPT_UUID" ]; then
@@ -2246,7 +2249,7 @@ if true; then
             # Crear entrada UEFI manualmente si no existe
             if ! efibootmgr | grep -q "GRUB"; then
                 echo -e "${CYAN}Creando entrada UEFI para GRUB...${NC}"
-                efibootmgr --disk $SELECTED_DISK --part 1 --create --label "GRUB" --loader '\EFI\GRUB\grubx64.efi'
+                efibootmgr --disk "$SELECTED_DISK" --part 1 --create --label "GRUB" --loader '\EFI\GRUB\grubx64.efi'
 
                 # Hacer que GRUB sea la primera opción de boot
                 GRUB_NUM=$(efibootmgr | grep "GRUB" | head -1 | cut -d'*' -f1 | sed 's/Boot//')
@@ -2355,36 +2358,36 @@ else
 
     # Método 2: Detectar particiones Windows (NTFS)
     WINDOWS_PARTITIONS=$(blkid -t TYPE=ntfs 2>/dev/null | wc -l || echo "0")
-    if [ $WINDOWS_PARTITIONS -gt 0 ]; then
+    if [ "$WINDOWS_PARTITIONS" -gt 0 ]; then
         echo -e "${CYAN}  • Particiones Windows (NTFS) detectadas: $WINDOWS_PARTITIONS${NC}"
         OS_COUNT=$((OS_COUNT + 1))
     fi
 
     # Método 3: Detectar otras particiones Linux (ext4, ext3, btrfs, xfs)
-    EXT4_PARTITIONS=$(blkid -t TYPE=ext4 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
-    EXT3_PARTITIONS=$(blkid -t TYPE=ext3 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
-    BTRFS_PARTITIONS=$(blkid -t TYPE=btrfs 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
-    XFS_PARTITIONS=$(blkid -t TYPE=xfs 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
+    EXT4_PARTITIONS=$(blkid -t TYPE=ext4 2>/dev/null | grep -c -v "$(findmnt -n -o SOURCE /)" 2>/dev/null || echo "0")
+    EXT3_PARTITIONS=$(blkid -t TYPE=ext3 2>/dev/null | grep -c -v "$(findmnt -n -o SOURCE /)" 2>/dev/null || echo "0")
+    BTRFS_PARTITIONS=$(blkid -t TYPE=btrfs 2>/dev/null | grep -c -v "$(findmnt -n -o SOURCE /)" 2>/dev/null || echo "0")
+    XFS_PARTITIONS=$(blkid -t TYPE=xfs 2>/dev/null | grep -c -v "$(findmnt -n -o SOURCE /)" 2>/dev/null || echo "0")
     LINUX_PARTITIONS=$((EXT4_PARTITIONS + EXT3_PARTITIONS + BTRFS_PARTITIONS + XFS_PARTITIONS))
 
     if [ $LINUX_PARTITIONS -gt 0 ]; then
         echo -e "${CYAN}  • Otras particiones Linux detectadas: $LINUX_PARTITIONS${NC}"
-        [ $EXT4_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - ext4: $EXT4_PARTITIONS${NC}"
-        [ $EXT3_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - ext3: $EXT3_PARTITIONS${NC}"
-        [ $BTRFS_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - btrfs: $BTRFS_PARTITIONS${NC}"
-        [ $XFS_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - xfs: $XFS_PARTITIONS${NC}"
+        [ "$EXT4_PARTITIONS" -gt 0 ] && echo -e "${CYAN}    - ext4: $EXT4_PARTITIONS${NC}"
+        [ "$EXT3_PARTITIONS" -gt 0 ] && echo -e "${CYAN}    - ext3: $EXT3_PARTITIONS${NC}"
+        [ "$BTRFS_PARTITIONS" -gt 0 ] && echo -e "${CYAN}    - btrfs: $BTRFS_PARTITIONS${NC}"
+        [ "$XFS_PARTITIONS" -gt 0 ] && echo -e "${CYAN}    - xfs: $XFS_PARTITIONS${NC}"
         OS_COUNT=$((OS_COUNT + 1))
     fi
 
     # Método 4: Buscar particiones con indicadores de SO
-    OTHER_OS=$(blkid 2>/dev/null | grep -E "LABEL.*Windows|LABEL.*Microsoft|TYPE.*fat32" | wc -l || echo "0")
-    if [ $OTHER_OS -gt 0 ]; then
+    OTHER_OS=$(blkid 2>/dev/null | grep -cE || echo "0")
+    if [ "$OTHER_OS" -gt 0 ]; then
         echo -e "${CYAN}  • Otras particiones de SO detectadas: $OTHER_OS${NC}"
         OS_COUNT=$((OS_COUNT + 1))
     fi
 
     # Considerar múltiples sistemas si hay más indicadores de OS o más de 1 partición bootable
-    if [ $OS_COUNT -gt 0 ] || [ $BOOTABLE_PARTITIONS -gt 1 ]; then
+    if [ $OS_COUNT -gt 0 ] || [ "$BOOTABLE_PARTITIONS" -gt 1 ]; then
         MULTIPLE_OS_DETECTED=true
         echo -e "${GREEN}✓ Múltiples sistemas operativos detectados en BIOS Legacy${NC}"
     else
@@ -2441,7 +2444,6 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
         # Montar particiones Windows (NTFS) si existen
         while IFS= read -r ntfs_partition; do
             if [ -n "$ntfs_partition" ]; then
-                partition_name=$(basename "$ntfs_partition")
                 if ! mount | grep -q "^$ntfs_partition "; then
                     mount_point="/mnt/mnt/windows_$MOUNT_COUNTER"
                     mkdir -p "$mount_point" 2>/dev/null || true
@@ -2458,7 +2460,6 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
         # Montar particiones Linux (ext4) si existen
         while IFS= read -r ext4_partition; do
             if [ -n "$ext4_partition" ]; then
-                partition_name=$(basename "$ext4_partition")
                 # Evitar montar la partición root actual del sistema live
                 if ! mount | grep -q "^$ext4_partition " && [[ "$ext4_partition" != "$(findmnt -n -o SOURCE /)" ]]; then
                     mount_point="/mnt/mnt/ext4_$MOUNT_COUNTER"
@@ -2476,7 +2477,6 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
         # Montar particiones Linux (ext3) si existen
         while IFS= read -r ext3_partition; do
             if [ -n "$ext3_partition" ]; then
-                partition_name=$(basename "$ext3_partition")
                 # Evitar montar la partición root actual del sistema live
                 if ! mount | grep -q "^$ext3_partition " && [[ "$ext3_partition" != "$(findmnt -n -o SOURCE /)" ]]; then
                     mount_point="/mnt/mnt/ext3_$MOUNT_COUNTER"
@@ -2494,7 +2494,6 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
         # Montar particiones Linux (btrfs) si existen
         while IFS= read -r btrfs_partition; do
             if [ -n "$btrfs_partition" ]; then
-                partition_name=$(basename "$btrfs_partition")
                 # Evitar montar la partición root actual del sistema live
                 if ! mount | grep -q "^$btrfs_partition " && [[ "$btrfs_partition" != "$(findmnt -n -o SOURCE /)" ]]; then
                     mount_point="/mnt/mnt/btrfs_$MOUNT_COUNTER"
@@ -2512,7 +2511,6 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
         # Montar particiones Linux (xfs) si existen
         while IFS= read -r xfs_partition; do
             if [ -n "$xfs_partition" ]; then
-                partition_name=$(basename "$xfs_partition")
                 # Evitar montar la partición root actual del sistema live
                 if ! mount | grep -q "^$xfs_partition " && [[ "$xfs_partition" != "$(findmnt -n -o SOURCE /)" ]]; then
                     mount_point="/mnt/mnt/xfs_$MOUNT_COUNTER"
@@ -2589,7 +2587,7 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
 
     # Desmontar todas las particiones Linux temporales (BIOS Legacy)
     for fs_type in ext4 ext3 btrfs xfs; do
-        for mount_point in /mnt/mnt/${fs_type}_*; do
+        for mount_point in /mnt/mnt/"${fs_type}"_*; do
             if [ -d "$mount_point" ]; then
                 if mountpoint -q "$mount_point" 2>/dev/null; then
                     echo -e "${CYAN}  • Desmontando $mount_point${NC}"
@@ -3032,8 +3030,8 @@ echo -e "${GREEN}| Copiando archivos de configuración |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
-cp /usr/share/arcrisgui/data/config/bashrc /mnt/home/$USER/.bashrc
-cp /usr/share/arcrisgui/data/config/bashrc /mnt/home/$USER/.bashrc
+cp /usr/share/arcrisgui/data/config/bashrc /mnt/home/"$USER"/.bashrc
+cp /usr/share/arcrisgui/data/config/bashrc /mnt/home/"$USER"/.bashrc
 cp /usr/share/arcrisgui/data/config/bashrc-root /mnt/root/.bashrc
 
 # Configurar permisos de archivos de usuario
@@ -3062,9 +3060,9 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 
     # Configurar crypttab
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+        CRYPT_UUID=$(blkid -s UUID -o value "${SELECTED_DISK}"3)
     else
-        CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+        CRYPT_UUID=$(blkid -s UUID -o value "${SELECTED_DISK}"2)
     fi
     echo "cryptlvm UUID=${CRYPT_UUID} none luks,discard" >> /mnt/etc/crypttab
     echo -e "${GREEN}✓ Configuración crypttab creada para montaje automático${NC}"
@@ -3072,10 +3070,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     # Crear archivo de configuración para LVM
     echo "# LVM devices for encrypted setup" > /mnt/etc/lvm/lvm.conf.local
     echo -e "${CYAN}Configuración LVM aplicada para sistema cifrado${NC}"
-    echo "activation {" >> /mnt/etc/lvm/lvm.conf.local
-    echo "    udev_sync = 1" >> /mnt/etc/lvm/lvm.conf.local
-    echo "    udev_rules = 1" >> /mnt/etc/lvm/lvm.conf.local
-    echo "}" >> /mnt/etc/lvm/lvm.conf.local
+    { echo "activation {"; echo "    udev_sync = 1"; echo "    udev_rules = 1"; echo "}"; } >> /mnt/etc/lvm/lvm.conf.local
 
     # Verificar que los servicios LVM estén habilitados
     arch-chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service"
@@ -3092,15 +3087,15 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     # Generar fstab correctamente con nombres de dispositivos apropiados
     echo -e "${CYAN}Generando fstab con dispositivos LVM...${NC}"
     # Limpiar fstab existente
-    > /mnt/etc/fstab
+true > /mnt/etc/fstab
     # Agregar entradas manualmente para asegurar nombres correctos
     echo "# <file system> <mount point> <type> <options> <dump> <pass>" >> /mnt/etc/fstab
     echo "/dev/mapper/vg0-root / ext4 rw,relatime 0 1" >> /mnt/etc/fstab
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
-        echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
+        echo "UUID=$(blkid -s UUID -o value "${SELECTED_DISK}"1) /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
+        echo "UUID=$(blkid -s UUID -o value "${SELECTED_DISK}"2) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
     else
-        echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
+        echo "UUID=$(blkid -s UUID -o value "${SELECTED_DISK}"1) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
     fi
     echo "/dev/mapper/vg0-swap none swap defaults 0 0" >> /mnt/etc/fstab
 
@@ -3454,7 +3449,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3lock --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noansweredit --noconfirm --needed"
                 # Crear configuración básica de i3
-                mkdir -p /mnt/home/$USER/.config/i3
+                mkdir -p /mnt/home/"$USER"/.config/i3
                 arch-chroot /mnt /bin/bash -c "install -Dm644 /etc/i3/config /home/$USER/.config/i3/config"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
@@ -3463,7 +3458,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S awesome --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S vicious --noansweredit --noconfirm --needed"
                 # Crear configuración básica de awesome
-                mkdir -p /mnt/home/$USER/.config/awesome
+                mkdir -p /mnt/home/"$USER"/.config/awesome
                 arch-chroot /mnt /bin/bash -c "install -Dm755 /etc/xdg/awesome/rc.lua /home/$USER/.config/awesome/rc.lua"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
@@ -3473,9 +3468,9 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S sxhkd --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S polybar --noansweredit --noconfirm --needed"
                 # Crear configuración básica de bspwm
-                mkdir -p /mnt/home/$USER/.config/bspwm
-                mkdir -p /mnt/home/$USER/.config/sxhkd
-                mkdir -p /mnt/home/$USER/.config/polybar/
+                mkdir -p /mnt/home/"$USER"/.config/bspwm
+                mkdir -p /mnt/home/"$USER"/.config/sxhkd
+                mkdir -p /mnt/home/"$USER"/.config/polybar/
                 arch-chroot /mnt /bin/bash -c "install -Dm755 /usr/share/doc/bspwm/examples/bspwmrc /home/$USER/.config/bspwm/bspwmrc"
                 arch-chroot /mnt /bin/bash -c "install -Dm644 /usr/share/doc/bspwm/examples/sxhkdrc /home/$USER/.config/sxhkd/sxhkdrc"
                 arch-chroot /mnt /bin/bash -c "install -Dm644 /etc/polybar/config.ini /home/$USER/.config/polybar/config.ini"
@@ -3503,7 +3498,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprpolkitagent --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprsunset --noansweredit --noconfirm --needed"
                 # Crear configuración básica de hyprland
-                mkdir -p /mnt/home/$USER/.config/hypr
+                mkdir -p /mnt/home/"$USER"/.config/hypr
                 arch-chroot /mnt /bin/bash -c "install -Dm644 /usr/share/hypr/hyprland.conf /home/$USER/.config/hypr/hyprland.conf"
                 arch-chroot /mnt /bin/bash -c "echo exec-once = waybar >> /home/$USER/.config/hypr/hyprland.conf"
                 arch-chroot /mnt /bin/bash -c "echo exec-once = systemctl --user start hyprpolkitagent >> /home/$USER/.config/hypr/hyprland.conf"
@@ -3521,7 +3516,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S obmenu-generator --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S tint2 --noansweredit --noconfirm --needed"
                 # Crear configuración básica de openbox
-                mkdir -p /mnt/home/$USER/.config/openbox
+                mkdir -p /mnt/home/"$USER"/.config/openbox
                 arch-chroot /mnt /bin/bash -c "cp -a /etc/xdg/openbox /home/$USER/.config/"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
@@ -3530,7 +3525,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S qtile --noansweredit --noconfirm --needed"
                 python-pywlroots
                 # Crear configuración básica de qtile
-                mkdir -p /mnt/home/$USER/.config/qtile
+                mkdir -p /mnt/home/"$USER"/.config/qtile
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "SWAY")
@@ -3541,7 +3536,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S swaybg --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S wmenu --noansweredit --noconfirm --needed"
                 # Crear configuración básica de sway
-                mkdir -p /mnt/home/$USER/.config/sway
+                mkdir -p /mnt/home/"$USER"/.config/sway
                 arch-chroot /mnt /bin/bash -c "install -Dm644 /etc/sway/config /home/$USER/.config/sway/config"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
@@ -3557,7 +3552,7 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S cabal-install --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S nitrogen --noansweredit --noconfirm --needed"
                 # Crear configuración básica de xmonad
-                mkdir -p /mnt/home/$USER/.config/xmonad
+                mkdir -p /mnt/home/"$USER"/.config/xmonad
                 guardar_configuraciones_xmonad
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER xmonad --recompile /home/$USER/.config/xmonad/xmonad.hs"
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
@@ -3569,8 +3564,8 @@ case "$INSTALLATION_TYPE" in
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3status --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3lock --noansweredit --noconfirm --needed"
                 arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noansweredit --noconfirm --needed"
-                mkdir -p /mnt/home/$USER/.config/i3
-                echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
+                mkdir -p /mnt/home/"$USER"/.config/i3
+                echo "# i3 config file" > /mnt/home/"$USER"/.config/i3/config
                 arch-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
         esac
@@ -3581,8 +3576,8 @@ case "$INSTALLATION_TYPE" in
         echo -e "${CYAN}Configurando terminales...${NC}"
 
         # Configuración básica para Kitty
-        mkdir -p /mnt/home/$USER/.config/kitty
-        cat > /mnt/home/$USER/.config/kitty/kitty.conf << 'EOF'
+        mkdir -p /mnt/home/"$USER"/.config/kitty
+        cat > /mnt/home/"$USER"/.config/kitty/kitty.conf << 'EOF'
 # Font settings
 font_family      JetBrains Mono
 bold_font        auto
@@ -3972,7 +3967,7 @@ if [ "${ESSENTIAL_APPS_ENABLED:-false}" = "true" ]; then
             arch-chroot /mnt /bin/bash -c "pacman -S zsh-completions --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S zsh-syntax-highlighting --noconfirm"
             arch-chroot /mnt /bin/bash -c "pacman -S zsh-autosuggestions --noconfirm"
-            cp /usr/share/arcrisgui/data/config/zshrc /mnt/home/$USER/.zshrc
+            cp /usr/share/arcrisgui/data/config/zshrc /mnt/home/"$USER"/.zshrc
             cp /usr/share/arcrisgui/data/config/zshrc /mnt/root/.zshrc
             arch-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.zshrc"
             arch-chroot /mnt /bin/bash -c "chsh -s /bin/zsh $USER"
@@ -4118,8 +4113,8 @@ echo ""
 
 # 1. Configuración con localectl (método universal y permanente)
 echo -e "${CYAN}1. Configurando con localectl (permanente para ambos Xorg y Wayland)...${NC}"
-arch-chroot /mnt localectl set-keymap $KEYBOARD_LAYOUT
-arch-chroot /mnt localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" ""
+arch-chroot /mnt localectl set-keymap "$KEYBOARD_LAYOUT"
+arch-chroot /mnt localectl set-x11-keymap "$KEYBOARD_LAYOUT" pc105 "" ""
 
 # También ejecutar como usuario para configuración por usuario
 # echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
@@ -4181,7 +4176,7 @@ EOF
 
 # 7. Configuración adicional para el usuario
 echo -e "${CYAN}7. Configurando variables de entorno para el usuario...${NC}"
-cat >> /mnt/home/$USER/.profile << EOF
+cat >> /mnt/home/"$USER"/.profile << EOF
 
 # Configuración de teclado
 export XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT
@@ -4294,7 +4289,7 @@ sleep 3
 clear
 
 echo ""
-ls /mnt/home/$USER/
+ls /mnt/home/"$USER"/
 sleep 5
 clear
 # Revertir a configuración normal
