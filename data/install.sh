@@ -4314,24 +4314,27 @@ fi
 # Verificar y configurar wheel en sudoers
 echo "🔧 Configurando grupo wheel en sudoers..."
 
+echo "%wheel ALL=(ALL) ALL" > /mnt/etc/sudoers.d/wheel
+chmod 440 /mnt/etc/sudoers.d/wheel
+
 # Verificar si existe configuración NOPASSWD
-if arch-chroot /mnt /bin/bash -c "grep -q '^%wheel.*NOPASSWD.*ALL' /etc/sudoers" 2>/dev/null; then
-    echo "🔄 Detectada configuración NOPASSWD, cambiando a configuración normal..."
-    # Cambiar de NOPASSWD a configuración normal
-    arch-chroot /mnt /bin/bash -c "sed -i 's/^%wheel.*NOPASSWD.*ALL$/%wheel ALL=(ALL) ALL/' /etc/sudoers"
-    echo "✓ Configuración wheel cambiada a modo normal (con contraseña)"
+#if arch-chroot /mnt /bin/bash -c "grep -q '^%wheel.*NOPASSWD.*ALL' /etc/sudoers" 2>/dev/null; then
+#    echo "🔄 Detectada configuración NOPASSWD, cambiando a configuración normal..."
+#    # Cambiar de NOPASSWD a configuración normal
+#    arch-chroot /mnt /bin/bash -c "sed -i 's/^%wheel.*NOPASSWD.*ALL$/%wheel ALL=(ALL) ALL/' /etc/sudoers"
+#    echo "✓ Configuración wheel cambiada a modo normal (con contraseña)"
 
 # Verificar si existe configuración normal
-elif arch-chroot /mnt /bin/bash -c "grep -q '^%wheel.*ALL.*ALL' /etc/sudoers" 2>/dev/null; then
-    echo "✓ Configuración wheel normal ya existe en sudoers"
+#elif arch-chroot /mnt /bin/bash -c "grep -q '^%wheel.*ALL.*ALL' /etc/sudoers" 2>/dev/null; then
+#    echo "✓ Configuración wheel normal ya existe en sudoers"
 
 # Si no existe ninguna configuración wheel, agregarla
-else
-    echo "➕ No se encontró configuración wheel, agregándola..."
-    echo "# Configuración normal del grupo wheel" >> /mnt/etc/sudoers
-    sed -i 's/^# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /mnt/etc/sudoers
-    echo "✓ Configuración wheel añadida al archivo sudoers"
-fi
+#else
+#    echo "➕ No se encontró configuración wheel, agregándola..."
+#    echo "# Configuración normal del grupo wheel" >> /mnt/etc/sudoers
+#    sed -i 's/^# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /mnt/etc/sudoers
+#    echo "✓ Configuración wheel añadida al archivo sudoers"
+#fi
 
 # Validar sintaxis del sudoers
 #if arch-chroot /mnt /usr/bin/visudo -c -f /etc/sudoers >/dev/null 2>&1; then
@@ -4341,13 +4344,10 @@ fi
 #fi
 
 
-sleep 5
-clear
 #sed -i '$d' /mnt/etc/sudoers
 #echo "%wheel ALL=(ALL) ALL"
 #echo %wheel ALL=(ALL) ALL >> /mnt/etc/sudoers
 
-clear
 
 clear
 
