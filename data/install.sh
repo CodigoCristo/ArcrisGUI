@@ -4250,7 +4250,7 @@ if [ "$UTILITIES_ENABLED" = "true" ] && [ ${#UTILITIES_APPS[@]} -gt 0 ]; then
 
     for app in "${UTILITIES_APPS[@]}"; do
         echo -e "${CYAN}Instalando: $app${NC}"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S $app --noansweredit --noconfirm --needed" || {
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S $app --noansweredit --noconfirm --needed --overwrite '*'" || {
             echo -e "${YELLOW}⚠ No se pudo instalar $app, continuando...${NC}"
         }
     done
@@ -4268,7 +4268,7 @@ if [ "$PROGRAM_EXTRA" = "true" ] && [ ${#EXTRA_PROGRAMS[@]} -gt 0 ]; then
 
     for program in "${EXTRA_PROGRAMS[@]}"; do
         echo -e "${CYAN}Instalando: $program${NC}"
-        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S $program --noansweredit --noconfirm --needed" || {
+        arch-chroot /mnt /bin/bash -c "sudo -u $USER yay -S $program --noansweredit --noconfirm --needed --overwrite '*'" || {
             echo -e "${YELLOW}⚠ No se pudo instalar $program, continuando...${NC}"
         }
     done
