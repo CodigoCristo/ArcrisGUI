@@ -1630,8 +1630,34 @@ unmount_selected_disk_partitions() {
     echo ""
 }
 
+# Función para configurar montajes necesarios para chroot
+setup_chroot_mounts() {
+    echo -e "${CYAN}Configurando montajes para chroot...${NC}"
+    mount --types proc /proc /mnt/proc
+    mount --rbind /sys /mnt/sys
+    mount --make-rslave /mnt/sys
+    mount --rbind /dev /mnt/dev
+    mount --make-rslave /mnt/dev
+    mount --bind /run /mnt/run
+    mount --make-slave /mnt/run
+    echo -e "${GREEN}✓ Montajes para chroot configurados${NC}"
+}
+
+
+# Función para limpiar montajes de chroot
+cleanup_chroot_mounts() {
+    echo -e "${CYAN}Limpiando montajes de chroot...${NC}"
+    umount -l /mnt/run 2>/dev/null || true
+    umount -l /mnt/dev 2>/dev/null || true
+    umount -l /mnt/sys 2>/dev/null || true
+    umount -l /mnt/proc 2>/dev/null || true
+    echo -e "${GREEN}✓ Montajes de chroot limpiados${NC}"
+}
+
+
 # Ejecutar limpieza de particiones
 unmount_selected_disk_partitions
+cleanup_chroot_mounts
 
 # Ejecutar particionado según el modo seleccionado
 case "$PARTITION_MODE" in
@@ -1661,19 +1687,6 @@ printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 lsblk -o NAME,FSTYPE,SIZE,MOUNTPOINT | grep -E "(NAME|/mnt)"
 sleep 3
-
-# Función para configurar montajes necesarios para chroot
-setup_chroot_mounts() {
-    echo -e "${CYAN}Configurando montajes para chroot...${NC}"
-    mount --types proc /proc /mnt/proc
-    mount --rbind /sys /mnt/sys
-    mount --make-rslave /mnt/sys
-    mount --rbind /dev /mnt/dev
-    mount --make-rslave /mnt/dev
-    mount --bind /run /mnt/run
-    mount --make-slave /mnt/run
-    echo -e "${GREEN}✓ Montajes para chroot configurados${NC}"
-}
 
 # Configurar montajes para chroot
 setup_chroot_mounts
@@ -4362,15 +4375,6 @@ fi
 #echo %wheel ALL=(ALL) ALL >> /mnt/etc/sudoers
 
 
-# Función para limpiar montajes de chroot
-cleanup_chroot_mounts() {
-    echo -e "${CYAN}Limpiando montajes de chroot...${NC}"
-    umount -l /mnt/run 2>/dev/null || true
-    umount -l /mnt/dev 2>/dev/null || true
-    umount -l /mnt/sys 2>/dev/null || true
-    umount -l /mnt/proc 2>/dev/null || true
-    echo -e "${GREEN}✓ Montajes de chroot limpiados${NC}"
-}
 
 # Limpiar montajes antes del final
 cleanup_chroot_mounts
