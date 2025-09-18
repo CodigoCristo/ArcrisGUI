@@ -1640,6 +1640,7 @@ setup_chroot_mounts() {
     mount --make-rslave /mnt/dev
     mount --bind /run /mnt/run
     mount --make-slave /mnt/run
+    cp /etc/resolv.conf /mnt/etc/
     echo -e "${GREEN}✓ Montajes para chroot configurados${NC}"
 }
 
@@ -1688,11 +1689,6 @@ echo ""
 lsblk -o NAME,FSTYPE,SIZE,MOUNTPOINT | grep -E "(NAME|/mnt)"
 sleep 3
 
-# Configurar montajes para chroot
-setup_chroot_mounts
-sleep 2
-clear
-
 
 # Instalación de paquetes principales
 echo -e "${GREEN}| Instalando paquetes principales de la distribución |${NC}"
@@ -1708,6 +1704,14 @@ pacstrap /mnt curl
 pacstrap /mnt wget
 pacstrap /mnt git
 
+# Configurar montajes para chroot
+clear
+sleep 2
+setup_chroot_mounts
+sleep 2
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+sleep 2
+clear
 
 # Actualización de mirrors en el sistema instalado
 chroot /mnt /bin/bash -c "reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist"
