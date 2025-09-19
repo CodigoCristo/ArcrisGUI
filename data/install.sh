@@ -3531,6 +3531,9 @@ case "$INSTALLATION_TYPE" in
                 # Instalar dependencias necesarias
                 echo -e "${YELLOW}Instalando dependencias...${NC}"
                 chroot /mnt /bin/bash -c "pacman -S base-devel --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wlroots0.18 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S tllist --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S xorg-xwayland --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S foot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S mako --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S wl-clipboard --noansweredit --noconfirm --needed"
@@ -3538,7 +3541,6 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "pacman -S git --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S wayland --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S wayland-protocols --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "pacman -S wlroots --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S pixman --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S libxkbcommon-x11 --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S libxkbcommon --noansweredit --noconfirm --needed"
@@ -3546,10 +3548,15 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "pacman -S grim --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S wofi --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S waybar --noansweredit --noconfirm --needed"
-                libinput
+                chroot /mnt /bin/bash -c "pacman -S libinput --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S pkg-config --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S fcft --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S pixman --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wbg --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S dwl --noansweredit --noconfirm --needed"
 
                 # Instalar DWL desde AUR
-                chroot /mnt /bin/bash -c "git clone https://github.com/dcalonge/dwl ; cd dwl ; sudo make install"
+                chroot /mnt /bin/bash -c "sudo -u $USER git clone https://github.com/dcalonge/dwl ; cd dwl ; sudo -u $USER make install"
 
                 # Crear directorio de configuración
                 chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/waybar"
