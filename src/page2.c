@@ -957,23 +957,43 @@ void open_keyboard_settings(GtkButton *button, gpointer user_data)
 
 // Función auxiliar para abrir la aplicación de visualización de teclado
 static gpointer open_tecla_task(gpointer data) {
-    if (!g_page2_data || !g_page2_data->combo_keyboard) {
+    if (!g_page2_data || !g_page2_data->combo_keyboard || !g_page2_data->combo_keymap) {
         return NULL;
     }
 
-    // Obtener el String del Row1 (teclado seleccionado)
-    GtkStringObject *selected_item = adw_combo_row_get_selected_item(g_page2_data->combo_keyboard);
-    const gchar *locale_keyboard = NULL;
+    // Obtener el String del Row1 (teclado X11 seleccionado)
+    GtkStringObject *keyboard_item = adw_combo_row_get_selected_item(g_page2_data->combo_keyboard);
+    const gchar *keyboard_layout = NULL;
 
-    if (selected_item) {
-        locale_keyboard = gtk_string_object_get_string(selected_item);
+    // Obtener el String del Row2 (keymap TTY seleccionado)
+    GtkStringObject *keymap_item = adw_combo_row_get_selected_item(g_page2_data->combo_keymap);
+    const gchar *keymap_tty = NULL;
 
-        if (locale_keyboard) {
-            gchar *command = g_strdup_printf("tecla %s &", locale_keyboard);
-            system(command);
-            g_free(command);
-            g_print("Abriendo visualización de teclado para: %s\n", locale_keyboard);
-        }
+    if (keyboard_item) {
+        keyboard_layout = gtk_string_object_get_string(keyboard_item);
+    }
+
+    if (keymap_item) {
+        keymap_tty = gtk_string_object_get_string(keymap_item);
+    }
+
+    if (keyboard_layout && keymap_tty) {
+        // Abrir kbd-layout-viewer5 con el layout seleccionado
+        gchar *viewer_command = g_strdup_printf("kbd-layout-viewer5 -l %s &", keyboard_layout);
+        system(viewer_command);
+        g_free(viewer_command);
+        g_print("Abriendo visualización de teclado para: %s\n", keyboard_layout);
+
+        // Ejecutar comandos para cambiar el idioma en el sistema
+        gchar *keymap_command = g_strdup_printf("sudo localectl set-keymap %s 2>/dev/null || true", keymap_tty);
+        system(keymap_command);
+        g_free(keymap_command);
+        g_print("Configurando keymap TTY: %s\n", keymap_tty);
+
+        gchar *x11_command = g_strdup_printf("sudo localectl set-x11-keymap %s pc105 \"\" \"\" 2>/dev/null || true", keyboard_layout);
+        system(x11_command);
+        g_free(x11_command);
+        g_print("Configurando teclado X11: %s\n", keyboard_layout);
     }
 
     return NULL;
