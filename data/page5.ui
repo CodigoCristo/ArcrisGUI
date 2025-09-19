@@ -151,15 +151,15 @@
                   <object class="GtkStringList">
                     <items>
                       <item>GNOME</item>
+                      <item>KDE</item>
+                      <item>XFCE4</item>
                       <item>BUDGIE</item>
                       <item>CINNAMON</item>
+                      <item>MATE</item>
                       <item>DEEPIN</item>
-                      <item>ENLIGHTENMENT</item>
-                      <item>KDE</item>
                       <item>LXDE</item>
                       <item>LXQT</item>
-                      <item>MATE</item>
-                      <item>XFCE4</item>
+                      <item>ENLIGHTENMENT</item>
                     </items>
                   </object>
                 </property>
@@ -257,15 +257,16 @@
                 <property name="model">
                   <object class="GtkStringList">
                     <items>
-                      <item>I3WM</item>
-                      <item>AWESOME</item>
-                      <item>BSPWM</item>
-                      <item>DWM</item>
+                      <item>DWL</item>
                       <item>HYPRLAND</item>
-                      <item>OPENBOX</item>
-                      <item>QTITLE</item>
                       <item>SWAY</item>
+                      <item>DWM</item>
+                      <item>I3WM</item>
+                      <item>BSPWM</item>
+                      <item>QTITLE</item>
+                      <item>AWESOME</item>
                       <item>XMONAD</item>
+                      <item>OPENBOX</item>
                     </items>
                   </object>
                 </property>
@@ -286,7 +287,7 @@
             <property name="margin-top">6</property>
             <child>
               <object class="GtkPicture" id="wm_preview_picture">
-                <property name="file">/org/gtk/arcris/I3WM.png</property>
+                <property name="file">/org/gtk/arcris/DWL.png</property>
                 <property name="halign">center</property>
                 <property name="valign">fill</property>
                 <property name="hexpand">true</property>

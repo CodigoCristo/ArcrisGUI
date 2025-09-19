@@ -22,6 +22,7 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+
 # Función para imprimir en rojo
 print_red() {
     echo -e "${BOLD_RED}$1${NC}"
@@ -61,6 +62,18 @@ barra_progreso() {
     echo -e "\n${GREEN}✓ Completado!${NC}\n"
 }
 
+################################################################################################
+# #################### DWL #####################################################################
+################################################################################################
+
+
+
+
+
+
+################################################################################################
+# #################### XMONAD ##################################################################
+################################################################################################
 
 guardar_configuraciones_xmonad() {
     echo "=== Configurando XMonad para Arch Linux ==="
@@ -3511,6 +3524,35 @@ case "$INSTALLATION_TYPE" in
                 echo -e "${CYAN}Instalando DWM Window Manager...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S dwm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S st --noansweredit --noconfirm --needed"
+                ;;
+            "DWL")
+                echo -e "${CYAN}Instalando DWL Wayland Compositor...${NC}"
+
+                # Instalar dependencias necesarias
+                echo -e "${YELLOW}Instalando dependencias...${NC}"
+                chroot /mnt /bin/bash -c "pacman -S --noconfirm --needed base-devel git wayland wayland-protocols wlroots pixman libxkbcommon"
+
+                # Instalar DWL desde AUR
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S dwl-git --noansweredit --noconfirm --needed"
+
+                # Instalar terminal recomendado para Wayland
+                echo -e "${YELLOW}Instalando Foot terminal...${NC}"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S foot --noansweredit --noconfirm --needed"
+
+                # Instalar utilidades adicionales para Wayland
+                echo -e "${YELLOW}Instalando utilidades adicionales...${NC}"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S waybar --noansweredit --noconfirm --needed"  # Barra de estado
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S wofi --noansweredit --noconfirm --needed"    # Launcher
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S grim --noansweredit --noconfirm --needed"    # Screenshots
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S slurp --noansweredit --noconfirm --needed"   # Region selector
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S wl-clipboard --noansweredit --noconfirm --needed" # Clipboard
+
+                # Crear directorio de configuración
+                chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/waybar"
+                chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/foot"
+                hroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+
+                echo -e "${GREEN}DWL instalado correctamente!${NC}"
                 ;;
             "HYPRLAND")
                 echo -e "${CYAN}Instalando Hyprland Window Manager...${NC}"

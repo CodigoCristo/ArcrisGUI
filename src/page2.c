@@ -985,12 +985,7 @@ static gpointer open_tecla_task(gpointer data) {
         g_print("Abriendo visualización de teclado para: %s\n", keyboard_layout);
 
         // Ejecutar comandos para cambiar el idioma en el sistema
-        gchar *keymap_command = g_strdup_printf("sudo localectl set-keymap %s 2>/dev/null || true", keymap_tty);
-        system(keymap_command);
-        g_free(keymap_command);
-        g_print("Configurando keymap TTY: %s\n", keymap_tty);
-
-        gchar *x11_command = g_strdup_printf("sudo localectl set-x11-keymap %s pc105 \"\" \"\" 2>/dev/null || true", keyboard_layout);
+        gchar *x11_command = g_strdup_printf("sudo setxkbmap %s 2>/dev/null || true", keyboard_layout);
         system(x11_command);
         g_free(x11_command);
         g_print("Configurando teclado X11: %s\n", keyboard_layout);

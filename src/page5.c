@@ -10,55 +10,57 @@ static Page5Data *g_page5_data = NULL;
 // Nombres de los entornos de escritorio
 static const char* DE_NAMES[] = {
     "GNOME",
+    "KDE",
+    "XFCE4",
     "BUDGIE",
     "CINNAMON",
+    "MATE",
     "DEEPIN",
-    "ENLIGHTENMENT",
-    "KDE",
     "LXDE",
     "LXQT",
-    "MATE",
-    "XFCE4"
+    "ENLIGHTENMENT"
 };
 
 // Nombres de los gestores de ventanas
 static const char* WM_NAMES[] = {
-    "I3WM",
-    "AWESOME",
-    "BSPWM",
-    "DWM",
+    "DWL",
     "HYPRLAND",
-    "OPENBOX",
-    "QTITLE",
     "SWAY",
-    "XMONAD"
+    "DWM",
+    "I3WM",
+    "BSPWM",
+    "QTITLE",
+    "AWESOME",
+    "XMONAD",
+    "OPENBOX"
 };
 
 // Recursos de imágenes para DE
 static const char* DE_IMAGE_RESOURCES[] = {
     "/org/gtk/arcris/GNOME.png",
+    "/org/gtk/arcris/KDE.png",
+    "/org/gtk/arcris/XFCE4.png",
     "/org/gtk/arcris/BUDGIE.png",
     "/org/gtk/arcris/CINNAMON.png",
+    "/org/gtk/arcris/MATE.png",
     "/org/gtk/arcris/DEEPIN.png",
-    "/org/gtk/arcris/ENLIGHTENMENT.png",
-    "/org/gtk/arcris/KDE.png",
     "/org/gtk/arcris/LXDE.png",
     "/org/gtk/arcris/LXQT.png",
-    "/org/gtk/arcris/MATE.png",
-    "/org/gtk/arcris/XFCE4.png"
+    "/org/gtk/arcris/ENLIGHTENMENT.png"
 };
 
 // Recursos de imágenes para WM
 static const char* WM_IMAGE_RESOURCES[] = {
-    "/org/gtk/arcris/I3WM.png",
-    "/org/gtk/arcris/AWESOME.png",
-    "/org/gtk/arcris/BSPWM.png",
-    "/org/gtk/arcris/DWM.png",
+    "/org/gtk/arcris/DWL.png",
     "/org/gtk/arcris/HYPRLAND.png",
-    "/org/gtk/arcris/OPENBOX.png",
-    "/org/gtk/arcris/QTITLE.png",
     "/org/gtk/arcris/SWAY.png",
-    "/org/gtk/arcris/XMONAD.png"
+    "/org/gtk/arcris/DWM.png",
+    "/org/gtk/arcris/I3WM.png",
+    "/org/gtk/arcris/BSPWM.png",
+    "/org/gtk/arcris/QTITLE.png",
+    "/org/gtk/arcris/AWESOME.png",
+    "/org/gtk/arcris/XMONAD.png",
+    "/org/gtk/arcris/OPENBOX.png"
 };
 
 // Declaración forward de funciones
@@ -600,7 +602,7 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
             wm_name = g_strdup("XMONAD");
             break;
         default:
-            wm_name = g_strdup("I3WM");
+            wm_name = g_strdup("DWL");
             break;
     }
 

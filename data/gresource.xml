@@ -39,6 +39,7 @@
     <file alias="MATE.png">img/DE/MATE.png</file>
     <file alias="XFCE4.png">img/DE/XFCE4.png</file>
 
+    <file alias="DWL.png">img/WM/DWL.png</file>
     <file alias="I3WM.png">img/WM/I3WM.png</file>
     <file alias="AWESOME.png">img/WM/AWESOME.png</file>
     <file alias="BSPWM.png">img/WM/BSPWM.png</file>
