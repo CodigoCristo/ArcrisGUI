@@ -3530,27 +3530,31 @@ case "$INSTALLATION_TYPE" in
 
                 # Instalar dependencias necesarias
                 echo -e "${YELLOW}Instalando dependencias...${NC}"
-                chroot /mnt /bin/bash -c "pacman -S --noconfirm --needed base-devel git wayland wayland-protocols wlroots pixman libxkbcommon"
+                chroot /mnt /bin/bash -c "pacman -S base-devel --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S foot --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S mako --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wl-clipboard --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S jq --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S git --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wayland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wayland-protocols --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wlroots --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S pixman --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S libxkbcommon-x11 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S libxkbcommon --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S slurp --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S grim --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wofi --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S waybar --noansweredit --noconfirm --needed"
+                libinput
 
                 # Instalar DWL desde AUR
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S dwl-git --noansweredit --noconfirm --needed"
-
-                # Instalar terminal recomendado para Wayland
-                echo -e "${YELLOW}Instalando Foot terminal...${NC}"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S foot --noansweredit --noconfirm --needed"
-
-                # Instalar utilidades adicionales para Wayland
-                echo -e "${YELLOW}Instalando utilidades adicionales...${NC}"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S waybar --noansweredit --noconfirm --needed"  # Barra de estado
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S wofi --noansweredit --noconfirm --needed"    # Launcher
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S grim --noansweredit --noconfirm --needed"    # Screenshots
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S slurp --noansweredit --noconfirm --needed"   # Region selector
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S wl-clipboard --noansweredit --noconfirm --needed" # Clipboard
+                chroot /mnt /bin/bash -c "git clone https://github.com/dcalonge/dwl ; cd dwl ; sudo make install"
 
                 # Crear directorio de configuración
                 chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/waybar"
                 chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/foot"
-                hroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
 
                 echo -e "${GREEN}DWL instalado correctamente!${NC}"
                 ;;
