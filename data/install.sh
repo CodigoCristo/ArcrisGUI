@@ -3288,9 +3288,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-guest --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter-mint-theme --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "CINNAMON")
@@ -3310,9 +3309,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-screenshot --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-guest --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter-mint-theme --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "DEEPIN")
