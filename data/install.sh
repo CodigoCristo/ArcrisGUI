@@ -4425,9 +4425,9 @@ fi
 #fi
 
 
-#sed -i '$d' /mnt/etc/sudoers
-#echo "%wheel ALL=(ALL) ALL"
-#echo %wheel ALL=(ALL) ALL >> /mnt/etc/sudoers
+sed -i '$d' /mnt/etc/sudoers
+echo "%wheel ALL=(ALL) ALL"
+echo "%wheel ALL=(ALL) ALL">> /mnt/etc/sudoers
 
 
 
