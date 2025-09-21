@@ -1888,7 +1888,7 @@ echo ""
 case "$SELECTED_KERNEL" in
     "linux")
         chroot /mnt /bin/bash -c "pacman -S linux --noconfirm"
-        #chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
         ;;
     "linux-hardened")
         chroot /mnt /bin/bash -c "pacman -S linux-hardened --noconfirm"
@@ -3327,7 +3327,7 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "CUTEFISH")
-                echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
+                echo -e "${CYAN}Instalando CUTEFISH Desktop...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S cutefish --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S polkit-kde-agent --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
@@ -3339,7 +3339,7 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "systemctl enable sddm"
                 ;;
             "UKUI")
-                echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
+                echo -e "${CYAN}Instalando UKUI Desktop...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S ukui --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
@@ -3350,7 +3350,7 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "PANTHEON")
-                echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
+                echo -e "${CYAN}Instalando PANTHEON Desktop...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S pantheon --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
