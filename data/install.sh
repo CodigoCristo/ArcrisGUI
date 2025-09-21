@@ -2279,8 +2279,8 @@ if true; then
             echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
             echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
         elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-            chroot /mnt /bin/bash -c "sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /etc/default/grub"
-            chroot /mnt /bin/bash -c "echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /etc/default/grub"
+            chroot /mnt /bin/bash -c "sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=5\"/' /etc/default/grub"
+            chroot /mnt /bin/bash -c "echo 'GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"' >> /etc/default/grub"
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
@@ -2382,8 +2382,8 @@ if true; then
             echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
 
         elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-            chroot /mnt /bin/bash -c "sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /etc/default/grub"
-            chroot /mnt /bin/bash -c "echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /etc/default/grub"
+            chroot /mnt /bin/bash -c "sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=5\"/' /etc/default/grub"
+            chroot /mnt /bin/bash -c "echo 'GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"' >> /etc/default/grub"
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
