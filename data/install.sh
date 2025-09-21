@@ -63,11 +63,145 @@ barra_progreso() {
 }
 
 ################################################################################################
-# #################### DWL #####################################################################
+# #################### teclado##################################################################
 ################################################################################################
 
+configurar_teclado() {
+    # Configuración completa del layout de teclado para Xorg y Wayland
+    echo -e "${GREEN}| Configurando layout de teclado: $KEYBOARD_LAYOUT |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    # 1. Configuración con localectl (método universal y permanente)
+    echo -e "${CYAN}1. Configurando con localectl (permanente para ambos Xorg y Wayland)...${NC}"
+    chroot /mnt localectl set-keymap $KEYBOARD_LAYOUT
+    chroot /mnt localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" ""
+
+    # También ejecutar como usuario para configuración por usuario
+    # echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
+    # chroot /mnt /bin/bash -c "sudo -u $USER localectl set-keymap $KEYBOARD_LAYOUT" || echo "Warning: No se pudo configurar keymap para usuario $USER"
+    # chroot /mnt /bin/bash -c "sudo -u $USER localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" || echo "Warning: No se pudo configurar X11 keymap para usuario $USER"
+
+    # 2. Configuración para Xorg (X11)
+    echo -e "${CYAN}2. Configurando teclado para Xorg (X11)...${NC}"
+    mkdir -p /mnt/etc/X11/xorg.conf.d
+    cat > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf << EOF
+Section "InputClass"
+        Identifier "system-keyboard"
+        MatchIsKeyboard "on"
+        Option "XkbLayout" "$KEYBOARD_LAYOUT"
+        Option "XkbModel" "pc105"
+        Option "XkbVariant" ""
+        Option "XkbOptions" "grp:alt_shift_toggle"
+EndSection
+EOF
+
+    # 3. Configuración para Wayland
+    echo -e "${CYAN}3. Configurando teclado para Wayland...${NC}"
+    mkdir -p /mnt/etc/xdg/wlroots
+    cat > /mnt/etc/xdg/wlroots/wlr.conf << EOF
+[keyboard]
+layout=$KEYBOARD_LAYOUT
+model=pc105
+variant=
+options=grp:alt_shift_toggle
+
+[input]
+kb_layout=$KEYBOARD_LAYOUT
+kb_model=pc105
+kb_variant=
+kb_options=grp:alt_shift_toggle
+EOF
+
+    # 4. Configuración persistente del archivo /etc/default/keyboard
+    echo -e "${CYAN}4. Configurando archivo /etc/default/keyboard...${NC}"
+    cat > /mnt/etc/default/keyboard << EOF
+XKBMODEL="pc105"
+XKBLAYOUT="$KEYBOARD_LAYOUT"
+XKBVARIANT=""
+XKBOPTIONS="grp:alt_shift_toggle"
+EOF
+
+    # 5. Configuración de la consola virtual (vconsole.conf)
+    echo -e "${CYAN}5. Configurando consola virtual...${NC}"
+    echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
+    echo "FONT=lat0-16" >> /mnt/etc/vconsole.conf
+
+    # 6. Configuración para GNOME (si se usa)
+    echo -e "${CYAN}6. Configurando para GNOME...${NC}"
+    mkdir -p /mnt/etc/dconf/db/local.d
+    cat > /mnt/etc/dconf/db/local.d/00-keyboard << EOF
+[org/gnome/desktop/input-sources]
+sources=[('xkb', '$KEYBOARD_LAYOUT')]
+EOF
+
+    # 7. Configuración adicional para el usuario
+    echo -e "${CYAN}7. Configurando variables de entorno para el usuario...${NC}"
+    cat >> /mnt/home/$USER/.profile << EOF
+
+# Configuración de teclado
+export XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT
+export XKB_DEFAULT_MODEL=pc105
+export XKB_DEFAULT_OPTIONS=grp:alt_shift_toggle
+EOF
+
+    # 8. Script de configuración automática para el arranque
+    echo -e "${CYAN}8. Creando script de configuración automática...${NC}"
+    mkdir -p /mnt/usr/local/bin
+    cat > /mnt/usr/local/bin/setup-keyboard.sh << 'EOF'
+#!/bin/bash
+# Script de configuración automática del teclado
+
+KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"
+
+# Detectar si estamos en X11 o Wayland
+if [ -n "$DISPLAY" ] && command -v setxkbmap >/dev/null 2>&1; then
+    # Estamos en X11
+    setxkbmap $KEYBOARD_LAYOUT
+elif [ -n "$WAYLAND_DISPLAY" ] && command -v gsettings >/dev/null 2>&1; then
+    # Estamos en Wayland con GNOME
+    gsettings set org.gnome.desktop.input-sources sources "[('xkb', '$KEYBOARD_LAYOUT')]"
+fi
+EOF
+
+    chmod +x /mnt/usr/local/bin/setup-keyboard.sh
+
+    # 9. Configuración para autostart en sesiones gráficas
+    echo -e "${CYAN}9. Configurando autostart para sesiones gráficas...${NC}"
+    mkdir -p /mnt/etc/xdg/autostart
+    cat > /mnt/etc/xdg/autostart/keyboard-setup.desktop << EOF
+[Desktop Entry]
+Type=Application
+Name=Keyboard Layout Setup
+Exec=/usr/local/bin/setup-keyboard.sh
+Hidden=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+EOF
+
+    # 10. Establecer permisos correctos
+    echo -e "${CYAN}10. Estableciendo permisos correctos...${NC}"
+    chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.profile" 2>/dev/null || true
+    chroot /mnt chmod 755 /usr/local/bin/setup-keyboard.sh
+    chroot /mnt chmod 644 /etc/xdg/autostart/keyboard-setup.desktop
+
+    # 11. Actualizar base de datos dconf si existe
+    echo -e "${CYAN}11. Actualizando configuraciones del sistema...${NC}"
+    chroot /mnt dconf update 2>/dev/null || true
 
 
+
+    echo -e "${GREEN}✓ Configuración completa del teclado finalizada${NC}"
+    echo -e "${CYAN}  • Layout: $KEYBOARD_LAYOUT${NC}"
+    echo -e "${CYAN}  • Keymap TTY: $KEYMAP_TTY${NC}"
+    echo -e "${CYAN}  • Modelo: pc105${NC}"
+    echo -e "${CYAN}  • Cambio de layout: Alt+Shift${NC}"
+    echo -e "${CYAN}  • Métodos configurados: localectl, Xorg, Wayland, GNOME, vconsole${NC}"
+    echo -e "${YELLOW}  • La configuración será efectiva después del reinicio${NC}"
+
+    sleep 4
+    clear
+}
 
 
 
@@ -1645,27 +1779,27 @@ unmount_selected_disk_partitions() {
 
 # Función para configurar montajes necesarios para chroot
 setup_chroot_mounts() {
-    echo -e "${CYAN}Configurando montajes para chroot...${NC}"
-    mount --types proc /proc /mnt/proc
-    mount --rbind /sys /mnt/sys
-    mount --make-rslave /mnt/sys
-    mount --rbind /dev /mnt/dev
-    mount --make-rslave /mnt/dev
-    mount --bind /run /mnt/run
-    mount --make-slave /mnt/run
-    cp /etc/resolv.conf /mnt/etc/
-    echo -e "${GREEN}✓ Montajes para chroot configurados${NC}"
+echo -e "${CYAN}Configurando montajes para chroot...${NC}"
+mount --types proc /proc /mnt/proc
+mount --rbind /sys /mnt/sys
+mount --make-rslave /mnt/sys
+mount --rbind /dev /mnt/dev
+mount --make-rslave /mnt/dev
+mount --bind /run /mnt/run
+mount --make-slave /mnt/run
+cp /etc/resolv.conf /mnt/etc/
+echo -e "${GREEN}✓ Montajes para chroot configurados${NC}"
 }
 
 
 # Función para limpiar montajes de chroot
 cleanup_chroot_mounts() {
-    echo -e "${CYAN}Limpiando montajes de chroot...${NC}"
-    umount -l /mnt/run 2>/dev/null || true
-    umount -l /mnt/dev 2>/dev/null || true
-    umount -l /mnt/sys 2>/dev/null || true
-    umount -l /mnt/proc 2>/dev/null || true
-    echo -e "${GREEN}✓ Montajes de chroot limpiados${NC}"
+echo -e "${CYAN}Limpiando montajes de chroot...${NC}"
+umount -l /mnt/run 2>/dev/null || true
+umount -l /mnt/dev 2>/dev/null || true
+umount -l /mnt/sys 2>/dev/null || true
+umount -l /mnt/proc 2>/dev/null || true
+echo -e "${GREEN}✓ Montajes de chroot limpiados${NC}"
 }
 
 
@@ -2207,14 +2341,7 @@ if true; then
         echo -e "${GREEN}✓ GRUB UEFI instalado correctamente${NC}"
     else
         echo -e "${CYAN}Instalando paquetes GRUB para BIOS...${NC}"
-        chroot /mnt /bin/bash -c "pacman -S grub os-prober --noconfirm"
-
-        # Crear directorios necesarios para GRUB
-        echo -e "${CYAN}Creando directorios GRUB...${NC}"
-        mkdir -p /mnt/boot/grub
-        mkdir -p /mnt/boot/grub/i386-pc
-        mkdir -p /mnt/boot/grub/locale
-        mkdir -p /mnt/boot/grub/fonts
+        chroot /mnt /bin/bash -c "pacman -S grub --noconfirm"
 
         # Configuración específica según el modo de particionado ANTES de instalar
         echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
@@ -2254,25 +2381,8 @@ if true; then
             echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
             echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
-<<<<<<< HEAD
-sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
-echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
-echo "GRUB_ENABLE_BLSCFG=false" >> /mnt/etc/default/grub
-echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
-echo "GRUB_TIMEOUT=10" >> /mnt/etc/default/grub
-echo "GRUB_RECORDFAIL_TIMEOUT=5" >> /mnt/etc/default/grub
-
-            # Verificar que el subvolumen @ esté accesible desde GRUB
-            echo -e "${CYAN}Verificando accesibilidad del subvolumen @...${NC}"
-            if chroot /mnt /bin/bash -c "btrfs subvolume show /" > /dev/null 2>&1; then
-                echo -e "${GREEN}✓ Subvolumen @ accesible${NC}"
-            else
-                echo -e "${YELLOW}⚠ Advertencia: Problema detectado con subvolumen @${NC}"
-            fi
-=======
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
->>>>>>> parent of 539e7a2 (data)
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
@@ -2281,10 +2391,8 @@ echo "GRUB_RECORDFAIL_TIMEOUT=5" >> /mnt/etc/default/grub
         sleep 4
 
         echo -e "${CYAN}Instalando GRUB en disco...${NC}"
-        if ! chroot /mnt /bin/bash -c "grub-install --target=i386-pc --boot-directory=/boot --recheck --force $SELECTED_DISK"; then
+        if ! chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK --recheck"; then
             echo -e "${RED}ERROR: Falló la instalación de GRUB BIOS${NC}"
-            echo -e "${YELLOW}Verificando estructura de directorios...${NC}"
-            ls -la /mnt/boot/grub/ 2>/dev/null || echo "Directorio /boot/grub no existe"
             exit 1
         fi
 
@@ -2293,61 +2401,13 @@ echo "GRUB_RECORDFAIL_TIMEOUT=5" >> /mnt/etc/default/grub
         echo -e "${CYAN}Generando configuración de GRUB...${NC}"
         if ! chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
             echo -e "${RED}ERROR: Falló la generación de grub.cfg${NC}"
-            echo -e "${YELLOW}Intentando recuperación automática...${NC}"
-
-            # Recuperación automática
-            chroot /mnt /bin/bash -c "grub-install --target=i386-pc --boot-directory=/boot --recheck --force $SELECTED_DISK"
-            sleep 2
-            chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
-
-            if [ ! -f "/mnt/boot/grub/grub.cfg" ]; then
-                echo -e "${RED}ERROR: Recuperación fallida${NC}"
-                exit 1
-            fi
-            echo -e "${GREEN}✓ Recuperación automática exitosa${NC}"
+            exit 1
         fi
 
         # Verificar que grub.cfg se haya creado
         if [ ! -f "/mnt/boot/grub/grub.cfg" ]; then
             echo -e "${RED}ERROR: No se creó grub.cfg${NC}"
             exit 1
-        fi
-
-        # Verificar módulos críticos para BTRFS
-        if [ "$PARTITION_MODE" = "btrfs" ]; then
-            echo -e "${CYAN}Verificando módulos GRUB para BTRFS...${NC}"
-            MODULOS_CRITICOS=("normal.mod" "btrfs.mod" "part_msdos.mod")
-            for modulo in "${MODULOS_CRITICOS[@]}"; do
-                if [ -f "/mnt/boot/grub/i386-pc/$modulo" ]; then
-                    echo -e "${GREEN}✓ $modulo${NC}"
-                else
-                    echo -e "${RED}✗ $modulo (FALTANTE)${NC}"
-                fi
-            done
-        fi
-
-        # Verificación final y creación de script de emergencia
-        if [ "$PARTITION_MODE" = "btrfs" ]; then
-            echo -e "${CYAN}Creando herramientas de emergencia GRUB-BTRFS...${NC}"
-
-            # Script de emergencia en el sistema instalado
-            cat > /mnt/usr/local/bin/emergency_grub_fix << 'EMERGENCY_EOF'
-#!/bin/bash
-echo "=== Reparación de Emergencia GRUB BTRFS ==="
-DISCO=$(lsblk -no PKNAME $(findmnt -n -o SOURCE /) | head -1 2>/dev/null)
-if [ -z "$DISCO" ]; then
-    echo "ERROR: No se pudo detectar el disco"
-    exit 1
-fi
-
-echo "Disco: /dev/$DISCO"
-mkdir -p /boot/grub/i386-pc
-grub-install --target=i386-pc --boot-directory=/boot --recheck --force /dev/$DISCO
-grub-mkconfig -o /boot/grub/grub.cfg
-echo "Reparación completada"
-EMERGENCY_EOF
-            chmod +x /mnt/usr/local/bin/emergency_grub_fix
-            echo -e "${GREEN}✓ Script de emergencia: /usr/local/bin/emergency_grub_fix${NC}"
         fi
 
         echo -e "${GREEN}✓ GRUB BIOS instalado correctamente${NC}"
@@ -2386,83 +2446,8 @@ if true; then
     else
         if [ -f "/mnt/boot/grub/grub.cfg" ]; then
             echo -e "${GREEN}✓ Bootloader BIOS verificado correctamente${NC}"
-
-            # Verificaciones adicionales para BTRFS
-            if [ "$PARTITION_MODE" = "btrfs" ]; then
-                echo -e "${CYAN}Verificando instalación GRUB para BTRFS...${NC}"
-
-                # Verificar módulos críticos
-                MODULOS_FALTANTES=0
-                MODULOS_CRITICOS=("normal.mod" "btrfs.mod" "part_msdos.mod" "biosdisk.mod" "search.mod")
-
-                for modulo in "${MODULOS_CRITICOS[@]}"; do
-                    if [ -f "/mnt/boot/grub/i386-pc/$modulo" ]; then
-                        echo -e "${GREEN}  ✓ $modulo${NC}"
-                    else
-                        echo -e "${RED}  ✗ $modulo (FALTANTE)${NC}"
-                        ((MODULOS_FALTANTES++))
-                    fi
-                done
-
-                # Verificar configuración BTRFS en grub.cfg
-                if grep -q "rootflags=subvol=@" /mnt/boot/grub/grub.cfg; then
-                    echo -e "${GREEN}  ✓ Configuración BTRFS en grub.cfg${NC}"
-                else
-                    echo -e "${YELLOW}  ⚠ Configuración BTRFS no encontrada en grub.cfg${NC}"
-                fi
-
-                # Crear script de recuperación
-                echo -e "${CYAN}Creando script de recuperación GRUB...${NC}"
-                cat > /mnt/root/fix_grub_btrfs.sh << 'GRUBFIX_EOF'
-#!/bin/bash
-# Script de recuperación GRUB para BTRFS
-echo "=== Reparación GRUB BTRFS ==="
-
-# Detectar disco
-DISCO=$(lsblk -no PKNAME $(findmnt -n -o SOURCE /) | head -1)
-echo "Disco detectado: /dev/$DISCO"
-
-# Reinstalar GRUB
-echo "Reinstalando GRUB..."
-grub-install --target=i386-pc --boot-directory=/boot --recheck --force /dev/$DISCO
-
-# Regenerar configuración
-echo "Regenerando configuración GRUB..."
-grub-mkconfig -o /boot/grub/grub.cfg
-
-echo "Reparación completada. Reinicia el sistema."
-GRUBFIX_EOF
-                chmod +x /mnt/root/fix_grub_btrfs.sh
-                echo -e "${GREEN}  ✓ Script de recuperación creado: /root/fix_grub_btrfs.sh${NC}"
-
-                if [ $MODULOS_FALTANTES -gt 0 ]; then
-                    echo -e "${YELLOW}⚠ ADVERTENCIA: $MODULOS_FALTANTES módulos GRUB faltantes${NC}"
-                    echo -e "${YELLOW}  Si el sistema no arranca, usa el script /root/fix_grub_btrfs.sh${NC}"
-                fi
-
-                # Información de recuperación específica para el error "normal.mod not found"
-                echo -e "${CYAN}=== INFORMACIÓN DE RECUPERACIÓN GRUB BTRFS ===${NC}"
-                echo -e "${YELLOW}Si al reiniciar aparece el error 'normal.mod not found':${NC}"
-                echo -e "${CYAN}1. Desde GRUB rescue, ejecuta:${NC}"
-                echo -e "${CYAN}   set root=(hd0,msdos1)${NC}"
-                echo -e "${CYAN}   set prefix=(hd0,msdos1)/boot/grub${NC}"
-                echo -e "${CYAN}   insmod normal${NC}"
-                echo -e "${CYAN}   normal${NC}"
-                echo -e "${CYAN}2. O desde un Live USB:${NC}"
-                echo -e "${CYAN}   Monta tu sistema BTRFS con: mount -o subvol=@ /dev/sdXY /mnt${NC}"
-                echo -e "${CYAN}   Ejecuta: /mnt/root/fix_grub_btrfs.sh${NC}"
-                echo -e "${CYAN}3. Comando de emergencia desde Live USB:${NC}"
-                echo -e "${CYAN}   grub-install --target=i386-pc --boot-directory=/mnt/boot --recheck --force /dev/sdX${NC}"
-            fi
-        else
+else
             echo -e "${RED}⚠ Problema con la instalación del bootloader BIOS${NC}"
-            echo -e "${RED}  Archivo grub.cfg no encontrado en /boot/grub/${NC}"
-            if [ "$PARTITION_MODE" = "btrfs" ]; then
-                echo -e "${YELLOW}Para recuperar GRUB BTRFS manualmente:${NC}"
-                echo -e "${CYAN}1. Desde Live USB, monta: mount -o subvol=@ /dev/sdXY /mnt${NC}"
-                echo -e "${CYAN}2. Reinstala GRUB: grub-install --target=i386-pc --boot-directory=/mnt/boot /dev/sdX${NC}"
-                echo -e "${CYAN}3. Regenera config: grub-mkconfig -o /mnt/boot/grub/grub.cfg${NC}"
-            fi
         fi
     fi
     sleep 2
@@ -3434,7 +3419,6 @@ case "$INSTALLATION_TYPE" in
                 [GroupOrder]
                 0=Default
                 EOF"
-
                 ;;
             "BUDGIE")
                 echo -e "${CYAN}Instalando Budgie Desktop...${NC}"
@@ -3541,10 +3525,9 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S evisum --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S econnman --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
-<<<<<<< HEAD
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
-sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
@@ -3552,9 +3535,6 @@ cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgrou
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
-=======
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
->>>>>>> parent of 539e7a2 (data)
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "KDE")
@@ -4431,140 +4411,7 @@ chroot /mnt pacman -S ttf-ubuntu-font-family --noconfirm
 chroot /mnt pacman -S gnu-free-fonts --noconfirm
 sleep 2
 clear
-
-# Configuración completa del layout de teclado para Xorg y Wayland
-echo -e "${GREEN}| Configurando layout de teclado: $KEYBOARD_LAYOUT |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
-
-# 1. Configuración con localectl (método universal y permanente)
-echo -e "${CYAN}1. Configurando con localectl (permanente para ambos Xorg y Wayland)...${NC}"
-chroot /mnt localectl set-keymap $KEYBOARD_LAYOUT
-chroot /mnt localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" ""
-
-# También ejecutar como usuario para configuración por usuario
-# echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
-# chroot /mnt /bin/bash -c "sudo -u $USER localectl set-keymap $KEYBOARD_LAYOUT" || echo "Warning: No se pudo configurar keymap para usuario $USER"
-# chroot /mnt /bin/bash -c "sudo -u $USER localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" || echo "Warning: No se pudo configurar X11 keymap para usuario $USER"
-
-# 2. Configuración para Xorg (X11)
-echo -e "${CYAN}2. Configurando teclado para Xorg (X11)...${NC}"
-mkdir -p /mnt/etc/X11/xorg.conf.d
-cat > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf << EOF
-Section "InputClass"
-        Identifier "system-keyboard"
-        MatchIsKeyboard "on"
-        Option "XkbLayout" "$KEYBOARD_LAYOUT"
-        Option "XkbModel" "pc105"
-        Option "XkbVariant" ""
-        Option "XkbOptions" "grp:alt_shift_toggle"
-EndSection
-EOF
-
-# 3. Configuración para Wayland
-echo -e "${CYAN}3. Configurando teclado para Wayland...${NC}"
-mkdir -p /mnt/etc/xdg/wlroots
-cat > /mnt/etc/xdg/wlroots/wlr.conf << EOF
-[keyboard]
-layout=$KEYBOARD_LAYOUT
-model=pc105
-variant=
-options=grp:alt_shift_toggle
-
-[input]
-kb_layout=$KEYBOARD_LAYOUT
-kb_model=pc105
-kb_variant=
-kb_options=grp:alt_shift_toggle
-EOF
-
-# 4. Configuración persistente del archivo /etc/default/keyboard
-echo -e "${CYAN}4. Configurando archivo /etc/default/keyboard...${NC}"
-cat > /mnt/etc/default/keyboard << EOF
-XKBMODEL="pc105"
-XKBLAYOUT="$KEYBOARD_LAYOUT"
-XKBVARIANT=""
-XKBOPTIONS="grp:alt_shift_toggle"
-EOF
-
-# 5. Configuración de la consola virtual (vconsole.conf)
-echo -e "${CYAN}5. Configurando consola virtual...${NC}"
-echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
-echo "FONT=lat0-16" >> /mnt/etc/vconsole.conf
-
-# 6. Configuración para GNOME (si se usa)
-echo -e "${CYAN}6. Configurando para GNOME...${NC}"
-mkdir -p /mnt/etc/dconf/db/local.d
-cat > /mnt/etc/dconf/db/local.d/00-keyboard << EOF
-[org/gnome/desktop/input-sources]
-sources=[('xkb', '$KEYBOARD_LAYOUT')]
-EOF
-
-# 7. Configuración adicional para el usuario
-echo -e "${CYAN}7. Configurando variables de entorno para el usuario...${NC}"
-cat >> /mnt/home/$USER/.profile << EOF
-
-# Configuración de teclado
-export XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT
-export XKB_DEFAULT_MODEL=pc105
-export XKB_DEFAULT_OPTIONS=grp:alt_shift_toggle
-EOF
-
-# 8. Script de configuración automática para el arranque
-echo -e "${CYAN}8. Creando script de configuración automática...${NC}"
-mkdir -p /mnt/usr/local/bin
-cat > /mnt/usr/local/bin/setup-keyboard.sh << 'EOF'
-#!/bin/bash
-# Script de configuración automática del teclado
-
-KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"
-
-# Detectar si estamos en X11 o Wayland
-if [ -n "$DISPLAY" ] && command -v setxkbmap >/dev/null 2>&1; then
-    # Estamos en X11
-    setxkbmap $KEYBOARD_LAYOUT
-elif [ -n "$WAYLAND_DISPLAY" ] && command -v gsettings >/dev/null 2>&1; then
-    # Estamos en Wayland con GNOME
-    gsettings set org.gnome.desktop.input-sources sources "[('xkb', '$KEYBOARD_LAYOUT')]"
-fi
-EOF
-
-chmod +x /mnt/usr/local/bin/setup-keyboard.sh
-
-# 9. Configuración para autostart en sesiones gráficas
-echo -e "${CYAN}9. Configurando autostart para sesiones gráficas...${NC}"
-mkdir -p /mnt/etc/xdg/autostart
-cat > /mnt/etc/xdg/autostart/keyboard-setup.desktop << EOF
-[Desktop Entry]
-Type=Application
-Name=Keyboard Layout Setup
-Exec=/usr/local/bin/setup-keyboard.sh
-Hidden=false
-NoDisplay=true
-X-GNOME-Autostart-enabled=true
-EOF
-
-# 10. Establecer permisos correctos
-echo -e "${CYAN}10. Estableciendo permisos correctos...${NC}"
-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.profile" 2>/dev/null || true
-chroot /mnt chmod 755 /usr/local/bin/setup-keyboard.sh
-chroot /mnt chmod 644 /etc/xdg/autostart/keyboard-setup.desktop
-
-# 11. Actualizar base de datos dconf si existe
-echo -e "${CYAN}11. Actualizando configuraciones del sistema...${NC}"
-chroot /mnt dconf update 2>/dev/null || true
-
-
-
-echo -e "${GREEN}✓ Configuración completa del teclado finalizada${NC}"
-echo -e "${CYAN}  • Layout: $KEYBOARD_LAYOUT${NC}"
-echo -e "${CYAN}  • Keymap TTY: $KEYMAP_TTY${NC}"
-echo -e "${CYAN}  • Modelo: pc105${NC}"
-echo -e "${CYAN}  • Cambio de layout: Alt+Shift${NC}"
-echo -e "${CYAN}  • Métodos configurados: localectl, Xorg, Wayland, GNOME, vconsole${NC}"
-echo -e "${YELLOW}  • La configuración será efectiva después del reinicio${NC}"
-
-sleep 4
+configurar_teclado
 clear
 
 # Instalación de programas adicionales según configuración
