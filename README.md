@@ -3,6 +3,11 @@
 <div align="center">
   <img src="data/img/Capturas/page1.png" alt="Arcris 2.0 - Página de Bienvenida" width="600">
 
+  **📥 Descargas Disponibles**
+
+  [![Google Drive](https://img.shields.io/badge/Google%20Drive-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/1Jcgjpbpem3Gir171_45vvCmgg39p7mIs){:target="_blank"}
+  [![SourceForge](https://img.shields.io/badge/SourceForge-FF6600?style=for-the-badge&logo=sourceforge&logoColor=white)](https://sourceforge.net/projects/arcrisgui/files/ISO/){:target="_blank"}
+
   **Instalador moderno de Arch Linux con interfaz gráfica**
 
   [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
