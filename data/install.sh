@@ -3070,7 +3070,7 @@ printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 chroot /mnt /bin/bash -c "pacman -S dhcp dhcpcd dhclient networkmanager wpa_supplicant --noconfirm"
 # Deshabilitar dhcpcd para evitar conflictos con NetworkManager
-chroot /mnt /bin/bash -c "systemctl disable dhcpcd" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+chroot /mnt /bin/bash -c "systemctl enable dhcpcd" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 chroot /mnt /bin/bash -c "systemctl enable NetworkManager" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 clear
 
@@ -3328,13 +3328,27 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "DEEPIN")
                 echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin-kwin --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S deepin-extra --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cosmic --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cosmic-greeter --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "systemctl enable cosmic-greeter.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+                ;;
+
+            "PANTHEON")
+                echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S pantheon --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
+
             "ENLIGHTENMENT")
                 echo -e "${CYAN}Instalando Enlightenment Desktop...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S enlightenment --noansweredit --noconfirm --needed"
@@ -4413,6 +4427,7 @@ else
     echo "# Configuración normal del grupo wheel" >> /mnt/etc/sudoers
     sed -i '$d' /mnt/etc/sudoers
     echo "%wheel ALL=(ALL) ALL"
+    echo ""
     echo '%wheel ALL=(ALL) ALL' >> /mnt/etc/sudoers
     echo "✓ Configuración wheel añadida al archivo sudoers"
 fi
@@ -4427,7 +4442,7 @@ fi
 
 sed -i '$d' /mnt/etc/sudoers
 echo "%wheel ALL=(ALL) ALL"
-echo "%wheel ALL=(ALL) ALL">> /mnt/etc/sudoers
+echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
 
 
 
