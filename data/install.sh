@@ -1844,6 +1844,7 @@ echo ""
 
 pacstrap /mnt base
 pacstrap /mnt base-devel
+pacstrap /mnt lsb-release
 pacstrap /mnt reflector python3 rsync
 pacstrap /mnt nano
 pacstrap /mnt xdg-user-dirs
@@ -2391,7 +2392,7 @@ if true; then
         sleep 4
 
         echo -e "${CYAN}Instalando GRUB en disco...${NC}"
-        if ! chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK --recheck"; then
+        if ! chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK"; then
             echo -e "${RED}ERROR: Falló la instalación de GRUB BIOS${NC}"
             exit 1
         fi
