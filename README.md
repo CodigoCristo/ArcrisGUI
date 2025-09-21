@@ -5,8 +5,8 @@
 
   **📥 Descargas Disponibles**
 
-  [![Google Drive](https://img.shields.io/badge/Google%20Drive-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/1Jcgjpbpem3Gir171_45vvCmgg39p7mIs){:target="_blank"}
-  [![SourceForge](https://img.shields.io/badge/SourceForge-FF6600?style=for-the-badge&logo=sourceforge&logoColor=white)](https://sourceforge.net/projects/arcrisgui/files/ISO/){:target="_blank"}
+  [![Google Drive](https://img.shields.io/badge/Google%20Drive-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/1Jcgjpbpem3Gir171_45vvCmgg39p7mIs)
+  [![SourceForge](https://img.shields.io/badge/SourceForge-FF6600?style=for-the-badge&logo=sourceforge&logoColor=white)](https://sourceforge.net/projects/arcrisgui/files/ISO/)
 
   **Instalador moderno de Arch Linux con interfaz gráfica**
 
