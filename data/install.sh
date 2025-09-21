@@ -3354,9 +3354,9 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S pantheon --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-pantheon-greeter --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "ENLIGHTENMENT")
@@ -3455,8 +3455,14 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER sed -i '102s/.*/greeter-session=lightdm-slick-greeter/' /etc/lightdm/lightdm.conf"
+                cp /home/arcris/.config/xfce4/backgroundarch.jpg /usr/share/pixmaps/backgroundarch.jpge
+                chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
+                chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
+                chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
+                chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
+                chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S light-locker --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
