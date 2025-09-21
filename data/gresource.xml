@@ -30,7 +30,7 @@
 
     <file alias="BUDGIE.png">img/DE/BUDGIE.png</file>
     <file alias="CINNAMON.png">img/DE/CINNAMON.png</file>
-    <file alias="DEEPIN.png">img/DE/DEEPIN.png</file>
+    <file alias="CUTEFISH.png">img/DE/CUTEFISH.png</file>
     <file alias="ENLIGHTENMENT.png">img/DE/ENLIGHTENMENT.png</file>
     <file alias="GNOME.png">img/DE/GNOME.png</file>
     <file alias="KDE.png">img/DE/KDE.png</file>
@@ -38,6 +38,8 @@
     <file alias="LXQT.png">img/DE/LXQT.png</file>
     <file alias="MATE.png">img/DE/MATE.png</file>
     <file alias="XFCE4.png">img/DE/XFCE4.png</file>
+    <file alias="UKUI.png">img/DE/UKUI.png</file>
+    <file alias="PANTHEON.png">img/DE/PANTHEON.png</file>
 
     <file alias="DWL.png">img/WM/DWL.png</file>
     <file alias="I3WM.png">img/WM/I3WM.png</file>

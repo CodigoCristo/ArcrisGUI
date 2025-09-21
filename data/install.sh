@@ -1930,7 +1930,7 @@ echo ""
 echo "root:$PASSWORD_ROOT" | chroot /mnt /bin/bash -c "chpasswd"
 
 # Crear usuario
-chroot /mnt /bin/bash -c "useradd -m -G wheel,audio,video,optical,storage -s /bin/bash $USER"
+chroot /mnt /bin/bash -c "useradd -m -G wheel,audio,video,optical,storage,input -s /bin/bash $USER"
 echo "$USER:$PASSWORD_USER" | chroot /mnt /bin/bash -c "chpasswd"
 
 
@@ -3326,18 +3326,29 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter-mint-theme --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
-            "DEEPIN")
+            "CUTEFISH")
                 echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cosmic --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cutefish --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S polkit-kde-agent --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cosmic-greeter --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "systemctl enable cosmic-greeter.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm-kcm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "systemctl enable sddm"
                 ;;
-
+            "UKUI")
+                echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S ukui --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+                ;;
             "PANTHEON")
                 echo -e "${CYAN}Instalando Deepin Desktop...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S pantheon --noansweredit --noconfirm --needed"
@@ -3348,7 +3359,6 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter-settings --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
-
             "ENLIGHTENMENT")
                 echo -e "${CYAN}Instalando Enlightenment Desktop...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S enlightenment --noansweredit --noconfirm --needed"
@@ -3369,7 +3379,6 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S systemsettings --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S discover --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S flatpak --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S polkit-kde-agent --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S powerdevil --noansweredit --noconfirm --needed"
@@ -3387,7 +3396,16 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S kde-gtk-config --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S kdeplasma-addons --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S kdegraphics-thumbnailers --noansweredit --noconfirm --needed"
-                chroot /mnt /
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kscreen --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kinfocenter --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze-gtk --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-kde --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-wayland-session --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-x11-session --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm-kcm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "systemctl enable sddm"
                 ;;
             "LXDE")
                 echo -e "${CYAN}Instalando LXDE Desktop...${NC}"
@@ -4425,10 +4443,7 @@ elif chroot /mnt /bin/bash -c "grep -q '^%wheel.*ALL.*ALL' /etc/sudoers" 2>/dev/
 else
     echo "➕ No se encontró configuración wheel, agregándola..."
     echo "# Configuración normal del grupo wheel" >> /mnt/etc/sudoers
-    sed -i '$d' /mnt/etc/sudoers
-    echo "%wheel ALL=(ALL) ALL"
-    echo ""
-    echo '%wheel ALL=(ALL) ALL' >> /mnt/etc/sudoers
+    cp /usr/share/arcrisgui/data/config/sudoers /mnt/etc/sudoers
     echo "✓ Configuración wheel añadida al archivo sudoers"
 fi
 
@@ -4440,9 +4455,9 @@ fi
 #fi
 
 
-sed -i '$d' /mnt/etc/sudoers
-echo "%wheel ALL=(ALL) ALL"
-echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
+#sed -i '$d' /mnt/etc/sudoers
+#echo "%wheel ALL=(ALL) ALL"
+#echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
 
 
 

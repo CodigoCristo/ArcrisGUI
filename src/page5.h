@@ -20,17 +20,19 @@ typedef enum {
     DE_TYPE_BUDGIE,
     DE_TYPE_CINNAMON,
     DE_TYPE_MATE,
-    DE_TYPE_DEEPIN,
+    DE_TYPE_CUTEFISH,
     DE_TYPE_LXDE,
     DE_TYPE_LXQT,
-    DE_TYPE_ENLIGHTENMENT
+    DE_TYPE_ENLIGHTENMENT,
+    DE_TYPE_UKUI,
+    DE_TYPE_PANTHEON
 } DesktopEnvironmentType;
 
 // Enumeración para gestores de ventanas
 typedef enum {
-    WM_TYPE_DWL,
     WM_TYPE_HYPRLAND,
     WM_TYPE_SWAY,
+    WM_TYPE_DWL,
     WM_TYPE_DWM,
     WM_TYPE_I3WM,
     WM_TYPE_BSPWM,

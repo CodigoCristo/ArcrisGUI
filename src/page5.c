@@ -15,17 +15,19 @@ static const char* DE_NAMES[] = {
     "BUDGIE",
     "CINNAMON",
     "MATE",
-    "DEEPIN",
+    "CUTEFISH",
     "LXDE",
     "LXQT",
-    "ENLIGHTENMENT"
+    "ENLIGHTENMENT",
+    "UKUI",
+    "PANTHEON"
 };
 
 // Nombres de los gestores de ventanas
 static const char* WM_NAMES[] = {
-    "DWL",
     "HYPRLAND",
     "SWAY",
+    "DWL",
     "DWM",
     "I3WM",
     "BSPWM",
@@ -43,17 +45,19 @@ static const char* DE_IMAGE_RESOURCES[] = {
     "/org/gtk/arcris/BUDGIE.png",
     "/org/gtk/arcris/CINNAMON.png",
     "/org/gtk/arcris/MATE.png",
-    "/org/gtk/arcris/DEEPIN.png",
+    "/org/gtk/arcris/CUTEFISH.png",
     "/org/gtk/arcris/LXDE.png",
     "/org/gtk/arcris/LXQT.png",
-    "/org/gtk/arcris/ENLIGHTENMENT.png"
+    "/org/gtk/arcris/ENLIGHTENMENT.png",
+    "/org/gtk/arcris/UKUI.png",
+    "/org/gtk/arcris/PANTHEON.png"
 };
 
 // Recursos de imágenes para WM
 static const char* WM_IMAGE_RESOURCES[] = {
-    "/org/gtk/arcris/DWL.png",
     "/org/gtk/arcris/HYPRLAND.png",
     "/org/gtk/arcris/SWAY.png",
+    "/org/gtk/arcris/DWL.png",
     "/org/gtk/arcris/DWM.png",
     "/org/gtk/arcris/I3WM.png",
     "/org/gtk/arcris/BSPWM.png",
@@ -254,7 +258,7 @@ void page5_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     // Configurar valores por defecto
     g_page5_data->current_type = INSTALL_TYPE_TERMINAL;
     g_page5_data->current_de = DE_TYPE_GNOME;
-    g_page5_data->current_wm = WM_TYPE_I3WM;
+    g_page5_data->current_wm = WM_TYPE_HYPRLAND;
 
     // Realizar configuraciones iniciales
     page5_setup_widgets(g_page5_data);
@@ -478,8 +482,8 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
         case DE_TYPE_CINNAMON:
             de_name = g_strdup("CINNAMON");
             break;
-        case DE_TYPE_DEEPIN:
-            de_name = g_strdup("DEEPIN");
+        case DE_TYPE_CUTEFISH:
+            de_name = g_strdup("CUTEFISH");
             break;
         case DE_TYPE_ENLIGHTENMENT:
             de_name = g_strdup("ENLIGHTENMENT");
@@ -498,6 +502,12 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
             break;
         case DE_TYPE_XFCE4:
             de_name = g_strdup("XFCE4");
+            break;
+        case DE_TYPE_UKUI:
+            de_name = g_strdup("UKUI");
+            break;
+        case DE_TYPE_PANTHEON:
+            de_name = g_strdup("PANTHEON");
             break;
         default:
             de_name = g_strdup("GNOME");
@@ -583,6 +593,9 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
         case WM_TYPE_BSPWM:
             wm_name = g_strdup("BSPWM");
             break;
+        case WM_TYPE_DWL:
+            wm_name = g_strdup("DWL");
+            break;
         case WM_TYPE_DWM:
             wm_name = g_strdup("DWM");
             break;
@@ -602,7 +615,7 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
             wm_name = g_strdup("XMONAD");
             break;
         default:
-            wm_name = g_strdup("DWL");
+            wm_name = g_strdup("HYPRLAND");
             break;
     }
 
@@ -919,7 +932,7 @@ void page5_set_window_manager(Page5Data *data, WindowManagerType wm)
 // Función para obtener el gestor de ventanas
 WindowManagerType page5_get_window_manager(Page5Data *data)
 {
-    if (!data) return WM_TYPE_I3WM;
+    if (!data) return WM_TYPE_HYPRLAND;
     return data->current_wm;
 }
 
@@ -1326,7 +1339,7 @@ const char* page5_get_wm_image_resource(WindowManagerType wm)
     if (wm >= 0 && wm < G_N_ELEMENTS(WM_IMAGE_RESOURCES)) {
         return WM_IMAGE_RESOURCES[wm];
     }
-    return WM_IMAGE_RESOURCES[0]; // I3WM por defecto
+    return WM_IMAGE_RESOURCES[0]; // HYPRLAND por defecto
 }
 
 const char* page5_get_de_name(DesktopEnvironmentType de)
@@ -1342,7 +1355,7 @@ const char* page5_get_wm_name(WindowManagerType wm)
     if (wm >= 0 && wm < G_N_ELEMENTS(WM_NAMES)) {
         return WM_NAMES[wm];
     }
-    return WM_NAMES[0]; // I3WM por defecto
+    return WM_NAMES[0]; // HYPRLAND por defecto
 }
 
 // Función para guardar configuración
@@ -1403,7 +1416,7 @@ WindowManagerType page5_index_to_wm_type(guint index)
     if (index < G_N_ELEMENTS(WM_NAMES)) {
         return (WindowManagerType)index;
     }
-    return WM_TYPE_I3WM;
+    return WM_TYPE_HYPRLAND;
 }
 
 guint page5_de_type_to_index(DesktopEnvironmentType de)
