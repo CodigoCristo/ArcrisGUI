@@ -2164,7 +2164,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${YELLOW}  • IMPORTANTE: 'encrypt' DEBE ir antes de 'lvm2' para que funcione correctamente${NC}"
     echo -e "${YELLOW}  • keyboard y keymap son necesarios para introducir la contraseña en el boot${NC}"
 
-elif [ "$PARTITION_MODE" = "btrfs" ]; then
+elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     echo "Configurando mkinitcpio para BTRFS..."
     # Configurar módulos específicos para BTRFS
     sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c-intel crc32c zstd_compress lzo_compress)/' /mnt/etc/mkinitcpio.conf || echo "Error al configurar módulos para BTRFS"
@@ -2278,7 +2278,7 @@ if true; then
             echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
             echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
             echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
-        elif [ "$PARTITION_MODE" = "btrfs" ]; then
+        elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
         else
@@ -2381,7 +2381,7 @@ if true; then
             echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
             echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
 
-        elif [ "$PARTITION_MODE" = "btrfs" ]; then
+        elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
         else
@@ -3298,7 +3298,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 fi
 
 # Configuración adicional para BTRFS
-if [ "$PARTITION_MODE" = "btrfs" ]; then
+if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     echo -e "${GREEN}| Configuración adicional para BTRFS |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
