@@ -3456,7 +3456,7 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER sed -i '102s/.*/greeter-session=lightdm-slick-greeter/' /etc/lightdm/lightdm.conf"
+                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
