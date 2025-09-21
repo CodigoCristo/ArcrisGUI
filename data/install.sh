@@ -2341,7 +2341,14 @@ echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
         echo -e "${GREEN}✓ GRUB UEFI instalado correctamente${NC}"
     else
         echo -e "${CYAN}Instalando paquetes GRUB para BIOS...${NC}"
-        chroot /mnt /bin/bash -c "pacman -S grub --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S grub os-prober --noconfirm"
+
+        # Crear directorios necesarios para GRUB
+        echo -e "${CYAN}Creando directorios GRUB...${NC}"
+        mkdir -p /mnt/boot/grub
+        mkdir -p /mnt/boot/grub/i386-pc
+        mkdir -p /mnt/boot/grub/locale
+        mkdir -p /mnt/boot/grub/fonts
 
         # Configuración específica según el modo de particionado ANTES de instalar
         echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
@@ -2383,6 +2390,18 @@ echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
 sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
 echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
+echo "GRUB_ENABLE_BLSCFG=false" >> /mnt/etc/default/grub
+echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
+echo "GRUB_TIMEOUT=10" >> /mnt/etc/default/grub
+echo "GRUB_RECORDFAIL_TIMEOUT=5" >> /mnt/etc/default/grub
+
+            # Verificar que el subvolumen @ esté accesible desde GRUB
+            echo -e "${CYAN}Verificando accesibilidad del subvolumen @...${NC}"
+            if chroot /mnt /bin/bash -c "btrfs subvolume show /" > /dev/null 2>&1; then
+                echo -e "${GREEN}✓ Subvolumen @ accesible${NC}"
+            else
+                echo -e "${YELLOW}⚠ Advertencia: Problema detectado con subvolumen @${NC}"
+            fi
         else
 sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
 echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
@@ -2391,8 +2410,10 @@ echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
         sleep 4
 
         echo -e "${CYAN}Instalando GRUB en disco...${NC}"
-        if ! chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK --recheck"; then
+        if ! chroot /mnt /bin/bash -c "grub-install --target=i386-pc --boot-directory=/boot --recheck --force $SELECTED_DISK"; then
             echo -e "${RED}ERROR: Falló la instalación de GRUB BIOS${NC}"
+            echo -e "${YELLOW}Verificando estructura de directorios...${NC}"
+            ls -la /mnt/boot/grub/ 2>/dev/null || echo "Directorio /boot/grub no existe"
             exit 1
         fi
 
@@ -2401,13 +2422,61 @@ echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
         echo -e "${CYAN}Generando configuración de GRUB...${NC}"
         if ! chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
             echo -e "${RED}ERROR: Falló la generación de grub.cfg${NC}"
-            exit 1
+            echo -e "${YELLOW}Intentando recuperación automática...${NC}"
+
+            # Recuperación automática
+            chroot /mnt /bin/bash -c "grub-install --target=i386-pc --boot-directory=/boot --recheck --force $SELECTED_DISK"
+            sleep 2
+            chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
+
+            if [ ! -f "/mnt/boot/grub/grub.cfg" ]; then
+                echo -e "${RED}ERROR: Recuperación fallida${NC}"
+                exit 1
+            fi
+            echo -e "${GREEN}✓ Recuperación automática exitosa${NC}"
         fi
 
         # Verificar que grub.cfg se haya creado
         if [ ! -f "/mnt/boot/grub/grub.cfg" ]; then
             echo -e "${RED}ERROR: No se creó grub.cfg${NC}"
             exit 1
+        fi
+
+        # Verificar módulos críticos para BTRFS
+        if [ "$PARTITION_MODE" = "btrfs" ]; then
+            echo -e "${CYAN}Verificando módulos GRUB para BTRFS...${NC}"
+            MODULOS_CRITICOS=("normal.mod" "btrfs.mod" "part_msdos.mod")
+            for modulo in "${MODULOS_CRITICOS[@]}"; do
+                if [ -f "/mnt/boot/grub/i386-pc/$modulo" ]; then
+                    echo -e "${GREEN}✓ $modulo${NC}"
+                else
+                    echo -e "${RED}✗ $modulo (FALTANTE)${NC}"
+                fi
+            done
+        fi
+
+        # Verificación final y creación de script de emergencia
+        if [ "$PARTITION_MODE" = "btrfs" ]; then
+            echo -e "${CYAN}Creando herramientas de emergencia GRUB-BTRFS...${NC}"
+
+            # Script de emergencia en el sistema instalado
+            cat > /mnt/usr/local/bin/emergency_grub_fix << 'EMERGENCY_EOF'
+#!/bin/bash
+echo "=== Reparación de Emergencia GRUB BTRFS ==="
+DISCO=$(lsblk -no PKNAME $(findmnt -n -o SOURCE /) | head -1 2>/dev/null)
+if [ -z "$DISCO" ]; then
+    echo "ERROR: No se pudo detectar el disco"
+    exit 1
+fi
+
+echo "Disco: /dev/$DISCO"
+mkdir -p /boot/grub/i386-pc
+grub-install --target=i386-pc --boot-directory=/boot --recheck --force /dev/$DISCO
+grub-mkconfig -o /boot/grub/grub.cfg
+echo "Reparación completada"
+EMERGENCY_EOF
+            chmod +x /mnt/usr/local/bin/emergency_grub_fix
+            echo -e "${GREEN}✓ Script de emergencia: /usr/local/bin/emergency_grub_fix${NC}"
         fi
 
         echo -e "${GREEN}✓ GRUB BIOS instalado correctamente${NC}"
@@ -2446,8 +2515,83 @@ echo ""
     else
         if [ -f "/mnt/boot/grub/grub.cfg" ]; then
             echo -e "${GREEN}✓ Bootloader BIOS verificado correctamente${NC}"
+
+            # Verificaciones adicionales para BTRFS
+            if [ "$PARTITION_MODE" = "btrfs" ]; then
+                echo -e "${CYAN}Verificando instalación GRUB para BTRFS...${NC}"
+
+                # Verificar módulos críticos
+                MODULOS_FALTANTES=0
+                MODULOS_CRITICOS=("normal.mod" "btrfs.mod" "part_msdos.mod" "biosdisk.mod" "search.mod")
+
+                for modulo in "${MODULOS_CRITICOS[@]}"; do
+                    if [ -f "/mnt/boot/grub/i386-pc/$modulo" ]; then
+                        echo -e "${GREEN}  ✓ $modulo${NC}"
+                    else
+                        echo -e "${RED}  ✗ $modulo (FALTANTE)${NC}"
+                        ((MODULOS_FALTANTES++))
+                    fi
+                done
+
+                # Verificar configuración BTRFS en grub.cfg
+                if grep -q "rootflags=subvol=@" /mnt/boot/grub/grub.cfg; then
+                    echo -e "${GREEN}  ✓ Configuración BTRFS en grub.cfg${NC}"
+                else
+                    echo -e "${YELLOW}  ⚠ Configuración BTRFS no encontrada en grub.cfg${NC}"
+                fi
+
+                # Crear script de recuperación
+                echo -e "${CYAN}Creando script de recuperación GRUB...${NC}"
+                cat > /mnt/root/fix_grub_btrfs.sh << 'GRUBFIX_EOF'
+#!/bin/bash
+# Script de recuperación GRUB para BTRFS
+echo "=== Reparación GRUB BTRFS ==="
+
+# Detectar disco
+DISCO=$(lsblk -no PKNAME $(findmnt -n -o SOURCE /) | head -1)
+echo "Disco detectado: /dev/$DISCO"
+
+# Reinstalar GRUB
+echo "Reinstalando GRUB..."
+grub-install --target=i386-pc --boot-directory=/boot --recheck --force /dev/$DISCO
+
+# Regenerar configuración
+echo "Regenerando configuración GRUB..."
+grub-mkconfig -o /boot/grub/grub.cfg
+
+echo "Reparación completada. Reinicia el sistema."
+GRUBFIX_EOF
+                chmod +x /mnt/root/fix_grub_btrfs.sh
+                echo -e "${GREEN}  ✓ Script de recuperación creado: /root/fix_grub_btrfs.sh${NC}"
+
+                if [ $MODULOS_FALTANTES -gt 0 ]; then
+                    echo -e "${YELLOW}⚠ ADVERTENCIA: $MODULOS_FALTANTES módulos GRUB faltantes${NC}"
+                    echo -e "${YELLOW}  Si el sistema no arranca, usa el script /root/fix_grub_btrfs.sh${NC}"
+                fi
+
+                # Información de recuperación específica para el error "normal.mod not found"
+                echo -e "${CYAN}=== INFORMACIÓN DE RECUPERACIÓN GRUB BTRFS ===${NC}"
+                echo -e "${YELLOW}Si al reiniciar aparece el error 'normal.mod not found':${NC}"
+                echo -e "${CYAN}1. Desde GRUB rescue, ejecuta:${NC}"
+                echo -e "${CYAN}   set root=(hd0,msdos1)${NC}"
+                echo -e "${CYAN}   set prefix=(hd0,msdos1)/boot/grub${NC}"
+                echo -e "${CYAN}   insmod normal${NC}"
+                echo -e "${CYAN}   normal${NC}"
+                echo -e "${CYAN}2. O desde un Live USB:${NC}"
+                echo -e "${CYAN}   Monta tu sistema BTRFS con: mount -o subvol=@ /dev/sdXY /mnt${NC}"
+                echo -e "${CYAN}   Ejecuta: /mnt/root/fix_grub_btrfs.sh${NC}"
+                echo -e "${CYAN}3. Comando de emergencia desde Live USB:${NC}"
+                echo -e "${CYAN}   grub-install --target=i386-pc --boot-directory=/mnt/boot --recheck --force /dev/sdX${NC}"
+            fi
         else
             echo -e "${RED}⚠ Problema con la instalación del bootloader BIOS${NC}"
+            echo -e "${RED}  Archivo grub.cfg no encontrado en /boot/grub/${NC}"
+            if [ "$PARTITION_MODE" = "btrfs" ]; then
+                echo -e "${YELLOW}Para recuperar GRUB BTRFS manualmente:${NC}"
+                echo -e "${CYAN}1. Desde Live USB, monta: mount -o subvol=@ /dev/sdXY /mnt${NC}"
+                echo -e "${CYAN}2. Reinstala GRUB: grub-install --target=i386-pc --boot-directory=/mnt/boot /dev/sdX${NC}"
+                echo -e "${CYAN}3. Regenera config: grub-mkconfig -o /mnt/boot/grub/grub.cfg${NC}"
+            fi
         fi
     fi
     sleep 2
