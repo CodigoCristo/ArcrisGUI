@@ -63,11 +63,145 @@ barra_progreso() {
 }
 
 ################################################################################################
-# #################### DWL #####################################################################
+# #################### teclado##################################################################
 ################################################################################################
 
+configurar_teclado() {
+    # Configuración completa del layout de teclado para Xorg y Wayland
+    echo -e "${GREEN}| Configurando layout de teclado: $KEYBOARD_LAYOUT |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    # 1. Configuración con localectl (método universal y permanente)
+    echo -e "${CYAN}1. Configurando con localectl (permanente para ambos Xorg y Wayland)...${NC}"
+    chroot /mnt localectl set-keymap $KEYBOARD_LAYOUT
+    chroot /mnt localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" ""
+
+    # También ejecutar como usuario para configuración por usuario
+    # echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
+    # chroot /mnt /bin/bash -c "sudo -u $USER localectl set-keymap $KEYBOARD_LAYOUT" || echo "Warning: No se pudo configurar keymap para usuario $USER"
+    # chroot /mnt /bin/bash -c "sudo -u $USER localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" || echo "Warning: No se pudo configurar X11 keymap para usuario $USER"
+
+    # 2. Configuración para Xorg (X11)
+    echo -e "${CYAN}2. Configurando teclado para Xorg (X11)...${NC}"
+    mkdir -p /mnt/etc/X11/xorg.conf.d
+    cat > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf << EOF
+Section "InputClass"
+        Identifier "system-keyboard"
+        MatchIsKeyboard "on"
+        Option "XkbLayout" "$KEYBOARD_LAYOUT"
+        Option "XkbModel" "pc105"
+        Option "XkbVariant" ""
+        Option "XkbOptions" "grp:alt_shift_toggle"
+EndSection
+EOF
+
+    # 3. Configuración para Wayland
+    echo -e "${CYAN}3. Configurando teclado para Wayland...${NC}"
+    mkdir -p /mnt/etc/xdg/wlroots
+    cat > /mnt/etc/xdg/wlroots/wlr.conf << EOF
+[keyboard]
+layout=$KEYBOARD_LAYOUT
+model=pc105
+variant=
+options=grp:alt_shift_toggle
+
+[input]
+kb_layout=$KEYBOARD_LAYOUT
+kb_model=pc105
+kb_variant=
+kb_options=grp:alt_shift_toggle
+EOF
+
+    # 4. Configuración persistente del archivo /etc/default/keyboard
+    echo -e "${CYAN}4. Configurando archivo /etc/default/keyboard...${NC}"
+    cat > /mnt/etc/default/keyboard << EOF
+XKBMODEL="pc105"
+XKBLAYOUT="$KEYBOARD_LAYOUT"
+XKBVARIANT=""
+XKBOPTIONS="grp:alt_shift_toggle"
+EOF
+
+    # 5. Configuración de la consola virtual (vconsole.conf)
+    echo -e "${CYAN}5. Configurando consola virtual...${NC}"
+    echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
+    echo "FONT=lat0-16" >> /mnt/etc/vconsole.conf
+
+    # 6. Configuración para GNOME (si se usa)
+    echo -e "${CYAN}6. Configurando para GNOME...${NC}"
+    mkdir -p /mnt/etc/dconf/db/local.d
+    cat > /mnt/etc/dconf/db/local.d/00-keyboard << EOF
+[org/gnome/desktop/input-sources]
+sources=[('xkb', '$KEYBOARD_LAYOUT')]
+EOF
+
+    # 7. Configuración adicional para el usuario
+    echo -e "${CYAN}7. Configurando variables de entorno para el usuario...${NC}"
+    cat >> /mnt/home/$USER/.profile << EOF
+
+# Configuración de teclado
+export XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT
+export XKB_DEFAULT_MODEL=pc105
+export XKB_DEFAULT_OPTIONS=grp:alt_shift_toggle
+EOF
+
+    # 8. Script de configuración automática para el arranque
+    echo -e "${CYAN}8. Creando script de configuración automática...${NC}"
+    mkdir -p /mnt/usr/local/bin
+    cat > /mnt/usr/local/bin/setup-keyboard.sh << 'EOF'
+#!/bin/bash
+# Script de configuración automática del teclado
+
+KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"
+
+# Detectar si estamos en X11 o Wayland
+if [ -n "$DISPLAY" ] && command -v setxkbmap >/dev/null 2>&1; then
+    # Estamos en X11
+    setxkbmap $KEYBOARD_LAYOUT
+elif [ -n "$WAYLAND_DISPLAY" ] && command -v gsettings >/dev/null 2>&1; then
+    # Estamos en Wayland con GNOME
+    gsettings set org.gnome.desktop.input-sources sources "[('xkb', '$KEYBOARD_LAYOUT')]"
+fi
+EOF
+
+    chmod +x /mnt/usr/local/bin/setup-keyboard.sh
+
+    # 9. Configuración para autostart en sesiones gráficas
+    echo -e "${CYAN}9. Configurando autostart para sesiones gráficas...${NC}"
+    mkdir -p /mnt/etc/xdg/autostart
+    cat > /mnt/etc/xdg/autostart/keyboard-setup.desktop << EOF
+[Desktop Entry]
+Type=Application
+Name=Keyboard Layout Setup
+Exec=/usr/local/bin/setup-keyboard.sh
+Hidden=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+EOF
+
+    # 10. Establecer permisos correctos
+    echo -e "${CYAN}10. Estableciendo permisos correctos...${NC}"
+    chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.profile" 2>/dev/null || true
+    chroot /mnt chmod 755 /usr/local/bin/setup-keyboard.sh
+    chroot /mnt chmod 644 /etc/xdg/autostart/keyboard-setup.desktop
+
+    # 11. Actualizar base de datos dconf si existe
+    echo -e "${CYAN}11. Actualizando configuraciones del sistema...${NC}"
+    chroot /mnt dconf update 2>/dev/null || true
 
 
+
+    echo -e "${GREEN}✓ Configuración completa del teclado finalizada${NC}"
+    echo -e "${CYAN}  • Layout: $KEYBOARD_LAYOUT${NC}"
+    echo -e "${CYAN}  • Keymap TTY: $KEYMAP_TTY${NC}"
+    echo -e "${CYAN}  • Modelo: pc105${NC}"
+    echo -e "${CYAN}  • Cambio de layout: Alt+Shift${NC}"
+    echo -e "${CYAN}  • Métodos configurados: localectl, Xorg, Wayland, GNOME, vconsole${NC}"
+    echo -e "${YELLOW}  • La configuración será efectiva después del reinicio${NC}"
+
+    sleep 4
+    clear
+}
 
 
 
@@ -1645,16 +1779,16 @@ unmount_selected_disk_partitions() {
 
 # Función para configurar montajes necesarios para chroot
 setup_chroot_mounts() {
-    echo -e "${CYAN}Configurando montajes para chroot...${NC}"
-    mount --types proc /proc /mnt/proc
-    mount --rbind /sys /mnt/sys
-    mount --make-rslave /mnt/sys
-    mount --rbind /dev /mnt/dev
-    mount --make-rslave /mnt/dev
-    mount --bind /run /mnt/run
-    mount --make-slave /mnt/run
-    cp /etc/resolv.conf /mnt/etc/
-    echo -e "${GREEN}✓ Montajes para chroot configurados${NC}"
+echo -e "${CYAN}Configurando montajes para chroot...${NC}"
+mount --types proc /proc /mnt/proc
+mount --rbind /sys /mnt/sys
+mount --make-rslave /mnt/sys
+mount --rbind /dev /mnt/dev
+mount --make-rslave /mnt/dev
+mount --bind /run /mnt/run
+mount --make-slave /mnt/run
+cp /etc/resolv.conf /mnt/etc/
+echo -e "${GREEN}✓ Montajes para chroot configurados${NC}"
 }
 
 
@@ -1948,20 +2082,20 @@ USUARIOS_EXISTENTES=$(awk -F':' '$3 >= 1000 && $3 != 65534 {print $1}' /mnt/etc/
 if [[ -n "$USUARIOS_EXISTENTES" ]]; then
     echo "✓ Usuarios detectados en el sistema:"
     echo "$USUARIOS_EXISTENTES" | while read -r usuario; do
-        echo "  - $usuario"
-        chroot /mnt /bin/bash -c "userdel $usuario"
-        chroot /mnt /bin/bash -c "useradd -m -G wheel,audio,video,optical,storage -s /bin/bash $USER"
-        echo "$USER:$PASSWORD_USER" | chroot /mnt /bin/bash -c "chpasswd"
+echo "  - $usuario"
+chroot /mnt /bin/bash -c "userdel $usuario"
+chroot /mnt /bin/bash -c "useradd -m -G wheel,audio,video,optical,storage -s /bin/bash $USER"
+echo "$USER:$PASSWORD_USER" | chroot /mnt /bin/bash -c "chpasswd"
     done
-    echo ""
+echo ""
 
     # Configurar sudo para todos los usuarios encontrados
     {
-        echo "# Configuración temporal para instalaciones"
-        echo "$USUARIOS_EXISTENTES" | while read -r usuario_encontrado; do
-            echo "$usuario_encontrado ALL=(ALL:ALL) NOPASSWD: ALL"
-        done
-        echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL"
+echo "# Configuración temporal para instalaciones"
+echo "$USUARIOS_EXISTENTES" | while read -r usuario_encontrado; do
+    echo "$usuario_encontrado ALL=(ALL:ALL) NOPASSWD: ALL"
+done
+echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL"
     } > /mnt/etc/sudoers.d/temp-install
 
     echo "✓ Configuración sudo aplicada para usuarios existentes y grupo wheel"
@@ -1971,8 +2105,8 @@ else
 
     # Usar la variable USER proporcionada
     {
-        echo "# Configuración temporal para instalaciones"
-        echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL"
+echo "# Configuración temporal para instalaciones"
+echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL"
     } > /mnt/etc/sudoers.d/temp-install
 
     echo "✓ Configuración sudo aplicada para usuario: $USER"
@@ -1989,7 +2123,7 @@ if chroot /mnt /bin/bash -c "grep -q '^%wheel ALL=(ALL) ALL$' /etc/sudoers" 2>/d
     echo "🔄 Detectada configuración wheel normal, cambiando a NOPASSWD..."
 
     # Cambiar la línea específica
-    sed -i 's/^%wheel ALL=(ALL) ALL$/%wheel ALL=(ALL:ALL) NOPASSWD: ALL/' /mnt/etc/sudoers
+sed -i 's/^%wheel ALL=(ALL) ALL$/%wheel ALL=(ALL:ALL) NOPASSWD: ALL/' /mnt/etc/sudoers
 
     # Verificar que el cambio se aplicó correctamente
     if chroot /mnt /bin/bash -c "grep -q '^%wheel ALL=(ALL:ALL) NOPASSWD: ALL$' /etc/sudoers" 2>/dev/null; then
@@ -2014,35 +2148,35 @@ printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
 if [ "$PARTITION_MODE" = "cifrado" ]; then
-    echo -e "${GREEN}Configurando mkinitcpio para cifrado LUKS+LVM...${NC}"
+echo -e "${GREEN}Configurando mkinitcpio para cifrado LUKS+LVM...${NC}"
 
-    # Configurar módulos específicos para LUKS+LVM (siguiendo mejores prácticas)
-    echo -e "${CYAN}Configurando módulos del kernel para cifrado...${NC}"
-    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_snapshot dm_mirror)/' /mnt/etc/mkinitcpio.conf
+# Configurar módulos específicos para LUKS+LVM (siguiendo mejores prácticas)
+echo -e "${CYAN}Configurando módulos del kernel para cifrado...${NC}"
+sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_snapshot dm_mirror)/' /mnt/etc/mkinitcpio.conf
 
-    # Configurar hooks para cifrado con LVM - orden crítico: encrypt antes de lvm2
-    echo -e "${CYAN}Configurando hooks - ORDEN CRÍTICO: encrypt debe ir antes de lvm2${NC}"
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+# Configurar hooks para cifrado con LVM - orden crítico: encrypt antes de lvm2
+echo -e "${CYAN}Configurando hooks - ORDEN CRÍTICO: encrypt debe ir antes de lvm2${NC}"
+sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
-    echo -e "${GREEN}✓ Configuración mkinitcpio actualizada para LUKS+LVM${NC}"
-    echo -e "${CYAN}  • Módulos: dm_mod dm_crypt dm_snapshot dm_mirror${NC}"
-    echo -e "${CYAN}  • Hooks: base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck${NC}"
-    echo -e "${YELLOW}  • IMPORTANTE: 'encrypt' DEBE ir antes de 'lvm2' para que funcione correctamente${NC}"
-    echo -e "${YELLOW}  • keyboard y keymap son necesarios para introducir la contraseña en el boot${NC}"
+echo -e "${GREEN}✓ Configuración mkinitcpio actualizada para LUKS+LVM${NC}"
+echo -e "${CYAN}  • Módulos: dm_mod dm_crypt dm_snapshot dm_mirror${NC}"
+echo -e "${CYAN}  • Hooks: base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck${NC}"
+echo -e "${YELLOW}  • IMPORTANTE: 'encrypt' DEBE ir antes de 'lvm2' para que funcione correctamente${NC}"
+echo -e "${YELLOW}  • keyboard y keymap son necesarios para introducir la contraseña en el boot${NC}"
 
 elif [ "$PARTITION_MODE" = "btrfs" ]; then
-    echo "Configurando mkinitcpio para BTRFS..."
-    # Configurar módulos específicos para BTRFS
-    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c-intel crc32c zstd_compress lzo_compress)/' /mnt/etc/mkinitcpio.conf
+echo "Configurando mkinitcpio para BTRFS..."
+# Configurar módulos específicos para BTRFS
+sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c-intel crc32c zstd_compress lzo_compress)/' /mnt/etc/mkinitcpio.conf
 
-    # Configurar hooks para BTRFS
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+# Configurar hooks para BTRFS
+sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
 else
-    echo "Configurando mkinitcpio para sistema estándar..."
-    # Configuración estándar para ext4
-    sed -i 's/^MODULES=.*/MODULES=()/' /mnt/etc/mkinitcpio.conf
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+echo "Configurando mkinitcpio para sistema estándar..."
+# Configuración estándar para ext4
+sed -i 's/^MODULES=.*/MODULES=()/' /mnt/etc/mkinitcpio.conf
+sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 fi
 
 # Regenerar initramfs
@@ -2060,17 +2194,17 @@ if true; then
         # Verificar que la partición EFI esté montada con debug adicional
         echo -e "${CYAN}Verificando montaje de partición EFI...${NC}"
         if ! mountpoint -q /mnt/boot/efi; then
-            echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot/efi${NC}"
-            echo -e "${YELLOW}Información de debug:${NC}"
-            echo "- Contenido de /mnt/boot:"
-            ls -la /mnt/boot/ 2>/dev/null || echo "  Directorio /mnt/boot no accesible"
-            echo "- Contenido de /mnt/boot/efi:"
-            ls -la /mnt/boot/efi/ 2>/dev/null || echo "  Directorio /mnt/boot/efi no accesible"
-            echo "- Montajes actuales:"
-            mount | grep "/mnt"
-            echo "- Particiones disponibles:"
-            lsblk ${SELECTED_DISK}
-            exit 1
+echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot/efi${NC}"
+echo -e "${YELLOW}Información de debug:${NC}"
+echo "- Contenido de /mnt/boot:"
+ls -la /mnt/boot/ 2>/dev/null || echo "  Directorio /mnt/boot no accesible"
+echo "- Contenido de /mnt/boot/efi:"
+ls -la /mnt/boot/efi/ 2>/dev/null || echo "  Directorio /mnt/boot/efi no accesible"
+echo "- Montajes actuales:"
+mount | grep "/mnt"
+echo "- Particiones disponibles:"
+lsblk ${SELECTED_DISK}
+exit 1
         fi
         echo -e "${GREEN}✓ Partición EFI montada correctamente en /mnt/boot/efi${NC}"
 
@@ -2127,29 +2261,29 @@ if true; then
             fi
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
             # Configurar GRUB para LUKS+LVM (siguiendo mejores prácticas de la guía)
-            echo -e "${CYAN}Configurando parámetros de kernel para LUKS+LVM...${NC}"
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
+echo -e "${CYAN}Configurando parámetros de kernel para LUKS+LVM...${NC}"
+sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
 
-            # Habilitar soporte para discos cifrados en GRUB
-            echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
+# Habilitar soporte para discos cifrados en GRUB
+echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
 
-            # Precargar módulos necesarios para cifrado
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
+# Precargar módulos necesarios para cifrado
+echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
 
-            # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+# Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
 
-            echo -e "${GREEN}✓ Configuración GRUB para cifrado:${NC}"
-            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
-            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
-            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
-            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
+echo -e "${GREEN}✓ Configuración GRUB para cifrado:${NC}"
+echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
+echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
+echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
+echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
+echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
         else
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
         fi
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
@@ -2232,26 +2366,26 @@ if true; then
                 echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
                 exit 1
             fi
-            echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
-            # Usar GRUB_CMDLINE_LINUX en lugar de GRUB_CMDLINE_LINUX_DEFAULT para mejores prácticas
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
-            # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
+echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
+# Usar GRUB_CMDLINE_LINUX en lugar de GRUB_CMDLINE_LINUX_DEFAULT para mejores prácticas
+sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
+# Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
+echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
 
-            echo -e "${GREEN}✓ Configuración GRUB para cifrado BIOS Legacy:${NC}"
-            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
-            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
-            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
-            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
-            echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
+echo -e "${GREEN}✓ Configuración GRUB para cifrado BIOS Legacy:${NC}"
+echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
+echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
+echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
+echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
+echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
+echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
         else
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
         fi
 
         sleep 4
@@ -2283,9 +2417,9 @@ fi
 # Verificación final del bootloader
 # Verificar bootloader para todos los modos (incluyendo manual)
 if true; then
-    echo -e "${GREEN}| Verificación final del bootloader |${NC}"
-    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-    echo ""
+echo -e "${GREEN}| Verificación final del bootloader |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
 
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
@@ -3113,43 +3247,43 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     else
         CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
     fi
-    echo "cryptlvm UUID=${CRYPT_UUID} none luks,discard" >> /mnt/etc/crypttab
-    echo -e "${GREEN}✓ Configuración crypttab creada para montaje automático${NC}"
+echo "cryptlvm UUID=${CRYPT_UUID} none luks,discard" >> /mnt/etc/crypttab
+echo -e "${GREEN}✓ Configuración crypttab creada para montaje automático${NC}"
 
-    # Crear archivo de configuración para LVM
-    echo "# LVM devices for encrypted setup" > /mnt/etc/lvm/lvm.conf.local
-    echo -e "${CYAN}Configuración LVM aplicada para sistema cifrado${NC}"
-    echo "activation {" >> /mnt/etc/lvm/lvm.conf.local
-    echo "    udev_sync = 1" >> /mnt/etc/lvm/lvm.conf.local
-    echo "    udev_rules = 1" >> /mnt/etc/lvm/lvm.conf.local
-    echo "}" >> /mnt/etc/lvm/lvm.conf.local
+# Crear archivo de configuración para LVM
+echo "# LVM devices for encrypted setup" > /mnt/etc/lvm/lvm.conf.local
+echo -e "${CYAN}Configuración LVM aplicada para sistema cifrado${NC}"
+echo "activation {" >> /mnt/etc/lvm/lvm.conf.local
+echo "    udev_sync = 1" >> /mnt/etc/lvm/lvm.conf.local
+echo "    udev_rules = 1" >> /mnt/etc/lvm/lvm.conf.local
+echo "}" >> /mnt/etc/lvm/lvm.conf.local
 
-    # Verificar que los servicios LVM estén habilitados
-    chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+# Verificar que los servicios LVM estén habilitados
+chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
-    # Configuración adicional para reducir timeouts de cifrado y LVM
-    echo -e "${CYAN}Aplicando optimizaciones para sistema cifrado...${NC}"
+# Configuración adicional para reducir timeouts de cifrado y LVM
+echo -e "${CYAN}Aplicando optimizaciones para sistema cifrado...${NC}"
 
-    # Asegurar que LVM esté disponible y activo
-    echo -e "${CYAN}Activando volumes LVM...${NC}"
-    chroot /mnt /bin/bash -c "vgchange -ay vg0"
-    chroot /mnt /bin/bash -c "lvchange -ay vg0/root"
-    chroot /mnt /bin/bash -c "lvchange -ay vg0/swap"
+# Asegurar que LVM esté disponible y activo
+echo -e "${CYAN}Activando volumes LVM...${NC}"
+chroot /mnt /bin/bash -c "vgchange -ay vg0"
+chroot /mnt /bin/bash -c "lvchange -ay vg0/root"
+chroot /mnt /bin/bash -c "lvchange -ay vg0/swap"
 
-    # Generar fstab correctamente con nombres de dispositivos apropiados
-    echo -e "${CYAN}Generando fstab con dispositivos LVM...${NC}"
-    # Limpiar fstab existente
-    > /mnt/etc/fstab
-    # Agregar entradas manualmente para asegurar nombres correctos
-    echo "# <file system> <mount point> <type> <options> <dump> <pass>" >> /mnt/etc/fstab
-    echo "/dev/mapper/vg0-root / ext4 rw,relatime 0 1" >> /mnt/etc/fstab
+# Generar fstab correctamente con nombres de dispositivos apropiados
+echo -e "${CYAN}Generando fstab con dispositivos LVM...${NC}"
+# Limpiar fstab existente
+> /mnt/etc/fstab
+# Agregar entradas manualmente para asegurar nombres correctos
+echo "# <file system> <mount point> <type> <options> <dump> <pass>" >> /mnt/etc/fstab
+echo "/dev/mapper/vg0-root / ext4 rw,relatime 0 1" >> /mnt/etc/fstab
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
-        echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
+echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
+echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
     else
-        echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
+echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
     fi
-    echo "/dev/mapper/vg0-swap none swap defaults 0 0" >> /mnt/etc/fstab
+echo "/dev/mapper/vg0-swap none swap defaults 0 0" >> /mnt/etc/fstab
 
     # Regenerar initramfs después de todas las configuraciones
     echo -e "${CYAN}Regenerando initramfs con configuración LVM...${NC}"
@@ -3254,38 +3388,37 @@ case "$INSTALLATION_TYPE" in
                 # Después de las instalaciones de fcitx5...
                 echo -e "${CYAN}Configurando fcitx5 con keyboard layout: ${KEYBOARD_LAYOUT}${NC}"
 
-                # Configurar variables de entorno para fcitx5
-                chroot /mnt /bin/bash -c "cat >> /etc/environment << 'EOF'
-                GTK_IM_MODULE=fcitx
-                QT_IM_MODULE=fcitx
-                XMODIFIERS=@im=fcitx
-                INPUT_METHOD=fcitx
-                SDL_IM_MODULE=fcitx
-                GLFW_IM_MODULE=ibus
-                EOF"
+# Configurar variables de entorno para fcitx5
+chroot /mnt /bin/bash -c "cat >> /etc/environment << 'EOF'
+GTK_IM_MODULE=fcitx
+QT_IM_MODULE=fcitx
+XMODIFIERS=@im=fcitx
+INPUT_METHOD=fcitx
+SDL_IM_MODULE=fcitx
+GLFW_IM_MODULE=ibus
+EOF"
 
-                # Crear directorio de configuración
-                chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/fcitx5"
-                chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/autostart"
+# Crear directorio de configuración
+chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/fcitx5"
+chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/autostart"
 
-                # Usar directamente la variable
-                FCITX_LAYOUT="keyboard-$KEYBOARD_LAYOUT"
+# Usar directamente la variable
+FCITX_LAYOUT="keyboard-$KEYBOARD_LAYOUT"
 
-                # Crear configuración de profile
-                chroot /mnt /bin/bash -c "sudo -u $USER cat > /home/$USER/.config/fcitx5/profile << EOF
-                [Groups/0]
-                Name=Default
-                Default Layout=$KEYBOARD_LAYOUT
-                DefaultIM=$FCITX_LAYOUT
+# Crear configuración de profile
+chroot /mnt /bin/bash -c "sudo -u $USER cat > /home/$USER/.config/fcitx5/profile << EOF
+[Groups/0]
+Name=Default
+Default Layout=$KEYBOARD_LAYOUT
+DefaultIM=$FCITX_LAYOUT
 
-                [Groups/0/Items/0]
-                Name=$FCITX_LAYOUT
-                Layout=
+[Groups/0/Items/0]
+Name=$FCITX_LAYOUT
+Layout=
 
-                [GroupOrder]
-                0=Default
-                EOF"
-
+[GroupOrder]
+0=Default
+EOF"
                 ;;
             "BUDGIE")
                 echo -e "${CYAN}Instalando Budgie Desktop...${NC}"
@@ -3303,8 +3436,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
@@ -3334,8 +3467,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-screenshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
@@ -3366,8 +3499,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
@@ -3395,7 +3528,17 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S evisum --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S econnman --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+                chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
+                chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
+                chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
+                chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
+                chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S light-locker --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "KDE")
@@ -3446,8 +3589,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxpanel --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
@@ -3483,8 +3626,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-themes --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
@@ -3505,8 +3648,8 @@ case "$INSTALLATION_TYPE" in
 
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
@@ -3742,12 +3885,12 @@ case "$INSTALLATION_TYPE" in
 
 
 
-        # Configurar terminales con configuraciones básicas
-        echo -e "${CYAN}Configurando terminales...${NC}"
+# Configurar terminales con configuraciones básicas
+echo -e "${CYAN}Configurando terminales...${NC}"
 
-        # Configuración básica para Kitty
-        mkdir -p /mnt/home/$USER/.config/kitty
-        cat > /mnt/home/$USER/.config/kitty/kitty.conf << 'EOF'
+# Configuración básica para Kitty
+mkdir -p /mnt/home/$USER/.config/kitty
+cat > /mnt/home/$USER/.config/kitty/kitty.conf << 'EOF'
 # Font settings
 font_family      JetBrains Mono
 bold_font        auto
@@ -3987,7 +4130,7 @@ EOF
         # Crear archivos .desktop para cada window manager
         case "$WINDOW_MANAGER" in
             "I3WM"|"I3")
-                cat > /mnt/usr/share/xsessions/i3.desktop << EOF
+cat > /mnt/usr/share/xsessions/i3.desktop << EOF
 [Desktop Entry]
 Name=i3
 Comment=improved dynamic tiling window manager
@@ -4000,7 +4143,7 @@ Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;
             "AWESOME")
-                cat > /mnt/usr/share/xsessions/awesome.desktop << EOF
+cat > /mnt/usr/share/xsessions/awesome.desktop << EOF
 [Desktop Entry]
 Name=awesome
 Comment=Highly configurable framework window manager
@@ -4013,7 +4156,7 @@ Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;
             "BSPWM")
-                cat > /mnt/usr/share/xsessions/bspwm.desktop << EOF
+cat > /mnt/usr/share/xsessions/bspwm.desktop << EOF
 [Desktop Entry]
 Name=bspwm
 Comment=Binary space partitioning window manager
@@ -4026,7 +4169,7 @@ Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;
             "DWM")
-                cat > /mnt/usr/share/xsessions/dwm.desktop << EOF
+cat > /mnt/usr/share/xsessions/dwm.desktop << EOF
 [Desktop Entry]
 Name=dwm
 Comment=Dynamic window manager
@@ -4039,7 +4182,7 @@ Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;
             "HYPRLAND")
-                cat > /mnt/usr/share/wayland-sessions/hyprland.desktop << EOF
+cat > /mnt/usr/share/wayland-sessions/hyprland.desktop << EOF
 [Desktop Entry]
 Name=Hyprland
 Comment=An intelligent dynamic tiling Wayland compositor
@@ -4048,7 +4191,7 @@ Type=Application
 EOF
                 ;;
             "OPENBOX")
-                cat > /mnt/usr/share/xsessions/openbox.desktop << EOF
+cat > /mnt/usr/share/xsessions/openbox.desktop << EOF
 [Desktop Entry]
 Name=Openbox
 Comment=A highly configurable, next generation window manager
@@ -4061,7 +4204,7 @@ Keywords=wm;windowmanager;window;manager;
 EOF
                 ;;
             "QTITLE"|"QTILE")
-                cat > /mnt/usr/share/xsessions/qtile.desktop << EOF
+cat > /mnt/usr/share/xsessions/qtile.desktop << EOF
 [Desktop Entry]
 Name=Qtile
 Comment=A full-featured, hackable tiling window manager written in Python
@@ -4074,7 +4217,7 @@ Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;
             "SWAY")
-                cat > /mnt/usr/share/wayland-sessions/sway.desktop << EOF
+cat > /mnt/usr/share/wayland-sessions/sway.desktop << EOF
 [Desktop Entry]
 Name=Sway
 Comment=An i3-compatible Wayland compositor
@@ -4083,7 +4226,7 @@ Type=Application
 EOF
                 ;;
             "XMONAD")
-                cat > /mnt/usr/share/xsessions/xmonad.desktop << EOF
+cat > /mnt/usr/share/xsessions/xmonad.desktop << EOF
 [Desktop Entry]
 Name=XMonad
 Comment=Lightweight tiling window manager
@@ -4275,140 +4418,7 @@ chroot /mnt pacman -S ttf-ubuntu-font-family --noconfirm
 chroot /mnt pacman -S gnu-free-fonts --noconfirm
 sleep 2
 clear
-
-# Configuración completa del layout de teclado para Xorg y Wayland
-echo -e "${GREEN}| Configurando layout de teclado: $KEYBOARD_LAYOUT |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
-
-# 1. Configuración con localectl (método universal y permanente)
-echo -e "${CYAN}1. Configurando con localectl (permanente para ambos Xorg y Wayland)...${NC}"
-chroot /mnt localectl set-keymap $KEYBOARD_LAYOUT
-chroot /mnt localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" ""
-
-# También ejecutar como usuario para configuración por usuario
-# echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
-# chroot /mnt /bin/bash -c "sudo -u $USER localectl set-keymap $KEYBOARD_LAYOUT" || echo "Warning: No se pudo configurar keymap para usuario $USER"
-# chroot /mnt /bin/bash -c "sudo -u $USER localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" || echo "Warning: No se pudo configurar X11 keymap para usuario $USER"
-
-# 2. Configuración para Xorg (X11)
-echo -e "${CYAN}2. Configurando teclado para Xorg (X11)...${NC}"
-mkdir -p /mnt/etc/X11/xorg.conf.d
-cat > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf << EOF
-Section "InputClass"
-        Identifier "system-keyboard"
-        MatchIsKeyboard "on"
-        Option "XkbLayout" "$KEYBOARD_LAYOUT"
-        Option "XkbModel" "pc105"
-        Option "XkbVariant" ""
-        Option "XkbOptions" "grp:alt_shift_toggle"
-EndSection
-EOF
-
-# 3. Configuración para Wayland
-echo -e "${CYAN}3. Configurando teclado para Wayland...${NC}"
-mkdir -p /mnt/etc/xdg/wlroots
-cat > /mnt/etc/xdg/wlroots/wlr.conf << EOF
-[keyboard]
-layout=$KEYBOARD_LAYOUT
-model=pc105
-variant=
-options=grp:alt_shift_toggle
-
-[input]
-kb_layout=$KEYBOARD_LAYOUT
-kb_model=pc105
-kb_variant=
-kb_options=grp:alt_shift_toggle
-EOF
-
-# 4. Configuración persistente del archivo /etc/default/keyboard
-echo -e "${CYAN}4. Configurando archivo /etc/default/keyboard...${NC}"
-cat > /mnt/etc/default/keyboard << EOF
-XKBMODEL="pc105"
-XKBLAYOUT="$KEYBOARD_LAYOUT"
-XKBVARIANT=""
-XKBOPTIONS="grp:alt_shift_toggle"
-EOF
-
-# 5. Configuración de la consola virtual (vconsole.conf)
-echo -e "${CYAN}5. Configurando consola virtual...${NC}"
-echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
-echo "FONT=lat0-16" >> /mnt/etc/vconsole.conf
-
-# 6. Configuración para GNOME (si se usa)
-echo -e "${CYAN}6. Configurando para GNOME...${NC}"
-mkdir -p /mnt/etc/dconf/db/local.d
-cat > /mnt/etc/dconf/db/local.d/00-keyboard << EOF
-[org/gnome/desktop/input-sources]
-sources=[('xkb', '$KEYBOARD_LAYOUT')]
-EOF
-
-# 7. Configuración adicional para el usuario
-echo -e "${CYAN}7. Configurando variables de entorno para el usuario...${NC}"
-cat >> /mnt/home/$USER/.profile << EOF
-
-# Configuración de teclado
-export XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT
-export XKB_DEFAULT_MODEL=pc105
-export XKB_DEFAULT_OPTIONS=grp:alt_shift_toggle
-EOF
-
-# 8. Script de configuración automática para el arranque
-echo -e "${CYAN}8. Creando script de configuración automática...${NC}"
-mkdir -p /mnt/usr/local/bin
-cat > /mnt/usr/local/bin/setup-keyboard.sh << 'EOF'
-#!/bin/bash
-# Script de configuración automática del teclado
-
-KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"
-
-# Detectar si estamos en X11 o Wayland
-if [ -n "$DISPLAY" ] && command -v setxkbmap >/dev/null 2>&1; then
-    # Estamos en X11
-    setxkbmap $KEYBOARD_LAYOUT
-elif [ -n "$WAYLAND_DISPLAY" ] && command -v gsettings >/dev/null 2>&1; then
-    # Estamos en Wayland con GNOME
-    gsettings set org.gnome.desktop.input-sources sources "[('xkb', '$KEYBOARD_LAYOUT')]"
-fi
-EOF
-
-chmod +x /mnt/usr/local/bin/setup-keyboard.sh
-
-# 9. Configuración para autostart en sesiones gráficas
-echo -e "${CYAN}9. Configurando autostart para sesiones gráficas...${NC}"
-mkdir -p /mnt/etc/xdg/autostart
-cat > /mnt/etc/xdg/autostart/keyboard-setup.desktop << EOF
-[Desktop Entry]
-Type=Application
-Name=Keyboard Layout Setup
-Exec=/usr/local/bin/setup-keyboard.sh
-Hidden=false
-NoDisplay=true
-X-GNOME-Autostart-enabled=true
-EOF
-
-# 10. Establecer permisos correctos
-echo -e "${CYAN}10. Estableciendo permisos correctos...${NC}"
-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.profile" 2>/dev/null || true
-chroot /mnt chmod 755 /usr/local/bin/setup-keyboard.sh
-chroot /mnt chmod 644 /etc/xdg/autostart/keyboard-setup.desktop
-
-# 11. Actualizar base de datos dconf si existe
-echo -e "${CYAN}11. Actualizando configuraciones del sistema...${NC}"
-chroot /mnt dconf update 2>/dev/null || true
-
-
-
-echo -e "${GREEN}✓ Configuración completa del teclado finalizada${NC}"
-echo -e "${CYAN}  • Layout: $KEYBOARD_LAYOUT${NC}"
-echo -e "${CYAN}  • Keymap TTY: $KEYMAP_TTY${NC}"
-echo -e "${CYAN}  • Modelo: pc105${NC}"
-echo -e "${CYAN}  • Cambio de layout: Alt+Shift${NC}"
-echo -e "${CYAN}  • Métodos configurados: localectl, Xorg, Wayland, GNOME, vconsole${NC}"
-echo -e "${YELLOW}  • La configuración será efectiva después del reinicio${NC}"
-
-sleep 4
+configurar_teclado
 clear
 
 # Instalación de programas adicionales según configuración
@@ -4471,10 +4481,10 @@ echo ""
 
 # Eliminar configuración temporal
 if [[ -f "/mnt/etc/sudoers.d/temp-install" ]]; then
-    chroot /mnt /bin/bash -c "rm -f /etc/sudoers.d/temp-install"
-    echo "✓ Configuración temporal eliminada"
+chroot /mnt /bin/bash -c "rm -f /etc/sudoers.d/temp-install"
+echo "✓ Configuración temporal eliminada"
 else
-    echo "⚠️  Archivo temporal no encontrado (ya fue eliminado)"
+echo "⚠️  Archivo temporal no encontrado (ya fue eliminado)"
 fi
 
 # Verificar y configurar wheel en sudoers
@@ -4485,21 +4495,21 @@ echo "🔧 Configurando grupo wheel en sudoers..."
 
 # Verificar si existe configuración NOPASSWD
 if chroot /mnt /bin/bash -c "grep -q '^%wheel.*NOPASSWD.*ALL' /etc/sudoers" 2>/dev/null; then
-    echo "🔄 Detectada configuración NOPASSWD, cambiando a configuración normal..."
-    # Cambiar de NOPASSWD a configuración normal
-    chroot /mnt /bin/bash -c "sed -i 's/^%wheel.*NOPASSWD.*ALL$/%wheel ALL=(ALL) ALL/' /etc/sudoers"
-    echo "✓ Configuración wheel cambiada a modo normal (con contraseña)"
+echo "🔄 Detectada configuración NOPASSWD, cambiando a configuración normal..."
+# Cambiar de NOPASSWD a configuración normal
+chroot /mnt /bin/bash -c "sed -i 's/^%wheel.*NOPASSWD.*ALL$/%wheel ALL=(ALL) ALL/' /etc/sudoers"
+echo "✓ Configuración wheel cambiada a modo normal (con contraseña)"
 
 # Verificar si existe configuración normal
 elif chroot /mnt /bin/bash -c "grep -q '^%wheel.*ALL.*ALL' /etc/sudoers" 2>/dev/null; then
-    echo "✓ Configuración wheel normal ya existe en sudoers"
+echo "✓ Configuración wheel normal ya existe en sudoers"
 
 # Si no existe ninguna configuración wheel, agregarla
 else
-    echo "➕ No se encontró configuración wheel, agregándola..."
-    echo "# Configuración normal del grupo wheel" >> /mnt/etc/sudoers
-    cp /usr/share/arcrisgui/data/config/sudoers /mnt/etc/sudoers
-    echo "✓ Configuración wheel añadida al archivo sudoers"
+echo "➕ No se encontró configuración wheel, agregándola..."
+echo "# Configuración normal del grupo wheel" >> /mnt/etc/sudoers
+cp /usr/share/arcrisgui/data/config/sudoers /mnt/etc/sudoers
+echo "✓ Configuración wheel añadida al archivo sudoers"
 fi
 
 # Validar sintaxis del sudoers
