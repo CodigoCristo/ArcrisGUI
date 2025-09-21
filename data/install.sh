@@ -826,7 +826,7 @@ verify_lvm_devices() {
     local max_attempts=15
     local attempt=1
 
-    while [ $attempt -le $max_attempts ]; do
+    while [ "$attempt" -le "$max_attempts" ]; do
         # Forzar actualización de dispositivos
         udevadm settle
         vgchange -ay vg0 2>/dev/null || true
@@ -844,7 +844,7 @@ verify_lvm_devices() {
         fi
 
         echo -e "${YELLOW}Intento $attempt/$max_attempts: Esperando dispositivos LVM...${NC}"
-        if [ $attempt -eq 5 ]; then
+        if [ "$attempt" -eq 5 ]; then
             echo -e "${YELLOW}Información intermedia de debugging:${NC}"
             echo "• Logical Volumes disponibles:"
             lvs 2>/dev/null || echo "  No hay logical volumes"
@@ -852,7 +852,7 @@ verify_lvm_devices() {
             ls -la /dev/vg0/ 2>/dev/null || echo "  Directorio /dev/vg0/ no existe"
         fi
 
-        if [ $attempt -eq 10 ]; then
+        if [ "$attempt" -eq 10 ]; then
             echo -e "${YELLOW}Intentando reactivar volume groups...${NC}"
             vgchange -an vg0 2>/dev/null || true
             sleep 2
@@ -2022,7 +2022,7 @@ echo ""
 case "$SELECTED_KERNEL" in
     "linux")
         chroot /mnt /bin/bash -c "pacman -S linux --noconfirm"
-        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        #chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
         ;;
     "linux-hardened")
         chroot /mnt /bin/bash -c "pacman -S linux-hardened --noconfirm"
@@ -2167,7 +2167,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 elif [ "$PARTITION_MODE" = "btrfs" ]; then
     echo "Configurando mkinitcpio para BTRFS..."
     # Configurar módulos específicos para BTRFS
-    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c-intel crc32c zstd_compress lzo_compress)/' /mnt/etc/mkinitcpio.conf
+    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c-intel crc32c zstd_compress lzo_compress)/' /mnt/etc/mkinitcpio.conf || echo "Error al configurar módulos para BTRFS"
 
     # Configurar hooks para BTRFS
     sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
@@ -2380,6 +2380,7 @@ if true; then
             echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
             echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
             echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
+
         elif [ "$PARTITION_MODE" = "btrfs" ]; then
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
@@ -2537,7 +2538,7 @@ else
 
     # Método 2: Detectar particiones Windows (NTFS)
     WINDOWS_PARTITIONS=$(blkid -t TYPE=ntfs 2>/dev/null | wc -l || echo "0")
-    if [ $WINDOWS_PARTITIONS -gt 0 ]; then
+    if [ "$WINDOWS_PARTITIONS" -gt 0 ]; then
         echo -e "${CYAN}  • Particiones Windows (NTFS) detectadas: $WINDOWS_PARTITIONS${NC}"
         OS_COUNT=$((OS_COUNT + 1))
     fi
@@ -2549,24 +2550,24 @@ else
     XFS_PARTITIONS=$(blkid -t TYPE=xfs 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
     LINUX_PARTITIONS=$((EXT4_PARTITIONS + EXT3_PARTITIONS + BTRFS_PARTITIONS + XFS_PARTITIONS))
 
-    if [ $LINUX_PARTITIONS -gt 0 ]; then
+    if [ "$LINUX_PARTITIONS" -gt 0 ]; then
         echo -e "${CYAN}  • Otras particiones Linux detectadas: $LINUX_PARTITIONS${NC}"
-        [ $EXT4_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - ext4: $EXT4_PARTITIONS${NC}"
-        [ $EXT3_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - ext3: $EXT3_PARTITIONS${NC}"
-        [ $BTRFS_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - btrfs: $BTRFS_PARTITIONS${NC}"
-        [ $XFS_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - xfs: $XFS_PARTITIONS${NC}"
+        [ "$EXT4_PARTITIONS" -gt 0 ] && echo -e "${CYAN}    - ext4: $EXT4_PARTITIONS${NC}"
+        [ "$EXT3_PARTITIONS" -gt 0 ] && echo -e "${CYAN}    - ext3: $EXT3_PARTITIONS${NC}"
+        [ "$BTRFS_PARTITIONS" -gt 0 ] && echo -e "${CYAN}    - btrfs: $BTRFS_PARTITIONS${NC}"
+        [ "$XFS_PARTITIONS" -gt 0 ] && echo -e "${CYAN}    - xfs: $XFS_PARTITIONS${NC}"
         OS_COUNT=$((OS_COUNT + 1))
     fi
 
     # Método 4: Buscar particiones con indicadores de SO
     OTHER_OS=$(blkid 2>/dev/null | grep -E "LABEL.*Windows|LABEL.*Microsoft|TYPE.*fat32" | wc -l || echo "0")
-    if [ $OTHER_OS -gt 0 ]; then
+    if [ "$OTHER_OS" -gt 0 ]; then
         echo -e "${CYAN}  • Otras particiones de SO detectadas: $OTHER_OS${NC}"
         OS_COUNT=$((OS_COUNT + 1))
     fi
 
     # Considerar múltiples sistemas si hay más indicadores de OS o más de 1 partición bootable
-    if [ $OS_COUNT -gt 0 ] || [ $BOOTABLE_PARTITIONS -gt 1 ]; then
+    if [ "$OS_COUNT" -gt 0 ] || [ "$BOOTABLE_PARTITIONS" -gt 1 ]; then
         MULTIPLE_OS_DETECTED=true
         echo -e "${GREEN}✓ Múltiples sistemas operativos detectados en BIOS Legacy${NC}"
     else
