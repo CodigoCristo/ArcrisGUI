@@ -2167,7 +2167,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     echo "Configurando mkinitcpio para BTRFS..."
     # Configurar módulos específicos para BTRFS
-    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c-intel crc32c zstd_compress lzo_compress)/' /mnt/etc/mkinitcpio.conf || echo "Error al configurar módulos para BTRFS"
+    chroot /mnt /bin/bash -c "sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c zstd_compress lzo_compress)/' /etc/mkinitcpio.conf"
 
     # Configurar hooks para BTRFS
     sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
@@ -2279,8 +2279,8 @@ if true; then
             echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
             echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
         elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
+            chroot /mnt /bin/bash -c "sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /etc/default/grub"
+            chroot /mnt /bin/bash -c "echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /etc/default/grub"
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
@@ -2382,8 +2382,8 @@ if true; then
             echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
 
         elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
+            chroot /mnt /bin/bash -c "sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /etc/default/grub"
+            chroot /mnt /bin/bash -c "echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /etc/default/grub"
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
@@ -2532,51 +2532,22 @@ else
 
     OS_COUNT=0
 
-    # Método 1: Contar particiones bootables - CORREGIDO
-    BOOTABLE_COUNT=$(fdisk -l 2>/dev/null | grep "^\*" | wc -l 2>/dev/null || echo "0")
-    # Asegurar que sea un número válido
-    if ! [[ "$BOOTABLE_COUNT" =~ ^[0-9]+$ ]]; then
-        BOOTABLE_COUNT=0
-    fi
-    BOOTABLE_PARTITIONS=$BOOTABLE_COUNT
+    # Método 1: Contar particiones bootables
+    BOOTABLE_PARTITIONS=$(fdisk -l 2>/dev/null | grep -c "^\*" || echo "0")
     echo -e "${CYAN}  • Particiones bootables detectadas: $BOOTABLE_PARTITIONS${NC}"
 
-    # Método 2: Detectar particiones Windows (NTFS) - CORREGIDO
-    WINDOWS_COUNT=$(blkid -t TYPE=ntfs 2>/dev/null | wc -l 2>/dev/null || echo "0")
-    if ! [[ "$WINDOWS_COUNT" =~ ^[0-9]+$ ]]; then
-        WINDOWS_COUNT=0
-    fi
-    WINDOWS_PARTITIONS=$WINDOWS_COUNT
+    # Método 2: Detectar particiones Windows (NTFS)
+    WINDOWS_PARTITIONS=$(blkid -t TYPE=ntfs 2>/dev/null | wc -l || echo "0")
     if [ "$WINDOWS_PARTITIONS" -gt 0 ]; then
         echo -e "${CYAN}  • Particiones Windows (NTFS) detectadas: $WINDOWS_PARTITIONS${NC}"
         OS_COUNT=$((OS_COUNT + 1))
     fi
 
-    # Método 3: Detectar otras particiones Linux (ext4, ext3, btrfs, xfs) - CORREGIDO
-    EXT4_COUNT=$(blkid -t TYPE=ext4 2>/dev/null | grep -v "$(findmnt -n -o SOURCE / 2>/dev/null || echo "")" | wc -l 2>/dev/null || echo "0")
-    if ! [[ "$EXT4_COUNT" =~ ^[0-9]+$ ]]; then
-        EXT4_COUNT=0
-    fi
-    EXT4_PARTITIONS=$EXT4_COUNT
-
-    EXT3_COUNT=$(blkid -t TYPE=ext3 2>/dev/null | grep -v "$(findmnt -n -o SOURCE / 2>/dev/null || echo "")" | wc -l 2>/dev/null || echo "0")
-    if ! [[ "$EXT3_COUNT" =~ ^[0-9]+$ ]]; then
-        EXT3_COUNT=0
-    fi
-    EXT3_PARTITIONS=$EXT3_COUNT
-
-    BTRFS_COUNT=$(blkid -t TYPE=btrfs 2>/dev/null | grep -v "$(findmnt -n -o SOURCE / 2>/dev/null || echo "")" | wc -l 2>/dev/null || echo "0")
-    if ! [[ "$BTRFS_COUNT" =~ ^[0-9]+$ ]]; then
-        BTRFS_COUNT=0
-    fi
-    BTRFS_PARTITIONS=$BTRFS_COUNT
-
-    XFS_COUNT=$(blkid -t TYPE=xfs 2>/dev/null | grep -v "$(findmnt -n -o SOURCE / 2>/dev/null || echo "")" | wc -l 2>/dev/null || echo "0")
-    if ! [[ "$XFS_COUNT" =~ ^[0-9]+$ ]]; then
-        XFS_COUNT=0
-    fi
-    XFS_PARTITIONS=$XFS_COUNT
-
+    # Método 3: Detectar otras particiones Linux (ext4, ext3, btrfs, xfs)
+    EXT4_PARTITIONS=$(blkid -t TYPE=ext4 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
+    EXT3_PARTITIONS=$(blkid -t TYPE=ext3 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
+    BTRFS_PARTITIONS=$(blkid -t TYPE=btrfs 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
+    XFS_PARTITIONS=$(blkid -t TYPE=xfs 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
     LINUX_PARTITIONS=$((EXT4_PARTITIONS + EXT3_PARTITIONS + BTRFS_PARTITIONS + XFS_PARTITIONS))
 
     if [ "$LINUX_PARTITIONS" -gt 0 ]; then
@@ -2588,12 +2559,8 @@ else
         OS_COUNT=$((OS_COUNT + 1))
     fi
 
-    # Método 4: Buscar particiones con indicadores de SO - CORREGIDO
-    OTHER_COUNT=$(blkid 2>/dev/null | grep -E "LABEL.*Windows|LABEL.*Microsoft|TYPE.*fat32" | wc -l 2>/dev/null || echo "0")
-    if ! [[ "$OTHER_COUNT" =~ ^[0-9]+$ ]]; then
-        OTHER_COUNT=0
-    fi
-    OTHER_OS=$OTHER_COUNT
+    # Método 4: Buscar particiones con indicadores de SO
+    OTHER_OS=$(blkid 2>/dev/null | grep -E "LABEL.*Windows|LABEL.*Microsoft|TYPE.*fat32" | wc -l || echo "0")
     if [ "$OTHER_OS" -gt 0 ]; then
         echo -e "${CYAN}  • Otras particiones de SO detectadas: $OTHER_OS${NC}"
         OS_COUNT=$((OS_COUNT + 1))
@@ -2610,7 +2577,7 @@ fi
 
 # Solo proceder con os-prober si se detectaron múltiples sistemas operativos
 if [ "$MULTIPLE_OS_DETECTED" = true ]; then
-    echo -e "${GREEN}✓ Iniciando detección de múltiples sistemas${NC}"
+    echo -e "${GREEN}✓ ${#EFI_PARTITIONS[@]} particiones EFI detectadas - Iniciando detección de múltiples sistemas${NC}"
 
     # Crear directorio base de montaje temporal
     mkdir -p /mnt/mnt 2>/dev/null || true
@@ -2671,15 +2638,12 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
             fi
         done < <(blkid -t TYPE=ntfs -o device 2>/dev/null)
 
-        # Obtener la partición root actual de forma segura
-        CURRENT_ROOT=$(findmnt -n -o SOURCE / 2>/dev/null || echo "")
-
         # Montar particiones Linux (ext4) si existen
         while IFS= read -r ext4_partition; do
             if [ -n "$ext4_partition" ]; then
                 partition_name=$(basename "$ext4_partition")
                 # Evitar montar la partición root actual del sistema live
-                if ! mount | grep -q "^$ext4_partition " && [[ "$ext4_partition" != "$CURRENT_ROOT" ]]; then
+                if ! mount | grep -q "^$ext4_partition " && [[ "$ext4_partition" != "$(findmnt -n -o SOURCE /)" ]]; then
                     mount_point="/mnt/mnt/ext4_$MOUNT_COUNTER"
                     mkdir -p "$mount_point" 2>/dev/null || true
                     if mount "$ext4_partition" "$mount_point" 2>/dev/null; then
@@ -2690,14 +2654,14 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
                     MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
                 fi
             fi
-        done < <(blkid -t TYPE=ext4 -o device 2>/dev/null | grep -v "$CURRENT_ROOT")
+        done < <(blkid -t TYPE=ext4 -o device 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)")
 
         # Montar particiones Linux (ext3) si existen
         while IFS= read -r ext3_partition; do
             if [ -n "$ext3_partition" ]; then
                 partition_name=$(basename "$ext3_partition")
                 # Evitar montar la partición root actual del sistema live
-                if ! mount | grep -q "^$ext3_partition " && [[ "$ext3_partition" != "$CURRENT_ROOT" ]]; then
+                if ! mount | grep -q "^$ext3_partition " && [[ "$ext3_partition" != "$(findmnt -n -o SOURCE /)" ]]; then
                     mount_point="/mnt/mnt/ext3_$MOUNT_COUNTER"
                     mkdir -p "$mount_point" 2>/dev/null || true
                     if mount "$ext3_partition" "$mount_point" 2>/dev/null; then
@@ -2708,14 +2672,14 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
                     MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
                 fi
             fi
-        done < <(blkid -t TYPE=ext3 -o device 2>/dev/null | grep -v "$CURRENT_ROOT")
+        done < <(blkid -t TYPE=ext3 -o device 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)")
 
         # Montar particiones Linux (btrfs) si existen
         while IFS= read -r btrfs_partition; do
             if [ -n "$btrfs_partition" ]; then
                 partition_name=$(basename "$btrfs_partition")
                 # Evitar montar la partición root actual del sistema live
-                if ! mount | grep -q "^$btrfs_partition " && [[ "$btrfs_partition" != "$CURRENT_ROOT" ]]; then
+                if ! mount | grep -q "^$btrfs_partition " && [[ "$btrfs_partition" != "$(findmnt -n -o SOURCE /)" ]]; then
                     mount_point="/mnt/mnt/btrfs_$MOUNT_COUNTER"
                     mkdir -p "$mount_point" 2>/dev/null || true
                     if mount "$btrfs_partition" "$mount_point" 2>/dev/null; then
@@ -2726,14 +2690,14 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
                     MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
                 fi
             fi
-        done < <(blkid -t TYPE=btrfs -o device 2>/dev/null | grep -v "$CURRENT_ROOT")
+        done < <(blkid -t TYPE=btrfs -o device 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)")
 
         # Montar particiones Linux (xfs) si existen
         while IFS= read -r xfs_partition; do
             if [ -n "$xfs_partition" ]; then
                 partition_name=$(basename "$xfs_partition")
                 # Evitar montar la partición root actual del sistema live
-                if ! mount | grep -q "^$xfs_partition " && [[ "$xfs_partition" != "$CURRENT_ROOT" ]]; then
+                if ! mount | grep -q "^$xfs_partition " && [[ "$xfs_partition" != "$(findmnt -n -o SOURCE /)" ]]; then
                     mount_point="/mnt/mnt/xfs_$MOUNT_COUNTER"
                     mkdir -p "$mount_point" 2>/dev/null || true
                     if mount "$xfs_partition" "$mount_point" 2>/dev/null; then
@@ -2744,9 +2708,8 @@ if [ "$MULTIPLE_OS_DETECTED" = true ]; then
                     MOUNT_COUNTER=$((MOUNT_COUNTER + 1))
                 fi
             fi
-        done < <(blkid -t TYPE=xfs -o device 2>/dev/null | grep -v "$CURRENT_ROOT")
+        done < <(blkid -t TYPE=xfs -o device 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)")
     fi
-fi
 
     # Crear directorios adicionales para otros tipos de sistemas
     mkdir -p /mnt/mnt/windows 2>/dev/null || true
@@ -3351,7 +3314,7 @@ if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     fi
 
     # Optimizar fstab para BTRFS
-    sed -i 's/relatime/noatime/g' /mnt/etc/fstab
+    chroot /mnt /bin/bash -c "sed -i 's/relatime/noatime/g' /etc/fstab"
 
     sleep 2
 fi
