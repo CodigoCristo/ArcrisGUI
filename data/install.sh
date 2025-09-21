@@ -2167,8 +2167,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     echo "Configurando mkinitcpio para BTRFS..."
     # Configurar módulos específicos para BTRFS
-    chroot /mnt /bin/bash -c "sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c zstd_compress lzo_compress)/' /etc/mkinitcpio.conf"
-
+    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c zstd_compress lzo_compress)/' /mnt/etc/mkinitcpio.conf
     # Configurar hooks para BTRFS
     sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
@@ -2279,7 +2278,7 @@ if true; then
             echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
             echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
         elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-            chroot /mnt /bin/bash -c "sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 quiet\"/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=5\"/' /etc/default/grub"
+            chroot /mnt /bin/bash -c "sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3\"/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=5\"/' /etc/default/grub"
             chroot /mnt /bin/bash -c "echo 'GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"' >> /etc/default/grub"
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
