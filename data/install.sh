@@ -1108,55 +1108,50 @@ partition_auto_btrfs() {
         pacstrap /mnt btrfs-progs
 
     else
-        # Configuración para BIOS Legacy
         echo -e "${GREEN}| Configurando particiones BTRFS para BIOS Legacy |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-
         # Borrar completamente el disco
         echo -e "${CYAN}Limpiando disco completamente...${NC}"
         sgdisk --zap-all $SELECTED_DISK
         sleep 2
         partprobe $SELECTED_DISK
         wipefs -af $SELECTED_DISK
-
         # Crear tabla de particiones MBR
         parted $SELECTED_DISK --script --align optimal mklabel msdos
-
+        # Crear partición boot (1GB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 1025MiB
         # Crear partición swap (8GB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1MiB 8193MiB
-
+        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1025MiB 9217MiB
         # Crear partición root (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 8193MiB 100%
-        parted $SELECTED_DISK --script set 2 boot on
-
+        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 9217MiB 100%
+        parted $SELECTED_DISK --script set 1 boot on
         # Formatear particiones
         echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkswap ${SELECTED_DISK}1
-        mkfs.btrfs -f ${SELECTED_DISK}2
+        mkfs.ext4 -F ${SELECTED_DISK}1
+        mkswap ${SELECTED_DISK}2
+        mkfs.btrfs -f ${SELECTED_DISK}3
         sleep 2
-
         # Montar y crear subvolúmenes BTRFS
         echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount ${SELECTED_DISK}2 /mnt
+        mount ${SELECTED_DISK}3 /mnt
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
         btrfs subvolume create /mnt/@var
         btrfs subvolume create /mnt/@tmp
         umount /mnt
-
         # Montar subvolúmenes
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}2 /mnt
-        swapon ${SELECTED_DISK}1
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}3 /mnt
+        swapon ${SELECTED_DISK}2
         mkdir -p /mnt/{boot,home,var,tmp}
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}2 /mnt/home
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}2 /mnt/var
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}2 /mnt/tmp
-
+        mount ${SELECTED_DISK}1 /mnt/boot
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}3 /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}3 /mnt/var
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
         # Instalar herramientas específicas para BTRFS
         pacstrap /mnt btrfs-progs
     fi
@@ -1984,7 +1979,187 @@ fi
 echo ""
 chroot /mnt /bin/bash -c "cat /etc/fstab"
 sleep 3
-clear
+clearecho -e "${GREEN}| Configurando particiones BTRFS para BIOS Legacy |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tpuecho -e "${GREEN}| Configurando particiones BTRFS para BIOS Legacy |${NC}"
+                printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+                echo ""
+                # Borrar completamente el disco
+                echo -e "${CYAN}Limpiando disco completamente...${NC}"
+                sgdisk --zap-all $SELECTED_DISK
+                sleep 2
+                partprobe $SELECTED_DISK
+                wipefs -af $SELECTED_DISK
+                # Crear tabla de particiones MBR
+                parted $SELECTED_DISK --script --align optimal mklabel msdos
+                # Crear partición boot (1GB)
+                parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 1025MiB
+                # Crear partición swap (8GB)
+                parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1025MiB 9217MiB
+                # Crear partición root (resto del disco)
+                parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 9217MiB 100%
+                parted $SELECTED_DISK --script set 1 boot on
+                # Formatear particiones
+                echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
+                printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+                echo ""
+                mkfs.ext4 -F ${SELECTED_echo -e "${GREEN}| Configurando particiones BTRFS para BIOS Legacy |${NC}"
+                        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+                        echo ""
+                        # Borrar completamente el disco
+                        echo -e "${CYAN}Limpiando disco completamente...${NC}"
+                        sgdisk --zap-all $SELECTED_DISK
+                        sleep 2
+                        partprobe $SELECTED_DISK
+                        wipefs -af $SELECTED_DISK
+                        # Crear tabla de particiones MBR
+                        parted $SELECTED_DISK --script --align optimal mklabel msdos
+                        # Crear partición boot (1GB)
+                        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 1025MiB
+                        # Crear partición swap (8GB)
+                        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1025MiB 9217MiB
+                        # Crear partición root (resto del disco)
+                        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 9217MiB 100%
+                        parted $SELECTED_DISK --script set 1 boot on
+                        # Formatear particiones
+                        echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
+                        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+                        echo ""
+                        mkfs.ext4 -F ${Secho -e "${GREEN}| Configurando particiones BTRFS para BIOS Legacy |${NC}"
+                                printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+                                echo ""
+                                # Borrar completamente el disco
+                                echo -e "${CYAN}Limpiando disco completamente...${NC}"
+                                sgdisk --zap-all $SELECTED_DISK
+                                sleep 2
+                                partprobe $SELECTED_DISK
+                                wipefs -af $SELECTED_DISK
+                                # Crear tabla de particiones MBR
+                                parted $SELECTED_DISK --script --align optimal mklabel msdos
+                                # Crear partición boot (1GB)
+                                parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 1025MiB
+                                # Crear partición swap (8GB)
+                                parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1025MiB 9217MiB
+                                # Crear partición root (resto del disco)
+                                parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 9217MiB 100%
+                                parted $SELECTED_DISK --script set 1 boot on
+                                # Formatear particiones
+                                echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
+                                printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+                                echo ""
+                                mkfs.ext4 -F ${SELECTED_DISK}1
+                                mkswap ${SELECTED_DISK}2
+                                mkfs.btrfs -f ${SELECTED_DISK}3
+                                sleep 2
+                                # Montar y crear subvolúmenes BTRFS
+                                echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
+                                printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+                                echo ""
+                                mount ${SELECTED_DISK}3 /mnt
+                                btrfs subvolume create /mnt/@
+                                btrfs subvolume create /mnt/@home
+                                btrfs subvolume create /mnt/@var
+                                btrfs subvolume create /mnt/@tmp
+                                umount /mnt
+                                # Montar subvolúmenes
+                                mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}3 /mnt
+                                swapon ${SELECTED_DISK}2
+                                mkdir -p /mnt/{boot,home,var,tmp}
+                                mount ${SELECTED_DISK}1 /mnt/boot
+                                mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}3 /mnt/home
+                                mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}3 /mnt/var
+                                mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
+                                # Instalar herramientas específicas para BTRFS
+                                pacstrap /mnt btrfs-progsELECTED_DISK}1
+                        mkswap ${SELECTED_DISK}2
+                        mkfs.btrfs -f ${SELECTED_DISK}3
+                        sleep 2
+                        # Montar y crear subvolúmenes BTRFS
+                        echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
+                        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+                        echo ""
+                        mount ${SELECTED_DISK}3 /mnt
+                        btrfs subvolume create /mnt/@
+                        btrfs subvolume create /mnt/@home
+                        btrfs subvolume create /mnt/@var
+                        btrfs subvolume create /mnt/@tmp
+                        umount /mnt
+                        # Montar subvolúmenes
+                        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}3 /mnt
+                        swapon ${SELECTED_DISK}2
+                        mkdir -p /mnt/{boot,home,var,tmp}
+                        mount ${SELECTED_DISK}1 /mnt/boot
+                        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}3 /mnt/home
+                        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}3 /mnt/var
+                        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
+                        # Instalar herramientas específicas para BTRFS
+                        pacstrap /mnt btrfs-progsDISK}1
+                mkswap ${SELECTED_DISK}2
+                mkfs.btrfs -f ${SELECTED_DISK}3
+                sleep 2
+                # Montar y crear subvolúmenes BTRFS
+                echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
+                printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+                echo ""
+                mount ${SELECTED_DISK}3 /mnt
+                btrfs subvolume create /mnt/@
+                btrfs subvolume create /mnt/@home
+                btrfs subvolume create /mnt/@var
+                btrfs subvolume create /mnt/@tmp
+                umount /mnt
+                # Montar subvolúmenes
+                mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}3 /mnt
+                swapon ${SELECTED_DISK}2
+                mkdir -p /mnt/{boot,home,var,tmp}
+                mount ${SELECTED_DISK}1 /mnt/boot
+                mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}3 /mnt/home
+                mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}3 /mnt/var
+                mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
+                # Instalar herramientas específicas para BTRFS
+                pacstrap /mnt btrfs-progst cols)}" '' | tr ' ' _
+        echo ""
+        # Borrar completamente el disco
+        echo -e "${CYAN}Limpiando disco completamente...${NC}"
+        sgdisk --zap-all $SELECTED_DISK
+        sleep 2
+        partprobe $SELECTED_DISK
+        wipefs -af $SELECTED_DISK
+        # Crear tabla de particiones MBR
+        parted $SELECTED_DISK --script --align optimal mklabel msdos
+        # Crear partición boot (1GB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 1025MiB
+        # Crear partición swap (8GB)
+        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1025MiB 9217MiB
+        # Crear partición root (resto del disco)
+        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 9217MiB 100%
+        parted $SELECTED_DISK --script set 1 boot on
+        # Formatear particiones
+        echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+        mkfs.ext4 -F ${SELECTED_DISK}1
+        mkswap ${SELECTED_DISK}2
+        mkfs.btrfs -f ${SELECTED_DISK}3
+        sleep 2
+        # Montar y crear subvolúmenes BTRFS
+        echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
+        printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+        echo ""
+        mount ${SELECTED_DISK}3 /mnt
+        btrfs subvolume create /mnt/@
+        btrfs subvolume create /mnt/@home
+        btrfs subvolume create /mnt/@var
+        btrfs subvolume create /mnt/@tmp
+        umount /mnt
+        # Montar subvolúmenes
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}3 /mnt
+        swapon ${SELECTED_DISK}2
+        mkdir -p /mnt/{boot,home,var,tmp}
+        mount ${SELECTED_DISK}1 /mnt/boot
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}3 /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}3 /mnt/var
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
+        # Instalar herramientas específicas para BTRFS
+        pacstrap /mnt btrfs-progs
 
 # Configuración del sistema
 echo -e "${GREEN}| Configurando sistema base |${NC}"
