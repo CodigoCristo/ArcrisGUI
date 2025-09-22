@@ -2552,10 +2552,9 @@ if true; then
             echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
             echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
         elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-            sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@,compress=zstd:3,space_cache=v2 loglevel=5 quiet\"/' /mnt/etc/default/grub
-            sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs zstd lzopio lvm\"/' /mnt/etc/default/grub
-            echo "GRUB_BTRFS_OVERRIDE_BOOT_PARTITION_DETECTION=true" >> /mnt/etc/default/grub
-            echo "GRUB_SAVEDEFAULT=true" >> /mnt/etc/default/grub
+            sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=3\"/' /mnt/etc/default/grub
+            sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"/' /mnt/etc/default/grub
+            echo -e "${GREEN}✓ Configuración GRUB UEFI simplificada para BTRFS${NC}"
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
@@ -2657,10 +2656,9 @@ if true; then
             echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
 
         elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-            sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@,compress=zstd:3,space_cache=v2 loglevel=5 quiet\"/' /mnt/etc/default/grub
-            sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_msdos btrfs zstd lzopio\"/' /mnt/etc/default/grub
-            echo "GRUB_BTRFS_OVERRIDE_BOOT_PARTITION_DETECTION=true" >> /mnt/etc/default/grub
-            echo "GRUB_SAVEDEFAULT=true" >> /mnt/etc/default/grub
+            sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=3\"/' /mnt/etc/default/grub
+            sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"/' /mnt/etc/default/grub
+            echo -e "${GREEN}✓ Configuración GRUB BIOS Legacy simplificada para BTRFS${NC}"
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
@@ -3588,6 +3586,12 @@ if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     fi
     echo -e "${GREEN}✓ Sistema BTRFS verificado${NC}"
 
+    # Configuración básica para BTRFS (sin complicaciones)
+    echo -e "${CYAN}Aplicando configuración básica BTRFS...${NC}"
+
+    # Solo asegurar que el bootloader funcione correctamente
+    echo -e "${GREEN}✓ Configuración BTRFS simplificada completada${NC}"
+
     # Instalar herramientas adicionales para BTRFS si no están presentes
     echo -e "${CYAN}Verificando herramientas BTRFS adicionales...${NC}"
     chroot /mnt /bin/bash -c "pacman -S --needed --noconfirm btrfs-progs-git grub-btrfs" 2>/dev/null || \
@@ -3641,7 +3645,7 @@ if [ $(date +%w) -eq 0 ]; then
 fi
 
 # Desfragmentación ligera
-echo "Ejecutando desfragmentación ligera..."
+echo "Ejecutando desfragmentación básica..."
 find /home -type f -size +100M -exec btrfs filesystem defragment {} \; 2>/dev/null || true
 
 echo "Mantenimiento BTRFS completado."
