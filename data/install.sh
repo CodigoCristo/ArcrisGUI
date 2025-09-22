@@ -2441,7 +2441,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     echo "Configurando mkinitcpio para BTRFS..."
     # Configurar módulos específicos para BTRFS (agregando módulos de compresión adicionales)
-    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c zstd lzo lz4 zlib_deflate libcrc32c crc32c-intel)/' /mnt/etc/mkinitcpio.conf
+    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c zstd lzo lz4 zlib_deflate)/' /mnt/etc/mkinitcpio.conf
     # Configurar hooks para BTRFS
     sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
