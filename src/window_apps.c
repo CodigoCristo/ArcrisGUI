@@ -256,6 +256,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"ardour_info", "https://ardour.org/"},
         {"elisa_info", "https://apps.kde.org/elisa/"},
         {"euphonica_info", "https://github.com/htkhiem/euphonica/"},
+        {"spotify_info", "https://www.spotify.com"},
 
         // Communications
         {"telegram_info", "https://telegram.org/"},
