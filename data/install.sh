@@ -67,25 +67,25 @@ barra_progreso() {
 ################################################################################################
 
 configurar_teclado() {
-    # Configuración completa del layout de teclado para Xorg y Wayland
-    echo -e "${GREEN}| Configurando layout de teclado: $KEYBOARD_LAYOUT |${NC}"
-    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-    echo ""
+# Configuración completa del layout de teclado para Xorg y Wayland
+echo -e "${GREEN}| Configurando layout de teclado: $KEYBOARD_LAYOUT |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
 
-    # 1. Configuración con localectl (método universal y permanente)
-    echo -e "${CYAN}1. Configurando con localectl (permanente para ambos Xorg y Wayland)...${NC}"
-    chroot /mnt localectl set-keymap $KEYBOARD_LAYOUT
-    chroot /mnt localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" ""
+# 1. Configuración con localectl (método universal y permanente)
+echo -e "${CYAN}1. Configurando con localectl (permanente para ambos Xorg y Wayland)...${NC}"
+chroot /mnt localectl set-keymap $KEYBOARD_LAYOUT
+chroot /mnt localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" ""
 
-    # También ejecutar como usuario para configuración por usuario
-    # echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
-    # chroot /mnt /bin/bash -c "sudo -u $USER localectl set-keymap $KEYBOARD_LAYOUT" || echo "Warning: No se pudo configurar keymap para usuario $USER"
-    # chroot /mnt /bin/bash -c "sudo -u $USER localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" || echo "Warning: No se pudo configurar X11 keymap para usuario $USER"
+# También ejecutar como usuario para configuración por usuario
+# echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
+# chroot /mnt /bin/bash -c "sudo -u $USER localectl set-keymap $KEYBOARD_LAYOUT" || echo "Warning: No se pudo configurar keymap para usuario $USER"
+# chroot /mnt /bin/bash -c "sudo -u $USER localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" || echo "Warning: No se pudo configurar X11 keymap para usuario $USER"
 
-    # 2. Configuración para Xorg (X11)
-    echo -e "${CYAN}2. Configurando teclado para Xorg (X11)...${NC}"
-    mkdir -p /mnt/etc/X11/xorg.conf.d
-    cat > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf << EOF
+# 2. Configuración para Xorg (X11)
+echo -e "${CYAN}2. Configurando teclado para Xorg (X11)...${NC}"
+mkdir -p /mnt/etc/X11/xorg.conf.d
+cat > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf << EOF
 Section "InputClass"
         Identifier "system-keyboard"
         MatchIsKeyboard "on"
@@ -96,10 +96,10 @@ Section "InputClass"
 EndSection
 EOF
 
-    # 3. Configuración para Wayland
-    echo -e "${CYAN}3. Configurando teclado para Wayland...${NC}"
-    mkdir -p /mnt/etc/xdg/wlroots
-    cat > /mnt/etc/xdg/wlroots/wlr.conf << EOF
+# 3. Configuración para Wayland
+echo -e "${CYAN}3. Configurando teclado para Wayland...${NC}"
+mkdir -p /mnt/etc/xdg/wlroots
+cat > /mnt/etc/xdg/wlroots/wlr.conf << EOF
 [keyboard]
 layout=$KEYBOARD_LAYOUT
 model=pc105
@@ -113,31 +113,31 @@ kb_variant=
 kb_options=grp:alt_shift_toggle
 EOF
 
-    # 4. Configuración persistente del archivo /etc/default/keyboard
-    echo -e "${CYAN}4. Configurando archivo /etc/default/keyboard...${NC}"
-    cat > /mnt/etc/default/keyboard << EOF
+# 4. Configuración persistente del archivo /etc/default/keyboard
+echo -e "${CYAN}4. Configurando archivo /etc/default/keyboard...${NC}"
+cat > /mnt/etc/default/keyboard << EOF
 XKBMODEL="pc105"
 XKBLAYOUT="$KEYBOARD_LAYOUT"
 XKBVARIANT=""
 XKBOPTIONS="grp:alt_shift_toggle"
 EOF
 
-    # 5. Configuración de la consola virtual (vconsole.conf)
-    echo -e "${CYAN}5. Configurando consola virtual...${NC}"
-    echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
-    echo "FONT=lat0-16" >> /mnt/etc/vconsole.conf
+# 5. Configuración de la consola virtual (vconsole.conf)
+echo -e "${CYAN}5. Configurando consola virtual...${NC}"
+echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
+echo "FONT=lat0-16" >> /mnt/etc/vconsole.conf
 
-    # 6. Configuración para GNOME (si se usa)
-    echo -e "${CYAN}6. Configurando para GNOME...${NC}"
-    mkdir -p /mnt/etc/dconf/db/local.d
-    cat > /mnt/etc/dconf/db/local.d/00-keyboard << EOF
+# 6. Configuración para GNOME (si se usa)
+echo -e "${CYAN}6. Configurando para GNOME...${NC}"
+mkdir -p /mnt/etc/dconf/db/local.d
+cat > /mnt/etc/dconf/db/local.d/00-keyboard << EOF
 [org/gnome/desktop/input-sources]
 sources=[('xkb', '$KEYBOARD_LAYOUT')]
 EOF
 
-    # 7. Configuración adicional para el usuario
-    echo -e "${CYAN}7. Configurando variables de entorno para el usuario...${NC}"
-    cat >> /mnt/home/$USER/.profile << EOF
+# 7. Configuración adicional para el usuario
+echo -e "${CYAN}7. Configurando variables de entorno para el usuario...${NC}"
+cat >> /mnt/home/$USER/.profile << EOF
 
 # Configuración de teclado
 export XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT
@@ -145,10 +145,10 @@ export XKB_DEFAULT_MODEL=pc105
 export XKB_DEFAULT_OPTIONS=grp:alt_shift_toggle
 EOF
 
-    # 8. Script de configuración automática para el arranque
-    echo -e "${CYAN}8. Creando script de configuración automática...${NC}"
-    mkdir -p /mnt/usr/local/bin
-    cat > /mnt/usr/local/bin/setup-keyboard.sh << 'EOF'
+# 8. Script de configuración automática para el arranque
+echo -e "${CYAN}8. Creando script de configuración automática...${NC}"
+mkdir -p /mnt/usr/local/bin
+cat > /mnt/usr/local/bin/setup-keyboard.sh << 'EOF'
 #!/bin/bash
 # Script de configuración automática del teclado
 
@@ -164,12 +164,12 @@ elif [ -n "$WAYLAND_DISPLAY" ] && command -v gsettings >/dev/null 2>&1; then
 fi
 EOF
 
-    chmod +x /mnt/usr/local/bin/setup-keyboard.sh
+chmod +x /mnt/usr/local/bin/setup-keyboard.sh
 
-    # 9. Configuración para autostart en sesiones gráficas
-    echo -e "${CYAN}9. Configurando autostart para sesiones gráficas...${NC}"
-    mkdir -p /mnt/etc/xdg/autostart
-    cat > /mnt/etc/xdg/autostart/keyboard-setup.desktop << EOF
+# 9. Configuración para autostart en sesiones gráficas
+echo -e "${CYAN}9. Configurando autostart para sesiones gráficas...${NC}"
+mkdir -p /mnt/etc/xdg/autostart
+cat > /mnt/etc/xdg/autostart/keyboard-setup.desktop << EOF
 [Desktop Entry]
 Type=Application
 Name=Keyboard Layout Setup
@@ -179,28 +179,28 @@ NoDisplay=true
 X-GNOME-Autostart-enabled=true
 EOF
 
-    # 10. Establecer permisos correctos
-    echo -e "${CYAN}10. Estableciendo permisos correctos...${NC}"
-    chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.profile" 2>/dev/null || true
-    chroot /mnt chmod 755 /usr/local/bin/setup-keyboard.sh
-    chroot /mnt chmod 644 /etc/xdg/autostart/keyboard-setup.desktop
+# 10. Establecer permisos correctos
+echo -e "${CYAN}10. Estableciendo permisos correctos...${NC}"
+chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.profile" 2>/dev/null || true
+chroot /mnt chmod 755 /usr/local/bin/setup-keyboard.sh
+chroot /mnt chmod 644 /etc/xdg/autostart/keyboard-setup.desktop
 
-    # 11. Actualizar base de datos dconf si existe
-    echo -e "${CYAN}11. Actualizando configuraciones del sistema...${NC}"
-    chroot /mnt dconf update 2>/dev/null || true
+# 11. Actualizar base de datos dconf si existe
+echo -e "${CYAN}11. Actualizando configuraciones del sistema...${NC}"
+chroot /mnt dconf update 2>/dev/null || true
 
 
 
-    echo -e "${GREEN}✓ Configuración completa del teclado finalizada${NC}"
-    echo -e "${CYAN}  • Layout: $KEYBOARD_LAYOUT${NC}"
-    echo -e "${CYAN}  • Keymap TTY: $KEYMAP_TTY${NC}"
-    echo -e "${CYAN}  • Modelo: pc105${NC}"
-    echo -e "${CYAN}  • Cambio de layout: Alt+Shift${NC}"
-    echo -e "${CYAN}  • Métodos configurados: localectl, Xorg, Wayland, GNOME, vconsole${NC}"
-    echo -e "${YELLOW}  • La configuración será efectiva después del reinicio${NC}"
+echo -e "${GREEN}✓ Configuración completa del teclado finalizada${NC}"
+echo -e "${CYAN}  • Layout: $KEYBOARD_LAYOUT${NC}"
+echo -e "${CYAN}  • Keymap TTY: $KEYMAP_TTY${NC}"
+echo -e "${CYAN}  • Modelo: pc105${NC}"
+echo -e "${CYAN}  • Cambio de layout: Alt+Shift${NC}"
+echo -e "${CYAN}  • Métodos configurados: localectl, Xorg, Wayland, GNOME, vconsole${NC}"
+echo -e "${YELLOW}  • La configuración será efectiva después del reinicio${NC}"
 
-    sleep 4
-    clear
+sleep 4
+clear
 }
 
 
@@ -2274,8 +2274,8 @@ chroot /mnt /bin/bash -c "locale-gen"
 echo "LANG=$LOCALE" > /mnt/etc/locale.conf
 
 # Configuración de teclado
-echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
-echo "FONT=lat9w-16" >> /mnt/etc/vconsole.conf
+# echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
+# echo "FONT=lat9w-16" >> /mnt/etc/vconsole.conf
 
 # Configuración de hostname
 echo "$HOSTNAME" > /mnt/etc/hostname
