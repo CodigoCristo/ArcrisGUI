@@ -1049,6 +1049,77 @@ partition_auto_btrfs() {
     echo ""
     sleep 2
 
+    # Limpieza agresiva del disco ANTES de cualquier particionado
+    echo -e "${CYAN}Desmontando todas las particiones del disco ${SELECTED_DISK}...${NC}"
+
+    # Desmontar todas las particiones montadas del disco seleccionado
+    for partition in $(lsblk -lno NAME ${SELECTED_DISK} | grep -v "^$(basename ${SELECTED_DISK})$" | sort -r); do
+        partition_path="/dev/$partition"
+        if mountpoint -q "/mnt" && grep -q "$partition_path" /proc/mounts; then
+            echo -e "${YELLOW}Desmontando $partition_path de /mnt...${NC}"
+            umount -R /mnt 2>/dev/null || umount -l /mnt 2>/dev/null || true
+        fi
+        if grep -q "$partition_path" /proc/mounts; then
+            echo -e "${YELLOW}Desmontando $partition_path...${NC}"
+            umount -f "$partition_path" 2>/dev/null || umount -l "$partition_path" 2>/dev/null || true
+        fi
+    done
+
+    # Desactivar swap si está en el disco seleccionado
+    echo -e "${CYAN}Desactivando swap en ${SELECTED_DISK}...${NC}"
+    for partition in $(lsblk -lno NAME ${SELECTED_DISK} | grep -v "^$(basename ${SELECTED_DISK})$"); do
+        swapoff "/dev/$partition" 2>/dev/null || true
+    done
+
+    # Limpiar estructuras BTRFS existentes
+    echo -e "${CYAN}Limpiando estructuras BTRFS existentes...${NC}"
+    for partition in $(lsblk -lno NAME ${SELECTED_DISK} | grep -v "^$(basename ${SELECTED_DISK})$"); do
+        wipefs -af "/dev/$partition" 2>/dev/null || true
+    done
+
+    # Limpiar completamente el disco - cabecera y final
+    echo -e "${CYAN}Limpieza completa del disco ${SELECTED_DISK}...${NC}"
+    # Limpiar los primeros 100MB (tablas de partición, etc.)
+    dd if=/dev/zero of=$SELECTED_DISK bs=1M count=100 2>/dev/null || true
+    # Limpiar los últimos 100MB (backup de tablas GPT)
+    DISK_SIZE=$(blockdev --getsz $SELECTED_DISK)
+    DISK_SIZE_MB=$((DISK_SIZE * 512 / 1024 / 1024))
+    if [ $DISK_SIZE_MB -gt 200 ]; then
+        dd if=/dev/zero of=$SELECTED_DISK bs=1M seek=$((DISK_SIZE_MB - 100)) count=100 2>/dev/null || true
+    fi
+    sync
+    sleep 5
+
+    # Forzar re-lectura de la tabla de particiones
+    blockdev --rereadpt $SELECTED_DISK 2>/dev/null || true
+    partprobe $SELECTED_DISK 2>/dev/null || true
+
+    # Reinicializar kernel sobre el dispositivo
+    echo -e "${CYAN}Reinicializando kernel sobre el dispositivo...${NC}"
+    echo 1 > /sys/block/$(basename $SELECTED_DISK)/device/rescan 2>/dev/null || true
+    udevadm settle --timeout=10
+    udevadm trigger --subsystem-match=block
+    udevadm settle --timeout=10
+
+    # Verificaciones adicionales
+    echo -e "${CYAN}Verificando estado del disco después de la limpieza...${NC}"
+    if ! [ -b "$SELECTED_DISK" ]; then
+        echo -e "${RED}ERROR: El disco $SELECTED_DISK no es un dispositivo de bloque válido${NC}"
+        exit 1
+    fi
+
+    # Verificar que no hay particiones activas
+    if [ $(lsblk -n -o NAME $SELECTED_DISK | grep -c "├─\|└─") -gt 0 ]; then
+        echo -e "${YELLOW}Warning: Aún se detectan particiones. Realizando limpieza adicional...${NC}"
+        sgdisk --clear $SELECTED_DISK 2>/dev/null || true
+        wipefs -af $SELECTED_DISK 2>/dev/null || true
+        partprobe $SELECTED_DISK 2>/dev/null || true
+        sleep 2
+    fi
+
+    echo -e "${GREEN}✓ Disco limpio y listo para particionado${NC}"
+    sleep 3
+
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         # Configuración para UEFI
         echo -e "${GREEN}| Configurando particiones BTRFS para UEFI |${NC}"
@@ -1056,24 +1127,49 @@ partition_auto_btrfs() {
         echo ""
 
         # Borrar completamente el disco
-        echo -e "${CYAN}Limpiando disco completamente...${NC}"
+        echo -e "${CYAN}Creando nueva tabla de particiones...${NC}"
         sgdisk --zap-all $SELECTED_DISK
         sleep 2
         partprobe $SELECTED_DISK
         wipefs -af $SELECTED_DISK
 
         # Crear tabla de particiones GPT
-        parted $SELECTED_DISK --script --align optimal mklabel gpt
+        echo -e "${CYAN}Creando tabla de particiones GPT...${NC}"
+        parted $SELECTED_DISK --script --align optimal mklabel gpt || {
+            echo -e "${RED}ERROR: No se pudo crear tabla GPT${NC}"
+            exit 1
+        }
+        sleep 2
+        partprobe $SELECTED_DISK
 
         # Crear partición EFI (512MB)
-        parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
+        echo -e "${CYAN}Creando partición EFI...${NC}"
+        parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB || {
+            echo -e "${RED}ERROR: No se pudo crear partición EFI${NC}"
+            exit 1
+        }
         parted $SELECTED_DISK --script set 1 esp on
+        sleep 1
 
         # Crear partición swap (8GB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 513MiB 8705MiB
+        echo -e "${CYAN}Creando partición swap...${NC}"
+        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 513MiB 8705MiB || {
+            echo -e "${RED}ERROR: No se pudo crear partición swap${NC}"
+            exit 1
+        }
+        sleep 1
 
         # Crear partición root (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 8705MiB 100%
+        echo -e "${CYAN}Creando partición root...${NC}"
+        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 8705MiB 100% || {
+            echo -e "${RED}ERROR: No se pudo crear partición root${NC}"
+            exit 1
+        }
+
+        # Verificar creación de particiones
+        partprobe $SELECTED_DISK
+        sleep 3
+        udevadm settle --timeout=10
 
         # Formatear particiones
         echo -e "${GREEN}| Formateando particiones BTRFS UEFI |${NC}"
@@ -1084,11 +1180,61 @@ partition_auto_btrfs() {
         mkfs.btrfs -f ${SELECTED_DISK}3
         sleep 2
 
+        # Verificar que las particiones estén disponibles y no montadas
+        echo -e "${CYAN}Verificando particiones creadas...${NC}"
+        sleep 5
+        partprobe $SELECTED_DISK
+        sleep 2
+
+        # Verificar que las particiones no estén montadas
+        for i in 1 2 3; do
+            if mountpoint -q "${SELECTED_DISK}${i}" 2>/dev/null; then
+                echo -e "${YELLOW}Desmontando ${SELECTED_DISK}${i}...${NC}"
+                umount -f "${SELECTED_DISK}${i}" 2>/dev/null || true
+            fi
+            if swapon --show=NAME --noheadings 2>/dev/null | grep -q "${SELECTED_DISK}${i}"; then
+                echo -e "${YELLOW}Desactivando swap ${SELECTED_DISK}${i}...${NC}"
+                swapoff "${SELECTED_DISK}${i}" 2>/dev/null || true
+            fi
+        done
+
+        lsblk $SELECTED_DISK
+        sleep 2
+
         # Montar y crear subvolúmenes BTRFS
         echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount ${SELECTED_DISK}3 /mnt
+
+        # Verificar que la partición no esté montada antes de montar
+        echo -e "${CYAN}Preparando montaje de partición BTRFS...${NC}"
+        if mountpoint -q /mnt; then
+            echo -e "${YELLOW}Desmontando /mnt recursivamente...${NC}"
+            umount -R /mnt 2>/dev/null || umount -l /mnt 2>/dev/null || true
+            sleep 2
+        fi
+
+        # Verificar específicamente la partición BTRFS
+        if mountpoint -q "${SELECTED_DISK}3" 2>/dev/null; then
+            echo -e "${YELLOW}Desmontando ${SELECTED_DISK}3...${NC}"
+            umount -f "${SELECTED_DISK}3" 2>/dev/null || true
+            sleep 2
+        fi
+
+        echo -e "${CYAN}Montando partición BTRFS ${SELECTED_DISK}3 en /mnt...${NC}"
+        mount ${SELECTED_DISK}3 /mnt || {
+            echo -e "${RED}ERROR: No se pudo montar ${SELECTED_DISK}3${NC}"
+            exit 1
+        }
+
+        # Limpiar contenido existente del filesystem BTRFS
+        echo -e "${CYAN}Limpiando contenido existente del filesystem BTRFS...${NC}"
+        find /mnt -mindepth 1 -maxdepth 1 -not -name 'lost+found' -exec rm -rf {} + 2>/dev/null || true
+
+        # No necesitamos eliminar subvolúmenes porque el filesystem está recién formateado
+
+        # Crear subvolúmenes BTRFS
+        echo -e "${CYAN}Creando subvolúmenes BTRFS...${NC}"
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
         btrfs subvolume create /mnt/@var
@@ -1113,25 +1259,54 @@ partition_auto_btrfs() {
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
 
-        # Borrar completamente el disco
-        echo -e "${CYAN}Limpiando disco completamente...${NC}"
+        # Crear nueva tabla de particiones GPT
+        echo -e "${CYAN}Creando nueva tabla de particiones GPT...${NC}"
+        sgdisk --clear $SELECTED_DISK
         sgdisk --zap-all $SELECTED_DISK
+        sleep 3
+        partprobe $SELECTED_DISK
+        sleep 2
+        wipefs -af $SELECTED_DISK
         sleep 2
         partprobe $SELECTED_DISK
-        wipefs -af $SELECTED_DISK
 
         # Crear tabla de particiones MBR
-        parted $SELECTED_DISK --script --align optimal mklabel msdos
+        echo -e "${CYAN}Creando tabla de particiones MBR...${NC}"
+        parted $SELECTED_DISK --script --align optimal mklabel msdos || {
+            echo -e "${RED}ERROR: No se pudo crear tabla MBR${NC}"
+            exit 1
+        }
+        sleep 2
+        partprobe $SELECTED_DISK
 
         # Crear partición boot (1GB) - necesaria para GRUB en BIOS Legacy con BTRFS
-        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 1025MiB
+        echo -e "${CYAN}Creando partición boot...${NC}"
+        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 1025MiB || {
+            echo -e "${RED}ERROR: No se pudo crear partición boot${NC}"
+            exit 1
+        }
         parted $SELECTED_DISK --script set 1 boot on
+        sleep 1
 
         # Crear partición swap (8GB)
-        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1025MiB 9217MiB
+        echo -e "${CYAN}Creando partición swap...${NC}"
+        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1025MiB 9217MiB || {
+            echo -e "${RED}ERROR: No se pudo crear partición swap${NC}"
+            exit 1
+        }
+        sleep 1
 
         # Crear partición root (resto del disco)
-        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 9217MiB 100%
+        echo -e "${CYAN}Creando partición root...${NC}"
+        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 9217MiB 100% || {
+            echo -e "${RED}ERROR: No se pudo crear partición root${NC}"
+            exit 1
+        }
+
+        # Verificar creación de particiones
+        partprobe $SELECTED_DISK
+        sleep 3
+        udevadm settle --timeout=10
 
         # Formatear particiones
         echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
@@ -1142,11 +1317,61 @@ partition_auto_btrfs() {
         mkfs.btrfs -f ${SELECTED_DISK}3
         sleep 2
 
+        # Verificar que las particiones estén disponibles y no montadas
+        echo -e "${CYAN}Verificando particiones creadas...${NC}"
+        sleep 5
+        partprobe $SELECTED_DISK
+        sleep 2
+
+        # Verificar que las particiones no estén montadas
+        for i in 1 2 3; do
+            if mountpoint -q "${SELECTED_DISK}${i}" 2>/dev/null; then
+                echo -e "${YELLOW}Desmontando ${SELECTED_DISK}${i}...${NC}"
+                umount -f "${SELECTED_DISK}${i}" 2>/dev/null || true
+            fi
+            if swapon --show=NAME --noheadings 2>/dev/null | grep -q "${SELECTED_DISK}${i}"; then
+                echo -e "${YELLOW}Desactivando swap ${SELECTED_DISK}${i}...${NC}"
+                swapoff "${SELECTED_DISK}${i}" 2>/dev/null || true
+            fi
+        done
+
+        lsblk $SELECTED_DISK
+        sleep 2
+
         # Montar y crear subvolúmenes BTRFS
         echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount ${SELECTED_DISK}3 /mnt
+
+        # Verificar que la partición no esté montada antes de montar
+        echo -e "${CYAN}Preparando montaje de partición BTRFS...${NC}"
+        if mountpoint -q /mnt; then
+            echo -e "${YELLOW}Desmontando /mnt recursivamente...${NC}"
+            umount -R /mnt 2>/dev/null || umount -l /mnt 2>/dev/null || true
+            sleep 2
+        fi
+
+        # Verificar específicamente la partición BTRFS
+        if mountpoint -q "${SELECTED_DISK}3" 2>/dev/null; then
+            echo -e "${YELLOW}Desmontando ${SELECTED_DISK}3...${NC}"
+            umount -f "${SELECTED_DISK}3" 2>/dev/null || true
+            sleep 2
+        fi
+
+        echo -e "${CYAN}Montando partición BTRFS ${SELECTED_DISK}3 en /mnt...${NC}"
+        mount ${SELECTED_DISK}3 /mnt || {
+            echo -e "${RED}ERROR: No se pudo montar ${SELECTED_DISK}3${NC}"
+            exit 1
+        }
+
+        # Limpiar contenido existente del filesystem BTRFS
+        echo -e "${CYAN}Limpiando contenido existente del filesystem BTRFS...${NC}"
+        find /mnt -mindepth 1 -maxdepth 1 -not -name 'lost+found' -exec rm -rf {} + 2>/dev/null || true
+
+        # No necesitamos eliminar subvolúmenes porque el filesystem está recién formateado
+
+        # Crear subvolúmenes BTRFS
+        echo -e "${CYAN}Creando subvolúmenes BTRFS...${NC}"
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
         btrfs subvolume create /mnt/@var
