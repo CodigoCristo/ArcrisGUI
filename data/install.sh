@@ -2197,7 +2197,8 @@ sleep 2
 clear
 
 # Actualización de mirrors en el sistema instalado
-chroot /mnt /bin/bash -c "reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist"
+cp /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
+#chroot /mnt /bin/bash -c "reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist"
 clear
 cat /mnt/etc/pacman.d/mirrorlist
 sleep 3
@@ -2398,28 +2399,22 @@ echo ""
 
 case "$SELECTED_KERNEL" in
     "linux")
-        chroot /mnt /bin/bash -c "pacman -S linux --noconfirm"
-        #chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux linux-firmware --noconfirm"
         ;;
     "linux-hardened")
-        chroot /mnt /bin/bash -c "pacman -S linux-hardened --noconfirm"
-        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux-hardened linux-firmware --noconfirm"
         ;;
     "linux-lts")
-        chroot /mnt /bin/bash -c "pacman -S linux-lts --noconfirm"
-        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux-lts linux-firmware --noconfirm"
         ;;
     "linux-rt-lts")
-        chroot /mnt /bin/bash -c "pacman -S linux-rt-lts --noconfirm"
-        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux-rt-lts linux-firmware--noconfirm"
         ;;
     "linux-zen")
-        chroot /mnt /bin/bash -c "pacman -S linux-zen --noconfirm"
-        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux-zen linux-firmware --noconfirm"
         ;;
     *)
-        chroot /mnt /bin/bash -c "pacman -S linux --noconfirm"
-        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux linux-firmware --noconfirm"
         ;;
 esac
 

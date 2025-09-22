@@ -7,15 +7,28 @@
 # setopt NOHUP
 # setopt NOTIFY
 # setopt NO_FLOW_CONTROL
-setopt INC_APPEND_HISTORY SHARE_HISTORY
-setopt APPEND_HISTORY
+# setopt INC_APPEND_HISTORY
+# setopt APPEND_HISTORY
 # setopt AUTO_LIST
 # setopt AUTO_REMOVE_SLASH
 # setopt AUTO_RESUME
+# setopt HASH_CMDS
+
+setopt SHARE_HISTORY          # Comparte historial entre sesiones (recomendado)
+# O alternativamente (no ambas):
+# setopt INC_APPEND_HISTORY   # Solo si no usas SHARE_HISTORY
+# setopt APPEND_HISTORY       # Solo si no usas SHARE_HISTORY
+
+setopt EXTENDED_HISTORY       # Guarda timestamps
+setopt HIST_EXPIRE_DUPS_FIRST # Elimina duplicados primero cuando el historial está lleno
+setopt HIST_IGNORE_DUPS       # No guarda comandos duplicados consecutivos
+setopt HIST_IGNORE_ALL_DUPS   # Elimina duplicados más antiguos
+setopt HIST_FIND_NO_DUPS      # No muestra duplicados en búsquedas
+setopt HIST_IGNORE_SPACE      # No guarda comandos que empiecen con espacio
+setopt HIST_SAVE_NO_DUPS      # No guarda duplicados en el archivo
+setopt HIST_VERIFY            # Muestra comando antes de ejecutarlo desde historial
 unsetopt BG_NICE
 setopt CORRECT
-setopt EXTENDED_HISTORY
-# setopt HASH_CMDS
 setopt MENUCOMPLETE
 setopt ALL_EXPORT
 
@@ -41,8 +54,8 @@ zle -N history-beginning-search-forward-end history-search-end
 #################
 PATH="/usr/local/bin:/usr/local/sbin/:$PATH"
 HISTFILE=$HOME/.zhistory
-HISTSIZE=1000
-SAVEHIST=1000
+HISTSIZE=5000
+SAVEHIST=5000
 HOSTNAME="$HOST"
 LS_COLORS='rs=0:di=01;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:tw=30;42:ow=34;42:st=37;44:ex=01;32:';
 
