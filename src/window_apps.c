@@ -250,6 +250,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
 
         // Audio
         {"audacious_info", "https://audacious-media-player.org/"},
+        {"decibels_info", "https://apps.gnome.org/es/Decibels/"},
         {"clementine_info", "https://www.clementine-player.org/"},
         {"audacity_info", "https://www.audacityteam.org/"},
         {"ardour_info", "https://ardour.org/"},
@@ -390,12 +391,13 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
 
         // Audio
         {"audacious_check", "audacious", "reproductor audio audacious", "audio_expander"},
+        {"decibels_check", "decibels", "reproductor sonido decibels", "audio_expander"},
         {"clementine_check", "clementine-git", "reproductor música clementine", "audio_expander"},
         {"audacity_check", "audacity", "editor audio audacity", "audio_expander"},
         {"ardour_check", "ardour", "audio digital ardour profesional", "audio_expander"},
         {"elisa_check", "elisa", "reproductor música elisa kde", "audio_expander"},
         {"euphonica_check", "euphonica", "An MPD frontend with delusions of grandeur", "audio_expander"},
-        {"spotify_launcher_check", "spotify-launcher", "lanzador spotify reproductor música", "audio_expander"},
+        {"spotify_check", "spotify", "spotify reproductor música", "audio_expander"},
 
         // Communications
         {"telegram_check", "telegram-desktop", "mensajería telegram", "mail_expander"},
@@ -816,12 +818,13 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
 
         // Audio
         {"audacious_check", "audacious"},
+        {"decibels_check", "decibels"},
         {"clementine_check", "clementine-git"},
         {"audacity_check", "audacity"},
         {"ardour_check", "ardour"},
         {"elisa_check", "elisa"},
         {"euphonica_check", "euphonica"},
-        {"spotify_launcher_check", "spotify-launcher"},
+        {"spotify_check", "spotify"},
 
         // Communications
         {"telegram_check", "telegram-desktop"},
@@ -953,12 +956,13 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
 
         // Audio
         {"audacious_check", "audacious"},
+        {"decibels_check", "decibels"},
         {"clementine_check", "clementine-git"},
         {"audacity_check", "audacity"},
         {"ardour_check", "ardour"},
         {"elisa_check", "elisa"},
         {"euphonica_check", "euphonica"},
-        {"spotify_launcher_check", "spotify-launcher"},
+        {"spotify_check", "spotify"},
 
         // Communications
         {"telegram_check", "telegram-desktop"},

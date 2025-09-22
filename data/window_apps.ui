@@ -661,6 +661,26 @@
                                   </object>
                                 </child>
 
+                                <!-- Decibels -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">decibels</property>
+                                    <property name="subtitle">Reproductor de sonido simple que reproduce archivos de sonido sin bibliotecas</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="decibels_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="decibels_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://apps.gnome.org/es/Decibels/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
                                 <!-- Clementine -->
                                 <child>
                                   <object class="AdwActionRow">
@@ -764,7 +784,7 @@
                                 <!-- Spotify Launcher -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">spotify-launcher</property>
+                                    <property name="title">spotify</property>
                                     <property name="subtitle">Lanzador de Spotify para Linux</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="spotify_launcher_check">
@@ -775,7 +795,7 @@
                                       <object class="GtkButton" id="spotify_launcher_info">
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
-                                        <property name="tooltip-text">https://github.com/kpcyrd/spotify-launcher</property>
+                                        <property name="tooltip-text">https://github.com/kpcyrd/spotify</property>
                                       </object>
                                     </child>
                                   </object>
