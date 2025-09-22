@@ -1108,24 +1108,31 @@ partition_auto_btrfs() {
         pacstrap /mnt btrfs-progs
 
     else
+        # Configuración para BIOS Legacy
         echo -e "${GREEN}| Configurando particiones BTRFS para BIOS Legacy |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
+
         # Borrar completamente el disco
         echo -e "${CYAN}Limpiando disco completamente...${NC}"
         sgdisk --zap-all $SELECTED_DISK
         sleep 2
         partprobe $SELECTED_DISK
         wipefs -af $SELECTED_DISK
+
         # Crear tabla de particiones MBR
         parted $SELECTED_DISK --script --align optimal mklabel msdos
-        # Crear partición boot (1GB)
+
+        # Crear partición boot (1GB) - necesaria para GRUB en BIOS Legacy con BTRFS
         parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 1025MiB
+        parted $SELECTED_DISK --script set 1 boot on
+
         # Crear partición swap (8GB)
         parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1025MiB 9217MiB
+
         # Crear partición root (resto del disco)
         parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 9217MiB 100%
-        parted $SELECTED_DISK --script set 1 boot on
+
         # Formatear particiones
         echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
@@ -1134,6 +1141,7 @@ partition_auto_btrfs() {
         mkswap ${SELECTED_DISK}2
         mkfs.btrfs -f ${SELECTED_DISK}3
         sleep 2
+
         # Montar y crear subvolúmenes BTRFS
         echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
@@ -1144,6 +1152,7 @@ partition_auto_btrfs() {
         btrfs subvolume create /mnt/@var
         btrfs subvolume create /mnt/@tmp
         umount /mnt
+
         # Montar subvolúmenes
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}3 /mnt
         swapon ${SELECTED_DISK}2
@@ -1152,6 +1161,7 @@ partition_auto_btrfs() {
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}3 /mnt/home
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}3 /mnt/var
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
+
         # Instalar herramientas específicas para BTRFS
         pacstrap /mnt btrfs-progs
     fi
@@ -1847,6 +1857,15 @@ pacstrap /mnt curl
 pacstrap /mnt wget
 pacstrap /mnt git
 
+# Instalar herramientas específicas según el modo de particionado
+if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
+    echo -e "${CYAN}Instalando herramientas BTRFS...${NC}"
+    pacstrap /mnt btrfs-progs
+elif [ "$PARTITION_MODE" = "cifrado" ]; then
+    echo -e "${CYAN}Instalando herramientas de cifrado...${NC}"
+    pacstrap /mnt cryptsetup lvm2
+fi
+
 # Configurar montajes para chroot
 clear
 sleep 2
@@ -2342,8 +2361,8 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 
 elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     echo "Configurando mkinitcpio para BTRFS..."
-    # Configurar módulos específicos para BTRFS
-    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c zstd_compress lzo_compress)/' /mnt/etc/mkinitcpio.conf
+    # Configurar módulos específicos para BTRFS (agregando módulos de compresión adicionales)
+    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c zstd lzo lz4 zlib_deflate libcrc32c crc32c-intel)/' /mnt/etc/mkinitcpio.conf
     # Configurar hooks para BTRFS
     sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
@@ -2454,9 +2473,10 @@ if true; then
             echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
             echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
         elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-            sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=5 quiet\"/' /mnt/etc/default/grub
-            sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"/' /mnt/etc/default/grub
+            sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@,compress=zstd:3,space_cache=v2 loglevel=5 quiet\"/' /mnt/etc/default/grub
+            sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs zstd lzopio lvm\"/' /mnt/etc/default/grub
             echo "GRUB_BTRFS_OVERRIDE_BOOT_PARTITION_DETECTION=true" >> /mnt/etc/default/grub
+            echo "GRUB_SAVEDEFAULT=true" >> /mnt/etc/default/grub
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
@@ -2558,9 +2578,10 @@ if true; then
             echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
 
         elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-            sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=5 quiet\"/' /mnt/etc/default/grub
-            sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"/' /mnt/etc/default/grub
+            sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@,compress=zstd:3,space_cache=v2 loglevel=5 quiet\"/' /mnt/etc/default/grub
+            sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_msdos btrfs zstd lzopio\"/' /mnt/etc/default/grub
             echo "GRUB_BTRFS_OVERRIDE_BOOT_PARTITION_DETECTION=true" >> /mnt/etc/default/grub
+            echo "GRUB_SAVEDEFAULT=true" >> /mnt/etc/default/grub
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
@@ -3480,19 +3501,106 @@ if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
 
+    # Verificar que BTRFS esté montado correctamente
+    echo -e "${CYAN}Verificando sistema de archivos BTRFS...${NC}"
+    if ! chroot /mnt /bin/bash -c "btrfs filesystem show" >/dev/null 2>&1; then
+        echo -e "${RED}ERROR: No se pudo verificar el sistema BTRFS${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✓ Sistema BTRFS verificado${NC}"
+
+    # Instalar herramientas adicionales para BTRFS si no están presentes
+    echo -e "${CYAN}Verificando herramientas BTRFS adicionales...${NC}"
+    chroot /mnt /bin/bash -c "pacman -S --needed --noconfirm btrfs-progs-git grub-btrfs" 2>/dev/null || \
+    chroot /mnt /bin/bash -c "pacman -S --needed --noconfirm grub-btrfs" 2>/dev/null || true
+
     # Habilitar servicios de mantenimiento BTRFS
-    chroot /mnt /bin/bash -c "systemctl enable btrfs-scrub@-.timer" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
-    chroot /mnt /bin/bash -c "systemctl enable fstrim.timer" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+    echo -e "${CYAN}Configurando servicios de mantenimiento BTRFS...${NC}"
+    chroot /mnt /bin/bash -c "systemctl enable btrfs-scrub@-.timer" 2>/dev/null || echo -e "${YELLOW}Warning: btrfs-scrub timer no disponible${NC}"
+    chroot /mnt /bin/bash -c "systemctl enable fstrim.timer" || echo -e "${RED}ERROR: Falló habilitar fstrim.timer${NC}"
 
     # Configurar snapshots automáticos si snapper está disponible
     if chroot /mnt /bin/bash -c "pacman -Qq snapper" 2>/dev/null; then
-        chroot /mnt /bin/bash -c "snapper -c root create-config /"
-        chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer snapper-cleanup.timer" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+        echo -e "${CYAN}Configurando Snapper para snapshots automáticos...${NC}"
+        chroot /mnt /bin/bash -c "snapper -c root create-config /" || echo -e "${YELLOW}Warning: No se pudo crear config de snapper${NC}"
+        chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer snapper-cleanup.timer" || echo -e "${YELLOW}Warning: Falló habilitar servicios de snapper${NC}"
     fi
 
     # Optimizar fstab para BTRFS
+    echo -e "${CYAN}Optimizando fstab para BTRFS...${NC}"
     chroot /mnt /bin/bash -c "sed -i 's/relatime/noatime/g' /etc/fstab"
 
+    # Agregar opciones de montaje optimizadas si no están presentes
+    chroot /mnt /bin/bash -c "sed -i 's/subvol=@/subvol=@,compress=zstd:3,space_cache=v2,autodefrag/' /etc/fstab" 2>/dev/null || true
+
+    # Verificar configuración final de fstab
+    echo -e "${CYAN}Verificando configuración final de fstab...${NC}"
+    if chroot /mnt /bin/bash -c "mount -a --fake" 2>/dev/null; then
+        echo -e "${GREEN}✓ Configuración fstab válida${NC}"
+    else
+        echo -e "${YELLOW}Warning: Posibles issues en fstab, pero continuando...${NC}"
+    fi
+
+    # Crear script de mantenimiento BTRFS
+    echo -e "${CYAN}Creando script de mantenimiento BTRFS...${NC}"
+    cat > /mnt/usr/local/bin/btrfs-maintenance << 'EOF'
+#!/bin/bash
+# Script de mantenimiento BTRFS automático
+
+echo "Iniciando mantenimiento BTRFS..."
+
+# Balance mensual (solo si es necesario)
+if [ $(date +%d) -eq 01 ]; then
+    echo "Ejecutando balance BTRFS..."
+    btrfs balance start -dusage=50 -musage=50 / 2>/dev/null || true
+fi
+
+# Scrub semanal
+if [ $(date +%w) -eq 0 ]; then
+    echo "Ejecutando scrub BTRFS..."
+    btrfs scrub start / 2>/dev/null || true
+fi
+
+# Desfragmentación ligera
+echo "Ejecutando desfragmentación ligera..."
+find /home -type f -size +100M -exec btrfs filesystem defragment {} \; 2>/dev/null || true
+
+echo "Mantenimiento BTRFS completado."
+EOF
+
+    chmod +x /mnt/usr/local/bin/btrfs-maintenance
+
+    # Crear servicio systemd para el mantenimiento
+    cat > /mnt/etc/systemd/system/btrfs-maintenance.service << 'EOF'
+[Unit]
+Description=BTRFS Maintenance
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/btrfs-maintenance
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    cat > /mnt/etc/systemd/system/btrfs-maintenance.timer << 'EOF'
+[Unit]
+Description=Run BTRFS Maintenance Weekly
+Requires=btrfs-maintenance.service
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    chroot /mnt /bin/bash -c "systemctl enable btrfs-maintenance.timer" || echo -e "${YELLOW}Warning: No se pudo habilitar btrfs-maintenance.timer${NC}"
+
+    echo -e "${GREEN}✓ Configuración BTRFS completada${NC}"
     sleep 2
 fi
 
