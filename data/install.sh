@@ -3278,6 +3278,7 @@ case "$DRIVER_VIDEO" in
 
             chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-fbdev --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
@@ -3290,7 +3291,8 @@ case "$DRIVER_VIDEO" in
             chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
-            chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+            chroot /mnt /bin/bash -c "sudo -u $USER enable qemu-guest-agent" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+            chroot /mnt /bin/bash -c "sudo -u $USER systemctl start qemu-guest-agent.service"
 
 
 
@@ -3433,6 +3435,7 @@ case "$DRIVER_VIDEO" in
             echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
             chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-fbdev --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
@@ -3445,8 +3448,8 @@ case "$DRIVER_VIDEO" in
             chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
-            chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
-
+            chroot /mnt /bin/bash -c "sudo -u $USER enable qemu-guest-agent" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+            chroot /mnt /bin/bash -c "sudo -u $USER systemctl start qemu-guest-agent.service"
 
 
         elif echo "$VGA_LINE" | grep -i virtualbox > /dev/null; then
@@ -3859,45 +3862,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
                 echo "Installing extension-manager..."
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S extension-manager --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5 --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5-configtool --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5-gtk --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5-qt --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable gdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
-                # Después de las instalaciones de fcitx5...
-                echo -e "${CYAN}Configurando fcitx5 con keyboard layout: ${KEYBOARD_LAYOUT}${NC}"
 
-                # Configurar variables de entorno para fcitx5
-                chroot /mnt /bin/bash -c "cat >> /etc/environment << 'EOF'
-                GTK_IM_MODULE=fcitx
-                QT_IM_MODULE=fcitx
-                XMODIFIERS=@im=fcitx
-                INPUT_METHOD=fcitx
-                SDL_IM_MODULE=fcitx
-                GLFW_IM_MODULE=ibus
-                EOF"
-
-                # Crear directorio de configuración
-                chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/fcitx5"
-                chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/autostart"
-
-                # Usar directamente la variable
-                FCITX_LAYOUT="keyboard-$KEYBOARD_LAYOUT"
-
-                # Crear configuración de profile
-                chroot /mnt /bin/bash -c "sudo -u $USER cat > /home/$USER/.config/fcitx5/profile << EOF
-                [Groups/0]
-                Name=Default
-                Default Layout=$KEYBOARD_LAYOUT
-                DefaultIM=$FCITX_LAYOUT
-
-                [Groups/0/Items/0]
-                Name=$FCITX_LAYOUT
-                Layout=
-
-                [GroupOrder]
-                0=Default
-                EOF"
                 ;;
             "BUDGIE")
                 echo -e "${CYAN}Instalando Budgie Desktop...${NC}"
