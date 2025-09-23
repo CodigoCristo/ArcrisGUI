@@ -217,26 +217,36 @@ else
 fi
 
 # 8. Script de configuración automática para el arranque
-echo -e "${CYAN}8. Creando script de configuración automática...${NC}"
+# 8. Script de configuración automática mejorado
+echo -e "${CYAN}8. Creando script de configuración universal de teclado...${NC}"
 if mkdir -p /mnt/usr/local/bin 2>/dev/null; then
     cat > /mnt/usr/local/bin/setup-keyboard.sh << EOF
 #!/bin/bash
-# Script de configuración automática del teclado
+# Script de configuración universal del teclado
+# Compatible con X11 y múltiples compositores Wayland
 
 KEYBOARD_LAYOUT="$KEYBOARD_LAYOUT"
 
-# Detectar si estamos en X11 o Wayland
-if [ -n "\$DISPLAY" ] && command -v setxkbmap >/dev/null 2>&1; then
-    # Estamos en X11
-    setxkbmap "\$KEYBOARD_LAYOUT"
-elif [ -n "\$WAYLAND_DISPLAY" ] && command -v gsettings >/dev/null 2>&1; then
-    # Estamos en Wayland con GNOME
-    gsettings set org.gnome.desktop.input-sources sources "[('xkb', '\$KEYBOARD_LAYOUT')]"
+# Configurar variables de entorno XKB (universales para Wayland)
+export XKB_DEFAULT_LAYOUT="\$KEYBOARD_LAYOUT"
+export XKB_DEFAULT_OPTIONS="grp:alt_shift_toggle"
+
+# Importar variables al entorno de usuario systemd
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl --user import-environment XKB_DEFAULT_LAYOUT XKB_DEFAULT_OPTIONS 2>/dev/null
 fi
+
+# Para X11: usar setxkbmap si está disponible
+if [ -n "\$DISPLAY" ] && command -v setxkbmap >/dev/null 2>&1; then
+    setxkbmap "\$KEYBOARD_LAYOUT" -option grp:alt_shift_toggle 2>/dev/null
+fi
+
+# Para Wayland: las variables XKB_DEFAULT_* serán leídas por el compositor
+# Funciona con: KDE/kwin_wayland, GNOME/mutter, wlroots-based compositors, etc.
 EOF
 
     if chmod +x /mnt/usr/local/bin/setup-keyboard.sh 2>/dev/null; then
-        echo -e "${GREEN}  ✓ Script setup-keyboard.sh creado correctamente${NC}"
+        echo -e "${GREEN}  ✓ Script setup-keyboard.sh universal creado correctamente${NC}"
     else
         echo -e "${RED}  ✗ Error al crear script setup-keyboard.sh${NC}"
     fi
@@ -244,20 +254,20 @@ else
     echo -e "${RED}  ✗ Error al crear directorio /usr/local/bin${NC}"
 fi
 
-# 9. Configuración para autostart en sesiones gráficas
-echo -e "${CYAN}9. Configurando autostart para sesiones gráficas...${NC}"
+# 9. Configuración para autostart universal
+echo -e "${CYAN}9. Configurando autostart universal...${NC}"
 if mkdir -p /mnt/etc/xdg/autostart 2>/dev/null; then
     cat > /mnt/etc/xdg/autostart/keyboard-setup.desktop << EOF
 [Desktop Entry]
 Type=Application
-Name=Keyboard Layout Setup
+Name=Universal Keyboard Layout Setup
 Exec=/usr/local/bin/setup-keyboard.sh
 Hidden=false
 NoDisplay=true
-X-GNOME-Autostart-enabled=true
+StartupNotify=false
 EOF
     if [[ -f /mnt/etc/xdg/autostart/keyboard-setup.desktop ]]; then
-        echo -e "${GREEN}  ✓ Autostart desktop file creado correctamente${NC}"
+        echo -e "${GREEN}  ✓ Autostart desktop file universal creado correctamente${NC}"
     else
         echo -e "${RED}  ✗ Error al crear autostart desktop file${NC}"
     fi
@@ -3845,7 +3855,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-shell-extensions --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-browser-connector --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
                 echo "Installing extension-manager..."
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S extension-manager --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5 --noansweredit --noconfirm --needed"
@@ -3901,7 +3912,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs gvfs-goa --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
@@ -3930,7 +3942,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S cinnamon-control-center --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S xed --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-screenshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
@@ -3950,7 +3963,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S cutefish --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S polkit-kde-agent --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
@@ -3962,7 +3976,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S ukui --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
@@ -3980,7 +3995,8 @@ case "$INSTALLATION_TYPE" in
                 echo -e "${CYAN}Instalando PANTHEON Desktop...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S pantheon --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-pantheon-greeter --noansweredit --noconfirm --needed"
@@ -4106,7 +4122,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4-goodies --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
 
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"

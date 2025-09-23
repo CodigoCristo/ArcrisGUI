@@ -229,10 +229,45 @@ void page3_setup_widgets(Page3Data *data)
         gtk_widget_set_sensitive(GTK_WIDGET(data->configure_partitions_button), FALSE);
     }
 
+    // Obtener los widgets AdwActionRow correctos navegando por el árbol de widgets
+    GtkWidget *auto_partition_row = GTK_WIDGET(data->auto_partition_radio);
+    while (auto_partition_row && !ADW_IS_ACTION_ROW(auto_partition_row)) {
+        auto_partition_row = gtk_widget_get_parent(auto_partition_row);
+    }
+
+    GtkWidget *auto_btrfs_row = GTK_WIDGET(data->auto_btrfs_radio);
+    while (auto_btrfs_row && !ADW_IS_ACTION_ROW(auto_btrfs_row)) {
+        auto_btrfs_row = gtk_widget_get_parent(auto_btrfs_row);
+    }
+
+    GtkWidget *cifrado_row = GTK_WIDGET(data->cifrado_partition_button);
+    while (cifrado_row && !ADW_IS_ACTION_ROW(cifrado_row)) {
+        cifrado_row = gtk_widget_get_parent(cifrado_row);
+    }
+
+    // Aplicar color rojo solo al texto del subtítulo usando markup Pango
+    if (auto_partition_row) {
+        const char *red_subtitle = "<span foreground='#ff6b6b' weight='bold'>Eliminará todos los datos del disco seleccionado</span>";
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(auto_partition_row), red_subtitle);
+        LOG_INFO("Subtítulo en rojo aplicado a AdwActionRow de particionado automático");
+    }
+
+    if (auto_btrfs_row) {
+        const char *red_subtitle = "<span foreground='#ff6b6b' weight='bold'>Eliminará todos los datos del disco seleccionado</span>";
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(auto_btrfs_row), red_subtitle);
+        LOG_INFO("Subtítulo en rojo aplicado a AdwActionRow de particionado Btrfs");
+    }
+
+    if (cifrado_row) {
+        const char *red_subtitle = "<span foreground='#ff6b6b' weight='bold'>Elimina y crea disco Cifrado completo (LUKS) y LVM</span>";
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(cifrado_row), red_subtitle);
+        LOG_INFO("Subtítulo en rojo aplicado a AdwActionRow de particionado cifrado");
+    }
+
     // Conectar señales adicionales si es necesario
     // Los callbacks principales ya están conectados en disk_manager_init_widgets
 
-    LOG_INFO("Widgets de la página 3 configurados");
+    LOG_INFO("Widgets de la página 3 configurados con estilos CSS");
 }
 
 // Función para cargar datos
