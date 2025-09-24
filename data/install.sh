@@ -3291,8 +3291,8 @@ case "$DRIVER_VIDEO" in
             chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
-            chroot /mnt /bin/bash -c "sudo -u $USER enable qemu-guest-agent" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
-            chroot /mnt /bin/bash -c "sudo -u $USER systemctl start qemu-guest-agent.service"
+            chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+            chroot /mnt /bin/bash -c "systemctl start qemu-guest-agent.service"
 
 
 
@@ -3448,8 +3448,8 @@ case "$DRIVER_VIDEO" in
             chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
-            chroot /mnt /bin/bash -c "sudo -u $USER enable qemu-guest-agent" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
-            chroot /mnt /bin/bash -c "sudo -u $USER systemctl start qemu-guest-agent.service"
+            chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+            chroot /mnt /bin/bash -c "systemctl start qemu-guest-agent.service"
 
 
         elif echo "$VGA_LINE" | grep -i virtualbox > /dev/null; then
