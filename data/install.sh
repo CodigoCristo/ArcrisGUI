@@ -4048,12 +4048,27 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "LXQT")
                 echo -e "${CYAN}Instalando LXQt Desktop...${NC}"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze-icons --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S nm-tray --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt-wayland-session --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "systemctl enable sddm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+                #chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt --noansweredit --noconfirm --needed"
+                #chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze-icons --noansweredit --noconfirm --needed"
+                #chroot /mnt /bin/bash -c "sudo -u $USER yay -S nm-tray --noansweredit --noconfirm --needed"
+                #chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt-wayland-session --noansweredit --noconfirm --needed"
+                #chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
+                #chroot /mnt /bin/bash -c "systemctl enable sddm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+                # Instalar compositor (elige uno)
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S labwc --noconfirm --needed"  # Más simple para empezar
+                # Dependencias base
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S wayland wlroots --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-wlr --noconfirm --needed"
+                # LXQt y componentes
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt-wayland-session --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze-icons --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S nm-tray --noconfirm --needed"
+                # Display manager
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noconfirm --needed"
+                chroot /mnt /bin/bash -c "systemctl enable sddm"
+                # Herramientas adicionales
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S qterminal wofi --noconfirm --needed"
                 ;;
             "MATE")
                 echo -e "${CYAN}Instalando MATE Desktop...${NC}"
