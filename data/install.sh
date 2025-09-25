@@ -2604,6 +2604,7 @@ if true; then
         # echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
         # efibootmgr | awk '/grub/i {gsub(/Boot|\*.*/, ""); system("efibootmgr -b " $1 " -B 2>/dev/null")}'
         efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
+        clear
         sleep 4
 
         # Limpiar directorio EFI previo si existe
@@ -3819,8 +3820,14 @@ case "$INSTALLATION_TYPE" in
         # Instalar X.org como base para todos los escritorios
         echo -e "${CYAN}Instalando servidor X.org...${NC}"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server-common --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xsetroot --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xrandr --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-setxkbmap --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xrdb --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xwayland --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbnailer --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S freetype2 --noansweredit --noconfirm --needed"
@@ -4136,9 +4143,14 @@ case "$INSTALLATION_TYPE" in
         # Instalar X.org y dependencias base para gestores de ventanas
         echo -e "${CYAN}Instalando servidor X.org y dependencias base...${NC}"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server-common --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xsetroot --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xrandr --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-setxkbmap --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xrdb --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xwayland --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xterm --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S dmenu --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S pcmanfm --noansweredit --noconfirm --needed"
@@ -4222,7 +4234,6 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "pacman -S base-devel --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S wlroots0.18 --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S tllist --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "pacman -S xorg-xwayland --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S foot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S mako --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "pacman -S wl-clipboard --noansweredit --noconfirm --needed"
@@ -4314,9 +4325,6 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "XMONAD")
                 echo -e "${CYAN}Instalando XMonad Window Manager...${NC}"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xrandr --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmonad --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmonad-contrib --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmobar --noansweredit --noconfirm --needed"
