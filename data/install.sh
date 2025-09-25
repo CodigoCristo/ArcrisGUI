@@ -2121,9 +2121,6 @@ mount --rbind /sys /mnt/sys
 mount --make-rslave /mnt/sys
 mount --rbind /dev /mnt/dev
 mount --make-rslave /mnt/dev
-mount --bind /dev /mnt/dev
-mount --bind /proc /mnt/proc
-mount --bind /sys /mnt/sys
 mount --bind /run /mnt/run
 mount --make-slave /mnt/run
 cp /etc/resolv.conf /mnt/etc/
