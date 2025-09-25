@@ -2675,7 +2675,7 @@ if true; then
         sleep 2
         clear
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        grub-install --target=x86_64-efi --efi-directory=/mnt/boot/efi --removable || {
+        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --removable --no-nvram" || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (modo removible)${NC}"
             echo -e "${YELLOW}Información adicional:${NC}"
             echo "- Estado de /boot:"
@@ -2693,7 +2693,7 @@ if true; then
         echo -e "${GREEN}✓ GRUB instalado en modo removible (/EFI/BOOT/bootx64.efi)${NC}"
 
         echo -e "${CYAN}Instalando GRUB con entrada NVRAM...${NC}"
-        grub-install --target=x86_64-efi --efi-directory=/mnt/boot/efi --bootloader-id=GRUB || {
+        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --no-nvram" || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (entrada NVRAM)${NC}"
             echo -e "${YELLOW}Información adicional:${NC}"
             echo "- Estado de /boot/efi/EFI/:"
