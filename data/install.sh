@@ -2418,7 +2418,7 @@ case "$SELECTED_KERNEL" in
         chroot /mnt /bin/bash -c "pacman -S linux-lts linux-firmware --noconfirm"
         ;;
     "linux-rt-lts")
-        chroot /mnt /bin/bash -c "pacman -S linux-rt-lts linux-firmware--noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux-rt-lts linux-firmware --noconfirm"
         ;;
     "linux-zen")
         chroot /mnt /bin/bash -c "pacman -S linux-zen linux-firmware --noconfirm"
@@ -3974,6 +3974,9 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-pantheon-greeter --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+                chroot /mnt /bin/bash -c "pacman -Rdd orca onboard --noconfirm"
+                sed -i '$d' /mnt/etc/lightdm/Xsession
+                sed -i '$a io.elementary.wingpanel &\nplank &\nexec gala' /mnt/etc/lightdm/Xsession
                 ;;
             "ENLIGHTENMENT")
                 echo -e "${CYAN}Instalando Enlightenment Desktop...${NC}"
