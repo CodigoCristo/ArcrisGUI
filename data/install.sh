@@ -2121,6 +2121,9 @@ mount --rbind /sys /mnt/sys
 mount --make-rslave /mnt/sys
 mount --rbind /dev /mnt/dev
 mount --make-rslave /mnt/dev
+mount --bind /dev /mnt/dev
+mount --bind /proc /mnt/proc
+mount --bind /sys /mnt/sys
 mount --bind /run /mnt/run
 mount --make-slave /mnt/run
 cp /etc/resolv.conf /mnt/etc/
@@ -2669,8 +2672,10 @@ if true; then
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
         fi
 
+        sleep 2
+        clear
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --removable" || {
+        grub-install --target=x86_64-efi --efi-directory=/mnt/boot/efi --removable || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (modo removible)${NC}"
             echo -e "${YELLOW}Información adicional:${NC}"
             echo "- Estado de /boot:"
@@ -2684,10 +2689,11 @@ if true; then
             exit 1
         }
         sleep 5
+        clear
         echo -e "${GREEN}✓ GRUB instalado en modo removible (/EFI/BOOT/bootx64.efi)${NC}"
 
         echo -e "${CYAN}Instalando GRUB con entrada NVRAM...${NC}"
-        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB" || {
+        grub-install --target=x86_64-efi --efi-directory=/mnt/boot/efi --bootloader-id=GRUB || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (entrada NVRAM)${NC}"
             echo -e "${YELLOW}Información adicional:${NC}"
             echo "- Estado de /boot/efi/EFI/:"
