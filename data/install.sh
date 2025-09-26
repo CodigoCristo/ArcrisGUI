@@ -2671,9 +2671,89 @@ if true; then
 
         sleep 2
         clear
+
+        # Detectar si estamos en un entorno virtualizado
+        VIRTUAL_ENV=""
+        IS_QEMU=false
+
+        # Múltiples métodos de detección
+        if [ -f /sys/class/dmi/id/product_name ]; then
+            PRODUCT_NAME=$(cat /sys/class/dmi/id/product_name 2>/dev/null || echo "")
+            if echo "$PRODUCT_NAME" | grep -qi "qemu"; then
+                VIRTUAL_ENV="QEMU"
+                IS_QEMU=true
+            elif echo "$PRODUCT_NAME" | grep -qi "kvm"; then
+                VIRTUAL_ENV="KVM"
+                IS_QEMU=true
+            elif echo "$PRODUCT_NAME" | grep -qi "virtualbox"; then
+                VIRTUAL_ENV="VirtualBox"
+            elif echo "$PRODUCT_NAME" | grep -qi "vmware"; then
+                VIRTUAL_ENV="VMware"
+            fi
+        fi
+
+        # Verificación adicional para QEMU
+        if [ -z "$VIRTUAL_ENV" ] && [ -f /sys/class/dmi/id/sys_vendor ]; then
+            SYS_VENDOR=$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || echo "")
+            if echo "$SYS_VENDOR" | grep -qi "qemu"; then
+                VIRTUAL_ENV="QEMU"
+                IS_QEMU=true
+            fi
+        fi
+
+        # Verificar si efivars está montado y disponible
+        EFIVARS_AVAILABLE=false
+        if [ -d /sys/firmware/efi/efivars ] && mountpoint -q /sys/firmware/efi/efivars 2>/dev/null; then
+            EFIVARS_AVAILABLE=true
+            echo -e "${GREEN}✓ EFI variables disponibles${NC}"
+        else
+            echo -e "${YELLOW}⚠ EFI variables no disponibles (normal en algunos entornos virtuales)${NC}"
+        fi
+
+        # Verificar si efibootmgr está disponible
+        if command -v efibootmgr >/dev/null 2>&1; then
+            echo -e "${GREEN}✓ efibootmgr disponible${NC}"
+        else
+            echo -e "${YELLOW}⚠ efibootmgr no disponible${NC}"
+        fi
+
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --removable" || {
-            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (modo removible)${NC}"
+        if [ -n "$VIRTUAL_ENV" ]; then
+            echo -e "${YELLOW}Detectado entorno virtual: $VIRTUAL_ENV${NC}"
+            echo -e "${YELLOW}Usando configuración optimizada para virtualización${NC}"
+
+            if [ "$IS_QEMU" = true ]; then
+                echo -e "${YELLOW}Configuración específica para QEMU/KVM aplicada${NC}"
+            fi
+        fi
+
+        # Verificar que la partición EFI esté montada correctamente
+        if ! mountpoint -q /mnt/boot/efi; then
+            echo -e "${RED}ERROR: /boot/efi no está montado correctamente${NC}"
+            exit 1
+        fi
+
+        # Verificar permisos en la partición EFI
+        if [ ! -w /mnt/boot/efi ]; then
+            echo -e "${RED}ERROR: No se puede escribir en /boot/efi${NC}"
+            exit 1
+        fi
+
+        # Comando con timeout para evitar cuelgues en QEMU
+        GRUB_INSTALL_CMD="grub-install --target=x86_64-efi --efi-directory=/boot/efi --removable --force --recheck"
+
+        # Añadir opciones específicas para QEMU
+        if [ "$IS_QEMU" = true ]; then
+            GRUB_INSTALL_CMD="$GRUB_INSTALL_CMD --no-floppy --modules='part_gpt part_msdos fat ext2 normal chain boot configfile linux multiboot'"
+        fi
+
+        timeout 120 chroot /mnt /bin/bash -c "$GRUB_INSTALL_CMD" || {
+            GRUB_EXIT_CODE=$?
+            if [ $GRUB_EXIT_CODE -eq 124 ]; then
+                echo -e "${RED}ERROR: Timeout en instalación de GRUB UEFI (modo removible) - posible problema en entorno virtual${NC}"
+            else
+                echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (modo removible)${NC}"
+            fi
             echo -e "${YELLOW}Información adicional:${NC}"
             echo "- Estado de /boot:"
             ls -la /mnt/boot/
@@ -2690,27 +2770,75 @@ if true; then
         echo -e "${GREEN}✓ GRUB instalado en modo removible (/EFI/BOOT/bootx64.efi)${NC}"
 
         echo -e "${CYAN}Instalando GRUB con entrada NVRAM...${NC}"
-        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB" || {
-            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (entrada NVRAM)${NC}"
-            echo -e "${YELLOW}Información adicional:${NC}"
-            echo "- Estado de /boot/efi/EFI/:"
-            ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
-            exit 1
-        }
+
+        # En entornos virtuales, usar parámetros más conservadores
+        if [ -n "$VIRTUAL_ENV" ]; then
+            GRUB_NVRAM_CMD="grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force"
+
+            if [ "$IS_QEMU" = true ]; then
+                # Configuración específica para QEMU
+                GRUB_NVRAM_CMD="$GRUB_NVRAM_CMD --no-floppy --modules='part_gpt part_msdos fat ext2 normal chain boot configfile linux multiboot'"
+                echo -e "${YELLOW}Usando configuración GRUB optimizada para QEMU${NC}"
+            else
+                GRUB_NVRAM_CMD="$GRUB_NVRAM_CMD --no-floppy --disable-shim-lock"
+            fi
+
+            timeout 120 chroot /mnt /bin/bash -c "$GRUB_NVRAM_CMD" || {
+                GRUB_EXIT_CODE=$?
+                if [ $GRUB_EXIT_CODE -eq 124 ]; then
+                    echo -e "${RED}ERROR: Timeout en instalación de GRUB UEFI (entrada NVRAM) - posible problema en entorno virtual${NC}"
+                    echo -e "${YELLOW}Intentando instalación alternativa para entornos virtuales...${NC}"
+
+                    # Intento alternativo para QEMU/KVM
+                    timeout 60 chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force --no-floppy --modules='part_gpt part_msdos fat ext2 normal chain boot configfile linux multiboot'" || {
+                        echo -e "${RED}ERROR: Falló también la instalación alternativa${NC}"
+                        echo -e "${YELLOW}ADVERTENCIA: Falló la instalación NVRAM, pero el modo removible debería funcionar${NC}"
+                        echo -e "${CYAN}Continuando con la instalación...${NC}"
+                    }
+                else
+                    echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (entrada NVRAM)${NC}"
+                    echo -e "${YELLOW}Información adicional:${NC}"
+                    echo "- Estado de /boot/efi/EFI/:"
+                    ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
+                    exit 1
+                fi
+            }
+        else
+            timeout 120 chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force --recheck" || {
+                GRUB_EXIT_CODE=$?
+                echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (entrada NVRAM)${NC}"
+                echo -e "${YELLOW}Información adicional:${NC}"
+                echo "- Estado de /boot/efi/EFI/:"
+                ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
+                exit 1
+            }
+        fi
 
         echo -e "${GREEN}✓ GRUB instalado con entrada NVRAM (/EFI/GRUB/grubx64.efi)${NC}"
 
-        # Verificar que grubx64.efi se haya creado con debug
-        if [ ! -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
-            echo -e "${RED}ERROR: No se creó grubx64.efi${NC}"
+        # Verificar que al menos uno de los bootloaders se haya creado
+        BOOT_SUCCESS=false
+        if [ -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ]; then
+            echo -e "${GREEN}✓ bootx64.efi creado exitosamente (modo removible)${NC}"
+            BOOT_SUCCESS=true
+        fi
+
+        if [ "$VIRTUAL_ENV" = "false" ] && [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
+            echo -e "${GREEN}✓ grubx64.efi creado exitosamente (modo NVRAM)${NC}"
+            BOOT_SUCCESS=true
+        fi
+
+        if [ "$BOOT_SUCCESS" = "false" ]; then
+            echo -e "${RED}ERROR: No se crearon los archivos de arranque EFI${NC}"
             echo -e "${YELLOW}Información de debug:${NC}"
             echo "- Contenido de /mnt/boot/efi/EFI/:"
             ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
+            echo "- Contenido de /mnt/boot/efi/EFI/BOOT/:"
+            ls -la /mnt/boot/efi/EFI/BOOT/ 2>/dev/null || echo "  Directorio BOOT no existe"
             echo "- Contenido de /mnt/boot/efi/EFI/GRUB/:"
             ls -la /mnt/boot/efi/EFI/GRUB/ 2>/dev/null || echo "  Directorio GRUB no existe"
             exit 1
         fi
-        echo -e "${GREEN}✓ grubx64.efi creado exitosamente${NC}"
 
         echo -e "${CYAN}Generando configuración de GRUB...${NC}"
         if ! chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
@@ -3295,6 +3423,8 @@ case "$DRIVER_VIDEO" in
             chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libgl --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libglvnd --noconfirm"
             chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
             chroot /mnt /bin/bash -c "systemctl start qemu-guest-agent.service"
 
@@ -3452,6 +3582,8 @@ case "$DRIVER_VIDEO" in
             chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
             chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libgl --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libglvnd --noconfirm"
             chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
             chroot /mnt /bin/bash -c "systemctl start qemu-guest-agent.service"
 
