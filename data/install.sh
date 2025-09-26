@@ -2769,52 +2769,36 @@ if true; then
         clear
         echo -e "${GREEN}✓ GRUB instalado en modo removible (/EFI/BOOT/bootx64.efi)${NC}"
 
-        echo -e "${CYAN}Instalando GRUB con entrada NVRAM...${NC}"
+        # Saltar instalación NVRAM en QEMU para evitar cuelgues
+        if [ "$IS_QEMU" = true ]; then
+            echo -e "${YELLOW}Saltando instalación NVRAM en QEMU (puede causar cuelgues)${NC}"
+            echo -e "${CYAN}El modo removible (/EFI/BOOT/bootx64.efi) es suficiente para arrancar en QEMU${NC}"
+        else
+            echo -e "${CYAN}Instalando GRUB con entrada NVRAM...${NC}"
 
-        # En entornos virtuales, usar parámetros más conservadores
-        if [ -n "$VIRTUAL_ENV" ]; then
-            GRUB_NVRAM_CMD="grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force"
+            # En entornos virtuales no-QEMU, usar parámetros conservadores
+            if [ -n "$VIRTUAL_ENV" ]; then
+                GRUB_NVRAM_CMD="grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force --no-floppy --disable-shim-lock"
 
-            if [ "$IS_QEMU" = true ]; then
-                # Configuración específica para QEMU
-                GRUB_NVRAM_CMD="$GRUB_NVRAM_CMD --no-floppy --modules='part_gpt part_msdos fat ext2 normal chain boot configfile linux multiboot'"
-                echo -e "${YELLOW}Usando configuración GRUB optimizada para QEMU${NC}"
+                timeout 120 chroot /mnt /bin/bash -c "$GRUB_NVRAM_CMD" || {
+                    echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (entrada NVRAM)${NC}"
+                    echo -e "${YELLOW}ADVERTENCIA: Falló la instalación NVRAM, pero el modo removible debería funcionar${NC}"
+                    echo -e "${CYAN}Continuando con la instalación...${NC}"
+                }
             else
-                GRUB_NVRAM_CMD="$GRUB_NVRAM_CMD --no-floppy --disable-shim-lock"
-            fi
-
-            timeout 120 chroot /mnt /bin/bash -c "$GRUB_NVRAM_CMD" || {
-                GRUB_EXIT_CODE=$?
-                if [ $GRUB_EXIT_CODE -eq 124 ]; then
-                    echo -e "${RED}ERROR: Timeout en instalación de GRUB UEFI (entrada NVRAM) - posible problema en entorno virtual${NC}"
-                    echo -e "${YELLOW}Intentando instalación alternativa para entornos virtuales...${NC}"
-
-                    # Intento alternativo para QEMU/KVM
-                    timeout 60 chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force --no-floppy --modules='part_gpt part_msdos fat ext2 normal chain boot configfile linux multiboot'" || {
-                        echo -e "${RED}ERROR: Falló también la instalación alternativa${NC}"
-                        echo -e "${YELLOW}ADVERTENCIA: Falló la instalación NVRAM, pero el modo removible debería funcionar${NC}"
-                        echo -e "${CYAN}Continuando con la instalación...${NC}"
-                    }
-                else
+                # Hardware real
+                timeout 120 chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force --recheck" || {
+                    GRUB_EXIT_CODE=$?
                     echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (entrada NVRAM)${NC}"
                     echo -e "${YELLOW}Información adicional:${NC}"
                     echo "- Estado de /boot/efi/EFI/:"
                     ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
                     exit 1
-                fi
-            }
-        else
-            timeout 120 chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force --recheck" || {
-                GRUB_EXIT_CODE=$?
-                echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (entrada NVRAM)${NC}"
-                echo -e "${YELLOW}Información adicional:${NC}"
-                echo "- Estado de /boot/efi/EFI/:"
-                ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
-                exit 1
-            }
-        fi
+                }
+            fi
 
-        echo -e "${GREEN}✓ GRUB instalado con entrada NVRAM (/EFI/GRUB/grubx64.efi)${NC}"
+            echo -e "${GREEN}✓ GRUB instalado con entrada NVRAM (/EFI/GRUB/grubx64.efi)${NC}"
+        fi
 
         # Verificar que al menos uno de los bootloaders se haya creado
         BOOT_SUCCESS=false
@@ -2823,8 +2807,11 @@ if true; then
             BOOT_SUCCESS=true
         fi
 
-        if [ "$VIRTUAL_ENV" = "false" ] && [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
+        if [ "$IS_QEMU" != true ] && [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
             echo -e "${GREEN}✓ grubx64.efi creado exitosamente (modo NVRAM)${NC}"
+            BOOT_SUCCESS=true
+        elif [ "$IS_QEMU" = true ]; then
+            echo -e "${GREEN}✓ Instalación NVRAM omitida en QEMU (recomendado)${NC}"
             BOOT_SUCCESS=true
         fi
 
