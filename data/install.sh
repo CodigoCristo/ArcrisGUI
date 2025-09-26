@@ -2925,8 +2925,12 @@ if true; then
     echo ""
 
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+        # Verificar si tenemos GRUB instalado (modo NVRAM o modo removible)
+        UEFI_BOOT_OK=false
+
         if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
-            echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente${NC}"
+            echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente (modo NVRAM)${NC}"
+            UEFI_BOOT_OK=true
 
             # Crear entrada UEFI manualmente si no existe
             if ! efibootmgr | grep -q "GRUB"; then
@@ -2943,8 +2947,18 @@ if true; then
                     efibootmgr --bootorder "$NEW_ORDER" 2>/dev/null || true
                 fi
             fi
-        else
+        elif [ -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
+            echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente (modo removible)${NC}"
+            echo -e "${CYAN}• Usando /EFI/BOOT/bootx64.efi (compatible con QEMU y hardware)${NC}"
+            UEFI_BOOT_OK=true
+        fi
+
+        if [ "$UEFI_BOOT_OK" = false ]; then
             echo -e "${RED}⚠ Problema con la instalación del bootloader UEFI${NC}"
+            echo -e "${YELLOW}Archivos verificados:${NC}"
+            echo "  - /mnt/boot/efi/EFI/GRUB/grubx64.efi: $([ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && echo "✓" || echo "✗")"
+            echo "  - /mnt/boot/efi/EFI/BOOT/bootx64.efi: $([ -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ] && echo "✓" || echo "✗")"
+            echo "  - /mnt/boot/grub/grub.cfg: $([ -f "/mnt/boot/grub/grub.cfg" ] && echo "✓" || echo "✗")"
         fi
     else
         if [ -f "/mnt/boot/grub/grub.cfg" ]; then
