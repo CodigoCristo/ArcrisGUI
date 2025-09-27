@@ -3784,6 +3784,7 @@ case "$INSTALLATION_TYPE" in
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs --noansweredit --noconfirm --needed"
 
         case "$DESKTOP_ENVIRONMENT" in
             "GNOME")
@@ -4123,6 +4124,7 @@ case "$INSTALLATION_TYPE" in
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs --noansweredit --noconfirm --needed"
 
         # Instalar herramientas adicionales para gestores de ventanas
         echo -e "${CYAN}Instalando Terminales...${NC}"
