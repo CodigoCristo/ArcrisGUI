@@ -22,205 +22,6 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# ================================================================================================
-# FUNCIONES DE CONECTIVIDAD Y REINTENTOS INFINITOS PARA PACMAN/YAY
-# ================================================================================================
-# Función para verificar conectividad a internet
-check_internet() {
-    # Verificación rápida y simple de conectividad
-    if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
-        return 0
-    else
-        echo -e "${RED}❌ Sin conexión a internet${NC}"
-        return 1
-    fi
-}
-
-# Función para esperar conexión a internet con reintentos infinitos
-wait_for_internet() {
-    local attempt=1
-
-    while ! check_internet; do
-        echo -e "${YELLOW}⚠️  Intento #$attempt - Sin conexión a internet${NC}"
-        echo -e "${CYAN}🔄 Reintentando en 10 segundos...${NC}"
-        echo ""
-        echo -e "${BLUE}🔧 DIAGNÓSTICOS RECOMENDADOS:${NC}"
-        echo -e "${BLUE}   1. ${YELLOW}Conectividad Física:${NC}"
-        echo -e "${BLUE}      • Cable Ethernet conectado correctamente${NC}"
-        echo -e "${BLUE}      • LED de red activo en tu dispositivo${NC}"
-        echo -e "${BLUE}      • WiFi habilitado y conectado a la red correcta${NC}"
-        echo ""
-        echo -e "${BLUE}   2. ${YELLOW}Reiniciar Servicios:${NC}"
-        echo -e "${BLUE}      • systemctl restart NetworkManager${NC}"
-        echo -e "${BLUE}      • systemctl restart dhcpcd${NC}"
-        echo -e "${BLUE}      • ip link set [interfaz] up${NC}"
-        echo ""
-        echo -e "${BLUE}   4. ${YELLOW}Router/Módem:${NC}"
-        echo -e "${BLUE}      • Reiniciar router (desconectar 30 seg)${NC}"
-        echo -e "${BLUE}      • Verificar que otros dispositivos tengan internet${NC}"
-        echo -e "${BLUE}      • Contactar ISP si el problema persiste${NC}"
-        echo ""
-        echo -e "${GREEN}⏳ La instalación continuará automáticamente cuando se restablezca la conexión${NC}"
-        echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-
-        # Mostrar comando útil para verificar conectividad manualmente
-        if [ $((attempt % 3)) -eq 0 ]; then
-            echo -e "${BLUE}💡 Comando manual: ping -c 3 www.google.com${NC}"
-        fi
-
-        sleep 10
-        ((attempt++))
-
-        # Limpiar pantalla cada 5 intentos para evitar saturación
-        if (( attempt % 5 == 0 )); then
-            clear
-            echo -e "${YELLOW}🌐 ESPERANDO CONEXIÓN A INTERNET${NC}"
-            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-            echo -e "${YELLOW}⏱️  Intento #$attempt - Tiempo transcurrido: $((attempt * 10)) segundos${NC}"
-            echo ""
-        fi
-    done
-
-    echo -e "${GREEN}🎉 ¡CONEXIÓN A INTERNET RESTABLECIDA!${NC}"
-    echo -e "${GREEN}✅ Diagnóstico exitoso después de $((attempt * 10)) segundos${NC}"
-    echo -e "${CYAN}⏰ Continuando con la instalación en 3 segundos...${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    sleep 3
-    clear
-}
-
-
-
-# Función para instalar paquetes con pacman con reintentos infinitos
-install_pacman_package() {
-    local package="$1"
-    local extra_args="${2:-}"
-    local attempt=1
-
-    echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman${NC}"
-
-    while true; do
-        echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
-
-        # Ejecutar comando de instalación
-        if pacman -S "$package" --noconfirm $extra_args; then
-            echo -e "${GREEN}✅ $package instalado correctamente${NC}"
-            return 0
-        else
-            echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
-            echo -e "${RED}🔍 Comando ejecutado: pacman -S '$package' --noconfirm $extra_args${NC}"
-            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
-            sleep 5
-            ((attempt++))
-        fi
-    done
-}
-
-# Función para instalar paquetes usando pacstrap /mnt
-install_pacstrap_package() {
-    local package="$1"
-    local extra_args="${2:-}"
-    local attempt=1
-
-    echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacstrap${NC}"
-
-    while true; do
-        echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
-
-        # Intentar instalación con pacstrap
-        if pacstrap /mnt "$package" $extra_args; then
-            echo -e "${GREEN}✅ $package instalado correctamente con pacstrap${NC}"
-            return 0
-        else
-            echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
-            echo -e "${RED}🔍 Comando ejecutado: pacstrap /mnt '$package' $extra_args${NC}"
-            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
-            sleep 5
-            ((attempt++))
-        fi
-    done
-}
-
-# Función para instalar múltiples paquetes con pacstrap
-install_pacstrap_packages() {
-    local packages=("$@")
-
-    echo -e "${GREEN}📦 Instalando ${#packages[@]} paquetes con pacstrap:${NC}"
-    for pkg in "${packages[@]}"; do
-        echo -e "${CYAN}  • $pkg${NC}"
-    done
-    echo ""
-
-    for package in "${packages[@]}"; do
-        install_pacstrap_package "$package"
-        sleep 1  # Breve pausa entre paquetes
-    done
-
-    echo -e "${GREEN}✅ Todos los paquetes pacstrap instalados correctamente${NC}"
-}
-
-# Función para instalar paquetes con yay con reintentos infinitos
-install_yay_package() {
-    local package="$1"
-    local extra_args="${2:-}"
-    local attempt=1
-
-    echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con yay${NC}"
-
-    while true; do
-        echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
-
-        # Intentar instalación con yay en sistema instalado
-        if chroot /mnt /bin/bash -c "sudo -u $USER yay -S '$package' $extra_args --noansweredit --noconfirm --needed"; then
-            echo -e "${GREEN}✅ $package instalado correctamente con yay${NC}"
-            return 0
-        else
-            echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
-            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
-            sleep 5
-            ((attempt++))
-        fi
-    done
-}
-
-# Función para instalar múltiples paquetes con pacman
-install_pacman_packages() {
-    local packages=("$@")
-
-    echo -e "${GREEN}📦 Instalando ${#packages[@]} paquetes con pacman:${NC}"
-    for pkg in "${packages[@]}"; do
-        echo -e "${CYAN}  • $pkg${NC}"
-    done
-    echo ""
-
-    for package in "${packages[@]}"; do
-        install_pacman_package "$package"
-        sleep 1  # Breve pausa entre paquetes
-    done
-
-    echo -e "${GREEN}✅ Todos los paquetes pacman instalados correctamente${NC}"
-}
-
-# Función para instalar múltiples paquetes con yay
-install_yay_packages() {
-    local packages=("$@")
-
-    echo -e "${GREEN}📦 Instalando ${#packages[@]} paquetes con yay:${NC}"
-    for pkg in "${packages[@]}"; do
-        echo -e "${CYAN}  • $pkg${NC}"
-    done
-    echo ""
-
-    for package in "${packages[@]}"; do
-        install_yay_package "$package"
-        sleep 1  # Breve pausa entre paquetes
-    done
-
-    echo -e "${GREEN}✅ Todos los paquetes yay instalados correctamente${NC}"
-}
-
-# ================================================================================================
-
 
 # Función para imprimir en rojo
 print_red() {
@@ -1222,15 +1023,15 @@ clear
 echo -e "${GREEN}| Actualizando lista de Keys en LiveCD |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
-install_pacman_package "archlinux-keyring"
+pacman -Sy archlinux-keyring --noconfirm
 sleep 2
 clear
 
 # Instalación de herramientas necesarias
 sleep 3
-install_pacman_package "reflector"
-install_pacman_package "python3"
-install_pacman_package "rsync"
+pacman -Sy reflector --noconfirm
+pacman -Sy python3 --noconfirm
+pacman -Sy rsync --noconfirm
 clear
 
 # Actualización de mirrorlist
@@ -1567,7 +1368,7 @@ partition_auto_btrfs() {
         mount ${SELECTED_DISK}1 /mnt/boot/efi
 
         # Instalar herramientas específicas para BTRFS
-        install_pacstrap_package "btrfs-progs"
+        pacstrap /mnt btrfs-progs
 
     else
         # Configuración para BIOS Legacy
@@ -1693,7 +1494,7 @@ partition_auto_btrfs() {
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
 
         # Instalar herramientas específicas para BTRFS
-        install_pacstrap_package "btrfs-progs"
+        pacstrap /mnt btrfs-progs
     fi
 }
 
@@ -1897,7 +1698,7 @@ partition_cifrado() {
         echo -e "${GREEN}  • UEFI: EFI (512MB) + boot (1GB) sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
-        install_pacstrap_package "cryptsetup lvm2"
+        pacstrap /mnt cryptsetup lvm2
 
     else
         # Configuración para BIOS Legacy con cifrado (siguiendo mejores prácticas)
@@ -2064,7 +1865,7 @@ partition_cifrado() {
         echo -e "${GREEN}  • BIOS Legacy: boot (512MB) sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
-        install_pacstrap_package "cryptsetup lvm2"
+        pacstrap /mnt cryptsetup lvm2
     fi
 }
 
@@ -2377,25 +2178,23 @@ echo -e "${GREEN}| Instalando paquetes principales de la distribución |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
-install_pacstrap_package "base"
-install_pacstrap_package "base-devel"
-install_pacstrap_package "lsb-release"
-install_pacstrap_package "reflector"
-install_pacstrap_package "python3"
-install_pacstrap_package "rsync"
-install_pacstrap_package "nano"
-install_pacstrap_package "xdg-user-dirs"
-install_pacstrap_package "curl"
-install_pacstrap_package "wget"
-install_pacstrap_package "git"
+pacstrap /mnt base
+pacstrap /mnt base-devel
+pacstrap /mnt lsb-release
+pacstrap /mnt reflector python3 rsync
+pacstrap /mnt nano
+pacstrap /mnt xdg-user-dirs
+pacstrap /mnt curl
+pacstrap /mnt wget
+pacstrap /mnt git
 
 # Instalar herramientas específicas según el modo de particionado
 if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     echo -e "${CYAN}Instalando herramientas BTRFS...${NC}"
-    install_pacstrap_package "btrfs-progs"
+    pacstrap /mnt btrfs-progs
 elif [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${CYAN}Instalando herramientas de cifrado...${NC}"
-    install_pacstrap_package "cryptsetup lvm2"
+    pacstrap /mnt cryptsetup lvm2
 fi
 
 # Configurar montajes para chroot
@@ -2415,6 +2214,12 @@ cat /mnt/etc/pacman.d/mirrorlist
 sleep 3
 clear
 
+# Actualización del sistema instalado
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+cp /usr/share/arcrisgui/data/config/pacman.conf /mnt/etc/pacman.conf
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+sleep 5
 
 # Generar fstab
 if [ "$PARTITION_MODE" = "manual" ]; then
@@ -2534,35 +2339,30 @@ echo ""
 
 case "$SELECTED_KERNEL" in
     "linux")
-        install_pacman_packages "linux" "linux-firmware"
+        chroot /mnt /bin/bash -c "pacman -S linux linux-firmware --noconfirm"
         ;;
     "linux-hardened")
-        install_pacman_packages "linux-hardened" "linux-firmware"
+        chroot /mnt /bin/bash -c "pacman -S linux-hardened linux-firmware --noconfirm"
         ;;
     "linux-lts")
-        install_pacman_packages "linux-lts" "linux-firmware"
+        chroot /mnt /bin/bash -c "pacman -S linux-lts linux-firmware --noconfirm"
         ;;
     "linux-rt-lts")
-        install_pacman_packages "linux-rt-lts" "linux-firmware"
+        chroot /mnt /bin/bash -c "pacman -S linux-rt-lts linux-firmware --noconfirm"
         ;;
     "linux-zen")
-        install_pacman_packages "linux-zen" "linux-firmware"
+        chroot /mnt /bin/bash -c "pacman -S linux-zen linux-firmware --noconfirm"
         ;;
     *)
-        install_pacman_packages "linux" "linux-firmware"
+        chroot /mnt /bin/bash -c "pacman -S linux linux-firmware --noconfirm"
         ;;
 esac
 
 sleep 3
 clear
-# Actualización del sistema instalado
-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
-cp /usr/share/arcrisgui/data/config/pacman.conf /mnt/etc/pacman.conf
-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
 echo -e "${GREEN}✓ Instalanado extras${NC}"
-install_pacman_package "yay-bin"
-install_pacman_package "alsi"
+chroot /mnt pacman -S yay-bin --noconfirm
+chroot /mnt pacman -S alsi --noconfirm
 clear
 
 # Configuración del sistema
@@ -2610,7 +2410,7 @@ echo "$USER:$PASSWORD_USER" | chroot /mnt /bin/bash -c "chpasswd"
 
 
 # Configurar sudo
-install_pacman_package "sudo"
+chroot /mnt /bin/bash -c "pacman -S sudo --noconfirm"
 
 # Configuración temporal NOPASSWD para instalaciones
 echo -e "${GREEN}| Configurando permisos sudo temporales |${NC}"
@@ -2775,8 +2575,7 @@ if true; then
         mkdir -p /mnt/boot/efi/EFI
 
         echo -e "${CYAN}Instalando paquetes GRUB para UEFI...${NC}"
-        install_pacman_package "grub"
-        install_pacman_package "efibootmgr"
+        chroot /mnt /bin/bash -c "pacman -S grub efibootmgr --noconfirm"
 
         # Configuración específica según el modo de particionado ANTES de instalar
         echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
@@ -2878,7 +2677,7 @@ if true; then
         echo -e "${GREEN}✓ GRUB UEFI instalado correctamente${NC}"
     else
         echo -e "${CYAN}Instalando paquetes GRUB para BIOS...${NC}"
-        install_pacman_package "grub"
+        chroot /mnt /bin/bash -c "pacman -S grub --noconfirm"
 
         # Configuración específica según el modo de particionado ANTES de instalar
         echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
@@ -2993,8 +2792,8 @@ printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 # Instalar os-prober para detectar otros sistemas
 echo -e "${CYAN}Instalando os-prober...${NC}"
-install_yay_package "os-prober"
-install_yay_package "ntfs-3g"
+chroot /mnt /bin/bash -c "sudo -u $USER yay -S os-prober --noansweredit --noconfirm --needed"
+chroot /mnt /bin/bash -c "sudo -u $USER yay -S ntfs-3g --noansweredit --noconfirm --needed"
 echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
 sleep 2
 clear
@@ -3380,79 +3179,64 @@ case "$DRIVER_VIDEO" in
 
         if echo "$VGA_LINE" | grep -i nvidia > /dev/null; then
             echo "Detectado hardware NVIDIA - Instalando driver open source nouveau"
-            install_pacman_package "xf86-video-nouveau"
-            install_pacman_package "vulkan-nouveau"
-            install_pacman_package "lib32-vulkan-nouveau"
-            install_pacman_package "vulkan-tools"
-            install_pacman_package "mesa"
-            install_pacman_package "lib32-mesa"
-            install_pacman_package "opencl-mesa"
-            install_pacman_package "opencl-rusticl-mesa"
-            install_pacman_package "mesa-vdpau"
-            install_pacman_package "lib32-mesa-vdpau"
-            install_pacman_package "libva-mesa-driver"
-            install_pacman_package "lib32-libva-mesa-driver"
-            install_pacman_package "vdpauinfo"
-            install_pacman_package "vainfo"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-nouveau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-nouveau lib32-vulkan-nouveau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver lib32-libva-mesa-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
 
         elif echo "$VGA_LINE" | grep -i "amd\|radeon" > /dev/null; then
             echo "Detectado hardware AMD/Radeon - Instalando driver open source amdgpu"
-            install_pacman_package "xf86-video-amdgpu"
-            install_pacman_package "xf86-video-ati"
-            install_pacman_package "vulkan-radeon"
-            install_pacman_package "lib32-vulkan-radeon"
-            install_pacman_package "vulkan-tools"
-            install_pacman_package "mesa"
-            install_pacman_package "lib32-mesa"
-            install_pacman_package "opencl-mesa"
-            install_pacman_package "opencl-rusticl-mesa"
-            install_pacman_package "radeontop"
-            install_pacman_package "mesa-vdpau"
-            install_pacman_package "lib32-mesa-vdpau"
-            install_pacman_package "libva-mesa-driver"
-            install_pacman_package "lib32-libva-mesa-driver"
-            install_pacman_package "vdpauinfo"
-            install_pacman_package "vainfo"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-ati --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-radeon lib32-vulkan-radeon --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S radeontop --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver lib32-libva-mesa-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
 
         elif echo "$VGA_LINE" | grep -i intel > /dev/null; then
             echo "Detectado hardware Intel - Instalando driver open source intel"
-            install_pacman_package "mesa"
-            install_pacman_package "lib32-mesa"
-            install_pacman_package "vulkan-intel"
-            install_pacman_package "lib32-vulkan-intel"
-            install_pacman_package "vulkan-tools"
-            install_pacman_package "intel-media-driver"
-            install_pacman_package "libva-intel-driver"
-            install_pacman_package "opencl-mesa"
-            install_pacman_package "opencl-rusticl-mesa"
-            install_pacman_package "mesa-vdpau"
-            install_pacman_package "lib32-mesa-vdpau"
-            install_pacman_package "intel-gpu-tools"
-            install_pacman_package "vdpauinfo"
-            install_pacman_package "vainfo"
-            install_yay_package "intel-compute-runtime"
-            install_yay_package "intel-hybrid-codec-driver-git"
-            install_yay_package "vpl-gpu-rt"
+            chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-intel lib32-vulkan-intel --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S intel-media-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-intel-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S intel-gpu-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
+            chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-compute-runtime --noansweredit --noconfirm --needed"
+            chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-hybrid-codec-driver-git --noansweredit --noconfirm --needed"
+            chroot /mnt /bin/bash -c "sudo -u $USER yay -S vpl-gpu-rt --noansweredit --noconfirm --needed"
 
         elif echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
 
             echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
-            install_pacman_package "mesa"
-            install_pacman_package "lib32-mesa"
-            install_pacman_package "xf86-video-fbdev"
-            install_pacman_package "mesa-utils"
-            install_pacman_package "vulkan-mesa-layers"
-            install_pacman_package "vulkan-tools"
-            install_pacman_package "libva-mesa-driver"
-            install_pacman_package "mesa-vdpau"
-            install_pacman_package "lib32-libva-mesa-driver"
-            install_pacman_package "lib32-mesa-vdpau"
-            install_pacman_package "spice-vdagent"
-            install_pacman_package "xf86-video-qxl"
-            install_pacman_package "qemu-guest-agent"
-            install_pacman_package "virglrenderer"
-            install_pacman_package "libgl"
-            install_pacman_package "libglvnd"
+
+            chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-fbdev --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
+
+            chroot /mnt /bin/bash -c "pacman -S spice-vdagent --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libgl --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libglvnd --noconfirm"
             chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
             chroot /mnt /bin/bash -c "systemctl start qemu-guest-agent.service"
 
@@ -3460,141 +3244,133 @@ case "$DRIVER_VIDEO" in
 
         elif echo "$VGA_LINE" | grep -i virtualbox > /dev/null; then
             echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
-            install_pacman_package "mesa"
-            install_pacman_package "lib32-mesa"
-            install_pacman_package "mesa-utils"
-            install_pacman_package "vulkan-mesa-layers"
-            install_pacman_package "vulkan-tools"
-            install_pacman_package "libva-mesa-driver"
-            install_pacman_package "mesa-vdpau"
-            install_pacman_package "lib32-libva-mesa-driver"
-            install_pacman_package "lib32-mesa-vdpau"
-            install_pacman_package "virtualbox-guest-utils"
-            install_pacman_package "virglrenderer"
+
+            chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
+
+            chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
             echo "Detectado VMware - Instalando driver vmware"
-            install_pacman_package "mesa"
-            install_pacman_package "lib32-mesa"
-            install_pacman_package "mesa-utils"
-            install_pacman_package "vulkan-mesa-layers"
-            install_pacman_package "vulkan-tools"
-            install_pacman_package "libva-mesa-driver"
-            install_pacman_package "mesa-vdpau"
-            install_pacman_package "lib32-libva-mesa-driver"
-            install_pacman_package "lib32-mesa-vdpau"
-            install_pacman_package "virtualbox-guest-utils"
-            install_pacman_package "virglrenderer"
+            echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
+
+            chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
+
+            chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"
-            install_pacman_package "xorg-server"
-            install_pacman_package "xorg-xinit"
-            install_pacman_package "xf86-video-vesa"
-            install_pacman_package "mesa"
-            install_pacman_package "lib32-mesa"
-            install_pacman_package "mesa-utils"
-            install_pacman_package "vulkan-mesa-layers"
-            install_pacman_package "vulkan-tools"
-            install_pacman_package "libva-mesa-driver"
-            install_pacman_package "mesa-vdpau"
-            install_pacman_package "lib32-libva-mesa-driver"
-            install_pacman_package "lib32-mesa-vdpau"
+            chroot /mnt /bin/bash -c "pacman -S xorg-server --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xorg-xinit --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa --noconfirm"
+
+            chroot /mnt /bin/bash -c "pacman -S mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
         fi
         ;;
     "nvidia")
         echo "Instalando driver NVIDIA para kernel linux"
-        install_pacman_package "mesa"
-        install_pacman_package "lib32-mesa"
-        install_yay_package "nvidia"
-        install_yay_package "nvidia-utils"
-        install_yay_package "lib32-nvidia-utils"
-        install_yay_package "nvidia-settings"
-        install_yay_package "opencl-nvidia"
-        install_yay_package "lib32-opencl-nvidia"
+        chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noansweredit --noconfirm --needed"
+
         ;;
     "nvidia-lts")
         echo "Instalando driver NVIDIA para kernel LTS"
-        install_pacman_package "mesa"
-        install_pacman_package "lib32-mesa"
-        install_yay_package "nvidia-lts"
-        install_yay_package "nvidia-settings"
-        install_yay_package "lib32-nvidia-utils"
-        install_yay_package "opencl-nvidia"
-        install_yay_package "lib32-opencl-nvidia"
+        chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-lts --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noansweredit --noconfirm --needed"
         ;;
     "nvidia-dkms")
         echo "Instalando driver NVIDIA DKMS"
-        install_pacman_package "mesa"
-        install_pacman_package "lib32-mesa"
-        install_yay_package "nvidia-dkms"
-        install_yay_package "nvidia-utils"
-        install_yay_package "nvidia-settings"
-        install_yay_package "lib32-nvidia-utils"
-        install_yay_package "opencl-nvidia"
-        install_yay_package "lib32-opencl-nvidia"
+        chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-dkms --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noansweredit --noconfirm --needed"
         ;;
     "nvidia-470xx-dkms")
         echo "Instalando driver NVIDIA serie 470.xx con DKMS"
-        install_pacman_package "mesa"
-        install_pacman_package "lib32-mesa"
-        install_yay_package "nvidia-470xx-dkms"
-        install_yay_package "nvidia-470xx-utils"
-        install_yay_package "opencl-nvidia-470xx"
-        install_yay_package "nvidia-470xx-settings"
-        install_yay_package "lib32-nvidia-470xx-utils"
-        install_yay_package "lib32-opencl-nvidia-470xx"
-        install_yay_package "mhwd-nvidia-470xx"
+        chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-dkms --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia-470xx --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-settings --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-470xx-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia-470xx --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S mhwd-nvidia-470xx --noansweredit --noconfirm --needed"
         ;;
     "nvidia-390xx-dkms")
         echo "Instalando driver NVIDIA serie 390.xx con DKMS (hardware antiguo)"
-        install_pacman_package "mesa"
-        install_pacman_package "lib32-mesa"
-        install_yay_package "nvidia-390xx-dkms"
-        install_yay_package "nvidia-390xx-utils"
-        install_yay_package "opencl-nvidia-390xx"
-        install_yay_package "lib32-nvidia-390xx-utils"
-        install_yay_package "lib32-opencl-nvidia-390xx"
-        install_yay_package "nvidia-390xx-settings"
-        install_yay_package "mhwd-nvidia-390xx"
+        chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-dkms --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia-390xx --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-390xx-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia-390xx --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-settings --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S mhwd-nvidia-390xx --noansweredit --noconfirm --needed"
         ;;
     "AMD Private")
         echo "Instalando drivers privativos de AMDGPUPRO"
-        install_pacman_package "xf86-video-amdgpu"
-        install_pacman_package "mesa"
-        install_pacman_package "lib32-mesa"
-        install_pacman_package "vulkan-radeon"
-        install_pacman_package "lib32-vulkan-radeon"
-        install_pacman_package "vulkan-tools"
-        install_pacman_package "radeontop"
-        install_pacman_package "vdpauinfo"
-        install_pacman_package "vainfo"
-        install_yay_package "amf-amdgpu-pro"
-        install_yay_package "amdgpu-pro-oglp"
-        install_yay_package "lib32-amdgpu-pro-oglp"
-        install_yay_package "vulkan-amdgpu-pro"
-        install_yay_package "lib32-vulkan-amdgpu-pro"
-        install_yay_package "opencl-amd"
+        chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S vulkan-radeon lib32-vulkan-radeon vulkan-tools --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S radeontop --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S amf-amdgpu-pro --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S amdgpu-pro-oglp --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-amdgpu-pro-oglp --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S vulkan-amdgpu-pro --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-vulkan-amdgpu-pro --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-amd --noansweredit --noconfirm --needed"
         ;;
     "Intel Gen(4-9)")
         echo "Instalando drivers Modernos de Intel"
-        install_pacman_package "mesa"
-        install_pacman_package "lib32-mesa"
-        install_pacman_package "xf86-video-intel"
-        install_pacman_package "vulkan-intel"
-        install_pacman_package "lib32-vulkan-intel"
-        install_pacman_package "vulkan-tools"
-        install_pacman_package "intel-media-driver"
-        install_pacman_package "libva-intel-driver"
-        install_pacman_package "opencl-mesa"
-        install_pacman_package "opencl-rusticl-mesa"
-        install_pacman_package "mesa-vdpau"
-        install_pacman_package "lib32-mesa-vdpau"
-        install_pacman_package "intel-gpu-tools"
-        install_pacman_package "vdpauinfo"
-        install_pacman_package "vainfo"
+        chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S xf86-video-intel --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S vulkan-intel lib32-vulkan-intel --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S intel-media-driver --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S libva-intel-driver --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S intel-gpu-tools --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
         ;;
     "Máquina Virtual")
 
@@ -3604,70 +3380,70 @@ case "$DRIVER_VIDEO" in
 
         if  echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
             echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
-            install_pacman_package "mesa"
-            install_pacman_package "lib32-mesa"
-            install_pacman_package "xf86-video-fbdev"
-            install_pacman_package "mesa-utils"
-            install_pacman_package "vulkan-mesa-layers"
-            install_pacman_package "vulkan-tools"
-            install_pacman_package "libva-mesa-driver"
-            install_pacman_package "mesa-vdpau"
-            install_pacman_package "lib32-libva-mesa-driver"
-            install_pacman_package "lib32-mesa-vdpau"
+            chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-fbdev --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
 
-            install_pacman_package "spice-vdagent"
-            install_pacman_package "xf86-video-qxl"
-            install_pacman_package "qemu-guest-agent"
-            install_pacman_package "virglrenderer"
-            install_pacman_package "libgl"
-            install_pacman_package "libglvnd"
+            chroot /mnt /bin/bash -c "pacman -S spice-vdagent --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libgl --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libglvnd --noconfirm"
             chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
             chroot /mnt /bin/bash -c "systemctl start qemu-guest-agent.service"
 
 
         elif echo "$VGA_LINE" | grep -i virtualbox > /dev/null; then
             echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
-            install_pacman_package "mesa"
-            install_pacman_package "lib32-mesa"
-            install_pacman_package "mesa-utils"
-            install_pacman_package "vulkan-mesa-layers"
-            install_pacman_package "vulkan-tools"
-            install_pacman_package "libva-mesa-driver"
-            install_pacman_package "mesa-vdpau"
-            install_pacman_package "lib32-libva-mesa-driver"
-            install_pacman_package "lib32-mesa-vdpau"
+            chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
 
-            install_pacman_package "virtualbox-guest-utils"
-            install_pacman_package "virglrenderer"
+            chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
             echo "Detectado VMware - Instalando driver vmware"
-            install_pacman_package "mesa"
-            install_pacman_package "lib32-mesa"
-            install_pacman_package "mesa-utils"
-            install_pacman_package "vulkan-mesa-layers"
-            install_pacman_package "vulkan-tools"
-            install_pacman_package "libva-mesa-driver"
-            install_pacman_package "mesa-vdpau"
-            install_pacman_package "lib32-libva-mesa-driver"
-            install_pacman_package "lib32-mesa-vdpau"
+            chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
 
-            install_pacman_package "virtualbox-guest-utils"
-            install_pacman_package "virglrenderer"
+            chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"
-            install_pacman_package "mesa"
-            install_pacman_package "lib32-mesa"
-            install_pacman_package "mesa-utils"
-            install_pacman_package "vulkan-mesa-layers"
-            install_pacman_package "vulkan-tools"
-            install_pacman_package "libva-mesa-driver"
-            install_pacman_package "mesa-vdpau"
-            install_pacman_package "lib32-libva-mesa-driver"
-            install_pacman_package "lib32-mesa-vdpau"
+            chroot /mnt /bin/bash -c "pacman -S mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
         fi
         ;;
 esac
@@ -3681,25 +3457,20 @@ echo ""
 
 case "$DRIVER_AUDIO" in
     "Alsa Audio")
-        install_pacman_package "alsa-utils"
-        install_pacman_package "alsa-plugins"
+        chroot /mnt /bin/bash -c "pacman -S alsa-utils alsa-plugins --noconfirm"
         ;;
     "pipewire")
-        install_pacman_package "pipewire"
-        install_pacman_package "pipewire-pulse"
-        install_pacman_package "pipewire-alsa"
+        chroot /mnt /bin/bash -c "pacman -S pipewire pipewire-pulse pipewire-alsa --noconfirm"
         ;;
     "pulseaudio")
-        install_pacman_package "pulseaudio"
-        install_pacman_package "pulseaudio-alsa"
-        install_pacman_package "pavucontrol"
+        chroot /mnt /bin/bash -c "pacman -S pulseaudio pulseaudio-alsa pavucontrol --noconfirm"
         ;;
     "Jack2")
-        install_pacman_package "jack2"
-        install_pacman_package "lib32-jack2"
-        install_pacman_package "jack2-dbus"
-        install_pacman_package "carla"
-        install_pacman_package "qjackctl"
+        chroot /mnt /bin/bash -c "pacman -S jack2 --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S lib32-jack2 --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S jack2-dbus --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S carla --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S qjackctl --noconfirm"
         ;;
 esac
 
@@ -3715,26 +3486,26 @@ case "$DRIVER_WIFI" in
         echo "Sin drivers de WiFi"
         ;;
     "Open Source")
-        install_pacman_package "networkmanager"
-        install_pacman_package "wpa_supplicant"
-        install_pacman_package "wireless_tools"
-        install_pacman_package "iw"
+        chroot /mnt /bin/bash -c "pacman -S networkmanager --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S wpa_supplicant --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S wireless_tools --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S iw --noconfirm"
         ;;
     "broadcom-wl")
-        install_pacman_package "networkmanager"
-        install_pacman_package "wpa_supplicant"
-        install_pacman_package "wireless_tools"
-        install_pacman_package "iw"
-        install_pacman_package "broadcom-wl"
+        chroot /mnt /bin/bash -c "pacman -S networkmanager --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S wpa_supplicant --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S wireless_tools --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S iw --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S broadcom-wl networkmanager --noconfirm"
         ;;
     "Realtek")
-        install_pacman_package "networkmanager"
-        install_pacman_package "wpa_supplicant"
-        install_pacman_package "wireless_tools"
-        install_pacman_package "iw"
-        install_yay_package "rtl8821cu-dkms-git"
-        install_yay_package "rtl8821ce-dkms-git"
-        install_yay_package "rtw88-dkms-git"
+        chroot /mnt /bin/bash -c "pacman -S networkmanager --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S wpa_supplicant --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S wireless_tools --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S iw --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtl8821cu-dkms-git --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtl8821ce-dkms-git --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtw88-dkms-git --noansweredit --noconfirm --needed"
         ;;
 esac
 
@@ -3750,14 +3521,11 @@ case "$DRIVER_BLUETOOTH" in
         echo "Sin soporte Bluetooth"
         ;;
     "bluetoothctl (terminal)")
-        install_pacman_package "bluez"
-        install_pacman_package "bluez-utils"
+        chroot /mnt /bin/bash -c "pacman -S bluez bluez-utils --noconfirm"
         chroot /mnt /bin/bash -c "systemctl enable bluetooth" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
         ;;
     "blueman (Graphical)")
-        install_pacman_package "bluez"
-        install_pacman_package "bluez-utils"
-        install_pacman_package "blueman"
+        chroot /mnt /bin/bash -c "pacman -S bluez bluez-utils blueman --noconfirm"
         chroot /mnt /bin/bash -c "systemctl enable bluetooth" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
         ;;
 esac
@@ -3770,11 +3538,7 @@ clear
 echo -e "${GREEN}| Instalando herramientas de red |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
-install_pacman_package "dhcp"
-install_pacman_package "dhcpcd"
-install_pacman_package "dhclient"
-install_pacman_package "networkmanager"
-install_pacman_package "wpa_supplicant"
+chroot /mnt /bin/bash -c "pacman -S dhcp dhcpcd dhclient networkmanager wpa_supplicant --noconfirm"
 # Deshabilitar dhcpcd para evitar conflictos con NetworkManager
 chroot /mnt /bin/bash -c "systemctl enable dhcpcd" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 chroot /mnt /bin/bash -c "systemctl enable NetworkManager" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
@@ -3985,10 +3749,6 @@ fi
 
 clear
 # Actualizar base de datos de paquetes
-# Actualizar base de datos de paquetes con reintento
-while ! check_internet; do
-    wait_for_internet
-done
 chroot /mnt /bin/bash -c "pacman -Sy"
 
 clear
@@ -4007,79 +3767,77 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar X.org como base para todos los escritorios
         echo -e "${CYAN}Instalando servidor X.org...${NC}"
-        install_yay_package "xorg-server"
-        install_yay_package "xorg-server-common"
-        install_yay_package "xorg-xinit"
-        install_yay_package "xorg-xauth"
-        install_yay_package "xorg-xsetroot"
-        install_yay_package "xorg-xrandr"
-        install_yay_package "xorg-setxkbmap"
-        install_yay_package "xorg-xrdb"
-        install_yay_package "xorg-xwayland"
-        install_yay_package "ffmpegthumbs"
-        install_yay_package "ffmpegthumbnailer"
-        install_yay_package "freetype2"
-        install_yay_package "poppler-glib"
-        install_yay_package "libgsf"
-        install_yay_package "libnotify"
-        install_yay_package "tumbler"
-        install_yay_package "gdk-pixbuf2"
-        install_yay_package "fontconfig"
-        install_yay_package "gvfs"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server-common --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xsetroot --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xrandr --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-setxkbmap --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xrdb --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xwayland --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbnailer --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S freetype2 --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S poppler-glib --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S libgsf --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S libnotify --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs --noansweredit --noconfirm --needed"
 
         case "$DESKTOP_ENVIRONMENT" in
             "GNOME")
                 echo -e "${CYAN}Instalando GNOME Desktop...${NC}"
-                install_yay_package "gdm"
-                install_yay_package "gnome-session"
-                install_yay_package "gnome-settings-daemon"
-                install_yay_package "gnome-shell"
-                install_yay_package "gnome-control-center"
-                install_yay_package "nautilus"
-                install_yay_package "gvfs"
-                install_yay_package "gvfs-goa"
-                install_yay_package "gnome-console"
-                install_yay_package "gnome-text-editor"
-                install_yay_package "gnome-calculator"
-                install_yay_package "gnome-system-monitor"
-                install_yay_package "gnome-disk-utility"
-                install_yay_package "baobab"
-                install_yay_package "dconf-editor"
-                install_yay_package "gnome-themes-extra"
-                install_yay_package "gnome-tweaks"
-                install_yay_package "gnome-backgrounds"
-                install_yay_package "gnome-keyring"
-                install_yay_package "gnome-user-docs"
-                install_yay_package "gnome-software"
-                install_yay_package "xdg-desktop-portal-gnome"
-                install_yay_package "gnome-shell-extensions"
-                install_yay_package "gnome-browser-connector"
-                install_yay_package "loupe"
-                install_yay_package "showtime"
-                install_yay_package "papers"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-session --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-settings-daemon --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-shell --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-control-center --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S nautilus --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs gvfs-goa --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-text-editor --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-calculator --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-system-monitor --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-disk-utility --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S baobab --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S dconf-editor --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-themes-extra --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-tweaks --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-backgrounds --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-user-docs --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-software --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-gnome --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-shell-extensions --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-browser-connector --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
                 echo "Installing extension-manager..."
-                install_yay_package "extension-manager"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S extension-manager --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable gdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
                 ;;
             "BUDGIE")
                 echo -e "${CYAN}Instalando Budgie Desktop...${NC}"
-                install_yay_package "budgie-desktop"
-                install_yay_package "budgie-extras"
-                install_yay_package "budgie-desktop-view"
-                install_yay_package "budgie-backgrounds"
-                install_yay_package "network-manager-applet"
-                install_yay_package "materia-gtk-theme"
-                install_yay_package "papirus-icon-theme"
-                install_yay_package "nautilus"
-                install_yay_package "gvfs"
-                install_yay_package "gvfs-goa"
-                install_yay_package "gnome-console"
-                install_yay_package "loupe"
-                install_yay_package "showtime"
-                install_yay_package "papers"
-                install_yay_package "lightdm"
-                install_yay_package "lightdm-slick-greeter"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S budgie-desktop --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S budgie-extras --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S budgie-desktop-view --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S budgie-backgrounds --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S materia-gtk-theme --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papirus-icon-theme --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S nautilus --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs gvfs-goa --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4087,33 +3845,33 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_package "accountsservice"
-                install_yay_package "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "CINNAMON")
                 echo -e "${CYAN}Instalando Cinnamon Desktop...${NC}"
-                install_yay_package "cinnamon"
-                install_yay_package "cinnamon-translations"
-                install_yay_package "engrampa"
-                install_yay_package "gvfs-smb"
-                install_yay_package "bibata-cursor-theme"
-                install_yay_package "hicolor-icon-theme"
-                install_yay_package "mint-backgrounds"
-                install_yay_package "mint-themes"
-                install_yay_package "mint-x-icons"
-                install_yay_package "mint-y-icons"
-                install_yay_package "mintlocale"
-                install_yay_package "cinnamon-control-center"
-                install_yay_package "xed"
-                install_yay_package "loupe"
-                install_yay_package "showtime"
-                install_yay_package "papers"
-                install_yay_package "gnome-console"
-                install_yay_package "gnome-screenshot"
-                install_yay_package "gnome-keyring"
-                install_yay_package "lightdm"
-                install_yay_package "lightdm-slick-greeter"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cinnamon --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cinnamon-translations --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S engrampa --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs-smb --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S bibata-cursor-theme --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hicolor-icon-theme --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mint-backgrounds --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mint-themes --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mint-x-icons --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mint-y-icons --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mintlocale --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cinnamon-control-center --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xed --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-screenshot --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4121,32 +3879,32 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_package "accountsservice"
-                install_yay_package "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "CUTEFISH")
                 echo -e "${CYAN}Instalando CUTEFISH Desktop...${NC}"
-                install_yay_package "cutefish"
-                install_yay_package "polkit-kde-agent"
-                install_yay_package "loupe"
-                install_yay_package "showtime"
-                install_yay_package "papers"
-                install_yay_package "lightdm"
-                install_yay_package "gnome-console"
-                install_yay_package "sddm"
-                install_yay_package "sddm-kcm"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cutefish --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S polkit-kde-agent --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm-kcm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable sddm"
                 ;;
             "UKUI")
                 echo -e "${CYAN}Instalando UKUI Desktop...${NC}"
-                install_yay_package "ukui"
-                install_yay_package "gnome-keyring"
-                install_yay_package "loupe"
-                install_yay_package "showtime"
-                install_yay_package "papers"
-                install_yay_package "lightdm"
-                install_yay_package "lightdm-slick-greeter"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S ukui --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4154,19 +3912,19 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_package "accountsservice"
-                install_yay_package "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "PANTHEON")
                 echo -e "${CYAN}Instalando PANTHEON Desktop...${NC}"
-                install_yay_package "pantheon"
-                install_yay_package "loupe"
-                install_yay_package "showtime"
-                install_yay_package "papers"
-                install_yay_package "gnome-console"
-                install_yay_package "lightdm"
-                install_yay_package "lightdm-pantheon-greeter"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S pantheon --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-pantheon-greeter --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 chroot /mnt /bin/bash -c "pacman -Rdd orca onboard --noconfirm"
                 sed -i '$d' /mnt/etc/lightdm/Xsession
@@ -4174,12 +3932,12 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "ENLIGHTENMENT")
                 echo -e "${CYAN}Instalando Enlightenment Desktop...${NC}"
-                install_yay_package "enlightenment"
-                install_yay_package "terminology"
-                install_yay_package "evisum"
-                install_yay_package "econnman"
-                install_yay_package "lightdm"
-                install_yay_package "lightdm-slick-greeter"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S enlightenment --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S terminology --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S evisum --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S econnman --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4187,58 +3945,58 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_package "accountsservice"
-                install_yay_package "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "KDE")
                 echo -e "${CYAN}Instalando KDE Plasma Desktop...${NC}"
-                install_yay_package "plasma-desktop"
-                install_yay_package "plasma-workspace"
-                install_yay_package "plasma-systemmonitor"
-                install_yay_package "plasma-framework5"
-                install_yay_package "kwin"
-                install_yay_package "systemsettings"
-                install_yay_package "discover"
-                install_yay_package "flatpak"
-                install_yay_package "breeze"
-                install_yay_package "polkit-kde-agent"
-                install_yay_package "powerdevil"
-                install_yay_package "plasma-pa"
-                install_yay_package "plasma-nm"
-                install_yay_package "konsole"
-                install_yay_package "dolphin"
-                install_yay_package "kate"
-                install_yay_package "spectacle"
-                install_yay_package "ark"
-                install_yay_package "kcalc"
-                install_yay_package "gwenview"
-                install_yay_package "okular"
-                install_yay_package "kdeconnect"
-                install_yay_package "kde-gtk-config"
-                install_yay_package "kdeplasma-addons"
-                install_yay_package "kdegraphics-thumbnailers"
-                install_yay_package "kscreen"
-                install_yay_package "kinfocenter"
-                install_yay_package "breeze-gtk"
-                install_yay_package "xdg-desktop-portal-kde"
-                install_yay_package "ffmpegthumbs"
-                install_yay_package "plasma-wayland-session"
-                install_yay_package "plasma-x11-session"
-                install_yay_package "sddm"
-                install_yay_package "sddm-kcm"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-desktop --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-workspace --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-systemmonitor --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-framework5 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kwin --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S systemsettings --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S discover --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S flatpak --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S polkit-kde-agent --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S powerdevil --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-pa --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-nm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S konsole --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S dolphin --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kate --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S spectacle --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S ark --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kcalc --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gwenview --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S okular --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kdeconnect --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kde-gtk-config --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kdeplasma-addons --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kdegraphics-thumbnailers --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kscreen --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kinfocenter --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze-gtk --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-kde --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-wayland-session --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-x11-session --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm-kcm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable sddm"
                 ;;
             "LXDE")
                 echo -e "${CYAN}Instalando LXDE Desktop...${NC}"
-                install_yay_package "lxde"
-                install_yay_package "lxde-common"
-                install_yay_package "lxsession"
-                install_yay_package "lxappearance"
-                install_yay_package "lxappearance-obconf"
-                install_yay_package "lxpanel"
-                install_yay_package "lightdm"
-                install_yay_package "lightdm-slick-greeter"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxde --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxde-common --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxsession --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxappearance --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxappearance-obconf --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxpanel --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4246,48 +4004,52 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_package "accountsservice"
-                install_yay_package "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "LXQT")
                 echo -e "${CYAN}Instalando LXQt Desktop...${NC}"
+                #chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt --noansweredit --noconfirm --needed"
+                #chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze-icons --noansweredit --noconfirm --needed"
+                #chroot /mnt /bin/bash -c "sudo -u $USER yay -S nm-tray --noansweredit --noconfirm --needed"
+                #chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt-wayland-session --noansweredit --noconfirm --needed"
+                #chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
+                #chroot /mnt /bin/bash -c "systemctl enable sddm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 # Instalar compositor
-                install_pacman_package "labwc"
+                chroot /mnt /bin/bash -c "pacman -S labwc --noconfirm"
                 # Dependencias base
-                install_pacman_package "wayland"
-                install_pacman_package "wlroots"
-                install_pacman_package "xdg-desktop-portal-wlr"
+                chroot /mnt /bin/bash -c "pacman -S wayland wlroots --noconfirm"
+                chroot /mnt /bin/bash -c "pacman -S xdg-desktop-portal-wlr --noconfirm"
                 # LXQt y componentes
-                install_yay_package "lxqt"
-                install_yay_package "lxqt-wayland-session"
-                install_yay_package "breeze-icons"
-                install_yay_package "leafpad"
-                install_yay_package "slock"
-                install_yay_package "nm-tray"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt-wayland-session --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze-icons --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S leafpad --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S slock --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S nm-tray --noconfirm --needed"
                 # Display manager
-                install_yay_package "sddm"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable sddm"
                 # Herramientas adicionales
-                install_yay_package "qterminal"
-                install_yay_package "wofi"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S qterminal wofi --noconfirm --needed"
                 ;;
             "MATE")
                 echo -e "${CYAN}Instalando MATE Desktop...${NC}"
-                install_yay_package "mate"
-                install_yay_package "mate-extra"
-                install_yay_package "mate-applet-dock"
-                install_yay_package "mate-menu"
-                install_yay_package "mate-tweak"
-                install_yay_package "brisk-menu"
-                install_yay_package "mate-control-center"
-                install_yay_package "network-manager-applet"
-                install_yay_package "loupe"
-                install_yay_package "clapper"
-                install_yay_package "mate-power-manager"
-                install_yay_package "mate-themes"
-                install_yay_package "lightdm"
-                install_yay_package "lightdm-slick-greeter"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-extra --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-applet-dock --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-menu --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-tweak --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S brisk-menu --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-control-center --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-power-manager --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-themes --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4295,31 +4057,31 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_package "accountsservice"
-                install_yay_package "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "XFCE4")
                 echo -e "${CYAN}Instalando XFCE4 Desktop...${NC}"
-                install_yay_package "xfce4"
-                install_yay_package "xfce4-goodies"
-                install_yay_package "network-manager-applet"
-                install_yay_package "loupe"
-                install_yay_package "showtime"
-                install_yay_package "papers"
-                install_yay_package "pavucontrol"
-                install_pacman_package "gnome-keyring"
-                install_pacman_package "light-locker"
-                install_pacman_package "xfce4-screensaver"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4-goodies --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S pavucontrol --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S gnome-keyring --noconfirm"
+                chroot /mnt /bin/bash -c "pacman -S light-locker --noconfirm"
+                chroot /mnt /bin/bash -c "pacman -S xfce4-screensaver --noconfirm"
+                xscreensaver
                 # Instalar compositor
-                install_pacman_package "labwc"
+                chroot /mnt /bin/bash -c "pacman -S labwc --noconfirm"
                 # Dependencias base
-                install_pacman_package "wayland"
-                install_pacman_package "wlroots"
-                install_pacman_package "xdg-desktop-portal-wlr"
+                chroot /mnt /bin/bash -c "pacman -S wayland wlroots --noconfirm"
+                chroot /mnt /bin/bash -c "pacman -S xdg-desktop-portal-wlr --noconfirm"
                 # lightdm
-                install_yay_package "lightdm"
-                install_yay_package "lightdm-slick-greeter"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4327,12 +4089,18 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_package "accountsservice"
-                install_yay_package "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             *)
                 echo -e "${YELLOW}Entorno de escritorio no reconocido: $DESKTOP_ENVIRONMENT${NC}"
+                echo -e "${CYAN}Instalando XFCE4 como alternativa...${NC}"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4-goodies --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
         esac
         ;;
@@ -4341,52 +4109,53 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar X.org y dependencias base para gestores de ventanas
         echo -e "${CYAN}Instalando servidor X.org y dependencias base...${NC}"
-        install_yay_package "xorg-server"
-        install_yay_package "xorg-xinit"
-        install_yay_package "xorg-xauth"
-        install_yay_package "xorg-xrandr"
-        install_yay_package "xsel"
-        install_yay_package "xterm"
-        install_yay_package "dmenu"
-        install_yay_package "wofi"
-        install_yay_package "nemo"
-        install_yay_package "dunst"
-        install_yay_package "nano"
-        install_yay_package "vim"
-        install_yay_package "pulseaudio"
-        install_yay_package "pavucontrol"
-        install_yay_package "nitrogen"
-        install_yay_package "feh"
-        install_yay_package "network-manager-applet"
-        install_yay_package "lm_sensors"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xrandr --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xsel --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xterm --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S dmenu --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S wofi --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nemo --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S dunst --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nano  --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S vim --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S pulseaudio  --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S pavucontrol --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nitrogen  --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S feh --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lm_sensors --noansweredit --noconfirm --needed"
 
-        install_yay_package "ffmpegthumbs"
-        install_yay_package "ffmpegthumbnailer"
-        install_yay_package "freetype2"
-        install_yay_package "poppler-glib"
-        install_yay_package "libgsf"
-        install_yay_package "tumbler"
-        install_yay_package "gdk-pixbuf2"
-        install_yay_package "fontconfig"
-        install_yay_package "gvfs"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbnailer --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S freetype2 --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S poppler-glib --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S libgsf --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs --noansweredit --noconfirm --needed"
 
         # Instalar herramientas adicionales para gestores de ventanas
         echo -e "${CYAN}Instalando Terminales...${NC}"
-        install_yay_package "alacritty"
-        install_yay_package "kitty"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S alacritty --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S kitty --noansweredit --noconfirm --needed"
+
 
         # Instalar Ly display manager
         echo -e "${CYAN}Instalando Ly display manager...${NC}"
-        install_yay_package "ly"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S ly --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "systemctl enable ly" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         case "$WINDOW_MANAGER" in
             "I3WM"|"I3")
                 echo -e "${CYAN}Instalando i3 Window Manager...${NC}"
-                install_yay_package "i3-wm"
-                install_yay_package "i3status"
-                install_yay_package "i3lock"
-                install_yay_package "i3blocks"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3-wm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3status --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3lock --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noansweredit --noconfirm --needed"
                 # Crear configuración básica de i3
                 mkdir -p /mnt/home/$USER/.config/i3
                 chroot /mnt /bin/bash -c "install -Dm644 /etc/i3/config /home/$USER/.config/i3/config"
@@ -4394,9 +4163,9 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "AWESOME")
                 echo -e "${CYAN}Instalando Awesome Window Manager...${NC}"
-                install_yay_package "awesome"
-                install_yay_package "vicious"
-                install_yay_package "slock"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S awesome --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S vicious --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S slock --noansweredit --noconfirm --needed"
                 # Crear configuración básica de awesome
                 mkdir -p /mnt/home/$USER/.config/awesome
                 chroot /mnt /bin/bash -c "install -Dm755 /etc/xdg/awesome/rc.lua /home/$USER/.config/awesome/rc.lua"
@@ -4404,10 +4173,10 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "BSPWM")
                 echo -e "${CYAN}Instalando BSPWM Window Manager...${NC}"
-                install_yay_package "bspwm"
-                install_yay_package "sxhkd"
-                install_yay_package "slock"
-                install_yay_package "polybar"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S bspwm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sxhkd --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S slock --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S polybar --noansweredit --noconfirm --needed"
                 # Crear configuración básica de bspwm
                 mkdir -p /mnt/home/$USER/.config/bspwm
                 mkdir -p /mnt/home/$USER/.config/sxhkd
@@ -4420,38 +4189,38 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "DWM")
                 echo -e "${CYAN}Instalando DWM Window Manager...${NC}"
-                install_yay_package "dwm"
-                install_yay_package "st"
-                install_yay_package "slock"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S dwm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S st --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S slock --noansweredit --noconfirm --needed"
                 ;;
             "DWL")
                 echo -e "${CYAN}Instalando DWL Wayland Compositor...${NC}"
 
                 # Instalar dependencias necesarias
                 echo -e "${YELLOW}Instalando dependencias...${NC}"
-                install_pacman_package "base-devel"
-                install_pacman_package "wlroots0.18"
-                install_pacman_package "tllist"
-                install_pacman_package "foot"
-                install_pacman_package "mako"
-                install_pacman_package "wl-clipboard"
-                install_pacman_package "jq"
-                install_pacman_package "git"
-                install_pacman_package "wayland"
-                install_pacman_package "wayland-protocols"
-                install_pacman_package "pixman"
-                install_pacman_package "libxkbcommon-x11"
-                install_pacman_package "libxkbcommon"
-                install_pacman_package "slurp"
-                install_pacman_package "grim"
-                install_pacman_package "wofi"
-                install_pacman_package "waybar"
-                install_pacman_package "libinput"
-                install_pacman_package "pkg-config"
-                install_pacman_package "fcft"
-                install_pacman_package "pixman"
-                install_pacman_package "wbg"
-                install_pacman_package "dwl"
+                chroot /mnt /bin/bash -c "pacman -S base-devel --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wlroots0.18 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S tllist --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S foot --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S mako --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wl-clipboard --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S jq --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S git --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wayland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wayland-protocols --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S pixman --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S libxkbcommon-x11 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S libxkbcommon --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S slurp --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S grim --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wofi --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S waybar --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S libinput --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S pkg-config --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S fcft --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S pixman --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wbg --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S dwl --noansweredit --noconfirm --needed"
 
                 # Instalar DWL desde AUR
                 chroot /mnt /bin/bash -c "sudo -u $USER git clone https://github.com/dcalonge/dwl ; cd dwl ; sudo -u $USER make install"
@@ -4465,25 +4234,24 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "HYPRLAND")
                 echo -e "${CYAN}Instalando Hyprland Window Manager...${NC}"
-                install_pacman_package "wayland"
-                install_pacman_package "wlroots"
-                install_yay_package "hyprland"
-                install_yay_package "waybar"
-                install_yay_package "wofi"
-                install_yay_package "nwg-displays"
-                install_yay_package "xdg-desktop-portal-wlr"
-                install_yay_package "xdg-desktop-portal-hyprland"
-                install_yay_package "xdg-desktop-portal-gtk"
-                install_yay_package "hyprpaper"
-                install_yay_package "hyprpicker"
-                install_yay_package "hypridle"
-                install_yay_package "hyprcursor"
-                install_yay_package "hyprpolkitagent"
-                install_yay_package "hyprsunset"
-                install_yay_package "grim"
-                install_yay_package "qt5-wayland"
-                install_yay_package "qt6-wayland"
-                install_yay_package "xdg-desktop-portal-hyprland"
+                chroot /mnt /bin/bash -c "pacman -S wayland wlroots --noconfirm"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S waybar --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S wofi --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S nwg-displays --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-wlr --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-hyprland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-gtk --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprpaper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprpicker --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hypridle  --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprcursor --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprpolkitagent --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprsunset --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S grim --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S qt5-wayland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S qt6-wayland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-hyprland --noansweredit --noconfirm --needed"
                 # Crear configuración básica de hyprland
                 mkdir -p /mnt/home/$USER/.config/hypr
                 chroot /mnt /bin/bash -c "install -Dm644 /usr/share/hypr/hyprland.conf /home/$USER/.config/hypr/hyprland.conf"
@@ -4494,14 +4262,14 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "OPENBOX")
                 echo -e "${CYAN}Instalando Openbox Window Manager...${NC}"
-                install_yay_package "openbox"
-                install_yay_package "lxappearance-obconf"
-                install_yay_package "lxinput"
-                install_yay_package "lxrandr"
-                install_yay_package "archlinux-xdg-menu"
-                install_yay_package "menumaker"
-                install_yay_package "obmenu-generator"
-                install_yay_package "tint2"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S openbox --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxappearance-obconf --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxinput --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxrandr --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S archlinux-xdg-menu --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S menumaker --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S obmenu-generator --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S tint2 --noansweredit --noconfirm --needed"
                 # Crear configuración básica de openbox
                 mkdir -p /mnt/home/$USER/.config/openbox
                 chroot /mnt /bin/bash -c "cp -a /etc/xdg/openbox /home/$USER/.config/"
@@ -4509,30 +4277,27 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "QTITLE"|"QTILE")
                 echo -e "${CYAN}Instalando Qtile Window Manager...${NC}"
-                install_yay_package "qtile"
-                install_yay_package "python-pywlroots"
-                install_yay_package "python-pywayland"
-                install_yay_package "xorg-xwayland"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S qtile --noansweredit --noconfirm --needed"
+                python-pywlroots
                 # Crear configuración básica de qtile
                 mkdir -p /mnt/home/$USER/.config/qtile
                 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "SWAY")
                 echo -e "${CYAN}Instalando Sway Window Manager...${NC}"
-                install_pacman_package "wayland"
-                install_pacman_package "wlroots"
-                install_pacman_package "xdg-desktop-portal-wlr"
-                install_yay_package "sway"
-                install_yay_package "xorg-xwayland"
-                install_yay_package "slurp"
-                install_yay_package "pavucontrol"
-                install_yay_package "brightnessctl"
-                install_yay_package "swaylock"
-                install_yay_package "swayidle"
-                install_yay_package "swaybg"
-                install_yay_package "wmenu"
-                install_yay_package "waybar"
-                install_yay_package "grim"
+                chroot /mnt /bin/bash -c "pacman -S wayland wlroots --noconfirm"
+                chroot /mnt /bin/bash -c "pacman -S xdg-desktop-portal-wlr --noconfirm"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sway --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xwayland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S slurp --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S pavucontrol --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S brightnessctl --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S swaylock --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S swayidle --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S swaybg --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S wmenu --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S waybar --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S grim --noansweredit --noconfirm --needed"
                 # Crear configuración básica de sway
                 mkdir -p /mnt/home/$USER/.config/sway
                 chroot /mnt /bin/bash -c "install -Dm644 /etc/sway/config /home/$USER/.config/sway/config"
@@ -4540,12 +4305,12 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "XMONAD")
                 echo -e "${CYAN}Instalando XMonad Window Manager...${NC}"
-                install_yay_package "xmonad"
-                install_yay_package "xmonad-contrib"
-                install_yay_package "xmobar"
-                install_yay_package "ghc"
-                install_yay_package "cabal-install"
-                install_yay_package "nitrogen"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmonad --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmonad-contrib --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmobar --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S ghc --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cabal-install --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S nitrogen --noansweredit --noconfirm --needed"
                 # Crear configuración básica de xmonad
                 mkdir -p /mnt/home/$USER/.config/xmonad
                 guardar_configuraciones_xmonad
@@ -4555,6 +4320,13 @@ case "$INSTALLATION_TYPE" in
             *)
                 echo -e "${YELLOW}Gestor de ventanas no reconocido: $WINDOW_MANAGER${NC}"
                 echo -e "${CYAN}Instalando i3 como alternativa...${NC}"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3-wm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3status --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3lock --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noansweredit --noconfirm --needed"
+                mkdir -p /mnt/home/$USER/.config/i3
+                echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
+                chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
         esac
 
@@ -4935,27 +4707,26 @@ if [ "${ESSENTIAL_APPS_ENABLED:-false}" = "true" ]; then
 
     case "${SYSTEM_SHELL:-bash}" in
         "bash")
-            install_pacman_package "bash"
-            install_pacman_package "bash-completion"
+            chroot /mnt /bin/bash -c "pacman -S bash bash-completion --noconfirm"
             chroot /mnt /bin/bash -c "chsh -s /bin/bash $USER"
             ;;
         "dash")
-            install_pacman_package "dash"
+            chroot /mnt /bin/bash -c "pacman -S dash --noconfirm"
             chroot /mnt /bin/bash -c "chsh -s /bin/dash $USER"
             ;;
         "ksh")
-            install_pacman_package "ksh"
+            chroot /mnt /bin/bash -c "pacman -S ksh --noconfirm"
             chroot /mnt /bin/bash -c "chsh -s /usr/bin/ksh $USER"
             ;;
         "fish")
-            install_pacman_package "fish"
+            chroot /mnt /bin/bash -c "pacman -S fish --noconfirm"
             chroot /mnt /bin/bash -c "chsh -s /usr/bin/fish $USER"
             ;;
         "zsh")
-            install_pacman_package "zsh"
-            install_pacman_package "zsh-completions"
-            install_pacman_package "zsh-syntax-highlighting"
-            install_pacman_package "zsh-autosuggestions"
+            chroot /mnt /bin/bash -c "pacman -S zsh --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S zsh-completions --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S zsh-syntax-highlighting --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S zsh-autosuggestions --noconfirm"
             cp /usr/share/arcrisgui/data/config/zshrc /mnt/home/$USER/.zshrc
             cp /usr/share/arcrisgui/data/config/zshrc /mnt/root/.zshrc
             chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.zshrc"
@@ -4963,8 +4734,7 @@ if [ "${ESSENTIAL_APPS_ENABLED:-false}" = "true" ]; then
             ;;
         *)
             echo -e "${YELLOW}Shell no reconocida: ${SYSTEM_SHELL}, usando bash${NC}"
-            install_pacman_package "bash"
-            install_pacman_package "bash-completion"
+            chroot /mnt /bin/bash -c "pacman -S bash bash-completion --noconfirm"
             chroot /mnt /bin/bash -c "chsh -s /bin/bash $USER"
             ;;
     esac
@@ -4975,36 +4745,36 @@ fi
 if [ "${FILESYSTEMS_ENABLED:-false}" = "true" ]; then
     echo -e "${CYAN}Instalando herramientas de sistemas de archivos...${NC}"
 
-    install_pacman_package "android-file-transfer"
-    install_pacman_package "android-tools"
-    install_pacman_package "android-udev"
-    install_pacman_package "msmtp"
-    install_pacman_package "libmtp"
-    install_pacman_package "libcddb"
-    install_pacman_package "gvfs"
-    install_pacman_package "gvfs-afc"
-    install_pacman_package "gvfs-smb"
-    install_pacman_package "gvfs-gphoto2"
-    install_pacman_package "gvfs-mtp"
-    install_pacman_package "gvfs-goa"
-    install_pacman_package "gvfs-nfs"
-    install_pacman_package "gvfs-google"
-    install_pacman_package "gst-libav"
-    install_pacman_package "dosfstools"
-    install_pacman_package "f2fs-tools"
-    install_pacman_package "ntfs-3g"
-    install_pacman_package "udftools"
-    install_pacman_package "nilfs-utils"
-    install_pacman_package "polkit"
-    install_pacman_package "gpart"
-    install_pacman_package "mtools"
-    install_pacman_package "cifs-utils"
-    install_pacman_package "jfsutils"
-    install_pacman_package "btrfs-progs"
-    install_pacman_package "xfsprogs"
-    install_pacman_package "reiserfsprogs"
-    install_pacman_package "e2fsprogs"
-    install_pacman_package "exfatprogs"
+    chroot /mnt /bin/bash -c "pacman -S android-file-transfer --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S android-tools --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S android-udev --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S msmtp --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libmtp --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libcddb --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-afc --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-smb --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-gphoto2 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-mtp --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-goa --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-nfs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-google --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gst-libav --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S dosfstools --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S f2fs-tools --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S ntfs-3g --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S udftools --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S nilfs-utils --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S polkit --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gpart --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S mtools --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S cifs-utils --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S jfsutils --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S btrfs-progs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S xfsprogs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S reiserfsprogs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S e2fsprogs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S exfatprogs --noconfirm"
 
     echo -e "${GREEN}✓ Herramientas de sistemas de archivos instaladas${NC}"
 fi
@@ -5013,28 +4783,28 @@ fi
 if [ "${COMPRESSION_ENABLED:-false}" = "true" ]; then
     echo -e "${CYAN}Instalando herramientas de compresión...${NC}"
 
-    install_pacman_package "xarchiver"
-    install_pacman_package "unarchiver"
-    install_pacman_package "binutils"
-    install_pacman_package "gzip"
-    install_pacman_package "lha"
-    install_pacman_package "lrzip"
-    install_pacman_package "lzip"
-    install_pacman_package "lz4"
-    install_pacman_package "p7zip"
-    install_pacman_package "tar"
-    install_pacman_package "xz"
-    install_pacman_package "bzip2"
-    install_pacman_package "lbzip2"
-    install_pacman_package "arj"
-    install_pacman_package "lzop"
-    install_pacman_package "cpio"
-    install_pacman_package "unrar"
-    install_pacman_package "unzip"
-    install_pacman_package "zstd"
-    install_pacman_package "zip"
-    install_pacman_package "unarj"
-    install_pacman_package "dpkg"
+    chroot /mnt /bin/bash -c "pacman -S xarchiver --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S unarchiver --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S binutils --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gzip --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lha --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lrzip --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lzip --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lz4 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S p7zip --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S tar --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S xz --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S bzip2 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lbzip2 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S arj --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lzop --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S cpio --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S unrar --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S unzip --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S zstd --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S zip --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S unarj --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S dpkg --noconfirm"
     echo -e "${GREEN}✓ Herramientas de compresión instaladas${NC}"
 fi
 
@@ -5042,41 +4812,41 @@ fi
 if [ "${VIDEO_CODECS_ENABLED:-false}" = "true" ]; then
     echo -e "${CYAN}Instalando codecs de video...${NC}"
 
-    install_pacman_package "ffmpeg"
-    install_pacman_package "aom"
-    install_pacman_package "libde265"
-    install_pacman_package "x265"
-    install_pacman_package "x264"
-    install_pacman_package "libmpeg2"
-    install_pacman_package "xvidcore"
-    install_pacman_package "libtheora"
-    install_pacman_package "libvpx"
-    install_pacman_package "sdl"
-    install_pacman_package "gstreamer"
-    install_pacman_package "gst-plugins-bad"
-    install_pacman_package "gst-plugins-base"
-    install_pacman_package "gst-plugins-base-libs"
-    install_pacman_package "gst-plugins-good"
-    install_pacman_package "gst-plugins-ugly"
-    install_pacman_package "xine-lib"
-    install_pacman_package "libdvdcss"
-    install_pacman_package "libdvdread"
-    install_pacman_package "dvd+rw-tools"
-    install_pacman_package "lame"
-    install_pacman_package "jasper"
-    install_pacman_package "libmng"
-    install_pacman_package "libraw"
-    install_pacman_package "libkdcraw"
-    install_pacman_package "vcdimager"
-    install_pacman_package "mpv"
-    install_pacman_package "faac"
-    install_pacman_package "faad2"
-    install_pacman_package "flac"
-    install_pacman_package "opus"
-    install_pacman_package "libvorbis"
-    install_pacman_package "wavpack"
-    install_pacman_package "libheif"
-    install_pacman_package "libavif"
+    chroot /mnt /bin/bash -c "pacman -S ffmpeg --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S aom --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libde265 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S x265 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S x264 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libmpeg2 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S xvidcore --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libtheora --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libvpx --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S sdl --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gstreamer --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gst-plugins-bad --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gst-plugins-base --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gst-plugins-base-libs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gst-plugins-good --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gst-plugins-ugly --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S xine-lib --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libdvdcss --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libdvdread --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S dvd+rw-tools --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lame --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S jasper --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libmng --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libraw --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libkdcraw --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S vcdimager --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S mpv --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S faac --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S faad2 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S flac --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S opus --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libvorbis --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S wavpack --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libheif --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libavif --noconfirm"
 
     echo -e "${GREEN}✓ Codecs de video instalados${NC}"
 fi
@@ -5085,14 +4855,14 @@ sleep 2
 clear
 
 echo -e "${GREEN}✓ Tipografías instaladas${NC}"
-install_pacman_package "noto-fonts"
-install_pacman_package "noto-fonts-emoji"
-install_pacman_package "adobe-source-code-pro-fonts"
-install_pacman_package "ttf-cascadia-code"
-install_pacman_package "cantarell-fonts"
-install_pacman_package "ttf-roboto"
-install_pacman_package "ttf-ubuntu-font-family"
-install_pacman_package "gnu-free-fonts"
+chroot /mnt pacman -S noto-fonts --noconfirm
+chroot /mnt pacman -S noto-fonts-emoji --noconfirm
+chroot /mnt pacman -S adobe-source-code-pro-fonts --noconfirm
+chroot /mnt pacman -S ttf-cascadia-code --noconfirm
+chroot /mnt pacman -S cantarell-fonts --noconfirm
+chroot /mnt pacman -S ttf-roboto --noconfirm
+chroot /mnt pacman -S ttf-ubuntu-font-family --noconfirm
+chroot /mnt pacman -S gnu-free-fonts --noconfirm
 sleep 2
 clear
 configurar_teclado
@@ -5107,7 +4877,9 @@ if [ "$UTILITIES_ENABLED" = "true" ] && [ ${#UTILITIES_APPS[@]} -gt 0 ]; then
 
     for app in "${UTILITIES_APPS[@]}"; do
         echo -e "${CYAN}Instalando: $app${NC}"
-        install_yay_package "$app" "--overwrite '*'"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S $app --noansweredit --noconfirm --needed --overwrite '*'" || {
+            echo -e "${YELLOW}⚠ No se pudo instalar $app, continuando...${NC}"
+        }
         sleep 2
     done
 
@@ -5124,7 +4896,9 @@ if [ "$PROGRAM_EXTRA" = "true" ] && [ ${#EXTRA_PROGRAMS[@]} -gt 0 ]; then
 
     for program in "${EXTRA_PROGRAMS[@]}"; do
         echo -e "${CYAN}Instalando: $program${NC}"
-        install_yay_package "$program" "--overwrite '*'"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S $program --noansweredit --noconfirm --needed --overwrite '*'" || {
+            echo -e "${YELLOW}⚠ No se pudo instalar $program, continuando...${NC}"
+        }
         sleep 2
     done
 
@@ -5136,14 +4910,7 @@ fi
 sleep 3
 clear
 cp /usr/share/arcrisgui/data/config/pacman-chroot.conf /mnt/etc/pacman.conf
-# Actualizar sistema con reintentos
-while ! check_internet; do
-    wait_for_internet
-done
 chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
-while ! check_internet; do
-    wait_for_internet
-done
 chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
 sleep 3
 clear
