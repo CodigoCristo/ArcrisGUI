@@ -2360,16 +2360,6 @@ esac
 
 sleep 3
 clear
-echo -e "${GREEN}✓ Instalanado extras${NC}"
-# chroot /mnt pacman -S yay-bin --noconfirm
-# chroot /mnt pacman -S alsi --noconfirm
-
-# Instalar yay-bin desde AUR usando makepkg
-chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && makepkg -si --noconfirm"
-
-# Instalar alsi desde AUR usando makepkg
-chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && cd alsi && makepkg -si --noconfirm"
-clear
 
 # Configuración del sistema
 echo -e "${GREEN}| Configurando sistema base |${NC}"
@@ -2484,10 +2474,21 @@ else
 fi
 
 
-
-
 sleep 2
 clear
+
+echo -e "${GREEN}✓ Instalanado extras${NC}"
+# chroot /mnt pacman -S yay-bin --noconfirm
+# chroot /mnt pacman -S alsi --noconfirm
+
+# Instalar yay-bin desde AUR usando makepkg
+chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
+sleep 2
+# Instalar alsi desde AUR usando makepkg
+chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && cd alsi && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
+sleep 2
+clear
+
 
 # Configuración de mkinitcpio según el modo de particionado
 echo -e "${GREEN}| Configurando mkinitcpio |${NC}"
