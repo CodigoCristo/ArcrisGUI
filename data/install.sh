@@ -102,12 +102,6 @@ install_pacman_package() {
     while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
-        # Sincronizar base de datos de pacman antes del primer intento
-        if [ $attempt -eq 1 ]; then
-            echo -e "${CYAN}🔄 Sincronizando base de datos de pacman...${NC}"
-            pacman -Sy --noconfirm || echo -e "${YELLOW}⚠️  Advertencia: No se pudo sincronizar base de datos${NC}"
-        fi
-
         # Ejecutar comando de instalación
         if pacman -S "$package" --noconfirm $extra_args; then
             echo -e "${GREEN}✅ $package instalado correctamente${NC}"
@@ -132,12 +126,6 @@ install_pacstrap_package() {
 
     while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
-
-        # Sincronizar base de datos de pacman antes del primer intento
-        if [ $attempt -eq 1 ]; then
-            echo -e "${CYAN}🔄 Sincronizando base de datos de pacman...${NC}"
-            pacman -Sy --noconfirm || echo -e "${YELLOW}⚠️  Advertencia: No se pudo sincronizar base de datos${NC}"
-        fi
 
         # Intentar instalación con pacstrap
         if pacstrap /mnt "$package" $extra_args; then
