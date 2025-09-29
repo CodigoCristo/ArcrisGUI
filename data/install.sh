@@ -27,17 +27,8 @@ NC='\033[0m' # No Color
 # ================================================================================================
 # Función para verificar conectividad a internet
 check_internet() {
-    echo -e "${CYAN}🌐 Verificando conectividad a internet...${NC}"
-
-    # Intentar ping a múltiples sitios web (prueba DNS + conectividad)
-    if ping -c 2 -W 5 www.google.com >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ Conexión a internet disponible${NC}"
-        return 0
-    elif ping -c 2 -W 5 archlinux.org >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ Conexión a internet disponible${NC}"
-        return 0
-    elif ping -c 2 -W 5 github.com >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ Conexión a internet disponible${NC}"
+    # Verificación rápida y simple de conectividad
+    if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
         return 0
     else
         echo -e "${RED}❌ Sin conexión a internet${NC}"
@@ -109,23 +100,16 @@ install_pacman_package() {
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman${NC}"
 
     while true; do
-        # Verificar conexión antes de cada intento
-        if ! check_internet; then
-            echo -e "${RED}❌ Sin conexión a internet para instalar $package${NC}"
-            wait_for_internet
-            continue
-        fi
-
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Sincronizar base de datos de pacman antes del primer intento
         if [ $attempt -eq 1 ]; then
             echo -e "${CYAN}🔄 Sincronizando base de datos de pacman...${NC}"
-            pacman -Sy --noconfirm >/dev/null 2>&1 || echo -e "${YELLOW}⚠️  Advertencia: No se pudo sincronizar base de datos${NC}"
+            pacman -Sy --noconfirm || echo -e "${YELLOW}⚠️  Advertencia: No se pudo sincronizar base de datos${NC}"
         fi
 
         # Ejecutar comando de instalación
-        if pacman -S "$package" --noconfirm $extra_args 2>/dev/null; then
+        if pacman -S "$package" --noconfirm $extra_args; then
             echo -e "${GREEN}✅ $package instalado correctamente${NC}"
             return 0
         else
@@ -147,23 +131,16 @@ install_pacstrap_package() {
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacstrap${NC}"
 
     while true; do
-        # Verificar conexión antes de cada intento
-        if ! check_internet; then
-            echo -e "${RED}❌ Sin conexión a internet para instalar $package${NC}"
-            wait_for_internet
-            continue
-        fi
-
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Sincronizar base de datos de pacman antes del primer intento
         if [ $attempt -eq 1 ]; then
             echo -e "${CYAN}🔄 Sincronizando base de datos de pacman...${NC}"
-            pacman -Sy --noconfirm >/dev/null 2>&1 || echo -e "${YELLOW}⚠️  Advertencia: No se pudo sincronizar base de datos${NC}"
+            pacman -Sy --noconfirm || echo -e "${YELLOW}⚠️  Advertencia: No se pudo sincronizar base de datos${NC}"
         fi
 
         # Intentar instalación con pacstrap
-        if pacstrap /mnt "$package" $extra_args >/dev/null 2>&1; then
+        if pacstrap /mnt "$package" $extra_args; then
             echo -e "${GREEN}✅ $package instalado correctamente con pacstrap${NC}"
             return 0
         else
@@ -203,17 +180,10 @@ install_yay_package() {
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con yay${NC}"
 
     while true; do
-        # Verificar conexión antes de cada intento
-        if ! check_internet; then
-            echo -e "${RED}❌ Sin conexión a internet para instalar $package${NC}"
-            wait_for_internet
-            continue
-        fi
-
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Intentar instalación con yay en sistema instalado
-        if chroot /mnt /bin/bash -c "sudo -u $USER yay -S '$package' $extra_args --noansweredit --noconfirm --needed" >/dev/null 2>&1; then
+        if chroot /mnt /bin/bash -c "sudo -u $USER yay -S '$package' $extra_args --noansweredit --noconfirm --needed"; then
             echo -e "${GREEN}✅ $package instalado correctamente con yay${NC}"
             return 0
         else
