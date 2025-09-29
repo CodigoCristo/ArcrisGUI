@@ -29,15 +29,15 @@ NC='\033[0m' # No Color
 check_internet() {
     echo -e "${CYAN}🌐 Verificando conectividad a internet...${NC}"
 
-    # Intentar ping a múltiples servidores DNS
-    if ping -c 2 -W 3 8.8.8.8 >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ Conexión a internet disponible (Google DNS)${NC}"
+    # Intentar ping a múltiples sitios web (prueba DNS + conectividad)
+    if ping -c 2 -W 5 www.google.com >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ Conexión a internet disponible (Google)${NC}"
         return 0
-    elif ping -c 2 -W 3 1.1.1.1 >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ Conexión a internet disponible (Cloudflare DNS)${NC}"
+    elif ping -c 2 -W 5 archlinux.org >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ Conexión a internet disponible (Arch Linux)${NC}"
         return 0
-    elif ping -c 2 -W 3 9.9.9.9 >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ Conexión a internet disponible (Quad9 DNS)${NC}"
+    elif ping -c 2 -W 5 github.com >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ Conexión a internet disponible (GitHub)${NC}"
         return 0
     else
         echo -e "${RED}❌ Sin conexión a internet${NC}"
@@ -52,25 +52,49 @@ wait_for_internet() {
     while ! check_internet; do
         echo -e "${YELLOW}⚠️  Intento #$attempt - Sin conexión a internet${NC}"
         echo -e "${CYAN}🔄 Reintentando en 10 segundos... (Presiona Ctrl+C para cancelar)${NC}"
-        echo -e "${BLUE}💡 Consejos mientras esperas:${NC}"
-        echo -e "${BLUE}   • Verifica tu cable de red o conexión WiFi${NC}"
-        echo -e "${BLUE}   • Reinicia tu router/modem si es necesario${NC}"
-        echo -e "${BLUE}   • Comprueba la configuración de red${NC}"
         echo ""
+        echo -e "${BLUE}🔧 DIAGNÓSTICOS RECOMENDADOS:${NC}"
+        echo -e "${BLUE}   1. ${YELLOW}Conectividad Física:${NC}"
+        echo -e "${BLUE}      • Cable Ethernet conectado correctamente${NC}"
+        echo -e "${BLUE}      • LED de red activo en tu dispositivo${NC}"
+        echo -e "${BLUE}      • WiFi habilitado y conectado a la red correcta${NC}"
+        echo ""
+        echo -e "${BLUE}   2. ${YELLOW}Reiniciar Servicios:${NC}"
+        echo -e "${BLUE}      • systemctl restart NetworkManager${NC}"
+        echo -e "${BLUE}      • systemctl restart dhcpcd${NC}"
+        echo -e "${BLUE}      • ip link set [interfaz] up${NC}"
+        echo ""
+        echo -e "${BLUE}   3. ${YELLOW}Verificar DNS:${NC}"
+        echo -e "${BLUE}      • echo 'nameserver 8.8.8.8' >> /etc/resolv.conf${NC}"
+        echo -e "${BLUE}      • nslookup www.google.com${NC}"
+        echo ""
+        echo -e "${BLUE}   4. ${YELLOW}Router/Módem:${NC}"
+        echo -e "${BLUE}      • Reiniciar router (desconectar 30 seg)${NC}"
+        echo -e "${BLUE}      • Verificar que otros dispositivos tengan internet${NC}"
+        echo -e "${BLUE}      • Contactar ISP si el problema persiste${NC}"
+        echo ""
+        echo -e "${GREEN}⏳ La instalación continuará automáticamente cuando se restablezca la conexión${NC}"
+        echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
         sleep 10
         ((attempt++))
 
-        # Limpiar pantalla cada 10 intentos para evitar saturación
-        if (( attempt % 10 == 0 )); then
+        # Limpiar pantalla cada 5 intentos para evitar saturación
+        if (( attempt % 5 == 0 )); then
             clear
-            echo -e "${YELLOW}🔄 Esperando conexión a internet... (Intento #$attempt)${NC}"
+            echo -e "${YELLOW}🌐 ESPERANDO CONEXIÓN A INTERNET${NC}"
+            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            echo -e "${YELLOW}⏱️  Intento #$attempt - Tiempo transcurrido: $((attempt * 10)) segundos${NC}"
+            echo ""
         fi
     done
 
-    echo -e "${GREEN}🎉 ¡Conexión a internet restablecida!${NC}"
+    echo -e "${GREEN}🎉 ¡CONEXIÓN A INTERNET RESTABLECIDA!${NC}"
+    echo -e "${GREEN}✅ Diagnóstico exitoso después de $((attempt * 10)) segundos${NC}"
     echo -e "${CYAN}⏰ Continuando con la instalación en 3 segundos...${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     sleep 3
+    clear
 }
 
 # Función para instalar paquetes con pacman con reintentos infinitos
