@@ -76,6 +76,11 @@ wait_for_internet() {
         echo -e "${GREEN}⏳ La instalación continuará automáticamente cuando se restablezca la conexión${NC}"
         echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
+        # Mostrar comando útil para verificar conectividad manualmente
+        if [ $((attempt % 3)) -eq 0 ]; then
+            echo -e "${BLUE}💡 Comando manual: ping -c 3 www.google.com${NC}"
+        fi
+
         sleep 10
         ((attempt++))
 
@@ -97,6 +102,16 @@ wait_for_internet() {
     clear
 }
 
+# Función para detectar si estamos en LiveCD o en sistema instalado
+is_livecd() {
+    # En este script estamos principalmente en LiveCD, simplificamos la lógica
+    if [ ! -f "/mnt/etc/arch-release" ]; then
+        return 0  # Es LiveCD
+    else
+        return 1  # Es sistema instalado
+    fi
+}
+
 # Función para instalar paquetes con pacman con reintentos infinitos
 install_pacman_package() {
     local package="$1"
@@ -104,6 +119,13 @@ install_pacman_package() {
     local attempt=1
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman${NC}"
+
+    # Debug: Mostrar contexto actual
+    if is_livecd; then
+        echo -e "${BLUE}🔧 Contexto: LiveCD de Arch Linux${NC}"
+    else
+        echo -e "${BLUE}🔧 Contexto: Sistema instalado en /mnt${NC}"
+    fi
 
     while true; do
         # Verificar conexión antes de cada intento
@@ -115,12 +137,29 @@ install_pacman_package() {
 
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
-        # Intentar instalación
-        if chroot /mnt /bin/bash -c "pacman -S $package --noconfirm $extra_args" 2>/dev/null; then
+        # Usar comando correcto según contexto
+        local install_cmd
+        if is_livecd; then
+            # En LiveCD usar pacman directamente
+            install_cmd="pacman -S $package --noconfirm $extra_args"
+        else
+            # En sistema instalado usar chroot
+            install_cmd="chroot /mnt /bin/bash -c \"pacman -S $package --noconfirm $extra_args\""
+        fi
+
+        # Sincronizar base de datos de pacman antes del primer intento
+        if [ $attempt -eq 1 ] && is_livecd; then
+            echo -e "${CYAN}🔄 Sincronizando base de datos de pacman...${NC}"
+            pacman -Sy --noconfirm >/dev/null 2>&1 || echo -e "${YELLOW}⚠️  Advertencia: No se pudo sincronizar base de datos${NC}"
+        fi
+
+        # Ejecutar comando de instalación
+        if eval "$install_cmd" 2>/dev/null; then
             echo -e "${GREEN}✅ $package instalado correctamente${NC}"
             return 0
         else
             echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
+            echo -e "${RED}🔍 Comando ejecutado: $install_cmd${NC}"
             echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
             sleep 5
             ((attempt++))
@@ -136,6 +175,16 @@ install_yay_package() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con yay${NC}"
 
+    # yay solo funciona en sistema instalado, no en LiveCD
+    if is_livecd; then
+        echo -e "${YELLOW}⚠️  yay no disponible en LiveCD, usando pacman en su lugar...${NC}"
+        echo -e "${BLUE}🔄 Alternativa: Intentando instalar $package con pacman desde repositorios oficiales${NC}"
+        install_pacman_package "$package" "$extra_args"
+        return $?
+    fi
+
+    echo -e "${BLUE}🔧 Contexto: Sistema instalado, usando yay${NC}"
+
     while true; do
         # Verificar conexión antes de cada intento
         if ! check_internet; then
@@ -146,9 +195,9 @@ install_yay_package() {
 
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
-        # Intentar instalación
-        if chroot /mnt /bin/bash -c "sudo -u $USER yay -S $package --noansweredit --noconfirm --needed $extra_args" 2>/dev/null; then
-            echo -e "${GREEN}✅ $package instalado correctamente${NC}"
+        # Intentar instalación con yay en sistema instalado
+        if chroot /mnt /bin/bash -c "sudo -u $USER yay -S $package --noansweredit --noconfirm --needed $extra_args" >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ $package instalado correctamente con yay${NC}"
             return 0
         else
             echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
