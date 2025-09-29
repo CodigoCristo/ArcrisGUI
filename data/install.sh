@@ -2427,12 +2427,6 @@ cat /mnt/etc/pacman.d/mirrorlist
 sleep 3
 clear
 
-# Actualización del sistema instalado
-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
-cp /usr/share/arcrisgui/data/config/pacman.conf /mnt/etc/pacman.conf
-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
-chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
-sleep 5
 
 # Generar fstab
 if [ "$PARTITION_MODE" = "manual" ]; then
@@ -2573,6 +2567,11 @@ esac
 
 sleep 3
 clear
+# Actualización del sistema instalado
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+cp /usr/share/arcrisgui/data/config/pacman.conf /mnt/etc/pacman.conf
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
 echo -e "${GREEN}✓ Instalanado extras${NC}"
 install_pacman_package "yay-bin"
 install_pacman_package "alsi"
