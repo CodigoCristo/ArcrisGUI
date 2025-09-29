@@ -31,13 +31,13 @@ check_internet() {
 
     # Intentar ping a múltiples sitios web (prueba DNS + conectividad)
     if ping -c 2 -W 5 www.google.com >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ Conexión a internet disponible (Google)${NC}"
+        echo -e "${GREEN}✓ Conexión a internet disponible${NC}"
         return 0
     elif ping -c 2 -W 5 archlinux.org >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ Conexión a internet disponible (Arch Linux)${NC}"
+        echo -e "${GREEN}✓ Conexión a internet disponible${NC}"
         return 0
     elif ping -c 2 -W 5 github.com >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ Conexión a internet disponible (GitHub)${NC}"
+        echo -e "${GREEN}✓ Conexión a internet disponible${NC}"
         return 0
     else
         echo -e "${RED}❌ Sin conexión a internet${NC}"
@@ -51,7 +51,7 @@ wait_for_internet() {
 
     while ! check_internet; do
         echo -e "${YELLOW}⚠️  Intento #$attempt - Sin conexión a internet${NC}"
-        echo -e "${CYAN}🔄 Reintentando en 10 segundos... (Presiona Ctrl+C para cancelar)${NC}"
+        echo -e "${CYAN}🔄 Reintentando en 10 segundos...${NC}"
         echo ""
         echo -e "${BLUE}🔧 DIAGNÓSTICOS RECOMENDADOS:${NC}"
         echo -e "${BLUE}   1. ${YELLOW}Conectividad Física:${NC}"
@@ -63,10 +63,6 @@ wait_for_internet() {
         echo -e "${BLUE}      • systemctl restart NetworkManager${NC}"
         echo -e "${BLUE}      • systemctl restart dhcpcd${NC}"
         echo -e "${BLUE}      • ip link set [interfaz] up${NC}"
-        echo ""
-        echo -e "${BLUE}   3. ${YELLOW}Verificar DNS:${NC}"
-        echo -e "${BLUE}      • echo 'nameserver 8.8.8.8' >> /etc/resolv.conf${NC}"
-        echo -e "${BLUE}      • nslookup www.google.com${NC}"
         echo ""
         echo -e "${BLUE}   4. ${YELLOW}Router/Módem:${NC}"
         echo -e "${BLUE}      • Reiniciar router (desconectar 30 seg)${NC}"
@@ -102,15 +98,7 @@ wait_for_internet() {
     clear
 }
 
-# Función para detectar si estamos en LiveCD o en sistema instalado
-is_livecd() {
-    # En este script estamos principalmente en LiveCD, simplificamos la lógica
-    if [ ! -f "/mnt/etc/arch-release" ]; then
-        return 0  # Es LiveCD
-    else
-        return 1  # Es sistema instalado
-    fi
-}
+
 
 # Función para instalar paquetes con pacman con reintentos infinitos
 install_pacman_package() {
@@ -119,13 +107,6 @@ install_pacman_package() {
     local attempt=1
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman${NC}"
-
-    # Debug: Mostrar contexto actual
-    if is_livecd; then
-        echo -e "${BLUE}🔧 Contexto: LiveCD de Arch Linux${NC}"
-    else
-        echo -e "${BLUE}🔧 Contexto: Sistema instalado en /mnt${NC}"
-    fi
 
     while true; do
         # Verificar conexión antes de cada intento
@@ -137,34 +118,80 @@ install_pacman_package() {
 
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
-        # Usar comando correcto según contexto
-        local install_cmd
-        if is_livecd; then
-            # En LiveCD usar pacman directamente
-            install_cmd="pacman -S $package --noconfirm $extra_args"
-        else
-            # En sistema instalado usar chroot
-            install_cmd="chroot /mnt /bin/bash -c \"pacman -S $package --noconfirm $extra_args\""
-        fi
-
         # Sincronizar base de datos de pacman antes del primer intento
-        if [ $attempt -eq 1 ] && is_livecd; then
+        if [ $attempt -eq 1 ]; then
             echo -e "${CYAN}🔄 Sincronizando base de datos de pacman...${NC}"
             pacman -Sy --noconfirm >/dev/null 2>&1 || echo -e "${YELLOW}⚠️  Advertencia: No se pudo sincronizar base de datos${NC}"
         fi
 
         # Ejecutar comando de instalación
-        if eval "$install_cmd" 2>/dev/null; then
+        if pacman -S "$package" --noconfirm $extra_args 2>/dev/null; then
             echo -e "${GREEN}✅ $package instalado correctamente${NC}"
             return 0
         else
             echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
-            echo -e "${RED}🔍 Comando ejecutado: $install_cmd${NC}"
+            echo -e "${RED}🔍 Comando ejecutado: pacman -S '$package' --noconfirm $extra_args${NC}"
             echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
             sleep 5
             ((attempt++))
         fi
     done
+}
+
+# Función para instalar paquetes usando pacstrap /mnt
+install_pacstrap_package() {
+    local package="$1"
+    local extra_args="${2:-}"
+    local attempt=1
+
+    echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacstrap${NC}"
+
+    while true; do
+        # Verificar conexión antes de cada intento
+        if ! check_internet; then
+            echo -e "${RED}❌ Sin conexión a internet para instalar $package${NC}"
+            wait_for_internet
+            continue
+        fi
+
+        echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
+
+        # Sincronizar base de datos de pacman antes del primer intento
+        if [ $attempt -eq 1 ]; then
+            echo -e "${CYAN}🔄 Sincronizando base de datos de pacman...${NC}"
+            pacman -Sy --noconfirm >/dev/null 2>&1 || echo -e "${YELLOW}⚠️  Advertencia: No se pudo sincronizar base de datos${NC}"
+        fi
+
+        # Intentar instalación con pacstrap
+        if pacstrap /mnt "$package" $extra_args >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ $package instalado correctamente con pacstrap${NC}"
+            return 0
+        else
+            echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
+            echo -e "${RED}🔍 Comando ejecutado: pacstrap /mnt '$package' $extra_args${NC}"
+            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
+            sleep 5
+            ((attempt++))
+        fi
+    done
+}
+
+# Función para instalar múltiples paquetes con pacstrap
+install_pacstrap_packages() {
+    local packages=("$@")
+
+    echo -e "${GREEN}📦 Instalando ${#packages[@]} paquetes con pacstrap:${NC}"
+    for pkg in "${packages[@]}"; do
+        echo -e "${CYAN}  • $pkg${NC}"
+    done
+    echo ""
+
+    for package in "${packages[@]}"; do
+        install_pacstrap_package "$package"
+        sleep 1  # Breve pausa entre paquetes
+    done
+
+    echo -e "${GREEN}✅ Todos los paquetes pacstrap instalados correctamente${NC}"
 }
 
 # Función para instalar paquetes con yay con reintentos infinitos
@@ -174,16 +201,6 @@ install_yay_package() {
     local attempt=1
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con yay${NC}"
-
-    # yay solo funciona en sistema instalado, no en LiveCD
-    if is_livecd; then
-        echo -e "${YELLOW}⚠️  yay no disponible en LiveCD, usando pacman en su lugar...${NC}"
-        echo -e "${BLUE}🔄 Alternativa: Intentando instalar $package con pacman desde repositorios oficiales${NC}"
-        install_pacman_package "$package" "$extra_args"
-        return $?
-    fi
-
-    echo -e "${BLUE}🔧 Contexto: Sistema instalado, usando yay${NC}"
 
     while true; do
         # Verificar conexión antes de cada intento
@@ -196,7 +213,7 @@ install_yay_package() {
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Intentar instalación con yay en sistema instalado
-        if chroot /mnt /bin/bash -c "sudo -u $USER yay -S $package --noansweredit --noconfirm --needed $extra_args" >/dev/null 2>&1; then
+        if chroot /mnt /bin/bash -c "sudo -u $USER yay -S '$package' $extra_args --noansweredit --noconfirm --needed" >/dev/null 2>&1; then
             echo -e "${GREEN}✅ $package instalado correctamente con yay${NC}"
             return 0
         else
@@ -1592,7 +1609,7 @@ partition_auto_btrfs() {
         mount ${SELECTED_DISK}1 /mnt/boot/efi
 
         # Instalar herramientas específicas para BTRFS
-        pacstrap /mnt btrfs-progs
+        install_pacstrap_package "btrfs-progs"
 
     else
         # Configuración para BIOS Legacy
@@ -1718,7 +1735,7 @@ partition_auto_btrfs() {
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
 
         # Instalar herramientas específicas para BTRFS
-        pacstrap /mnt btrfs-progs
+        install_pacstrap_package "btrfs-progs"
     fi
 }
 
@@ -1922,7 +1939,7 @@ partition_cifrado() {
         echo -e "${GREEN}  • UEFI: EFI (512MB) + boot (1GB) sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
-        pacstrap /mnt cryptsetup lvm2
+        install_pacstrap_package "cryptsetup lvm2"
 
     else
         # Configuración para BIOS Legacy con cifrado (siguiendo mejores prácticas)
@@ -2089,7 +2106,7 @@ partition_cifrado() {
         echo -e "${GREEN}  • BIOS Legacy: boot (512MB) sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
-        pacstrap /mnt cryptsetup lvm2
+        install_pacstrap_package "cryptsetup lvm2"
     fi
 }
 
@@ -2402,23 +2419,25 @@ echo -e "${GREEN}| Instalando paquetes principales de la distribución |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
-pacstrap /mnt base
-pacstrap /mnt base-devel
-pacstrap /mnt lsb-release
-pacstrap /mnt reflector python3 rsync
-pacstrap /mnt nano
-pacstrap /mnt xdg-user-dirs
-pacstrap /mnt curl
-pacstrap /mnt wget
-pacstrap /mnt git
+install_pacstrap_package "base"
+install_pacstrap_package "base-devel"
+install_pacstrap_package "lsb-release"
+install_pacstrap_package "reflector"
+install_pacstrap_package "python3"
+install_pacstrap_package "rsync"
+install_pacstrap_package "nano"
+install_pacstrap_package "xdg-user-dirs"
+install_pacstrap_package "curl"
+install_pacstrap_package "wget"
+install_pacstrap_package "git"
 
 # Instalar herramientas específicas según el modo de particionado
 if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     echo -e "${CYAN}Instalando herramientas BTRFS...${NC}"
-    pacstrap /mnt btrfs-progs
+    install_pacstrap_package "btrfs-progs"
 elif [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${CYAN}Instalando herramientas de cifrado...${NC}"
-    pacstrap /mnt cryptsetup lvm2
+    install_pacstrap_package "cryptsetup lvm2"
 fi
 
 # Configurar montajes para chroot
