@@ -2552,22 +2552,22 @@ echo ""
 
 case "$SELECTED_KERNEL" in
     "linux")
-        install_pacman_package "linux linux-firmware"
+        install_pacman_packages "linux" "linux-firmware"
         ;;
     "linux-hardened")
-        install_pacman_package "linux-hardened linux-firmware"
+        install_pacman_packages "linux-hardened" "linux-firmware"
         ;;
     "linux-lts")
-        install_pacman_package "linux-lts linux-firmware"
+        install_pacman_packages "linux-lts" "linux-firmware"
         ;;
     "linux-rt-lts")
-        install_pacman_package "linux-rt-lts linux-firmware"
+        install_pacman_packages "linux-rt-lts" "linux-firmware"
         ;;
     "linux-zen")
-        install_pacman_package "linux-zen linux-firmware"
+        install_pacman_packages "linux-zen" "linux-firmware"
         ;;
     *)
-        install_pacman_package "linux linux-firmware"
+        install_pacman_packages "linux" "linux-firmware"
         ;;
 esac
 
