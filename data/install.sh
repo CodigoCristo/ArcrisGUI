@@ -3349,6 +3349,7 @@ case "$DRIVER_VIDEO" in
     "AMD Private")
         echo "Instalando drivers privativos de AMDGPUPRO"
         chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S vulkan-radeon lib32-vulkan-radeon vulkan-tools --noconfirm"
         chroot /mnt /bin/bash -c "pacman -S radeontop --noconfirm"
         chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S amf-amdgpu-pro --noansweredit --noconfirm --needed"
@@ -3852,20 +3853,23 @@ case "$INSTALLATION_TYPE" in
                 echo -e "${CYAN}Instalando Cinnamon Desktop...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S cinnamon --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S cinnamon-translations --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S engrampa --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs-smb --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S bibata-cursor-theme --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S hicolor-icon-theme --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S mint-backgrounds --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S mint-themes --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S mint-x-icons --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S mint-y-icons --noansweredit --noconfirm --needed"
-                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S mintlocale --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S cinnamon-control-center --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S xed --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-screenshot --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
@@ -4012,7 +4016,7 @@ case "$INSTALLATION_TYPE" in
                 #chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt-wayland-session --noansweredit --noconfirm --needed"
                 #chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
                 #chroot /mnt /bin/bash -c "systemctl enable sddm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
-                # Instalar compositor (elige uno)
+                # Instalar compositor
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S labwc --noconfirm --needed"  # Más simple para empezar
                 # Dependencias base
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S wayland wlroots --noconfirm --needed"
@@ -4021,6 +4025,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt-wayland-session --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze-icons --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S leafpad --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S slock --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S nm-tray --noconfirm --needed"
                 # Display manager
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noconfirm --needed"
@@ -4063,7 +4069,13 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
-
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S pavucontrol --noansweredit --noconfirm --needed"
+                # Instalar compositor
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S labwc --noconfirm --needed"  # Más simple para empezar
+                # Dependencias base
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S wayland wlroots --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-wlr --noconfirm --needed"
+                # lightdm
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
@@ -4094,17 +4106,14 @@ case "$INSTALLATION_TYPE" in
         # Instalar X.org y dependencias base para gestores de ventanas
         echo -e "${CYAN}Instalando servidor X.org y dependencias base...${NC}"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
-        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server-common --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
-        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xsetroot --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xrandr --noansweredit --noconfirm --needed"
-        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-setxkbmap --noansweredit --noconfirm --needed"
-        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xrdb --noansweredit --noconfirm --needed"
-        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xwayland --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xsel --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S xterm --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S dmenu --noansweredit --noconfirm --needed"
-        chroot /mnt /bin/bash -c "sudo -u $USER yay -S pcmanfm --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S wofi --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nemo --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S dunst --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S nano  --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "sudo -u $USER yay -S vim --noansweredit --noconfirm --needed"
@@ -4153,6 +4162,7 @@ case "$INSTALLATION_TYPE" in
                 echo -e "${CYAN}Instalando Awesome Window Manager...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S awesome --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S vicious --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S slock --noansweredit --noconfirm --needed"
                 # Crear configuración básica de awesome
                 mkdir -p /mnt/home/$USER/.config/awesome
                 chroot /mnt /bin/bash -c "install -Dm755 /etc/xdg/awesome/rc.lua /home/$USER/.config/awesome/rc.lua"
@@ -4162,6 +4172,7 @@ case "$INSTALLATION_TYPE" in
                 echo -e "${CYAN}Instalando BSPWM Window Manager...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S bspwm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S sxhkd --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S slock --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S polybar --noansweredit --noconfirm --needed"
                 # Crear configuración básica de bspwm
                 mkdir -p /mnt/home/$USER/.config/bspwm
@@ -4177,6 +4188,7 @@ case "$INSTALLATION_TYPE" in
                 echo -e "${CYAN}Instalando DWM Window Manager...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S dwm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S st --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S slock --noansweredit --noconfirm --needed"
                 ;;
             "DWL")
                 echo -e "${CYAN}Instalando DWL Wayland Compositor...${NC}"
@@ -4232,6 +4244,10 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprcursor --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprpolkitagent --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprsunset --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S grim --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S qt5-wayland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S qt6-wayland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-hyprland --noansweredit --noconfirm --needed"
                 # Crear configuración básica de hyprland
                 mkdir -p /mnt/home/$USER/.config/hypr
                 chroot /mnt /bin/bash -c "install -Dm644 /usr/share/hypr/hyprland.conf /home/$USER/.config/hypr/hyprland.conf"
@@ -4266,10 +4282,16 @@ case "$INSTALLATION_TYPE" in
             "SWAY")
                 echo -e "${CYAN}Instalando Sway Window Manager...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S sway --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xwayland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S slurp --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S pavucontrol --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S brightnessctl --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S swaylock --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S swayidle --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S swaybg --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S wmenu --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S waybar --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S grim --noansweredit --noconfirm --needed"
                 # Crear configuración básica de sway
                 mkdir -p /mnt/home/$USER/.config/sway
                 chroot /mnt /bin/bash -c "install -Dm644 /etc/sway/config /home/$USER/.config/sway/config"

@@ -245,29 +245,6 @@ void page3_setup_widgets(Page3Data *data)
         cifrado_row = gtk_widget_get_parent(cifrado_row);
     }
 
-    // Aplicar color rojo solo al texto del subtítulo usando markup Pango
-    if (auto_partition_row) {
-        const char *red_subtitle = "<span foreground='#ff6b6b' weight='bold'>Eliminará todos los datos del disco seleccionado</span>";
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(auto_partition_row), red_subtitle);
-        LOG_INFO("Subtítulo en rojo aplicado a AdwActionRow de particionado automático");
-    }
-
-    if (auto_btrfs_row) {
-        const char *red_subtitle = "<span foreground='#ff6b6b' weight='bold'>Eliminará todos los datos del disco seleccionado</span>";
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(auto_btrfs_row), red_subtitle);
-        LOG_INFO("Subtítulo en rojo aplicado a AdwActionRow de particionado Btrfs");
-    }
-
-    if (cifrado_row) {
-        const char *red_subtitle = "<span foreground='#ff6b6b' weight='bold'>Elimina y crea disco Cifrado completo (LUKS) y LVM</span>";
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(cifrado_row), red_subtitle);
-        LOG_INFO("Subtítulo en rojo aplicado a AdwActionRow de particionado cifrado");
-    }
-
-    // Conectar señales adicionales si es necesario
-    // Los callbacks principales ya están conectados en disk_manager_init_widgets
-
-    LOG_INFO("Widgets de la página 3 configurados con estilos CSS");
 }
 
 // Función para cargar datos

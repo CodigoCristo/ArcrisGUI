@@ -77,7 +77,7 @@
                             <property name="title" translatable="yes">Elige una opción</property>
                             <child>
                               <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Particionado Automático</property>
+                                <property name="title" translatable="yes">Borra el disco e Instala Arch Linux en Etx4</property>
                                 <property name="subtitle" translatable="yes">Eliminará todos los datos del disco seleccionado</property>
                                 <property name="activatable">false</property>
 
@@ -91,7 +91,7 @@
 
                             <child>
                               <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Particionado Automático en Btrfs</property>
+                                <property name="title" translatable="yes">Borra el disco e Instala Arch Linux en Btrfs</property>
                                 <property name="subtitle" translatable="yes">Eliminará todos los datos del disco seleccionado</property>
                                 <property name="activatable">false</property>
 
@@ -105,8 +105,8 @@
 
                             <child>
                               <object class="AdwActionRow" id="cifrado_partition_radio">
-                                <property name="title" translatable="yes">Particionado Cifrado de Disco</property>
-                                <property name="subtitle" translatable="yes">Elimina y crea Disco Cifrado completo (LUKS) y LVM</property>
+                                <property name="title" translatable="yes">Borra el disco e Instala Arch Linux con Cifrado</property>
+                                <property name="subtitle" translatable="yes">Elimina y crea una clave en el Disco (LUKS) y LVM</property>
                                 <property name="activatable">false</property>
 
                                 <child type="prefix">
@@ -135,7 +135,7 @@
                             <child>
                               <object class="AdwActionRow" id="manual_partition_row">
                                 <property name="title" translatable="yes">Particionado Manual</property>
-                                <property name="subtitle" translatable="yes">Puede crear y asignar montajes</property>
+                                <property name="subtitle" translatable="yes">Puede crear y asignar montajes para instalar Arch Linux</property>
                                 <property name="activatable">false</property>
 
                                 <child type="prefix">
