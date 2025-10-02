@@ -2529,7 +2529,7 @@ fi
 # Regenerar initramfs
 chroot /mnt /bin/bash -c "mkinitcpio -P"
 sleep 2
-
+clear
 # Instalación de bootloader
 # Instalar bootloader para todos los modos (incluyendo manual)
 if true; then
@@ -2569,17 +2569,17 @@ if true; then
         # Limpiar entradas UEFI previas que puedan causar conflictos
         # echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
         # efibootmgr | awk '/grub/i {gsub(/Boot|\*.*/, ""); system("efibootmgr -b " $1 " -B 2>/dev/null")}'
-        efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
+        # efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
         clear
-        sleep 4
+        # sleep 4
 
         # Limpiar directorio EFI previo si existe
-        if [ -d "/mnt/boot/efi/EFI/GRUB" ]; then
-            rm -rf /mnt/boot/efi/EFI/GRUB
-        fi
+        #if [ -d "/mnt/boot/efi/EFI/GRUB" ]; then
+        #    rm -rf /mnt/boot/efi/EFI/GRUB
+        #fi
 
         # Crear directorio EFI si no existe
-        mkdir -p /mnt/boot/efi/EFI
+        #mkdir -p /mnt/boot/efi/EFI
 
         echo -e "${CYAN}Instalando paquetes GRUB para UEFI...${NC}"
         chroot /mnt /bin/bash -c "pacman -S grub efibootmgr --noconfirm"
