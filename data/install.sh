@@ -3907,6 +3907,7 @@ case "$INSTALLATION_TYPE" in
                 echo -e "${CYAN}Instalando UKUI Desktop...${NC}"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S ukui --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S showtime --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "sudo -u $USER yay -S papers --noansweredit --noconfirm --needed"
