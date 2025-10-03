@@ -2818,10 +2818,38 @@ if true; then
         echo -e "${GREEN}✓ Sistema en modo UEFI confirmado${NC}"
 
         sleep 4
-        # Limpiar entradas UEFI previas que puedan causar conflictos
-        # echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
-        # efibootmgr | awk '/grub/i {gsub(/Boot|\*.*/, ""); system("efibootmgr -b " $1 " -B 2>/dev/null")}'
-        efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
+        ############################################################################################################
+        # efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
+        # Limpieza UEFI optimizada para el instalador de Arch
+        echo -e "${CYAN}Limpiando entradas UEFI previas de GRUB...${NC}"
+
+        # Verificar que efibootmgr esté disponible (siempre lo está en Arch live)
+        if ! command -v efibootmgr >/dev/null 2>&1; then
+            echo -e "${YELLOW}efibootmgr no disponible, omitiendo limpieza UEFI${NC}"
+        else
+            # Mostrar entradas actuales para debug (útil durante instalación)
+            echo -e "${YELLOW}Entradas UEFI actuales con GRUB:${NC}"
+            GRUB_ENTRIES=$(efibootmgr | grep -i grub | wc -l)
+
+            if [ "$GRUB_ENTRIES" -gt 0 ]; then
+                efibootmgr | grep -i grub
+                echo -e "${CYAN}Eliminando $GRUB_ENTRIES entradas GRUB previas...${NC}"
+
+                # Opción más simple y robusta para el instalador
+                efibootmgr | grep -i grub | while read -r line; do
+                    BOOT_NUM=$(echo "$line" | cut -d'*' -f1 | sed 's/Boot//')
+                    if [ -n "$BOOT_NUM" ] && [ "$BOOT_NUM" != "Boot" ]; then
+                        echo "  Eliminando entrada: $BOOT_NUM"
+                        efibootmgr -b "$BOOT_NUM" -B >/dev/null 2>&1 || true
+                    fi
+                done
+
+                echo -e "${GREEN}✓ Entradas GRUB previas eliminadas${NC}"
+            else
+                echo -e "${GREEN}✓ No se encontraron entradas GRUB previas${NC}"
+            fi
+        fi
+
         sleep 4
 
         # Limpiar directorio EFI previo si existe
