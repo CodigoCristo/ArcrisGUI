@@ -45,17 +45,12 @@ wait_for_internet() {
         echo -e "${CYAN}🔄 Reintentando en 10 segundos...${NC}"
         echo ""
         echo -e "${BLUE}🔧 DIAGNÓSTICOS RECOMENDADOS:${NC}"
-        echo -e "${BLUE}   1. ${YELLOW}Conectividad Física:${NC}"
-        echo -e "${BLUE}      • Cable Ethernet conectado correctamente${NC}"
-        echo -e "${BLUE}      • LED de red activo en tu dispositivo${NC}"
-        echo -e "${BLUE}      • WiFi habilitado y conectado a la red correcta${NC}"
-        echo ""
-        echo -e "${BLUE}   2. ${YELLOW}Reiniciar Servicios:${NC}"
+        echo -e "${BLUE}   1. ${YELLOW}Reiniciar Servicios:${NC}"
         echo -e "${BLUE}      • systemctl restart NetworkManager${NC}"
         echo -e "${BLUE}      • systemctl restart dhcpcd${NC}"
         echo -e "${BLUE}      • ip link set [interfaz] up${NC}"
         echo ""
-        echo -e "${BLUE}   4. ${YELLOW}Router/Módem:${NC}"
+        echo -e "${BLUE}   2. ${YELLOW}Router/Módem:${NC}"
         echo -e "${BLUE}      • Reiniciar router (desconectar 30 seg)${NC}"
         echo -e "${BLUE}      • Verificar que otros dispositivos tengan internet${NC}"
         echo -e "${BLUE}      • Contactar ISP si el problema persiste${NC}"
@@ -65,7 +60,7 @@ wait_for_internet() {
 
         # Mostrar comando útil para verificar conectividad manualmente
         if [ $((attempt % 3)) -eq 0 ]; then
-            echo -e "${BLUE}💡 Comando manual: ping -c 3 www.google.com${NC}"
+            echo -e "${BLUE}💡 Revisa usando el comando manual: ping -c 3 www.google.com${NC}"
         fi
 
         sleep 10
@@ -2447,16 +2442,7 @@ install_pacstrap_with_retry "curl"
 install_pacstrap_with_retry "wget"
 install_pacstrap_with_retry "git"
 clear
-echo -e "${GREEN}✓ Instalanado extras${NC}"
-# chroot /mnt pacman -S yay-bin --noconfirm
-# chroot /mnt pacman -S alsi --noconfirm
-# Instalar yay-bin desde AUR usando makepkg
-chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
-sleep 2
-# Instalar alsi desde AUR usando makepkg
-chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && cd alsi && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
-sleep 2
-clear
+
 
 # Instalar herramientas específicas según el modo de particionado
 if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
@@ -2630,17 +2616,7 @@ update_system_chroot
 update_system_chroot
 sleep 3
 clear
-echo -e "${GREEN}✓ Instalanado extras${NC}"
-# chroot /mnt pacman -S yay-bin --noconfirm
-# chroot /mnt pacman -S alsi --noconfirm
 
-# Instalar yay-bin desde AUR usando makepkg
-chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && makepkg -si --noconfirm"
-
-# Instalar alsi desde AUR usando makepkg
-chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && cd alsi && makepkg -si --noconfirm"
-sleep 3
-clear
 
 # Configuración del sistema
 echo -e "${GREEN}| Configurando sistema base |${NC}"
@@ -2754,6 +2730,16 @@ else
     echo "   No se realizaron cambios"
 fi
 
+sleep 2
+clear
+echo -e "${GREEN}✓ Instalanado extras${NC}"
+# chroot /mnt pacman -S yay-bin --noconfirm
+# chroot /mnt pacman -S alsi --noconfirm
+# Instalar yay-bin desde AUR usando makepkg
+chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
+sleep 2
+# Instalar alsi desde AUR usando makepkg
+chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && cd alsi && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
 sleep 2
 clear
 
