@@ -4128,6 +4128,7 @@ case "$INSTALLATION_TYPE" in
                 install_yay_chroot_with_retry "xdg-desktop-portal-gnome"
                 install_yay_chroot_with_retry "gnome-shell-extensions"
                 install_yay_chroot_with_retry "gnome-browser-connector"
+                install_yay_chroot_with_retry "mission-center"
                 install_yay_chroot_with_retry "loupe"
                 install_yay_chroot_with_retry "showtime"
                 install_yay_chroot_with_retry "papers"
