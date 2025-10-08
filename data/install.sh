@@ -5156,7 +5156,6 @@ if [ "${FILESYSTEMS_ENABLED:-false}" = "true" ]; then
     install_pacman_chroot_with_retry "jfsutils"
     install_pacman_chroot_with_retry "btrfs-progs"
     install_pacman_chroot_with_retry "xfsprogs"
-    install_pacman_chroot_with_retry "reiserfsprogs"
     install_pacman_chroot_with_retry "e2fsprogs"
     install_pacman_chroot_with_retry "exfatprogs"
 
