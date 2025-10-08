@@ -3515,7 +3515,7 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "libva-mesa-driver"
             install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
             install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "vainfo"
+            install_pacman_chroot_with_retry "libva-utils"
 
         elif echo "$VGA_LINE" | grep -i "amd\|radeon" > /dev/null; then
             echo "Detectado hardware AMD/Radeon - Instalando driver open source amdgpu"
@@ -3533,7 +3533,7 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "libva-mesa-driver"
             install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
             install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "vainfo"
+            install_pacman_chroot_with_retry "libva-utils"
 
         elif echo "$VGA_LINE" | grep -i intel > /dev/null; then
             echo "Detectado hardware Intel - Instalando driver open source intel"
@@ -3548,7 +3548,7 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "lib32-mesa-vdpau"
             install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
             install_pacman_chroot_with_retry "intel-gpu-tools"
-            install_pacman_chroot_with_retry "vainfo"
+            install_pacman_chroot_with_retry "libva-utils"
             install_pacman_chroot_with_retry "vdpauinfo"
             install_pacman_chroot_with_retry "vpl-gpu-rt"
             install_yay_chroot_with_retry "intel-hybrid-codec-driver-git"
@@ -3689,7 +3689,7 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "vulkan-tools"
         install_pacman_chroot_with_retry "radeontop"
         install_pacman_chroot_with_retry "vdpauinfo"
-        install_pacman_chroot_with_retry "vainfo"
+        install_pacman_chroot_with_retry "libva-utils"
         install_yay_chroot_with_retry "amf-amdgpu-pro"
         install_yay_chroot_with_retry "amdgpu-pro-oglp"
         install_yay_chroot_with_retry "lib32-amdgpu-pro-oglp"
@@ -3720,7 +3720,7 @@ case "$DRIVER_VIDEO" in
 
         # Herramientas de diagnóstico (opcional)
         install_pacman_chroot_with_retry "intel-gpu-tools"
-        install_pacman_chroot_with_retry "vainfo"
+        install_pacman_chroot_with_retry "libva-utils"
         install_pacman_chroot_with_retry "vdpauinfo"
         install_pacman_chroot_with_retry "vpl-gpu-rt"
         install_yay_chroot_with_retry "intel-hybrid-codec-driver-git"
@@ -3741,7 +3741,7 @@ case "$DRIVER_VIDEO" in
 
         # Herramientas de diagnóstico (opcional)
         install_pacman_chroot_with_retry "intel-gpu-tools"
-        install_pacman_chroot_with_retry "vainfo"
+        install_pacman_chroot_with_retry "libva-utils"
         install_pacman_chroot_with_retry "vdpauinfo"
         ;;
     "Máquina Virtual")
