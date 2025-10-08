@@ -13,7 +13,8 @@ typedef enum {
     VIDEO_DRIVER_NVIDIA_470,
     VIDEO_DRIVER_NVIDIA_390,
     VIDEO_DRIVER_AMD_PRIVATE,
-    VIDEO_DRIVER_INTEL_PRIVATE,
+    VIDEO_DRIVER_INTEL_NEW,
+    VIDEO_DRIVER_INTEL_OLD,
     VIDEO_DRIVER_VIRTUAL_MACHINE
 } VideoDriverType;
 
@@ -49,34 +50,34 @@ typedef struct _HardwareInfo {
 typedef struct _WindowHardwareData {
     GtkWindow *window;
     GtkBuilder *builder;
-    
+
     // Botones de la ventana
     GtkButton *close_button;
     GtkButton *save_button;
-    
+
     // Grupos de preferencias
     AdwPreferencesGroup *video_group;
     AdwPreferencesGroup *audio_group;
     AdwPreferencesGroup *network_group;
-    
+
     // ComboRows para selección de drivers
     AdwComboRow *driver_video_combo;
     AdwComboRow *driver_sonido_combo;
     AdwComboRow *driver_wifi_combo;
     AdwComboRow *driver_bluetooth_combo;
-    
+
     // Estados actuales de drivers
     VideoDriverType current_video_driver;
     AudioDriverType current_audio_driver;
     WifiDriverType current_wifi_driver;
     BluetoothDriverType current_bluetooth_driver;
-    
+
     // Información de hardware detectado
     HardwareInfo *hardware_info;
-    
+
     // Estado de inicialización
     gboolean is_initialized;
-    
+
 } WindowHardwareData;
 
 // Funciones principales de la ventana

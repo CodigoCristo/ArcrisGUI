@@ -67,7 +67,8 @@
                               <item>Nvidia-470</item>
                               <item>Nvidia-390</item>
                               <item>AMD Private</item>
-                              <item>Intel Gen (4-9)</item>
+                              <item>Intel (Gen 8+)</item>
+                              <item>Intel (Gen 2-7)</item>
                               <item>Máquina Virtual</item>
                             </items>
                           </object>

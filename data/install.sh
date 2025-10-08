@@ -3514,18 +3514,17 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "vulkan-intel"
             install_pacman_chroot_with_retry "lib32-vulkan-intel"
             install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "intel-media-driver"
-            install_pacman_chroot_with_retry "libva-intel-driver"
-            install_pacman_chroot_with_retry "opencl-mesa"
-            install_pacman_chroot_with_retry "opencl-rusticl-mesa"
+            install_pacman_chroot_with_retry "intel-media-driver"  # Gen 8+ (VA-API moderna)
+            install_pacman_chroot_with_retry "libva-intel-driver"  # Fallback para modelos más viejos
             install_pacman_chroot_with_retry "mesa-vdpau"
             install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+            install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
+            install_pacman_chroot_with_retry "opencl-rusticl-mesa"    # Alternativa moderna
             install_pacman_chroot_with_retry "intel-gpu-tools"
-            install_pacman_chroot_with_retry "vdpauinfo"
             install_pacman_chroot_with_retry "vainfo"
-            install_yay_chroot_with_retry "intel-compute-runtime"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "vpl-gpu-rt"
             install_yay_chroot_with_retry "intel-hybrid-codec-driver-git"
-            install_yay_chroot_with_retry "vpl-gpu-rt"
 
         elif echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
 
@@ -3601,33 +3600,33 @@ case "$DRIVER_VIDEO" in
         echo "Instalando driver NVIDIA para kernel linux"
         install_pacman_chroot_with_retry "mesa"
         install_pacman_chroot_with_retry "lib32-mesa"
-        install_yay_chroot_with_retry "nvidia"
-        install_yay_chroot_with_retry "nvidia-utils"
-        install_yay_chroot_with_retry "lib32-nvidia-utils"
-        install_yay_chroot_with_retry "nvidia-settings"
-        install_yay_chroot_with_retry "opencl-nvidia"
-        install_yay_chroot_with_retry "lib32-opencl-nvidia"
+        install_pacman_chroot_with_retry "nvidia"
+        install_pacman_chroot_with_retry "nvidia-utils"
+        install_pacman_chroot_with_retry "lib32-nvidia-utils"
+        install_pacman_chroot_with_retry "nvidia-settings"
+        install_pacman_chroot_with_retry "opencl-nvidia"
+        install_pacman_chroot_with_retry "lib32-opencl-nvidia"
         ;;
     "nvidia-lts")
         echo "Instalando driver NVIDIA para kernel LTS"
         install_pacman_chroot_with_retry "mesa"
         install_pacman_chroot_with_retry "lib32-mesa"
-        install_yay_chroot_with_retry "nvidia-lts"
-        install_yay_chroot_with_retry "nvidia-settings"
-        install_yay_chroot_with_retry "lib32-nvidia-utils"
-        install_yay_chroot_with_retry "opencl-nvidia"
-        install_yay_chroot_with_retry "lib32-opencl-nvidia"
+        install_pacman_chroot_with_retry "nvidia-lts"
+        install_pacman_chroot_with_retry "nvidia-settings"
+        install_pacman_chroot_with_retry "lib32-nvidia-utils"
+        install_pacman_chroot_with_retry "opencl-nvidia"
+        install_pacman_chroot_with_retry "lib32-opencl-nvidia"
         ;;
     "nvidia-dkms")
         echo "Instalando driver NVIDIA DKMS"
         install_pacman_chroot_with_retry "mesa"
         install_pacman_chroot_with_retry "lib32-mesa"
-        install_yay_chroot_with_retry "nvidia-dkms"
-        install_yay_chroot_with_retry "nvidia-utils"
-        install_yay_chroot_with_retry "nvidia-settings"
-        install_yay_chroot_with_retry "lib32-nvidia-utils"
-        install_yay_chroot_with_retry "opencl-nvidia"
-        install_yay_chroot_with_retry "lib32-opencl-nvidia"
+        install_pacman_chroot_with_retry "nvidia-dkms"
+        install_pacman_chroot_with_retry "nvidia-utils"
+        install_pacman_chroot_with_retry "nvidia-settings"
+        install_pacman_chroot_with_retry "lib32-nvidia-utils"
+        install_pacman_chroot_with_retry "opencl-nvidia"
+        install_pacman_chroot_with_retry "lib32-opencl-nvidia"
         ;;
     "nvidia-470xx-dkms")
         echo "Instalando driver NVIDIA serie 470.xx con DKMS"
@@ -3671,23 +3670,52 @@ case "$DRIVER_VIDEO" in
         install_yay_chroot_with_retry "lib32-vulkan-amdgpu-pro"
         install_yay_chroot_with_retry "opencl-amd"
         ;;
-    "Intel Gen(4-9)")
-        echo "Instalando drivers Modernos de Intel"
+    "Intel (Gen 8+)")
+        echo "Detectado hardware Intel - Instalando driver open source intel"
+        # DRI/3D (obligatorio)
         install_pacman_chroot_with_retry "mesa"
         install_pacman_chroot_with_retry "lib32-mesa"
-        install_pacman_chroot_with_retry "xf86-video-intel"
+
+        # Vulkan (recomendado para Gen 8+)
         install_pacman_chroot_with_retry "vulkan-intel"
         install_pacman_chroot_with_retry "lib32-vulkan-intel"
         install_pacman_chroot_with_retry "vulkan-tools"
-        install_pacman_chroot_with_retry "intel-media-driver"
-        install_pacman_chroot_with_retry "libva-intel-driver"
-        install_pacman_chroot_with_retry "opencl-mesa"
-        install_pacman_chroot_with_retry "opencl-rusticl-mesa"
+
+        # Aceleración de video (obligatorio)
+        install_pacman_chroot_with_retry "intel-media-driver"  # Gen 8+ (VA-API moderna)
+        install_pacman_chroot_with_retry "libva-intel-driver"  # Fallback para modelos más viejos
         install_pacman_chroot_with_retry "mesa-vdpau"
         install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+
+        # OpenCL (opcional)
+        install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
+        install_pacman_chroot_with_retry "opencl-rusticl-mesa"    # Alternativa moderna
+
+        # Herramientas de diagnóstico (opcional)
         install_pacman_chroot_with_retry "intel-gpu-tools"
-        install_pacman_chroot_with_retry "vdpauinfo"
         install_pacman_chroot_with_retry "vainfo"
+        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "vpl-gpu-rt"
+        install_yay_chroot_with_retry "intel-hybrid-codec-driver-git"
+        ;;
+    "Intel (Gen 2-7)")
+        echo "Instalando drivers Modernos de Intel"
+        # DRI/3D (obligatorio)
+        install_pacman_chroot_with_retry "mesa-amber"
+        install_pacman_chroot_with_retry "lib32-mesa-amber"
+
+        # Aceleración de video (obligatorio)
+        install_pacman_chroot_with_retry "libva-intel-driver"  # Para VA-API
+        install_pacman_chroot_with_retry "mesa-vdpau"          # Para VDPAU
+        install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+
+        # OpenCL (opcional, solo si lo necesitas)
+        install_pacman_chroot_with_retry "opencl-mesa"  # Usa Clover, NO Rusticl
+
+        # Herramientas de diagnóstico (opcional)
+        install_pacman_chroot_with_retry "intel-gpu-tools"
+        install_pacman_chroot_with_retry "vainfo"
+        install_pacman_chroot_with_retry "vdpauinfo"
         ;;
     "Máquina Virtual")
 
@@ -4100,25 +4128,25 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar X.org como base para todos los escritorios
         echo -e "${CYAN}Instalando servidor X.org...${NC}"
-        install_yay_chroot_with_retry "xorg-server"
-        install_yay_chroot_with_retry "xorg-server-common"
-        install_yay_chroot_with_retry "xorg-xinit"
-        install_yay_chroot_with_retry "xorg-xauth"
-        install_yay_chroot_with_retry "xorg-xsetroot"
-        install_yay_chroot_with_retry "xorg-xrandr"
-        install_yay_chroot_with_retry "xorg-setxkbmap"
-        install_yay_chroot_with_retry "xorg-xrdb"
-        install_yay_chroot_with_retry "xorg-xwayland"
-        install_yay_chroot_with_retry "ffmpegthumbs"
-        install_yay_chroot_with_retry "ffmpegthumbnailer"
-        install_yay_chroot_with_retry "freetype2"
-        install_yay_chroot_with_retry "poppler-glib"
-        install_yay_chroot_with_retry "libgsf"
-        install_yay_chroot_with_retry "libnotify"
-        install_yay_chroot_with_retry "tumbler"
-        install_yay_chroot_with_retry "gdk-pixbuf2"
-        install_yay_chroot_with_retry "fontconfig"
-        install_yay_chroot_with_retry "gvfs"
+        install_pacman_chroot_with_retry "xorg-server"
+        install_pacman_chroot_with_retry "xorg-server-common"
+        install_pacman_chroot_with_retry "xorg-xinit"
+        install_pacman_chroot_with_retry "xorg-xauth"
+        install_pacman_chroot_with_retry "xorg-xsetroot"
+        install_pacman_chroot_with_retry "xorg-xrandr"
+        install_pacman_chroot_with_retry "xorg-setxkbmap"
+        install_pacman_chroot_with_retry "xorg-xrdb"
+        install_pacman_chroot_with_retry "xorg-xwayland"
+        install_pacman_chroot_with_retry "ffmpegthumbs"
+        install_pacman_chroot_with_retry "ffmpegthumbnailer"
+        install_pacman_chroot_with_retry "freetype2"
+        install_pacman_chroot_with_retry "poppler-glib"
+        install_pacman_chroot_with_retry "libgsf"
+        install_pacman_chroot_with_retry "libnotify"
+        install_pacman_chroot_with_retry "tumbler"
+        install_pacman_chroot_with_retry "gdk-pixbuf2"
+        install_pacman_chroot_with_retry "fontconfig"
+        install_pacman_chroot_with_retry "gvfs"
 
         case "$DESKTOP_ENVIRONMENT" in
             "GNOME")
