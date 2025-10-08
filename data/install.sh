@@ -3510,7 +3510,6 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "mesa"
             install_pacman_chroot_with_retry "lib32-mesa"
             install_pacman_chroot_with_retry "opencl-mesa"
-            install_pacman_chroot_with_retry "opencl-rusticl-mesa"
             install_pacman_chroot_with_retry "mesa-vdpau"
             install_pacman_chroot_with_retry "lib32-mesa-vdpau"
             install_pacman_chroot_with_retry "libva-mesa-driver"
@@ -3528,7 +3527,6 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "mesa"
             install_pacman_chroot_with_retry "lib32-mesa"
             install_pacman_chroot_with_retry "opencl-mesa"
-            install_pacman_chroot_with_retry "opencl-rusticl-mesa"
             install_pacman_chroot_with_retry "radeontop"
             install_pacman_chroot_with_retry "mesa-vdpau"
             install_pacman_chroot_with_retry "lib32-mesa-vdpau"
@@ -3549,7 +3547,6 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "mesa-vdpau"
             install_pacman_chroot_with_retry "lib32-mesa-vdpau"
             install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
-            install_pacman_chroot_with_retry "opencl-rusticl-mesa"    # Alternativa moderna
             install_pacman_chroot_with_retry "intel-gpu-tools"
             install_pacman_chroot_with_retry "vainfo"
             install_pacman_chroot_with_retry "vdpauinfo"
@@ -3719,7 +3716,7 @@ case "$DRIVER_VIDEO" in
 
         # OpenCL (opcional)
         install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
-        install_pacman_chroot_with_retry "opencl-rusticl-mesa"    # Alternativa moderna
+        install_pacman_chroot_with_retry "opencl-mesa"    # Alternativa moderna
 
         # Herramientas de diagnóstico (opcional)
         install_pacman_chroot_with_retry "intel-gpu-tools"
@@ -3740,7 +3737,7 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "lib32-mesa-vdpau"
 
         # OpenCL (opcional, solo si lo necesitas)
-        install_pacman_chroot_with_retry "opencl-mesa"  # Usa Clover, NO Rusticl
+        install_pacman_chroot_with_retry "opencl-mesa"  # Usa Clover
 
         # Herramientas de diagnóstico (opcional)
         install_pacman_chroot_with_retry "intel-gpu-tools"
