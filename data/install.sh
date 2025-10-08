@@ -23,6 +23,22 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # ================================================================================================
+# FUNCIÓN PARA MANEJO CORRECTO DE NOMENCLATURA DE PARTICIONES NVMe
+# ================================================================================================
+# Función para obtener el nombre correcto de la partición según el tipo de dispositivo
+get_partition_name() {
+    local disk="$1"
+    local partition_number="$2"
+
+    # Verificar si es un dispositivo NVMe
+    if [[ "$disk" == *"nvme"* ]]; then
+        echo "${disk}p${partition_number}"
+    else
+        echo "${disk}${partition_number}"
+    fi
+}
+
+# ================================================================================================
 # FUNCIONES DE CONECTIVIDAD Y REINTENTOS INFINITOS PARA PACMAN/YAY
 # ================================================================================================
 # Función para verificar conectividad a internet
@@ -1350,19 +1366,19 @@ partition_auto() {
         echo -e "${GREEN}| Formateando particiones UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkfs.fat -F32 -v ${SELECTED_DISK}1
-        mkswap ${SELECTED_DISK}2
-        mkfs.ext4 -F ${SELECTED_DISK}3
+        mkfs.fat -F32 -v $(get_partition_name "$SELECTED_DISK" "1")
+        mkswap $(get_partition_name "$SELECTED_DISK" "2")
+        mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "3")
         sleep 2
 
         # Montar particiones
         echo -e "${GREEN}| Montando particiones UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount ${SELECTED_DISK}3 /mnt
-        swapon ${SELECTED_DISK}2
+        mount $(get_partition_name "$SELECTED_DISK" "3") /mnt
+        swapon $(get_partition_name "$SELECTED_DISK" "2")
         mkdir -p /mnt/boot/efi
-        mount ${SELECTED_DISK}1 /mnt/boot/efi
+        mount $(get_partition_name "$SELECTED_DISK" "1") /mnt/boot/efi
 
     else
         # Configuración para BIOS Legacy
@@ -1391,16 +1407,16 @@ partition_auto() {
         echo -e "${GREEN}| Formateando particiones BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkswap ${SELECTED_DISK}1
-        mkfs.ext4 -F ${SELECTED_DISK}2
+        mkswap $(get_partition_name "$SELECTED_DISK" "1")
+        mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "2")
         sleep 2
 
         # Montar particiones
         echo -e "${GREEN}| Montando particiones BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount ${SELECTED_DISK}2 /mnt
-        swapon ${SELECTED_DISK}1
+        mount $(get_partition_name "$SELECTED_DISK" "2") /mnt
+        swapon $(get_partition_name "$SELECTED_DISK" "1")
         mkdir -p /mnt/boot
     fi
 }
@@ -1542,9 +1558,9 @@ partition_auto_btrfs() {
         echo -e "${GREEN}| Formateando particiones BTRFS UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkfs.fat -F32 -v ${SELECTED_DISK}1
-        mkswap ${SELECTED_DISK}2
-        mkfs.btrfs -f ${SELECTED_DISK}3
+        mkfs.fat -F32 -v $(get_partition_name "$SELECTED_DISK" "1")
+        mkswap $(get_partition_name "$SELECTED_DISK" "2")
+        mkfs.btrfs -f $(get_partition_name "$SELECTED_DISK" "3")
         sleep 2
 
         # Verificar que las particiones estén disponibles y no montadas
@@ -1582,15 +1598,16 @@ partition_auto_btrfs() {
         fi
 
         # Verificar específicamente la partición BTRFS
-        if mountpoint -q "${SELECTED_DISK}3" 2>/dev/null; then
-            echo -e "${YELLOW}Desmontando ${SELECTED_DISK}3...${NC}"
-            umount -f "${SELECTED_DISK}3" 2>/dev/null || true
+        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
+        if mountpoint -q "$PARTITION_3" 2>/dev/null; then
+            echo -e "${YELLOW}Desmontando $PARTITION_3...${NC}"
+            umount -f "$PARTITION_3" 2>/dev/null || true
             sleep 2
         fi
 
-        echo -e "${CYAN}Montando partición BTRFS ${SELECTED_DISK}3 en /mnt...${NC}"
-        mount ${SELECTED_DISK}3 /mnt || {
-            echo -e "${RED}ERROR: No se pudo montar ${SELECTED_DISK}3${NC}"
+        echo -e "${CYAN}Montando partición BTRFS $PARTITION_3 en /mnt...${NC}"
+        mount "$PARTITION_3" /mnt || {
+            echo -e "${RED}ERROR: No se pudo montar $PARTITION_3${NC}"
             exit 1
         }
 
@@ -1609,13 +1626,16 @@ partition_auto_btrfs() {
         umount /mnt
 
         # Montar subvolúmenes
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}3 /mnt
-        swapon ${SELECTED_DISK}2
+        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
+        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
+        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ "$PARTITION_3" /mnt
+        swapon "$PARTITION_2"
         mkdir -p /mnt/{boot/efi,home,var,tmp}
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}3 /mnt/home
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}3 /mnt/var
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
-        mount ${SELECTED_DISK}1 /mnt/boot/efi
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var "$PARTITION_3" /mnt/var
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "$PARTITION_3" /mnt/tmp
+        mount "$PARTITION_1" /mnt/boot/efi
 
         # Instalar herramientas específicas para BTRFS
         install_pacstrap_package "btrfs-progs"
@@ -1668,9 +1688,9 @@ partition_auto_btrfs() {
         echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkfs.ext4 -F ${SELECTED_DISK}1
-        mkswap ${SELECTED_DISK}2
-        mkfs.btrfs -f ${SELECTED_DISK}3
+        mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "1")
+        mkswap $(get_partition_name "$SELECTED_DISK" "2")
+        mkfs.btrfs -f $(get_partition_name "$SELECTED_DISK" "3")
         sleep 2
 
         # Verificar que las particiones estén disponibles y no montadas
@@ -1708,15 +1728,16 @@ partition_auto_btrfs() {
         fi
 
         # Verificar específicamente la partición BTRFS
-        if mountpoint -q "${SELECTED_DISK}3" 2>/dev/null; then
-            echo -e "${YELLOW}Desmontando ${SELECTED_DISK}3...${NC}"
-            umount -f "${SELECTED_DISK}3" 2>/dev/null || true
+        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
+        if mountpoint -q "$PARTITION_3" 2>/dev/null; then
+            echo -e "${YELLOW}Desmontando $PARTITION_3...${NC}"
+            umount -f "$PARTITION_3" 2>/dev/null || true
             sleep 2
         fi
 
-        echo -e "${CYAN}Montando partición BTRFS ${SELECTED_DISK}3 en /mnt...${NC}"
-        mount ${SELECTED_DISK}3 /mnt || {
-            echo -e "${RED}ERROR: No se pudo montar ${SELECTED_DISK}3${NC}"
+        echo -e "${CYAN}Montando partición BTRFS $PARTITION_3 en /mnt...${NC}"
+        mount "$PARTITION_3" /mnt || {
+            echo -e "${RED}ERROR: No se pudo montar $PARTITION_3${NC}"
             exit 1
         }
 
@@ -1735,13 +1756,16 @@ partition_auto_btrfs() {
         umount /mnt
 
         # Montar subvolúmenes
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}3 /mnt
-        swapon ${SELECTED_DISK}2
+        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
+        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
+        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ "$PARTITION_3" /mnt
+        swapon "$PARTITION_2"
         mkdir -p /mnt/{boot,home,var,tmp}
-        mount ${SELECTED_DISK}1 /mnt/boot
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}3 /mnt/home
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}3 /mnt/var
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
+        mount "$PARTITION_1" /mnt/boot
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var "$PARTITION_3" /mnt/var
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "$PARTITION_3" /mnt/tmp
 
         # Instalar herramientas específicas para BTRFS
         install_pacstrap_package "btrfs-progs"
@@ -1788,8 +1812,8 @@ partition_cifrado() {
         parted $SELECTED_DISK --script --align optimal mkpart primary 1537MiB 100%
 
         # Formatear particiones
-        mkfs.fat -F32 ${SELECTED_DISK}1
-        mkfs.ext4 -F ${SELECTED_DISK}2
+        mkfs.fat -F32 $(get_partition_name "$SELECTED_DISK" "1")
+        mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "2")
 
         # Sincronizar y esperar reconocimiento de particiones
         echo -e "${CYAN}Sincronizando sistema de archivos...${NC}"
@@ -1805,17 +1829,18 @@ partition_cifrado() {
 
         # Limpiar firmas de sistemas de archivos existentes
         echo -e "${CYAN}Limpiando firmas de sistemas de archivos...${NC}"
-        wipefs -af ${SELECTED_DISK}3 2>/dev/null || true
-        dd if=/dev/zero of=${SELECTED_DISK}3 bs=1M count=10 2>/dev/null || true
+        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
+        wipefs -af "$PARTITION_3" 2>/dev/null || true
+        dd if=/dev/zero of="$PARTITION_3" bs=1M count=10 2>/dev/null || true
 
-        echo -e "${CYAN}Aplicando cifrado LUKS a ${SELECTED_DISK}3...${NC}"
+        echo -e "${CYAN}Aplicando cifrado LUKS a $PARTITION_3...${NC}"
         echo -e "${YELLOW}IMPORTANTE: Esto puede tomar unos minutos dependiendo del tamaño del disco${NC}"
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase ${SELECTED_DISK}3 -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase "$PARTITION_3" -; then
             echo -e "${RED}ERROR: Falló el cifrado LUKS de la partición${NC}"
             exit 1
         fi
 
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode ${SELECTED_DISK}3 cryptlvm -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode "$PARTITION_3" cryptlvm -; then
             echo -e "${RED}ERROR: No se pudo abrir el dispositivo cifrado${NC}"
             exit 1
         fi
@@ -1828,7 +1853,7 @@ partition_cifrado() {
 
         # Crear backup del header LUKS (recomendación de seguridad)
         echo -e "${CYAN}Creando backup del header LUKS...${NC}"
-        cryptsetup luksHeaderBackup ${SELECTED_DISK}3 --header-backup-file /tmp/luks-header-backup
+        cryptsetup luksHeaderBackup "$PARTITION_3" --header-backup-file /tmp/luks-header-backup
         echo -e "${GREEN}✓ Backup del header LUKS guardado en /tmp/luks-header-backup${NC}"
         echo -e "${YELLOW}IMPORTANTE: Copia este archivo a un lugar seguro después de la instalación${NC}"
 
@@ -1902,12 +1927,13 @@ partition_cifrado() {
 
         # Verificar que las particiones existan antes de montar
         echo -e "${CYAN}Verificando particiones antes del montaje...${NC}"
-        if [ ! -b "${SELECTED_DISK}1" ]; then
-            echo -e "${RED}ERROR: Partición EFI ${SELECTED_DISK}1 no existe${NC}"
+        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
+        if [ ! -b "$PARTITION_1" ]; then
+            echo -e "${RED}ERROR: Partición EFI $PARTITION_1 no existe${NC}"
             exit 1
         fi
-        if [ ! -b "${SELECTED_DISK}1" ]; then
-            echo -e "${RED}ERROR: Partición boot ${SELECTED_DISK}1 no existe${NC}"
+        if [ ! -b "$PARTITION_1" ]; then
+            echo -e "${RED}ERROR: Partición boot $PARTITION_1 no existe${NC}"
             exit 1
         fi
 
@@ -1919,7 +1945,7 @@ partition_cifrado() {
         mkdir -p /mnt/boot
 
         echo -e "${CYAN}Montando partición boot...${NC}"
-        if ! mount ${SELECTED_DISK}1 /mnt/boot; then
+        if ! mount "$PARTITION_1" /mnt/boot; then
             echo -e "${RED}ERROR: Falló el montaje de la partición boot${NC}"
             exit 1
         fi
@@ -1928,7 +1954,7 @@ partition_cifrado() {
         mkdir -p /mnt/boot/efi
 
         echo -e "${CYAN}Montando partición EFI...${NC}"
-        if ! mount ${SELECTED_DISK}1 /mnt/boot/efi; then
+        if ! mount "$PARTITION_1" /mnt/boot/efi; then
             echo -e "${RED}ERROR: Falló el montaje de la partición EFI${NC}"
             exit 1
         fi
@@ -1974,7 +2000,7 @@ partition_cifrado() {
         parted $SELECTED_DISK --script --align optimal mkpart primary 513MiB 100%
 
         # Formatear partición boot
-        mkfs.ext4 -F ${SELECTED_DISK}1
+        mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "1")
 
         # Sincronizar y esperar reconocimiento de particiones
         echo -e "${CYAN}Sincronizando sistema de archivos...${NC}"
@@ -1990,15 +2016,16 @@ partition_cifrado() {
 
         # Limpiar firmas de sistemas de archivos existentes
         echo -e "${CYAN}Limpiando firmas de sistemas de archivos...${NC}"
-        wipefs -af ${SELECTED_DISK}2 2>/dev/null || true
-        dd if=/dev/zero of=${SELECTED_DISK}2 bs=1M count=10 2>/dev/null || true
+        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
+        wipefs -af "$PARTITION_2" 2>/dev/null || true
+        dd if=/dev/zero of="$PARTITION_2" bs=1M count=10 2>/dev/null || true
 
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase ${SELECTED_DISK}2 -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase "$PARTITION_2" -; then
             echo -e "${RED}ERROR: Falló el cifrado LUKS de la partición${NC}"
             exit 1
         fi
 
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode ${SELECTED_DISK}2 cryptlvm -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode "$PARTITION_2" cryptlvm -; then
             echo -e "${RED}ERROR: No se pudo abrir el dispositivo cifrado${NC}"
             exit 1
         fi
@@ -2011,7 +2038,7 @@ partition_cifrado() {
 
         # Crear backup del header LUKS (recomendación de seguridad)
         echo -e "${CYAN}Creando backup del header LUKS...${NC}"
-        cryptsetup luksHeaderBackup ${SELECTED_DISK}2 --header-backup-file /tmp/luks-header-backup
+        cryptsetup luksHeaderBackup "$PARTITION_2" --header-backup-file /tmp/luks-header-backup
         echo -e "${GREEN}✓ Backup del header LUKS guardado en /tmp/luks-header-backup${NC}"
         echo -e "${YELLOW}IMPORTANTE: Copia este archivo a un lugar seguro después de la instalación${NC}"
 
@@ -2085,8 +2112,9 @@ partition_cifrado() {
 
         # Verificar que la partición boot exista
         echo -e "${CYAN}Verificando partición boot antes del montaje...${NC}"
-        if [ ! -b "${SELECTED_DISK}1" ]; then
-            echo -e "${RED}ERROR: Partición boot ${SELECTED_DISK}1 no existe${NC}"
+        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
+        if [ ! -b "$PARTITION_1" ]; then
+            echo -e "${RED}ERROR: Partición boot $PARTITION_1 no existe${NC}"
             exit 1
         fi
 
@@ -2099,7 +2127,7 @@ partition_cifrado() {
         mkdir -p /mnt/boot
 
         echo -e "${CYAN}Montando partición boot...${NC}"
-        if ! mount ${SELECTED_DISK}1 /mnt/boot; then
+        if ! mount "$PARTITION_1" /mnt/boot; then
             echo -e "${RED}ERROR: Falló el montaje de la partición boot${NC}"
             exit 1
         fi
@@ -2874,16 +2902,17 @@ if true; then
             partprobe $SELECTED_DISK 2>/dev/null || true
             sleep 1
 
-            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+            PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
+            CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_3")
             # Reintentar si no se obtuvo UUID
             if [ -z "$CRYPT_UUID" ]; then
                 echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
                 sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+                CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_3")
             fi
 
             if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}3${NC}"
+                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada $PARTITION_3${NC}"
                 echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
                 exit 1
             fi
@@ -2983,16 +3012,17 @@ if true; then
             partprobe $SELECTED_DISK 2>/dev/null || true
             sleep 1
 
-            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+            PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
+            CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_2")
             # Reintentar si no se obtuvo UUID
             if [ -z "$CRYPT_UUID" ]; then
                 echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
                 sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+                CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_2")
             fi
 
             if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}2${NC}"
+                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada $PARTITION_2${NC}"
                 echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
                 exit 1
             fi
@@ -3936,9 +3966,11 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 
     # Configurar crypttab
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
+        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
+        CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_3")
     else
-        CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
+        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
+        CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_2")
     fi
     echo "cryptlvm UUID=${CRYPT_UUID} none luks,discard" >> /mnt/etc/crypttab
     echo -e "${GREEN}✓ Configuración crypttab creada para montaje automático${NC}"
@@ -3971,10 +4003,13 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo "# <file system> <mount point> <type> <options> <dump> <pass>" >> /mnt/etc/fstab
     echo "/dev/mapper/vg0-root / ext4 rw,relatime 0 1" >> /mnt/etc/fstab
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
-        echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
+        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
+        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
+        echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
+        echo "UUID=$(blkid -s UUID -o value "$PARTITION_2") /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
     else
-        echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
+        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
+        echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
     fi
     echo "/dev/mapper/vg0-swap none swap defaults 0 0" >> /mnt/etc/fstab
 
@@ -4151,36 +4186,36 @@ case "$INSTALLATION_TYPE" in
         case "$DESKTOP_ENVIRONMENT" in
             "GNOME")
                 echo -e "${CYAN}Instalando GNOME Desktop...${NC}"
-                install_yay_chroot_with_retry "gdm"
-                install_yay_chroot_with_retry "gnome-session"
-                install_yay_chroot_with_retry "gnome-settings-daemon"
-                install_yay_chroot_with_retry "gnome-shell"
-                install_yay_chroot_with_retry "gnome-control-center"
-                install_yay_chroot_with_retry "nautilus"
-                install_yay_chroot_with_retry "gvfs"
-                install_yay_chroot_with_retry "gvfs-goa"
-                install_yay_chroot_with_retry "gnome-console"
-                install_yay_chroot_with_retry "gnome-text-editor"
-                install_yay_chroot_with_retry "gnome-calculator"
-                install_yay_chroot_with_retry "gnome-system-monitor"
-                install_yay_chroot_with_retry "gnome-disk-utility"
-                install_yay_chroot_with_retry "baobab"
-                install_yay_chroot_with_retry "dconf-editor"
-                install_yay_chroot_with_retry "gnome-themes-extra"
-                install_yay_chroot_with_retry "gnome-tweaks"
-                install_yay_chroot_with_retry "gnome-backgrounds"
-                install_yay_chroot_with_retry "gnome-keyring"
-                install_yay_chroot_with_retry "gnome-user-docs"
-                install_yay_chroot_with_retry "gnome-software"
-                install_yay_chroot_with_retry "xdg-desktop-portal-gnome"
-                install_yay_chroot_with_retry "gnome-shell-extensions"
-                install_yay_chroot_with_retry "gnome-browser-connector"
-                install_yay_chroot_with_retry "mission-center"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
+                install_pacman_chroot_with_retry "gdm"
+                install_pacman_chroot_with_retry "gnome-session"
+                install_pacman_chroot_with_retry "gnome-settings-daemon"
+                install_pacman_chroot_with_retry "gnome-shell"
+                install_pacman_chroot_with_retry "gnome-control-center"
+                install_pacman_chroot_with_retry "nautilus"
+                install_pacman_chroot_with_retry "gvfs"
+                install_pacman_chroot_with_retry "gvfs-goa"
+                install_pacman_chroot_with_retry "gnome-console"
+                install_pacman_chroot_with_retry "gnome-text-editor"
+                install_pacman_chroot_with_retry "gnome-calculator"
+                install_pacman_chroot_with_retry "gnome-system-monitor"
+                install_pacman_chroot_with_retry "gnome-disk-utility"
+                install_pacman_chroot_with_retry "baobab"
+                install_pacman_chroot_with_retry "dconf-editor"
+                install_pacman_chroot_with_retry "gnome-themes-extra"
+                install_pacman_chroot_with_retry "gnome-tweaks"
+                install_pacman_chroot_with_retry "gnome-backgrounds"
+                install_pacman_chroot_with_retry "gnome-keyring"
+                install_pacman_chroot_with_retry "gnome-user-docs"
+                install_pacman_chroot_with_retry "gnome-software"
+                install_pacman_chroot_with_retry "xdg-desktop-portal-gnome"
+                install_pacman_chroot_with_retry "gnome-shell-extensions"
+                install_pacman_chroot_with_retry "gnome-browser-connector"
+                install_pacman_chroot_with_retry "mission-center"
+                install_pacman_chroot_with_retry "loupe"
+                install_pacman_chroot_with_retry "showtime"
+                install_pacman_chroot_with_retry "papers"
                 echo "Installing extension-manager..."
-                install_yay_chroot_with_retry "extension-manager"
+                install_pacman_chroot_with_retry "extension-manager"
                 chroot /mnt /bin/bash -c "systemctl enable gdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
                 ;;
