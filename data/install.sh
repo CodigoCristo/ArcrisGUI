@@ -3784,7 +3784,6 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "libva-utils"
             install_pacman_chroot_with_retry "vdpauinfo"
             install_pacman_chroot_with_retry "vpl-gpu-rt"
-            install_yay_chroot_with_retry "intel-hybrid-codec-driver-git"
 
         elif echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
 
@@ -3956,7 +3955,6 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "libva-utils"
         install_pacman_chroot_with_retry "vdpauinfo"
         install_pacman_chroot_with_retry "vpl-gpu-rt"
-        install_yay_chroot_with_retry "intel-hybrid-codec-driver-git"
         ;;
     "Intel (Gen 2-7)")
         echo "Instalando drivers Modernos de Intel"
