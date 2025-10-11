@@ -39,7 +39,7 @@ get_partition_name() {
 }
 
 # ================================================================================================
-# FUNCIONES DE CONECTIVIDAD Y REINTENTOS LIMITADOS (25 INTENTOS) PARA PACMAN/YAY
+# FUNCIONES DE CONECTIVIDAD Y REINTENTOS INFINITOS PARA PACMAN/YAY
 # ================================================================================================
 # Función para verificar conectividad a internet
 check_internet() {
@@ -52,11 +52,11 @@ check_internet() {
     fi
 }
 
-# Función para esperar conexión a internet con reintentos limitados (25 intentos)
+# Función para esperar conexión a internet con reintentos infinitos
 wait_for_internet() {
     local attempt=1
 
-    while ! check_internet && [ $attempt -le 25 ]; do
+    while ! check_internet; do
         echo -e "${YELLOW}⚠️  Intento #$attempt - Sin conexión a internet${NC}"
         echo -e "${CYAN}🔄 Reintentando en 10 segundos...${NC}"
         echo ""
@@ -92,13 +92,6 @@ wait_for_internet() {
         fi
     done
 
-    # Si superó los 25 intentos sin conexión
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo establecer conexión a internet después de 25 intentos${NC}"
-        echo -e "${YELLOW}⚠️  La instalación no puede continuar sin conexión a internet${NC}"
-        return 1
-    fi
-
     echo -e "${GREEN}🎉 ¡CONEXIÓN A INTERNET RESTABLECIDA!${NC}"
     echo -e "${CYAN}⏰ Continuando con la instalación...${NC}"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -110,13 +103,13 @@ wait_for_internet() {
 
 
 
-# Función para actualizar sistema con pacman en chroot con reintentos limitados (25 intentos)
+# Función para actualizar sistema con pacman en chroot con reintentos infinitos
 update_system_chroot() {
     local attempt=1
 
     echo -e "${GREEN}🔄 Actualizando sistema en chroot con pacman${NC}"
 
-    while [ $attempt -le 25 ]; do
+    while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para actualizar sistema${NC}"
 
         # Verificar conectividad antes del intento
@@ -134,21 +127,15 @@ update_system_chroot() {
             ((attempt++))
         fi
     done
-
-    # Si superó los 25 intentos
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo actualizar el sistema después de 25 intentos${NC}"
-        return 1
-    fi
 }
 
-# Función para actualizar repositorios con pacman con reintentos limitados (25 intentos)
+# Función para actualizar repositorios con pacman con reintentos infinitos
 update_repositories() {
     local attempt=1
 
     echo -e "${GREEN}🔄 Actualizando repositorios con pacman${NC}"
 
-    while [ $attempt -le 25 ]; do
+    while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para actualizar repositorios${NC}"
 
         # Verificar conectividad antes del intento
@@ -166,15 +153,9 @@ update_repositories() {
             ((attempt++))
         fi
     done
-
-    # Si superó los 25 intentos
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudieron actualizar los repositorios después de 25 intentos${NC}"
-        return 1
-    fi
 }
 
-# Función para instalar paquete con pacstrap con reintentos limitados (25 intentos)
+# Función para instalar paquete con pacstrap con reintentos infinitos
 install_pacstrap_with_retry() {
     local package="$1"
     local attempt=1
@@ -186,7 +167,7 @@ install_pacstrap_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacstrap${NC}"
 
-    while [ $attempt -le 25 ]; do
+    while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -204,15 +185,9 @@ install_pacstrap_with_retry() {
             ((attempt++))
         fi
     done
-
-    # Si superó los 25 intentos
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo instalar $package con pacstrap después de 25 intentos${NC}"
-        return 1
-    fi
 }
 
-# Función para instalar paquete con pacman en chroot con reintentos limitados (25 intentos)
+# Función para instalar paquete con pacman en chroot con reintentos infinitos
 install_pacman_chroot_with_retry() {
     local package="$1"
     local extra_args="${2:-}"
@@ -225,7 +200,7 @@ install_pacman_chroot_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman en chroot${NC}"
 
-    while [ $attempt -le 25 ]; do
+    while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -243,15 +218,9 @@ install_pacman_chroot_with_retry() {
             ((attempt++))
         fi
     done
-
-    # Si superó los 25 intentos
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo instalar $package con pacman en chroot después de 25 intentos${NC}"
-        return 1
-    fi
 }
 
-# Función para instalar paquete con yay en chroot con reintentos limitados (25 intentos)
+# Función para instalar paquete con yay en chroot con reintentos infinitos
 install_yay_chroot_with_retry() {
     local package="$1"
     local extra_args="${2:-}"
@@ -265,7 +234,7 @@ install_yay_chroot_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con yay en chroot${NC}"
 
-    while [ $attempt -le 25 ]; do
+    while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -283,15 +252,9 @@ install_yay_chroot_with_retry() {
             ((attempt++))
         fi
     done
-
-    # Si superó los 25 intentos
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo instalar $package con yay en chroot después de 25 intentos${NC}"
-        return 1
-    fi
 }
 
-# Función para instalar paquete localmente en LiveCD con reintentos limitados (25 intentos)
+# Función para instalar paquete localmente en LiveCD con reintentos infinitos
 install_pacman_livecd_with_retry() {
     local package="$1"
     local attempt=1
@@ -303,7 +266,7 @@ install_pacman_livecd_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman en LiveCD${NC}"
 
-    while [ $attempt -le 25 ]; do
+    while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -321,12 +284,6 @@ install_pacman_livecd_with_retry() {
             ((attempt++))
         fi
     done
-
-    # Si superó los 25 intentos
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo instalar $package en LiveCD después de 25 intentos${NC}"
-        return 1
-    fi
 }
 
 # ================================================================================================
@@ -1411,13 +1368,6 @@ partition_auto() {
         echo ""
         mkfs.fat -F32 -v $(get_partition_name "$SELECTED_DISK" "1")
         mkswap $(get_partition_name "$SELECTED_DISK" "2")
-
-        # Verificar que el sistema reconozca la nueva swap
-        echo -e "${CYAN}Esperando reconocimiento del sistema para partición swap...${NC}"
-        sleep 3
-        udevadm settle --timeout=10
-        partprobe $SELECTED_DISK
-
         mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "3")
         sleep 2
 
@@ -1426,19 +1376,7 @@ partition_auto() {
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
         mount $(get_partition_name "$SELECTED_DISK" "3") /mnt
-
-        # Verificar que la partición swap esté disponible antes de activar
-        echo -e "${CYAN}Verificando partición swap antes de activar...${NC}"
-        sleep 2
-        udevadm settle --timeout=10
-        SWAP_PARTITION=$(get_partition_name "$SELECTED_DISK" "2")
-
-        if ! blkid "$SWAP_PARTITION" | grep -q "TYPE=\"swap\""; then
-            echo -e "${YELLOW}Warning: Partición swap no detectada correctamente, verificando...${NC}"
-            sleep 2
-        fi
-
-        swapon "$SWAP_PARTITION"
+        swapon $(get_partition_name "$SELECTED_DISK" "2")
         mkdir -p /mnt/boot/efi
         mount $(get_partition_name "$SELECTED_DISK" "1") /mnt/boot/efi
 
@@ -1470,13 +1408,6 @@ partition_auto() {
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
         mkswap $(get_partition_name "$SELECTED_DISK" "1")
-
-        # Verificar que el sistema reconozca la nueva swap
-        echo -e "${CYAN}Esperando reconocimiento del sistema para partición swap...${NC}"
-        sleep 3
-        udevadm settle --timeout=10
-        partprobe $SELECTED_DISK
-
         mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "2")
         sleep 2
 
@@ -1485,19 +1416,7 @@ partition_auto() {
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
         mount $(get_partition_name "$SELECTED_DISK" "2") /mnt
-
-        # Verificar que la partición swap esté disponible antes de activar
-        echo -e "${CYAN}Verificando partición swap antes de activar...${NC}"
-        sleep 2
-        udevadm settle --timeout=10
-        SWAP_PARTITION=$(get_partition_name "$SELECTED_DISK" "1")
-
-        if ! blkid "$SWAP_PARTITION" | grep -q "TYPE=\"swap\""; then
-            echo -e "${YELLOW}Warning: Partición swap no detectada correctamente, verificando...${NC}"
-            sleep 2
-        fi
-
-        swapon "$SWAP_PARTITION"
+        swapon $(get_partition_name "$SELECTED_DISK" "1")
         mkdir -p /mnt/boot
     fi
 }
@@ -1641,13 +1560,6 @@ partition_auto_btrfs() {
         echo ""
         mkfs.fat -F32 -v $(get_partition_name "$SELECTED_DISK" "1")
         mkswap $(get_partition_name "$SELECTED_DISK" "2")
-
-        # Verificar que el sistema reconozca la nueva swap BTRFS
-        echo -e "${CYAN}Esperando reconocimiento del sistema para partición swap...${NC}"
-        sleep 3
-        udevadm settle --timeout=10
-        partprobe $SELECTED_DISK
-
         mkfs.btrfs -f $(get_partition_name "$SELECTED_DISK" "3")
         sleep 2
 
@@ -1718,24 +1630,6 @@ partition_auto_btrfs() {
         PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
         PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@ "$PARTITION_3" /mnt
-
-        # Verificar que la partición swap esté formateada correctamente antes de activar
-        echo -e "${CYAN}Verificando partición swap antes de activar...${NC}"
-        sleep 3
-        udevadm settle --timeout=10
-        partprobe $SELECTED_DISK
-
-        if ! blkid "$PARTITION_2" | grep -q "TYPE=\"swap\""; then
-            echo -e "${RED}ERROR: Partición swap no está formateada correctamente${NC}"
-            echo -e "${YELLOW}Intentando reformatear la partición swap...${NC}"
-            mkswap "$PARTITION_2" || {
-                echo -e "${RED}ERROR: No se pudo reformatear la partición swap${NC}"
-                exit 1
-            }
-            sleep 2
-        fi
-
-        echo -e "${CYAN}Activando partición swap...${NC}"
         swapon "$PARTITION_2"
         mkdir -p /mnt/{boot/efi,home,var,tmp}
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
@@ -1796,13 +1690,6 @@ partition_auto_btrfs() {
         echo ""
         mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "1")
         mkswap $(get_partition_name "$SELECTED_DISK" "2")
-
-        # Verificar que el sistema reconozca la nueva swap BTRFS BIOS
-        echo -e "${CYAN}Esperando reconocimiento del sistema para partición swap...${NC}"
-        sleep 3
-        udevadm settle --timeout=10
-        partprobe $SELECTED_DISK
-
         mkfs.btrfs -f $(get_partition_name "$SELECTED_DISK" "3")
         sleep 2
 
@@ -1873,24 +1760,6 @@ partition_auto_btrfs() {
         PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
         PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@ "$PARTITION_3" /mnt
-
-        # Verificar que la partición swap esté formateada correctamente antes de activar
-        echo -e "${CYAN}Verificando partición swap antes de activar...${NC}"
-        sleep 3
-        udevadm settle --timeout=10
-        partprobe $SELECTED_DISK
-
-        if ! blkid "$PARTITION_2" | grep -q "TYPE=\"swap\""; then
-            echo -e "${RED}ERROR: Partición swap no está formateada correctamente${NC}"
-            echo -e "${YELLOW}Intentando reformatear la partición swap...${NC}"
-            mkswap "$PARTITION_2" || {
-                echo -e "${RED}ERROR: No se pudo reformatear la partición swap${NC}"
-                exit 1
-            }
-            sleep 2
-        fi
-
-        echo -e "${CYAN}Activando partición swap...${NC}"
         swapon "$PARTITION_2"
         mkdir -p /mnt/{boot,home,var,tmp}
         mount "$PARTITION_1" /mnt/boot
@@ -2045,31 +1914,11 @@ partition_cifrado() {
             exit 1
         fi
 
-        # Verificar que el sistema reconozca el swap LVM
-        echo -e "${CYAN}Esperando reconocimiento del sistema para swap LVM...${NC}"
-        sleep 3
-        udevadm settle --timeout=10
-
         # Montar sistema de archivos root
         echo -e "${CYAN}Montando sistema raíz...${NC}"
         if ! mount /dev/vg0/root /mnt; then
             echo -e "${RED}ERROR: No se pudo montar /dev/vg0/root en /mnt${NC}"
             exit 1
-        fi
-
-        # Verificar que el swap LVM esté disponible antes de activar
-        echo -e "${CYAN}Verificando swap LVM antes de activar...${NC}"
-        sleep 3
-        udevadm settle --timeout=10
-
-        if ! blkid /dev/vg0/swap | grep -q "TYPE=\"swap\""; then
-            echo -e "${RED}ERROR: Swap LVM no está formateada correctamente${NC}"
-            echo -e "${YELLOW}Intentando reformatear el swap LVM...${NC}"
-            mkswap /dev/vg0/swap || {
-                echo -e "${RED}ERROR: No se pudo reformatear el swap LVM${NC}"
-                exit 1
-            }
-            sleep 2
         fi
 
         if ! swapon /dev/vg0/swap; then
@@ -2250,30 +2099,11 @@ partition_cifrado() {
             exit 1
         fi
 
-        # Verificar que el sistema reconozca el swap LVM BIOS
-        echo -e "${CYAN}Esperando reconocimiento del sistema para swap LVM...${NC}"
-        sleep 3
-        udevadm settle --timeout=10
-
         # Montar sistema de archivos root
         echo -e "${CYAN}Montando sistema raíz...${NC}"
         if ! mount /dev/vg0/root /mnt; then
             echo -e "${RED}ERROR: No se pudo montar /dev/vg0/root en /mnt${NC}"
             exit 1
-        fi
-
-        # Verificar que el swap LVM esté disponible antes de activar
-        echo -e "${CYAN}Verificando swap LVM antes de activar...${NC}"
-        sleep 2
-
-        if ! blkid /dev/vg0/swap | grep -q "TYPE=\"swap\""; then
-            echo -e "${RED}ERROR: Swap LVM no está formateada correctamente${NC}"
-            echo -e "${YELLOW}Intentando reformatear el swap LVM...${NC}"
-            mkswap /dev/vg0/swap || {
-                echo -e "${RED}ERROR: No se pudo reformatear el swap LVM${NC}"
-                exit 1
-            }
-            sleep 2
         fi
 
         if ! swapon /dev/vg0/swap; then
@@ -2771,73 +2601,10 @@ if [ "$PARTITION_MODE" = "manual" ]; then
 else
     # Usar genfstab para modos automáticos
     genfstab -U /mnt > /mnt/etc/fstab
-
-    # Verificar UUIDs de swap en fstab después de genfstab
-    echo -e "${CYAN}Verificando UUIDs de swap en fstab...${NC}"
-
-    # Extraer líneas de swap del fstab
-    SWAP_LINES=$(grep -E "^UUID=.*swap" /mnt/etc/fstab 2>/dev/null || true)
-
-    if [ -n "$SWAP_LINES" ]; then
-        echo "$SWAP_LINES" | while IFS= read -r swap_line; do
-            SWAP_UUID=$(echo "$swap_line" | grep -o 'UUID=[a-fA-F0-9-]*' | cut -d'=' -f2)
-
-            if [ -n "$SWAP_UUID" ]; then
-                # Verificar si el UUID existe en el sistema
-                if ! blkid | grep -q "$SWAP_UUID"; then
-                    echo -e "${YELLOW}WARNING: UUID de swap $SWAP_UUID no encontrado en el sistema${NC}"
-                    echo -e "${YELLOW}Esto podría causar problemas durante el boot${NC}"
-
-                    # Intentar encontrar particiones swap activas para corregir
-                    ACTIVE_SWAP=$(swapon --show=NAME --noheadings 2>/dev/null | head -n 1)
-                    if [ -n "$ACTIVE_SWAP" ]; then
-                        REAL_UUID=$(blkid -s UUID -o value "$ACTIVE_SWAP" 2>/dev/null)
-                        if [ -n "$REAL_UUID" ]; then
-                            echo -e "${CYAN}Corrigiendo UUID de swap en fstab: $REAL_UUID${NC}"
-                            sed -i "s/UUID=$SWAP_UUID/UUID=$REAL_UUID/g" /mnt/etc/fstab
-                        fi
-                    fi
-                else
-                    echo -e "${GREEN}✓ UUID de swap válido: $SWAP_UUID${NC}"
-                fi
-            fi
-        done
-    fi
 fi
 
 echo ""
 chroot /mnt /bin/bash -c "cat /etc/fstab"
-
-# Verificación final de fstab antes de continuar
-echo -e "${CYAN}Realizando verificación final de fstab...${NC}"
-FSTAB_ERRORS=0
-
-# Verificar que todas las particiones swap en fstab existan
-while IFS= read -r line; do
-    if [[ "$line" =~ ^UUID=.*[[:space:]].*[[:space:]]swap ]]; then
-        SWAP_UUID=$(echo "$line" | grep -o 'UUID=[a-fA-F0-9-]*' | cut -d'=' -f2)
-        if [ -n "$SWAP_UUID" ] && ! blkid | grep -q "$SWAP_UUID"; then
-            echo -e "${RED}ERROR: UUID de swap $SWAP_UUID en fstab no existe en el sistema${NC}"
-            FSTAB_ERRORS=1
-        fi
-    elif [[ "$line" =~ ^/dev/.*[[:space:]].*[[:space:]]swap ]]; then
-        SWAP_DEVICE=$(echo "$line" | awk '{print $1}')
-        if [ -n "$SWAP_DEVICE" ] && [ ! -b "$SWAP_DEVICE" ]; then
-            echo -e "${RED}ERROR: Dispositivo swap $SWAP_DEVICE en fstab no existe${NC}"
-            FSTAB_ERRORS=1
-        fi
-    fi
-done < /mnt/etc/fstab
-
-if [ $FSTAB_ERRORS -eq 0 ]; then
-    echo -e "${GREEN}✓ Verificación de fstab completada sin errores${NC}"
-else
-    echo -e "${YELLOW}WARNING: Se encontraron posibles problemas en fstab${NC}"
-    echo -e "${YELLOW}El sistema podría tener problemas durante el boot${NC}"
-    echo -e "${CYAN}Presiona Enter para continuar o Ctrl+C para abortar...${NC}"
-    read
-fi
-
 sleep 3
 clear
 
@@ -4241,15 +4008,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
         PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
         echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
     fi
-    # Usar UUID para swap LVM si está disponible, sino usar nombre de dispositivo como fallback
-    SWAP_UUID=$(blkid -s UUID -o value /dev/mapper/vg0-swap 2>/dev/null)
-    if [ -n "$SWAP_UUID" ]; then
-        echo "UUID=$SWAP_UUID none swap defaults 0 0" >> /mnt/etc/fstab
-        echo -e "${GREEN}✓ Swap agregada al fstab con UUID: $SWAP_UUID${NC}"
-    else
-        echo "/dev/mapper/vg0-swap none swap defaults 0 0" >> /mnt/etc/fstab
-        echo -e "${YELLOW}Warning: Swap agregada al fstab con nombre de dispositivo (no se pudo obtener UUID)${NC}"
-    fi
+    echo "/dev/mapper/vg0-swap none swap defaults 0 0" >> /mnt/etc/fstab
 
     # Regenerar initramfs después de todas las configuraciones
     echo -e "${CYAN}Regenerando initramfs con configuración LVM...${NC}"
