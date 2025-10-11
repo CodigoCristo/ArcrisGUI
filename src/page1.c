@@ -1,166 +1,168 @@
 #include "page1.h"
-#include "config.h"
 #include <stdlib.h>
 #include <unistd.h>
 
 // Variable global para datos de la página 1
 static Page1Data *g_page1_data = NULL;
-static guint g_internet_timer_id = 0;
 
-// Función robusta para verificar internet con fallback automático
-gboolean robust_internet_check_and_enable(gpointer user_data)
+// Función para verificar conectividad a internet
+static gboolean check_internet_connectivity(void)
 {
-    Page1Data *data = (Page1Data *)user_data;
-    
-    if (!data) {
-        g_print("❌ Error: datos de página nulos\n");
-        return FALSE;
-    }
-    
-    g_print("🌐 Verificando conexión a Internet...\n");
-    
-    // Intentar verificación rápida con múltiples métodos
-    int result = -1;
-    
-    // Método 1: ping a 1.1.1.1 (Cloudflare)
-    result = system("ping -c 1 -W 1 1.1.1.1 > /dev/null 2>&1");
-    if (result != 0) {
-        // Método 2: ping a 8.8.8.8 (Google)
-        result = system("ping -c 1 -W 1 8.8.8.8 > /dev/null 2>&1");
-    }
-    
-    // Limpiar timer
-    g_internet_timer_id = 0;
-    
-    // Ocultar spinner siempre
-    if (data->spinner) {
-        gtk_widget_set_visible(data->spinner, FALSE);
-    }
-    
+    // Método 1: ping a 1.1.1.1 (Cloudflare DNS)
+    int result = system("ping -c 1 -W 2 1.1.1.1 > /dev/null 2>&1");
     if (result == 0) {
-        // Conexión exitosa - ocultar labels y mostrar botón
-        if (data->internet_label) {
-            gtk_widget_set_visible(data->internet_label, FALSE);
-        }
-        if (data->no_internet_label) {
-            gtk_widget_set_visible(data->no_internet_label, FALSE);
-        }
-        if (data->start_button) {
-            gtk_widget_set_visible(data->start_button, TRUE);
-            gtk_widget_set_sensitive(data->start_button, TRUE);
-        }
-        g_print("✅ Conexión a Internet establecida\n");
-    } else {
-        // Sin conexión - mostrar mensaje de error
-        if (data->internet_label) {
-            gtk_widget_set_visible(data->internet_label, FALSE);
-        }
-        if (data->no_internet_label) {
-            gtk_label_set_text(GTK_LABEL(data->no_internet_label), "¡Conéctese primero a Internet!");
-            gtk_widget_set_visible(data->no_internet_label, TRUE);
-        }
-        if (data->start_button) {
-            gtk_widget_set_visible(data->start_button, FALSE);
-        }
-        g_print("⚠ Sin conexión a Internet\n");
+        return TRUE;
     }
     
-    return FALSE; // No repetir
-}
-
-// Función de fallback que garantiza que el spinner se oculte
-gboolean fallback_enable_button(gpointer user_data)
-{
-    Page1Data *data = (Page1Data *)user_data;
-    
-    if (!data) return FALSE;
-    
-    g_print("🔄 Fallback: Verificación final\n");
-    
-    // Ocultar spinner siempre
-    if (data->spinner) {
-        gtk_widget_set_visible(data->spinner, FALSE);
-    }
-    
-    // Hacer una verificación final de internet
-    int result = system("ping -c 1 -W 1 1.1.1.1 > /dev/null 2>&1");
-    if (result != 0) {
-        result = system("ping -c 1 -W 1 8.8.8.8 > /dev/null 2>&1");
-    }
-    
+    // Método 2: ping a 8.8.8.8 (Google DNS)
+    result = system("ping -c 1 -W 2 8.8.8.8 > /dev/null 2>&1");
     if (result == 0) {
-        // Hay internet - mostrar botón
-        if (data->internet_label) {
-            gtk_widget_set_visible(data->internet_label, FALSE);
-        }
-        if (data->no_internet_label) {
-            gtk_widget_set_visible(data->no_internet_label, FALSE);
-        }
-        if (data->start_button) {
-            gtk_widget_set_visible(data->start_button, TRUE);
-        }
-    } else {
-        // No hay internet - mostrar mensaje de error
-        if (data->internet_label) {
-            gtk_widget_set_visible(data->internet_label, FALSE);
-        }
-        if (data->no_internet_label) {
-            gtk_label_set_text(GTK_LABEL(data->no_internet_label), "¡Conéctese primero a Internet!");
-            gtk_widget_set_visible(data->no_internet_label, TRUE);
-        }
-        if (data->start_button) {
-            gtk_widget_set_visible(data->start_button, FALSE);
-        }
+        return TRUE;
+    }
+    
+    // Método 3: curl a un servicio web ligero
+    result = system("curl -s --connect-timeout 3 --max-time 5 http://httpbin.org/ip > /dev/null 2>&1");
+    if (result == 0) {
+        return TRUE;
     }
     
     return FALSE;
 }
 
-static void page1_check_internet_connection(GtkWidget *internet_label, GtkWidget *spinner, 
-                                          GtkWidget *no_internet_label, GtkWidget *start_button)
+// Función para actualizar la UI según el estado de internet
+static void update_internet_ui(gboolean has_internet)
 {
     if (!g_page1_data) {
-        g_print("❌ Error: datos de página globales nulos\n");
+        g_print("❌ Error: datos de página nulos\n");
         return;
     }
     
-    // Cancelar timer anterior si existe
-    if (g_internet_timer_id > 0) {
-        g_source_remove(g_internet_timer_id);
-        g_internet_timer_id = 0;
+    if (has_internet) {
+        g_print("✅ Internet conectado - Mostrando botón Iniciar\n");
+        
+        // Ocultar elementos de "sin internet"
+        if (g_page1_data->internet_label) {
+            gtk_widget_set_visible(g_page1_data->internet_label, FALSE);
+        }
+        if (g_page1_data->spinner) {
+            gtk_widget_set_visible(g_page1_data->spinner, FALSE);
+        }
+        if (g_page1_data->no_internet_label) {
+            gtk_widget_set_visible(g_page1_data->no_internet_label, FALSE);
+        }
+        
+        // Mostrar y habilitar botón
+        if (g_page1_data->start_button) {
+            gtk_widget_set_visible(g_page1_data->start_button, TRUE);
+            gtk_widget_set_sensitive(g_page1_data->start_button, TRUE);
+        }
+    } else {
+        g_print("⚠️ Sin internet - Mostrando spinner y mensaje\n");
+        
+        // Ocultar botón
+        if (g_page1_data->start_button) {
+            gtk_widget_set_visible(g_page1_data->start_button, FALSE);
+        }
+        
+        // Ocultar label inicial si está visible
+        if (g_page1_data->internet_label) {
+            gtk_widget_set_visible(g_page1_data->internet_label, FALSE);
+        }
+        
+        // Mostrar spinner y mensaje de sin internet
+        if (g_page1_data->spinner) {
+            gtk_widget_set_visible(g_page1_data->spinner, TRUE);
+        }
+        if (g_page1_data->no_internet_label) {
+            gtk_label_set_text(GTK_LABEL(g_page1_data->no_internet_label), "¡Conéctese primero a Internet!");
+            gtk_widget_set_visible(g_page1_data->no_internet_label, TRUE);
+        }
     }
-    
-    // Actualizar referencias en la estructura
-    g_page1_data->internet_label = internet_label;
-    g_page1_data->spinner = spinner;
-    g_page1_data->no_internet_label = no_internet_label;
-    g_page1_data->start_button = start_button;
-    
-    // Verificar que los widgets no sean NULL
-    if (!internet_label || !spinner || !no_internet_label || !start_button) {
-        g_print("❌ Error: algunos widgets son NULL\n");
-        return;
-    }
-    
-    // Configurar widgets iniciales
-    gtk_label_set_text(GTK_LABEL(internet_label), "Probando conexión a internet");
-    gtk_widget_set_visible(internet_label, TRUE);
-    gtk_widget_set_visible(spinner, TRUE);
-    gtk_widget_set_visible(no_internet_label, FALSE);
-    gtk_widget_set_visible(start_button, FALSE);
-    
-    g_print("🚀 Iniciando verificación robusta de Internet...\n");
-    
-    // Programar verificación principal en 1.5 segundos
-    g_timeout_add_seconds(2, robust_internet_check_and_enable, g_page1_data);
-    
-    // Programar fallback de seguridad en 4 segundos (garantiza que siempre se habilite)
-    g_timeout_add_seconds(4, fallback_enable_button, g_page1_data);
 }
 
+// Función de monitoreo continuo de internet (callback del timer)
+gboolean page1_check_internet_status(gpointer user_data)
+{
+    if (!g_page1_data) {
+        g_print("❌ Error: datos de página nulos en monitoreo\n");
+        return FALSE; // Detener timer
+    }
+    
+    gboolean current_status = check_internet_connectivity();
+    
+    // Solo actualizar UI si el estado cambió
+    if (current_status != g_page1_data->has_internet) {
+        g_print("🔄 Cambio de estado de internet: %s -> %s\n", 
+                g_page1_data->has_internet ? "conectado" : "desconectado",
+                current_status ? "conectado" : "desconectado");
+        
+        g_page1_data->has_internet = current_status;
+        update_internet_ui(current_status);
+    }
+    
+    return TRUE; // Continuar monitoreo
+}
+
+// Función para iniciar el monitoreo de internet (callback de timer inicial)
+gboolean page1_start_internet_monitoring_callback(gpointer user_data)
+{
+    if (!g_page1_data) {
+        g_print("❌ Error: no se puede iniciar monitoreo sin datos de página\n");
+        return FALSE;
+    }
+    
+    g_print("🚀 Iniciando monitoreo de internet...\n");
+    
+    // Realizar verificación inicial
+    g_page1_data->has_internet = check_internet_connectivity();
+    update_internet_ui(g_page1_data->has_internet);
+    
+    // Iniciar timer para monitoreo continuo cada 3 segundos
+    g_page1_data->internet_monitor_id = g_timeout_add_seconds(3, page1_check_internet_status, NULL);
+    
+    return FALSE; // No repetir este timer inicial
+}
+
+// Función para iniciar el monitoreo de internet
+void page1_start_internet_monitoring(void)
+{
+    if (!g_page1_data) {
+        g_print("❌ Error: no se puede iniciar monitoreo sin datos de página\n");
+        return;
+    }
+    
+    // Detener monitoreo anterior si existe
+    page1_stop_internet_monitoring();
+    
+    g_print("🚀 Iniciando monitoreo de internet...\n");
+    
+    // Realizar verificación inicial
+    g_page1_data->has_internet = check_internet_connectivity();
+    update_internet_ui(g_page1_data->has_internet);
+    
+    // Iniciar timer para monitoreo continuo cada 3 segundos
+    g_page1_data->internet_monitor_id = g_timeout_add_seconds(3, page1_check_internet_status, NULL);
+}
+
+// Función para detener el monitoreo de internet
+void page1_stop_internet_monitoring(void)
+{
+    if (g_page1_data && g_page1_data->internet_monitor_id > 0) {
+        g_print("🛑 Deteniendo monitoreo de internet\n");
+        g_source_remove(g_page1_data->internet_monitor_id);
+        g_page1_data->internet_monitor_id = 0;
+    }
+}
+
+// Callback para el botón "Iniciar"
 static void page1_start_button_clicked(GtkButton *button, gpointer user_data)
 {
     if (!g_page1_data) return;
+    
+    g_print("▶️ Botón Iniciar presionado\n");
+    
+    // Detener monitoreo de internet ya que vamos a la siguiente página
+    page1_stop_internet_monitoring();
     
     AdwCarousel *carousel = g_page1_data->carousel;
     GtkRevealer *revealer = g_page1_data->revealer;
@@ -178,14 +180,19 @@ static void page1_start_button_clicked(GtkButton *button, gpointer user_data)
     }
 }
 
+// Función de inicialización de la página 1
 void page1_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *revealer)
 {
+    g_print("🏁 Inicializando página 1...\n");
+    
     // Allocar memoria para los datos de la página
     g_page1_data = g_malloc0(sizeof(Page1Data));
     
     // Guardar referencias importantes
     g_page1_data->carousel = carousel;
     g_page1_data->revealer = revealer;
+    g_page1_data->has_internet = FALSE;
+    g_page1_data->internet_monitor_id = 0;
     
     // Cargar la página 1 desde el archivo UI
     GtkBuilder *page_builder = gtk_builder_new_from_resource("/org/gtk/arcris/page1.ui");
@@ -197,24 +204,49 @@ void page1_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page1_data->no_internet_label = GTK_WIDGET(gtk_builder_get_object(page_builder, "no_internet"));
     g_page1_data->start_button = GTK_WIDGET(gtk_builder_get_object(page_builder, "start_button"));
     
-    // Verificar conexión a Internet
-    page1_check_internet_connection(g_page1_data->internet_label, g_page1_data->spinner, 
-                                   g_page1_data->no_internet_label, g_page1_data->start_button);
+    // Verificar que se cargaron todos los widgets correctamente
+    if (!g_page1_data->internet_label || !g_page1_data->spinner || 
+        !g_page1_data->no_internet_label || !g_page1_data->start_button) {
+        g_print("❌ Error: No se pudieron cargar todos los widgets de page1.ui\n");
+        return;
+    }
+    
+    // Configurar estado inicial - mostrar mensaje de prueba
+    gtk_label_set_text(GTK_LABEL(g_page1_data->internet_label), "Probando Conexión a Internet...");
+    gtk_widget_set_visible(g_page1_data->internet_label, TRUE);
+    gtk_widget_set_visible(g_page1_data->spinner, TRUE);
+    gtk_widget_set_visible(g_page1_data->no_internet_label, FALSE);
+    gtk_widget_set_visible(g_page1_data->start_button, FALSE);
     
     // Conectar señales del botón de inicio
-    g_signal_connect(g_page1_data->start_button, "clicked", G_CALLBACK(page1_start_button_clicked), NULL);
+    g_signal_connect(g_page1_data->start_button, "clicked", 
+                     G_CALLBACK(page1_start_button_clicked), NULL);
     
     // Añadir la página al carousel
     adw_carousel_append(carousel, page1);
     
     // Liberar el builder de la página
     g_object_unref(page_builder);
+    
+    // Iniciar monitoreo de internet después de 1 segundo (dar tiempo a la UI)
+    g_timeout_add_seconds(1, page1_start_internet_monitoring_callback, NULL);
+    
+    g_print("✅ Página 1 inicializada correctamente\n");
 }
 
+// Función de limpieza de recursos
 void page1_cleanup(Page1Data *data)
 {
+    g_print("🧹 Limpiando recursos de página 1...\n");
+    
+    // Detener monitoreo de internet
+    page1_stop_internet_monitoring();
+    
+    // Liberar memoria
     if (g_page1_data) {
         g_free(g_page1_data);
         g_page1_data = NULL;
     }
+    
+    g_print("✅ Limpieza de página 1 completada\n");
 }

@@ -39,7 +39,7 @@ get_partition_name() {
 }
 
 # ================================================================================================
-# FUNCIONES DE CONECTIVIDAD Y REINTENTOS LIMITADOS (25 INTENTOS) PARA PACMAN/YAY
+# FUNCIONES DE CONECTIVIDAD Y REINTENTOS LIMITADOS (30 INTENTOS) PARA PACMAN/YAY
 # ================================================================================================
 # Función para verificar conectividad a internet
 check_internet() {
@@ -52,11 +52,11 @@ check_internet() {
     fi
 }
 
-# Función para esperar conexión a internet con reintentos limitados (25 intentos)
+# Función para esperar conexión a internet con reintentos limitados (30 intentos)
 wait_for_internet() {
     local attempt=1
 
-    while ! check_internet && [ $attempt -le 25 ]; do
+    while ! check_internet && [ $attempt -le 30 ]; do
         echo -e "${YELLOW}⚠️  Intento #$attempt - Sin conexión a internet${NC}"
         echo -e "${CYAN}🔄 Reintentando en 10 segundos...${NC}"
         echo ""
@@ -92,9 +92,9 @@ wait_for_internet() {
         fi
     done
 
-    # Si superó los 25 intentos sin conexión
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo establecer conexión a internet después de 25 intentos${NC}"
+    # Si superó los 30 intentos sin conexión
+    if [ $attempt -gt 30 ]; then
+        echo -e "${RED}❌ ERROR: No se pudo establecer conexión a internet después de 30 intentos${NC}"
         echo -e "${YELLOW}⚠️  La instalación no puede continuar sin conexión a internet${NC}"
         return 1
     fi
@@ -110,13 +110,13 @@ wait_for_internet() {
 
 
 
-# Función para actualizar sistema con pacman en chroot con reintentos limitados (25 intentos)
+# Función para actualizar sistema con pacman en chroot con reintentos limitados (30 intentos)
 update_system_chroot() {
     local attempt=1
 
     echo -e "${GREEN}🔄 Actualizando sistema en chroot con pacman${NC}"
 
-    while [ $attempt -le 25 ]; do
+    while [ $attempt -le 30 ]; do
         echo -e "${CYAN}🔄 Intento #$attempt para actualizar sistema${NC}"
 
         # Verificar conectividad antes del intento
@@ -135,20 +135,20 @@ update_system_chroot() {
         fi
     done
 
-    # Si superó los 25 intentos
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo actualizar el sistema después de 25 intentos${NC}"
+    # Si superó los 30 intentos
+    if [ $attempt -gt 30 ]; then
+        echo -e "${RED}❌ ERROR: No se pudo actualizar el sistema después de 30 intentos${NC}"
         return 1
     fi
 }
 
-# Función para actualizar repositorios con pacman con reintentos limitados (25 intentos)
+# Función para actualizar repositorios con pacman con reintentos limitados (30 intentos)
 update_repositories() {
     local attempt=1
 
     echo -e "${GREEN}🔄 Actualizando repositorios con pacman${NC}"
 
-    while [ $attempt -le 25 ]; do
+    while [ $attempt -le 30 ]; do
         echo -e "${CYAN}🔄 Intento #$attempt para actualizar repositorios${NC}"
 
         # Verificar conectividad antes del intento
@@ -167,14 +167,14 @@ update_repositories() {
         fi
     done
 
-    # Si superó los 25 intentos
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudieron actualizar los repositorios después de 25 intentos${NC}"
+    # Si superó los 30 intentos
+    if [ $attempt -gt 30 ]; then
+        echo -e "${RED}❌ ERROR: No se pudieron actualizar los repositorios después de 30 intentos${NC}"
         return 1
     fi
 }
 
-# Función para instalar paquete con pacstrap con reintentos limitados (25 intentos)
+# Función para instalar paquete con pacstrap con reintentos limitados (30 intentos)
 install_pacstrap_with_retry() {
     local package="$1"
     local attempt=1
@@ -186,7 +186,7 @@ install_pacstrap_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacstrap${NC}"
 
-    while [ $attempt -le 25 ]; do
+    while [ $attempt -le 30 ]; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -205,14 +205,14 @@ install_pacstrap_with_retry() {
         fi
     done
 
-    # Si superó los 25 intentos
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo instalar $package con pacstrap después de 25 intentos${NC}"
+    # Si superó los 30 intentos
+    if [ $attempt -gt 30 ]; then
+        echo -e "${RED}❌ ERROR: No se pudo instalar $package con pacstrap después de 30 intentos${NC}"
         return 1
     fi
 }
 
-# Función para instalar paquete con pacman en chroot con reintentos limitados (25 intentos)
+# Función para instalar paquete con pacman en chroot con reintentos limitados (30 intentos)
 install_pacman_chroot_with_retry() {
     local package="$1"
     local extra_args="${2:-}"
@@ -225,7 +225,7 @@ install_pacman_chroot_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman en chroot${NC}"
 
-    while [ $attempt -le 25 ]; do
+    while [ $attempt -le 30 ]; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -244,14 +244,14 @@ install_pacman_chroot_with_retry() {
         fi
     done
 
-    # Si superó los 25 intentos
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo instalar $package con pacman en chroot después de 25 intentos${NC}"
+    # Si superó los 30 intentos
+    if [ $attempt -gt 30 ]; then
+        echo -e "${RED}❌ ERROR: No se pudo instalar $package con pacman en chroot después de 30 intentos${NC}"
         return 1
     fi
 }
 
-# Función para instalar paquete con yay en chroot con reintentos limitados (25 intentos)
+# Función para instalar paquete con yay en chroot con reintentos limitados (30 intentos)
 install_yay_chroot_with_retry() {
     local package="$1"
     local extra_args="${2:-}"
@@ -265,7 +265,7 @@ install_yay_chroot_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con yay en chroot${NC}"
 
-    while [ $attempt -le 25 ]; do
+    while [ $attempt -le 30 ]; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -284,14 +284,14 @@ install_yay_chroot_with_retry() {
         fi
     done
 
-    # Si superó los 25 intentos
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo instalar $package con yay en chroot después de 25 intentos${NC}"
+    # Si superó los 30 intentos
+    if [ $attempt -gt 30 ]; then
+        echo -e "${RED}❌ ERROR: No se pudo instalar $package con yay en chroot después de 30 intentos${NC}"
         return 1
     fi
 }
 
-# Función para instalar paquete localmente en LiveCD con reintentos limitados (25 intentos)
+# Función para instalar paquete localmente en LiveCD con reintentos limitados (30 intentos)
 install_pacman_livecd_with_retry() {
     local package="$1"
     local attempt=1
@@ -303,7 +303,7 @@ install_pacman_livecd_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman en LiveCD${NC}"
 
-    while [ $attempt -le 25 ]; do
+    while [ $attempt -le 30 ]; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -322,9 +322,9 @@ install_pacman_livecd_with_retry() {
         fi
     done
 
-    # Si superó los 25 intentos
-    if [ $attempt -gt 25 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo instalar $package en LiveCD después de 25 intentos${NC}"
+    # Si superó los 30 intentos
+    if [ $attempt -gt 30 ]; then
+        echo -e "${RED}❌ ERROR: No se pudo instalar $package en LiveCD después de 30 intentos${NC}"
         return 1
     fi
 }
@@ -4651,7 +4651,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "labwc"
                 # Dependencias base
                 install_pacman_chroot_with_retry "wayland"
-                install_pacman_chroot_with_retry "wlroots"
                 install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
                 # LXQt y componentes
                 install_yay_chroot_with_retry "lxqt"
@@ -4710,7 +4709,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "labwc"
                 # Dependencias base
                 install_pacman_chroot_with_retry "wayland"
-                install_pacman_chroot_with_retry "wlroots"
                 install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
                 # lightdm
                 install_yay_chroot_with_retry "lightdm"
@@ -4861,7 +4859,6 @@ case "$INSTALLATION_TYPE" in
             "HYPRLAND")
                 echo -e "${CYAN}Instalando Hyprland Window Manager...${NC}"
                 install_pacman_chroot_with_retry "wayland"
-                install_pacman_chroot_with_retry "wlroots"
                 install_yay_chroot_with_retry "hyprland"
                 install_yay_chroot_with_retry "waybar"
                 install_yay_chroot_with_retry "wofi"
@@ -4915,7 +4912,6 @@ case "$INSTALLATION_TYPE" in
             "SWAY")
                 echo -e "${CYAN}Instalando Sway Window Manager...${NC}"
                 install_pacman_chroot_with_retry "wayland"
-                install_pacman_chroot_with_retry "wlroots"
                 install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
                 install_yay_chroot_with_retry "sway"
                 install_yay_chroot_with_retry "xorg-xwayland"

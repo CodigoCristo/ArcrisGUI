@@ -66,7 +66,7 @@
             <child>
               <object class="GtkButton" id="start_button">
               <property name="label">Iniciar</property>
-              <property name="visible">true</property>
+              <property name="visible">false</property>
               <property name="sensitive">false</property>
                 <style>
                   <class name="suggested-action"/>

@@ -22,272 +22,6 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# ================================================================================================
-# FUNCIÓN PARA MANEJO CORRECTO DE NOMENCLATURA DE PARTICIONES NVMe
-# ================================================================================================
-# Función para obtener el nombre correcto de la partición según el tipo de dispositivo
-get_partition_name() {
-    local disk="$1"
-    local partition_number="$2"
-
-    # Verificar si es un dispositivo NVMe
-    if [[ "$disk" == *"nvme"* ]]; then
-        echo "${disk}p${partition_number}"
-    else
-        echo "${disk}${partition_number}"
-    fi
-}
-
-# ================================================================================================
-# FUNCIONES DE CONECTIVIDAD Y REINTENTOS INFINITOS PARA PACMAN/YAY
-# ================================================================================================
-# Función para verificar conectividad a internet
-check_internet() {
-    # Verificación rápida y simple de conectividad
-    if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
-        return 0
-    else
-        echo -e "${RED}❌ Sin conexión a internet${NC}"
-        return 1
-    fi
-}
-
-# Función para esperar conexión a internet con reintentos infinitos
-wait_for_internet() {
-    local attempt=1
-
-    while ! check_internet; do
-        echo -e "${YELLOW}⚠️  Intento #$attempt - Sin conexión a internet${NC}"
-        echo -e "${CYAN}🔄 Reintentando en 10 segundos...${NC}"
-        echo ""
-        echo -e "${BLUE}🔧 DIAGNÓSTICOS RECOMENDADOS:${NC}"
-        echo -e "${BLUE}   1. ${YELLOW}Reiniciar Servicios:${NC}"
-        echo -e "${BLUE}      • systemctl restart NetworkManager${NC}"
-        echo -e "${BLUE}      • systemctl restart dhcpcd${NC}"
-        echo -e "${BLUE}      • ip link set [interfaz] up${NC}"
-        echo ""
-        echo -e "${BLUE}   2. ${YELLOW}Router/Módem:${NC}"
-        echo -e "${BLUE}      • Reiniciar router (desconectar 30 seg)${NC}"
-        echo -e "${BLUE}      • Verificar que otros dispositivos tengan internet${NC}"
-        echo -e "${BLUE}      • Contactar ISP si el problema persiste${NC}"
-        echo ""
-        echo -e "${GREEN}⏳ La instalación continuará automáticamente cuando se restablezca la conexión${NC}"
-        echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-
-        # Mostrar comando útil para verificar conectividad manualmente
-        if [ $((attempt % 3)) -eq 0 ]; then
-            echo -e "${BLUE}💡 Revisa usando el comando manual: ping -c 3 www.google.com${NC}"
-        fi
-
-        sleep 10
-        ((attempt++))
-
-        # Limpiar pantalla cada 5 intentos para evitar saturación
-        if (( attempt % 5 == 0 )); then
-            clear
-            echo -e "${YELLOW}🌐 ESPERANDO CONEXIÓN A INTERNET${NC}"
-            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-            echo -e "${YELLOW}⏱️  Intento #$attempt - Tiempo transcurrido: $((attempt * 10)) segundos${NC}"
-            echo ""
-        fi
-    done
-
-    echo -e "${GREEN}🎉 ¡CONEXIÓN A INTERNET RESTABLECIDA!${NC}"
-    echo -e "${CYAN}⏰ Continuando con la instalación...${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    sleep 3
-    clear
-}
-
-
-
-
-
-# Función para actualizar sistema con pacman en chroot con reintentos infinitos
-update_system_chroot() {
-    local attempt=1
-
-    echo -e "${GREEN}🔄 Actualizando sistema en chroot con pacman${NC}"
-
-    while true; do
-        echo -e "${CYAN}🔄 Intento #$attempt para actualizar sistema${NC}"
-
-        # Verificar conectividad antes del intento
-        wait_for_internet
-
-        # Ejecutar actualización del sistema
-        if chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"; then
-            echo -e "${GREEN}✅ Sistema actualizado correctamente${NC}"
-            return 0
-        else
-            echo -e "${YELLOW}⚠️  Falló la actualización del sistema (intento #$attempt)${NC}"
-            echo -e "${RED}🔍 Comando ejecutado: chroot /mnt /bin/bash -c \"pacman -Syu --noconfirm\"${NC}"
-            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
-            sleep 5
-            ((attempt++))
-        fi
-    done
-}
-
-# Función para actualizar repositorios con pacman con reintentos infinitos
-update_repositories() {
-    local attempt=1
-
-    echo -e "${GREEN}🔄 Actualizando repositorios con pacman${NC}"
-
-    while true; do
-        echo -e "${CYAN}🔄 Intento #$attempt para actualizar repositorios${NC}"
-
-        # Verificar conectividad antes del intento
-        wait_for_internet
-
-        # Ejecutar actualización de repositorios
-        if pacman -Syy; then
-            echo -e "${GREEN}✅ Repositorios actualizados correctamente${NC}"
-            return 0
-        else
-            echo -e "${YELLOW}⚠️  Falló la actualización de repositorios (intento #$attempt)${NC}"
-            echo -e "${RED}🔍 Comando ejecutado: pacman -Sy${NC}"
-            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
-            sleep 5
-            ((attempt++))
-        fi
-    done
-}
-
-# Función para instalar paquete con pacstrap con reintentos infinitos
-install_pacstrap_with_retry() {
-    local package="$1"
-    local attempt=1
-
-    if [[ -z "$package" ]]; then
-        echo -e "${RED}❌ Error: No se especificó paquete para pacstrap${NC}"
-        return 1
-    fi
-
-    echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacstrap${NC}"
-
-    while true; do
-        echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
-
-        # Verificar conectividad antes del intento
-        wait_for_internet
-
-        # Ejecutar instalación con pacstrap
-        if pacstrap /mnt "$package"; then
-            echo -e "${GREEN}✅ $package instalado correctamente con pacstrap${NC}"
-            return 0
-        else
-            echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
-            echo -e "${RED}🔍 Comando ejecutado: pacstrap /mnt \"$package\"${NC}"
-            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
-            sleep 5
-            ((attempt++))
-        fi
-    done
-}
-
-# Función para instalar paquete con pacman en chroot con reintentos infinitos
-install_pacman_chroot_with_retry() {
-    local package="$1"
-    local extra_args="${2:-}"
-    local attempt=1
-
-    if [[ -z "$package" ]]; then
-        echo -e "${RED}❌ Error: No se especificó paquete para pacman chroot${NC}"
-        return 1
-    fi
-
-    echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman en chroot${NC}"
-
-    while true; do
-        echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
-
-        # Verificar conectividad antes del intento
-        wait_for_internet
-
-        # Ejecutar instalación con pacman en chroot
-        if chroot /mnt /bin/bash -c "pacman -S $package $extra_args --noconfirm"; then
-            echo -e "${GREEN}✅ $package instalado correctamente con pacman en chroot${NC}"
-            return 0
-        else
-            echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
-            echo -e "${RED}🔍 Comando ejecutado: chroot /mnt /bin/bash -c \"pacman -S $package $extra_args --noconfirm\"${NC}"
-            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
-            sleep 5
-            ((attempt++))
-        fi
-    done
-}
-
-# Función para instalar paquete con yay en chroot con reintentos infinitos
-install_yay_chroot_with_retry() {
-    local package="$1"
-    local extra_args="${2:-}"
-    local user="$USER"
-    local attempt=1
-
-    if [[ -z "$package" ]]; then
-        echo -e "${RED}❌ Error: No se especificó paquete para yay chroot${NC}"
-        return 1
-    fi
-
-    echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con yay en chroot${NC}"
-
-    while true; do
-        echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
-
-        # Verificar conectividad antes del intento
-        wait_for_internet
-
-        # Ejecutar instalación con yay en chroot
-        if chroot /mnt /bin/bash -c "sudo -u $user yay -S $package $extra_args --noansweredit --noconfirm --needed"; then
-            echo -e "${GREEN}✅ $package instalado correctamente con yay en chroot${NC}"
-            return 0
-        else
-            echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
-            echo -e "${RED}🔍 Comando ejecutado: chroot /mnt /bin/bash -c \"sudo -u $user yay -S $package $extra_args --noansweredit --noconfirm --needed\"${NC}"
-            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
-            sleep 5
-            ((attempt++))
-        fi
-    done
-}
-
-# Función para instalar paquete localmente en LiveCD con reintentos infinitos
-install_pacman_livecd_with_retry() {
-    local package="$1"
-    local attempt=1
-
-    if [[ -z "$package" ]]; then
-        echo -e "${RED}❌ Error: No se especificó paquete para pacman LiveCD${NC}"
-        return 1
-    fi
-
-    echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman en LiveCD${NC}"
-
-    while true; do
-        echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
-
-        # Verificar conectividad antes del intento
-        wait_for_internet
-
-        # Ejecutar instalación con pacman localmente en LiveCD
-        if pacman -Sy "$package" --noconfirm; then
-            echo -e "${GREEN}✅ $package instalado correctamente en LiveCD${NC}"
-            return 0
-        else
-            echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
-            echo -e "${RED}🔍 Comando ejecutado: pacman -Sy \"$package\" --noconfirm${NC}"
-            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
-            sleep 5
-            ((attempt++))
-        fi
-    done
-}
-
-# ================================================================================================
-
 
 # Función para imprimir en rojo
 print_red() {
@@ -333,47 +67,24 @@ barra_progreso() {
 ################################################################################################
 
 configurar_teclado() {
-# Verificar que las variables necesarias estén definidas
-if [[ -z "$KEYBOARD_LAYOUT" ]]; then
-    echo -e "${RED}Error: KEYBOARD_LAYOUT no está definido${NC}"
-    return 1
-fi
-if [[ -z "$KEYMAP_TTY" ]]; then
-    echo -e "${RED}Error: KEYMAP_TTY no está definido${NC}"
-    return 1
-fi
-if [[ -z "$USER" ]]; then
-    echo -e "${RED}Error: USER no está definido${NC}"
-    return 1
-fi
+    # Configuración completa del layout de teclado para Xorg y Wayland
+    echo -e "${GREEN}| Configurando layout de teclado: $KEYBOARD_LAYOUT |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
 
-# Configuración completa del layout de teclado para Xorg y Wayland
-echo -e "${GREEN}| Configurando layout de teclado: $KEYBOARD_LAYOUT |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
+    # 1. Configuración con localectl (método universal y permanente)
+    echo -e "${CYAN}1. Configurando con localectl (permanente para ambos Xorg y Wayland)...${NC}"
+    chroot /mnt localectl set-keymap $KEYBOARD_LAYOUT
+    chroot /mnt localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 "" ""
 
-# 1. Configuración con localectl (método universal y permanente)
-echo -e "${CYAN}1. Configurando con localectl (permanente para ambos Xorg y Wayland)...${NC}"
-if chroot /mnt localectl set-keymap "$KEYBOARD_LAYOUT" 2>/dev/null; then
-    echo -e "${GREEN}  ✓ Keymap configurado correctamente${NC}"
-else
-    echo -e "${YELLOW}  ⚠ Warning: No se pudo configurar keymap con localectl${NC}"
-fi
+    # También ejecutar como usuario para configuración por usuario
+    # echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
+    # chroot /mnt /bin/bash -c "sudo -u $USER localectl set-keymap $KEYBOARD_LAYOUT" || echo "Warning: No se pudo configurar keymap para usuario $USER"
+    # chroot /mnt /bin/bash -c "sudo -u $USER localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" || echo "Warning: No se pudo configurar X11 keymap para usuario $USER"
 
-if chroot /mnt localectl set-x11-keymap "$KEYBOARD_LAYOUT" pc105 "" "" 2>/dev/null; then
-    echo -e "${GREEN}  ✓ X11 keymap configurado correctamente${NC}"
-else
-    echo -e "${YELLOW}  ⚠ Warning: No se pudo configurar X11 keymap con localectl${NC}"
-fi
-
-# También ejecutar como usuario para configuración por usuario
-# echo -e "${CYAN}1.1. Configurando localectl como usuario...${NC}"
-# chroot /mnt /bin/bash -c "sudo -u $USER localectl set-keymap $KEYBOARD_LAYOUT" || echo "Warning: No se pudo configurar keymap para usuario $USER"
-# chroot /mnt /bin/bash -c "sudo -u $USER localectl set-x11-keymap $KEYBOARD_LAYOUT pc105 \"\" \"\"" || echo "Warning: No se pudo configurar X11 keymap para usuario $USER"
-
-# 2. Configuración para Xorg (X11)
-echo -e "${CYAN}2. Configurando teclado para Xorg (X11)...${NC}"
-if mkdir -p /mnt/etc/X11/xorg.conf.d 2>/dev/null; then
+    # 2. Configuración para Xorg (X11)
+    echo -e "${CYAN}2. Configurando teclado para Xorg (X11)...${NC}"
+    mkdir -p /mnt/etc/X11/xorg.conf.d
     cat > /mnt/etc/X11/xorg.conf.d/00-keyboard.conf << EOF
 Section "InputClass"
         Identifier "system-keyboard"
@@ -384,18 +95,10 @@ Section "InputClass"
         Option "XkbOptions" "grp:alt_shift_toggle"
 EndSection
 EOF
-    if [[ -f /mnt/etc/X11/xorg.conf.d/00-keyboard.conf ]]; then
-        echo -e "${GREEN}  ✓ Configuración Xorg creada correctamente${NC}"
-    else
-        echo -e "${RED}  ✗ Error al crear configuración Xorg${NC}"
-    fi
-else
-    echo -e "${RED}  ✗ Error al crear directorio Xorg${NC}"
-fi
 
-# 3. Configuración para Wayland
-echo -e "${CYAN}3. Configurando teclado para Wayland...${NC}"
-if mkdir -p /mnt/etc/xdg/wlroots 2>/dev/null; then
+    # 3. Configuración para Wayland
+    echo -e "${CYAN}3. Configurando teclado para Wayland...${NC}"
+    mkdir -p /mnt/etc/xdg/wlroots
     cat > /mnt/etc/xdg/wlroots/wlr.conf << EOF
 [keyboard]
 layout=$KEYBOARD_LAYOUT
@@ -409,177 +112,95 @@ kb_model=pc105
 kb_variant=
 kb_options=grp:alt_shift_toggle
 EOF
-    if [[ -f /mnt/etc/xdg/wlroots/wlr.conf ]]; then
-        echo -e "${GREEN}  ✓ Configuración Wayland creada correctamente${NC}"
-    else
-        echo -e "${RED}  ✗ Error al crear configuración Wayland${NC}"
-    fi
-else
-    echo -e "${RED}  ✗ Error al crear directorio Wayland${NC}"
-fi
 
-# 4. Configuración persistente del archivo /etc/default/keyboard
-echo -e "${CYAN}4. Configurando archivo /etc/default/keyboard...${NC}"
-cat > /mnt/etc/default/keyboard << EOF
+    # 4. Configuración persistente del archivo /etc/default/keyboard
+    echo -e "${CYAN}4. Configurando archivo /etc/default/keyboard...${NC}"
+    cat > /mnt/etc/default/keyboard << EOF
 XKBMODEL="pc105"
 XKBLAYOUT="$KEYBOARD_LAYOUT"
 XKBVARIANT=""
 XKBOPTIONS="grp:alt_shift_toggle"
 EOF
-if [[ -f /mnt/etc/default/keyboard ]]; then
-    echo -e "${GREEN}  ✓ Archivo /etc/default/keyboard creado correctamente${NC}"
-else
-    echo -e "${RED}  ✗ Error al crear /etc/default/keyboard${NC}"
-fi
 
-# 5. Configuración de la consola virtual (vconsole.conf)
-echo -e "${CYAN}5. Configurando consola virtual...${NC}"
-{
-    echo "KEYMAP=$KEYMAP_TTY"
-    echo "FONT=lat0-16"
-} > /mnt/etc/vconsole.conf
-if [[ -f /mnt/etc/vconsole.conf ]]; then
-    echo -e "${GREEN}  ✓ Configuración vconsole creada correctamente${NC}"
-else
-    echo -e "${RED}  ✗ Error al crear vconsole.conf${NC}"
-fi
+    # 5. Configuración de la consola virtual (vconsole.conf)
+    echo -e "${CYAN}5. Configurando consola virtual...${NC}"
+    echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
+    echo "FONT=lat0-16" >> /mnt/etc/vconsole.conf
 
-# 6. Configuración para GNOME (si se usa)
-echo -e "${CYAN}6. Configurando para GNOME...${NC}"
-if mkdir -p /mnt/etc/dconf/db/local.d 2>/dev/null; then
+    # 6. Configuración para GNOME (si se usa)
+    echo -e "${CYAN}6. Configurando para GNOME...${NC}"
+    mkdir -p /mnt/etc/dconf/db/local.d
     cat > /mnt/etc/dconf/db/local.d/00-keyboard << EOF
 [org/gnome/desktop/input-sources]
 sources=[('xkb', '$KEYBOARD_LAYOUT')]
 EOF
-    if [[ -f /mnt/etc/dconf/db/local.d/00-keyboard ]]; then
-        echo -e "${GREEN}  ✓ Configuración GNOME creada correctamente${NC}"
-    else
-        echo -e "${RED}  ✗ Error al crear configuración GNOME${NC}"
-    fi
-else
-    echo -e "${RED}  ✗ Error al crear directorio dconf${NC}"
-fi
 
-# 7. Configuración adicional para el usuario
-echo -e "${CYAN}7. Configurando variables de entorno para el usuario...${NC}"
-# Verificar que el directorio home del usuario exista
-if [[ ! -d "/mnt/home/$USER" ]]; then
-    echo -e "${YELLOW}  ⚠ Creando directorio home para usuario $USER${NC}"
-    mkdir -p "/mnt/home/$USER"
-    chroot /mnt chown "$USER:$USER" "/home/$USER" 2>/dev/null || true
-fi
-
-cat >> /mnt/home/$USER/.profile << EOF
+    # 7. Configuración adicional para el usuario
+    echo -e "${CYAN}7. Configurando variables de entorno para el usuario...${NC}"
+    cat >> /mnt/home/$USER/.profile << EOF
 
 # Configuración de teclado
 export XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT
 export XKB_DEFAULT_MODEL=pc105
 export XKB_DEFAULT_OPTIONS=grp:alt_shift_toggle
 EOF
-if [[ -f /mnt/home/$USER/.profile ]]; then
-    echo -e "${GREEN}  ✓ Variables de entorno añadidas a .profile${NC}"
-else
-    echo -e "${RED}  ✗ Error al modificar .profile${NC}"
-fi
 
-# 8. Script de configuración automática para el arranque
-# 8. Script de configuración automática mejorado
-echo -e "${CYAN}8. Creando script de configuración universal de teclado...${NC}"
-if mkdir -p /mnt/usr/local/bin 2>/dev/null; then
-    cat > /mnt/usr/local/bin/setup-keyboard.sh << EOF
+    # 8. Script de configuración automática para el arranque
+    echo -e "${CYAN}8. Creando script de configuración automática...${NC}"
+    mkdir -p /mnt/usr/local/bin
+    cat > /mnt/usr/local/bin/setup-keyboard.sh << 'EOF'
 #!/bin/bash
-# Script de configuración universal del teclado
-# Compatible con X11 y múltiples compositores Wayland
+# Script de configuración automática del teclado
 
-KEYBOARD_LAYOUT="$KEYBOARD_LAYOUT"
+KEYBOARD_LAYOUT="${KEYBOARD_LAYOUT}"
 
-# Configurar variables de entorno XKB (universales para Wayland)
-export XKB_DEFAULT_LAYOUT="\$KEYBOARD_LAYOUT"
-export XKB_DEFAULT_OPTIONS="grp:alt_shift_toggle"
-
-# Importar variables al entorno de usuario systemd
-if command -v systemctl >/dev/null 2>&1; then
-    systemctl --user import-environment XKB_DEFAULT_LAYOUT XKB_DEFAULT_OPTIONS 2>/dev/null
+# Detectar si estamos en X11 o Wayland
+if [ -n "$DISPLAY" ] && command -v setxkbmap >/dev/null 2>&1; then
+    # Estamos en X11
+    setxkbmap $KEYBOARD_LAYOUT
+elif [ -n "$WAYLAND_DISPLAY" ] && command -v gsettings >/dev/null 2>&1; then
+    # Estamos en Wayland con GNOME
+    gsettings set org.gnome.desktop.input-sources sources "[('xkb', '$KEYBOARD_LAYOUT')]"
 fi
-
-# Para X11: usar setxkbmap si está disponible
-if [ -n "\$DISPLAY" ] && command -v setxkbmap >/dev/null 2>&1; then
-    setxkbmap "\$KEYBOARD_LAYOUT" -option grp:alt_shift_toggle 2>/dev/null
-fi
-
-# Para Wayland: las variables XKB_DEFAULT_* serán leídas por el compositor
-# Funciona con: KDE/kwin_wayland, GNOME/mutter, wlroots-based compositors, etc.
 EOF
 
-    if chmod +x /mnt/usr/local/bin/setup-keyboard.sh 2>/dev/null; then
-        echo -e "${GREEN}  ✓ Script setup-keyboard.sh universal creado correctamente${NC}"
-    else
-        echo -e "${RED}  ✗ Error al crear script setup-keyboard.sh${NC}"
-    fi
-else
-    echo -e "${RED}  ✗ Error al crear directorio /usr/local/bin${NC}"
-fi
+    chmod +x /mnt/usr/local/bin/setup-keyboard.sh
 
-# 9. Configuración para autostart universal
-echo -e "${CYAN}9. Configurando autostart universal...${NC}"
-if mkdir -p /mnt/etc/xdg/autostart 2>/dev/null; then
+    # 9. Configuración para autostart en sesiones gráficas
+    echo -e "${CYAN}9. Configurando autostart para sesiones gráficas...${NC}"
+    mkdir -p /mnt/etc/xdg/autostart
     cat > /mnt/etc/xdg/autostart/keyboard-setup.desktop << EOF
 [Desktop Entry]
 Type=Application
-Name=Universal Keyboard Layout Setup
+Name=Keyboard Layout Setup
 Exec=/usr/local/bin/setup-keyboard.sh
 Hidden=false
 NoDisplay=true
-StartupNotify=false
+X-GNOME-Autostart-enabled=true
 EOF
-    if [[ -f /mnt/etc/xdg/autostart/keyboard-setup.desktop ]]; then
-        echo -e "${GREEN}  ✓ Autostart desktop file universal creado correctamente${NC}"
-    else
-        echo -e "${RED}  ✗ Error al crear autostart desktop file${NC}"
-    fi
-else
-    echo -e "${RED}  ✗ Error al crear directorio autostart${NC}"
-fi
 
-# 10. Establecer permisos correctos
-echo -e "${CYAN}10. Estableciendo permisos correctos...${NC}"
-if chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER" 2>/dev/null; then
-    echo -e "${GREEN}  ✓ Permisos del directorio home establecidos${NC}"
-else
-    echo -e "${YELLOW}  ⚠ Warning: No se pudieron establecer permisos del home${NC}"
-fi
+    # 10. Establecer permisos correctos
+    echo -e "${CYAN}10. Estableciendo permisos correctos...${NC}"
+    chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.profile" 2>/dev/null || true
+    chroot /mnt chmod 755 /usr/local/bin/setup-keyboard.sh
+    chroot /mnt chmod 644 /etc/xdg/autostart/keyboard-setup.desktop
 
-if chroot /mnt chmod 755 /usr/local/bin/setup-keyboard.sh 2>/dev/null; then
-    echo -e "${GREEN}  ✓ Permisos del script establecidos${NC}"
-else
-    echo -e "${YELLOW}  ⚠ Warning: No se pudieron establecer permisos del script${NC}"
-fi
+    # 11. Actualizar base de datos dconf si existe
+    echo -e "${CYAN}11. Actualizando configuraciones del sistema...${NC}"
+    chroot /mnt dconf update 2>/dev/null || true
 
-if chroot /mnt chmod 644 /etc/xdg/autostart/keyboard-setup.desktop 2>/dev/null; then
-    echo -e "${GREEN}  ✓ Permisos del desktop file establecidos${NC}"
-else
-    echo -e "${YELLOW}  ⚠ Warning: No se pudieron establecer permisos del desktop file${NC}"
-fi
 
-# 11. Actualizar base de datos dconf si existe
-echo -e "${CYAN}11. Actualizando configuraciones del sistema...${NC}"
-if chroot /mnt dconf update 2>/dev/null; then
-    echo -e "${GREEN}  ✓ Base de datos dconf actualizada${NC}"
-else
-    echo -e "${YELLOW}  ⚠ Warning: No se pudo actualizar dconf (normal si no está instalado)${NC}"
-fi
 
-echo ""
-echo -e "${GREEN}✓ Configuración completa del teclado finalizada${NC}"
-echo -e "${CYAN}  • Layout: $KEYBOARD_LAYOUT${NC}"
-echo -e "${CYAN}  • Keymap TTY: $KEYMAP_TTY${NC}"
-echo -e "${CYAN}  • Modelo: pc105${NC}"
-echo -e "${CYAN}  • Cambio de layout: Alt+Shift${NC}"
-echo -e "${CYAN}  • Métodos configurados: localectl, Xorg, Wayland, GNOME, vconsole${NC}"
-echo -e "${YELLOW}  • La configuración será efectiva después del reinicio${NC}"
+    echo -e "${GREEN}✓ Configuración completa del teclado finalizada${NC}"
+    echo -e "${CYAN}  • Layout: $KEYBOARD_LAYOUT${NC}"
+    echo -e "${CYAN}  • Keymap TTY: $KEYMAP_TTY${NC}"
+    echo -e "${CYAN}  • Modelo: pc105${NC}"
+    echo -e "${CYAN}  • Cambio de layout: Alt+Shift${NC}"
+    echo -e "${CYAN}  • Métodos configurados: localectl, Xorg, Wayland, GNOME, vconsole${NC}"
+    echo -e "${YELLOW}  • La configuración será efectiva después del reinicio${NC}"
 
-sleep 4
-clear
+    sleep 4
+    clear
 }
 
 
@@ -1205,7 +826,7 @@ verify_lvm_devices() {
     local max_attempts=15
     local attempt=1
 
-    while [ "$attempt" -le "$max_attempts" ]; do
+    while [ $attempt -le $max_attempts ]; do
         # Forzar actualización de dispositivos
         udevadm settle
         vgchange -ay vg0 2>/dev/null || true
@@ -1223,7 +844,7 @@ verify_lvm_devices() {
         fi
 
         echo -e "${YELLOW}Intento $attempt/$max_attempts: Esperando dispositivos LVM...${NC}"
-        if [ "$attempt" -eq 5 ]; then
+        if [ $attempt -eq 5 ]; then
             echo -e "${YELLOW}Información intermedia de debugging:${NC}"
             echo "• Logical Volumes disponibles:"
             lvs 2>/dev/null || echo "  No hay logical volumes"
@@ -1231,7 +852,7 @@ verify_lvm_devices() {
             ls -la /dev/vg0/ 2>/dev/null || echo "  Directorio /dev/vg0/ no existe"
         fi
 
-        if [ "$attempt" -eq 10 ]; then
+        if [ $attempt -eq 10 ]; then
             echo -e "${YELLOW}Intentando reactivar volume groups...${NC}"
             vgchange -an vg0 2>/dev/null || true
             sleep 2
@@ -1289,21 +910,21 @@ clear
 echo -e "${GREEN}| Actualizando lista de Keys en LiveCD |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
-update_repositories
-install_pacman_livecd_with_retry "archlinux-keyring"
+pacman -Sy archlinux-keyring --noconfirm
 sleep 2
 clear
 
 # Instalación de herramientas necesarias
 sleep 3
-install_pacman_livecd_with_retry "reflector"
-install_pacman_livecd_with_retry "python3"
-install_pacman_livecd_with_retry "rsync"
+pacman -Sy reflector --noconfirm
+pacman -Sy python3 --noconfirm
+pacman -Sy rsync --noconfirm
 clear
 
 # Actualización de mirrorlist
 echo -e "${GREEN}| Actualizando mejores listas de Mirrors |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
 barra_progreso
 sudo reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
 sleep 3
@@ -1366,19 +987,19 @@ partition_auto() {
         echo -e "${GREEN}| Formateando particiones UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkfs.fat -F32 -v $(get_partition_name "$SELECTED_DISK" "1")
-        mkswap $(get_partition_name "$SELECTED_DISK" "2")
-        mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "3")
+        mkfs.fat -F32 -v ${SELECTED_DISK}1
+        mkswap ${SELECTED_DISK}2
+        mkfs.ext4 -F ${SELECTED_DISK}3
         sleep 2
 
         # Montar particiones
         echo -e "${GREEN}| Montando particiones UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount $(get_partition_name "$SELECTED_DISK" "3") /mnt
-        swapon $(get_partition_name "$SELECTED_DISK" "2")
+        mount ${SELECTED_DISK}3 /mnt
+        swapon ${SELECTED_DISK}2
         mkdir -p /mnt/boot/efi
-        mount $(get_partition_name "$SELECTED_DISK" "1") /mnt/boot/efi
+        mount ${SELECTED_DISK}1 /mnt/boot/efi
 
     else
         # Configuración para BIOS Legacy
@@ -1407,16 +1028,16 @@ partition_auto() {
         echo -e "${GREEN}| Formateando particiones BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkswap $(get_partition_name "$SELECTED_DISK" "1")
-        mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "2")
+        mkswap ${SELECTED_DISK}1
+        mkfs.ext4 -F ${SELECTED_DISK}2
         sleep 2
 
         # Montar particiones
         echo -e "${GREEN}| Montando particiones BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mount $(get_partition_name "$SELECTED_DISK" "2") /mnt
-        swapon $(get_partition_name "$SELECTED_DISK" "1")
+        mount ${SELECTED_DISK}2 /mnt
+        swapon ${SELECTED_DISK}1
         mkdir -p /mnt/boot
     fi
 }
@@ -1428,81 +1049,6 @@ partition_auto_btrfs() {
     echo ""
     sleep 2
 
-    # Limpieza agresiva del disco ANTES de cualquier particionado
-    echo -e "${CYAN}Desmontando todas las particiones del disco ${SELECTED_DISK}...${NC}"
-
-    # Desmontar todas las particiones montadas del disco seleccionado
-    for partition in $(lsblk -lno NAME ${SELECTED_DISK} | grep -v "^$(basename ${SELECTED_DISK})$" | sort -r); do
-        partition_path="/dev/$partition"
-        if mountpoint -q "/mnt" && grep -q "$partition_path" /proc/mounts; then
-            echo -e "${YELLOW}Desmontando $partition_path de /mnt...${NC}"
-            umount -R /mnt 2>/dev/null || umount -l /mnt 2>/dev/null || true
-        fi
-        if grep -q "$partition_path" /proc/mounts; then
-            echo -e "${YELLOW}Desmontando $partition_path...${NC}"
-            umount -f "$partition_path" 2>/dev/null || umount -l "$partition_path" 2>/dev/null || true
-        fi
-    done
-
-    # Desactivar swap si está en el disco seleccionado
-    echo -e "${CYAN}Desactivando swap en ${SELECTED_DISK}...${NC}"
-    for partition in $(lsblk -lno NAME ${SELECTED_DISK} | grep -v "^$(basename ${SELECTED_DISK})$"); do
-        swapoff "/dev/$partition" 2>/dev/null || true
-    done
-
-    # Limpiar estructuras BTRFS existentes
-    echo -e "${CYAN}Limpiando estructuras BTRFS existentes...${NC}"
-    for partition in $(lsblk -lno NAME ${SELECTED_DISK} | grep -v "^$(basename ${SELECTED_DISK})$"); do
-        wipefs -af "/dev/$partition" 2>/dev/null || true
-    done
-
-    # Limpiar completamente el disco - cabecera y final
-    echo -e "${CYAN}Limpieza completa del disco ${SELECTED_DISK}...${NC}"
-    # Limpiar los primeros 100MB (tablas de partición, etc.)
-    dd if=/dev/zero of=$SELECTED_DISK bs=1M count=100 2>/dev/null || true
-    # Limpiar los últimos 100MB (backup de tablas GPT)
-    DISK_SIZE=$(blockdev --getsz $SELECTED_DISK)
-    DISK_SIZE_MB=$((DISK_SIZE * 512 / 1024 / 1024))
-    if [ $DISK_SIZE_MB -gt 200 ]; then
-        dd if=/dev/zero of=$SELECTED_DISK bs=1M seek=$((DISK_SIZE_MB - 100)) count=100 2>/dev/null || true
-    fi
-    sync
-    sleep 5
-
-    # Forzar re-lectura de la tabla de particiones
-    blockdev --rereadpt $SELECTED_DISK 2>/dev/null || true
-    partprobe $SELECTED_DISK 2>/dev/null || true
-
-    # Reinicializar kernel sobre el dispositivo
-    echo -e "${CYAN}Reinicializando kernel sobre el dispositivo...${NC}"
-    # Intentar rescan solo si el archivo existe y tenemos permisos
-    RESCAN_FILE="/sys/block/$(basename $SELECTED_DISK)/device/rescan"
-    if [ -w "$RESCAN_FILE" ]; then
-        echo 1 > "$RESCAN_FILE" 2>/dev/null || true
-    fi
-    udevadm settle --timeout=10
-    udevadm trigger --subsystem-match=block
-    udevadm settle --timeout=10
-
-    # Verificaciones adicionales
-    echo -e "${CYAN}Verificando estado del disco después de la limpieza...${NC}"
-    if ! [ -b "$SELECTED_DISK" ]; then
-        echo -e "${RED}ERROR: El disco $SELECTED_DISK no es un dispositivo de bloque válido${NC}"
-        exit 1
-    fi
-
-    # Verificar que no hay particiones activas
-    if [ $(lsblk -n -o NAME $SELECTED_DISK | grep -c "├─\|└─") -gt 0 ]; then
-        echo -e "${YELLOW}Warning: Aún se detectan particiones. Realizando limpieza adicional...${NC}"
-        sgdisk --clear $SELECTED_DISK 2>/dev/null || true
-        wipefs -af $SELECTED_DISK 2>/dev/null || true
-        partprobe $SELECTED_DISK 2>/dev/null || true
-        sleep 2
-    fi
-
-    echo -e "${GREEN}✓ Disco limpio y listo para particionado${NC}"
-    sleep 3
-
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         # Configuración para UEFI
         echo -e "${GREEN}| Configurando particiones BTRFS para UEFI |${NC}"
@@ -1510,115 +1056,39 @@ partition_auto_btrfs() {
         echo ""
 
         # Borrar completamente el disco
-        echo -e "${CYAN}Creando nueva tabla de particiones...${NC}"
+        echo -e "${CYAN}Limpiando disco completamente...${NC}"
         sgdisk --zap-all $SELECTED_DISK
         sleep 2
         partprobe $SELECTED_DISK
         wipefs -af $SELECTED_DISK
 
         # Crear tabla de particiones GPT
-        echo -e "${CYAN}Creando tabla de particiones GPT...${NC}"
-        parted $SELECTED_DISK --script --align optimal mklabel gpt || {
-            echo -e "${RED}ERROR: No se pudo crear tabla GPT${NC}"
-            exit 1
-        }
-        sleep 2
-        partprobe $SELECTED_DISK
+        parted $SELECTED_DISK --script --align optimal mklabel gpt
 
         # Crear partición EFI (512MB)
-        echo -e "${CYAN}Creando partición EFI...${NC}"
-        parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB || {
-            echo -e "${RED}ERROR: No se pudo crear partición EFI${NC}"
-            exit 1
-        }
+        parted $SELECTED_DISK --script --align optimal mkpart ESP fat32 1MiB 513MiB
         parted $SELECTED_DISK --script set 1 esp on
-        sleep 1
 
         # Crear partición swap (8GB)
-        echo -e "${CYAN}Creando partición swap...${NC}"
-        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 513MiB 8705MiB || {
-            echo -e "${RED}ERROR: No se pudo crear partición swap${NC}"
-            exit 1
-        }
-        sleep 1
+        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 513MiB 8705MiB
 
         # Crear partición root (resto del disco)
-        echo -e "${CYAN}Creando partición root...${NC}"
-        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 8705MiB 100% || {
-            echo -e "${RED}ERROR: No se pudo crear partición root${NC}"
-            exit 1
-        }
-
-        # Verificar creación de particiones
-        partprobe $SELECTED_DISK
-        sleep 3
-        udevadm settle --timeout=10
+        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 8705MiB 100%
 
         # Formatear particiones
         echo -e "${GREEN}| Formateando particiones BTRFS UEFI |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkfs.fat -F32 -v $(get_partition_name "$SELECTED_DISK" "1")
-        mkswap $(get_partition_name "$SELECTED_DISK" "2")
-        mkfs.btrfs -f $(get_partition_name "$SELECTED_DISK" "3")
-        sleep 2
-
-        # Verificar que las particiones estén disponibles y no montadas
-        echo -e "${CYAN}Verificando particiones creadas...${NC}"
-        sleep 5
-        partprobe $SELECTED_DISK
-        sleep 2
-
-        # Verificar que las particiones no estén montadas
-        for i in 1 2 3; do
-            if mountpoint -q "${SELECTED_DISK}${i}" 2>/dev/null; then
-                echo -e "${YELLOW}Desmontando ${SELECTED_DISK}${i}...${NC}"
-                umount -f "${SELECTED_DISK}${i}" 2>/dev/null || true
-            fi
-            if swapon --show=NAME --noheadings 2>/dev/null | grep -q "${SELECTED_DISK}${i}"; then
-                echo -e "${YELLOW}Desactivando swap ${SELECTED_DISK}${i}...${NC}"
-                swapoff "${SELECTED_DISK}${i}" 2>/dev/null || true
-            fi
-        done
-
-        lsblk $SELECTED_DISK
+        mkfs.fat -F32 -v ${SELECTED_DISK}1
+        mkswap ${SELECTED_DISK}2
+        mkfs.btrfs -f ${SELECTED_DISK}3
         sleep 2
 
         # Montar y crear subvolúmenes BTRFS
         echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-
-        # Verificar que la partición no esté montada antes de montar
-        echo -e "${CYAN}Preparando montaje de partición BTRFS...${NC}"
-        if mountpoint -q /mnt; then
-            echo -e "${YELLOW}Desmontando /mnt recursivamente...${NC}"
-            umount -R /mnt 2>/dev/null || umount -l /mnt 2>/dev/null || true
-            sleep 2
-        fi
-
-        # Verificar específicamente la partición BTRFS
-        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
-        if mountpoint -q "$PARTITION_3" 2>/dev/null; then
-            echo -e "${YELLOW}Desmontando $PARTITION_3...${NC}"
-            umount -f "$PARTITION_3" 2>/dev/null || true
-            sleep 2
-        fi
-
-        echo -e "${CYAN}Montando partición BTRFS $PARTITION_3 en /mnt...${NC}"
-        mount "$PARTITION_3" /mnt || {
-            echo -e "${RED}ERROR: No se pudo montar $PARTITION_3${NC}"
-            exit 1
-        }
-
-        # Limpiar contenido existente del filesystem BTRFS
-        echo -e "${CYAN}Limpiando contenido existente del filesystem BTRFS...${NC}"
-        find /mnt -mindepth 1 -maxdepth 1 -not -name 'lost+found' -exec rm -rf {} + 2>/dev/null || true
-
-        # No necesitamos eliminar subvolúmenes porque el filesystem está recién formateado
-
-        # Crear subvolúmenes BTRFS
-        echo -e "${CYAN}Creando subvolúmenes BTRFS...${NC}"
+        mount ${SELECTED_DISK}3 /mnt
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
         btrfs subvolume create /mnt/@var
@@ -1626,19 +1096,16 @@ partition_auto_btrfs() {
         umount /mnt
 
         # Montar subvolúmenes
-        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
-        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
-        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ "$PARTITION_3" /mnt
-        swapon "$PARTITION_2"
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}3 /mnt
+        swapon ${SELECTED_DISK}2
         mkdir -p /mnt/{boot/efi,home,var,tmp}
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var "$PARTITION_3" /mnt/var
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "$PARTITION_3" /mnt/tmp
-        mount "$PARTITION_1" /mnt/boot/efi
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}3 /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}3 /mnt/var
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}3 /mnt/tmp
+        mount ${SELECTED_DISK}1 /mnt/boot/efi
 
         # Instalar herramientas específicas para BTRFS
-        install_pacstrap_package "btrfs-progs"
+        pacstrap /mnt btrfs-progs
 
     else
         # Configuración para BIOS Legacy
@@ -1646,109 +1113,36 @@ partition_auto_btrfs() {
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
 
-        # Crear tabla de particiones MBR
-        echo -e "${CYAN}Creando tabla de particiones MBR...${NC}"
-        parted $SELECTED_DISK --script --align optimal mklabel msdos || {
-            echo -e "${RED}ERROR: No se pudo crear tabla MBR${NC}"
-            exit 1
-        }
+        # Borrar completamente el disco
+        echo -e "${CYAN}Limpiando disco completamente...${NC}"
+        sgdisk --zap-all $SELECTED_DISK
         sleep 2
         partprobe $SELECTED_DISK
+        wipefs -af $SELECTED_DISK
 
-        # Crear partición boot (1GB) - necesaria para GRUB en BIOS Legacy con BTRFS
-        echo -e "${CYAN}Creando partición boot...${NC}"
-        parted $SELECTED_DISK --script --align optimal mkpart primary ext4 1MiB 1025MiB || {
-            echo -e "${RED}ERROR: No se pudo crear partición boot${NC}"
-            exit 1
-        }
-        parted $SELECTED_DISK --script set 1 boot on
-        sleep 1
+        # Crear tabla de particiones MBR
+        parted $SELECTED_DISK --script --align optimal mklabel msdos
 
         # Crear partición swap (8GB)
-        echo -e "${CYAN}Creando partición swap...${NC}"
-        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1025MiB 9217MiB || {
-            echo -e "${RED}ERROR: No se pudo crear partición swap${NC}"
-            exit 1
-        }
-        sleep 1
+        parted $SELECTED_DISK --script --align optimal mkpart primary linux-swap 1MiB 8193MiB
 
         # Crear partición root (resto del disco)
-        echo -e "${CYAN}Creando partición root...${NC}"
-        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 9217MiB 100% || {
-            echo -e "${RED}ERROR: No se pudo crear partición root${NC}"
-            exit 1
-        }
-
-        # Verificar creación de particiones
-        partprobe $SELECTED_DISK
-        sleep 3
-        udevadm settle --timeout=10
+        parted $SELECTED_DISK --script --align optimal mkpart primary btrfs 8193MiB 100%
+        parted $SELECTED_DISK --script set 2 boot on
 
         # Formatear particiones
         echo -e "${GREEN}| Formateando particiones BTRFS BIOS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-        mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "1")
-        mkswap $(get_partition_name "$SELECTED_DISK" "2")
-        mkfs.btrfs -f $(get_partition_name "$SELECTED_DISK" "3")
-        sleep 2
-
-        # Verificar que las particiones estén disponibles y no montadas
-        echo -e "${CYAN}Verificando particiones creadas...${NC}"
-        sleep 5
-        partprobe $SELECTED_DISK
-        sleep 2
-
-        # Verificar que las particiones no estén montadas
-        for i in 1 2 3; do
-            if mountpoint -q "${SELECTED_DISK}${i}" 2>/dev/null; then
-                echo -e "${YELLOW}Desmontando ${SELECTED_DISK}${i}...${NC}"
-                umount -f "${SELECTED_DISK}${i}" 2>/dev/null || true
-            fi
-            if swapon --show=NAME --noheadings 2>/dev/null | grep -q "${SELECTED_DISK}${i}"; then
-                echo -e "${YELLOW}Desactivando swap ${SELECTED_DISK}${i}...${NC}"
-                swapoff "${SELECTED_DISK}${i}" 2>/dev/null || true
-            fi
-        done
-
-        lsblk $SELECTED_DISK
+        mkswap ${SELECTED_DISK}1
+        mkfs.btrfs -f ${SELECTED_DISK}2
         sleep 2
 
         # Montar y crear subvolúmenes BTRFS
         echo -e "${GREEN}| Creando subvolúmenes BTRFS |${NC}"
         printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
         echo ""
-
-        # Verificar que la partición no esté montada antes de montar
-        echo -e "${CYAN}Preparando montaje de partición BTRFS...${NC}"
-        if mountpoint -q /mnt; then
-            echo -e "${YELLOW}Desmontando /mnt recursivamente...${NC}"
-            umount -R /mnt 2>/dev/null || umount -l /mnt 2>/dev/null || true
-            sleep 2
-        fi
-
-        # Verificar específicamente la partición BTRFS
-        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
-        if mountpoint -q "$PARTITION_3" 2>/dev/null; then
-            echo -e "${YELLOW}Desmontando $PARTITION_3...${NC}"
-            umount -f "$PARTITION_3" 2>/dev/null || true
-            sleep 2
-        fi
-
-        echo -e "${CYAN}Montando partición BTRFS $PARTITION_3 en /mnt...${NC}"
-        mount "$PARTITION_3" /mnt || {
-            echo -e "${RED}ERROR: No se pudo montar $PARTITION_3${NC}"
-            exit 1
-        }
-
-        # Limpiar contenido existente del filesystem BTRFS
-        echo -e "${CYAN}Limpiando contenido existente del filesystem BTRFS...${NC}"
-        find /mnt -mindepth 1 -maxdepth 1 -not -name 'lost+found' -exec rm -rf {} + 2>/dev/null || true
-
-        # No necesitamos eliminar subvolúmenes porque el filesystem está recién formateado
-
-        # Crear subvolúmenes BTRFS
-        echo -e "${CYAN}Creando subvolúmenes BTRFS...${NC}"
+        mount ${SELECTED_DISK}2 /mnt
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
         btrfs subvolume create /mnt/@var
@@ -1756,19 +1150,15 @@ partition_auto_btrfs() {
         umount /mnt
 
         # Montar subvolúmenes
-        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
-        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
-        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ "$PARTITION_3" /mnt
-        swapon "$PARTITION_2"
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@ ${SELECTED_DISK}2 /mnt
+        swapon ${SELECTED_DISK}1
         mkdir -p /mnt/{boot,home,var,tmp}
-        mount "$PARTITION_1" /mnt/boot
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var "$PARTITION_3" /mnt/var
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "$PARTITION_3" /mnt/tmp
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@home ${SELECTED_DISK}2 /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var ${SELECTED_DISK}2 /mnt/var
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp ${SELECTED_DISK}2 /mnt/tmp
 
         # Instalar herramientas específicas para BTRFS
-        install_pacstrap_package "btrfs-progs"
+        pacstrap /mnt btrfs-progs
     fi
 }
 
@@ -1812,8 +1202,8 @@ partition_cifrado() {
         parted $SELECTED_DISK --script --align optimal mkpart primary 1537MiB 100%
 
         # Formatear particiones
-        mkfs.fat -F32 $(get_partition_name "$SELECTED_DISK" "1")
-        mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "2")
+        mkfs.fat -F32 ${SELECTED_DISK}1
+        mkfs.ext4 -F ${SELECTED_DISK}2
 
         # Sincronizar y esperar reconocimiento de particiones
         echo -e "${CYAN}Sincronizando sistema de archivos...${NC}"
@@ -1829,18 +1219,17 @@ partition_cifrado() {
 
         # Limpiar firmas de sistemas de archivos existentes
         echo -e "${CYAN}Limpiando firmas de sistemas de archivos...${NC}"
-        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
-        wipefs -af "$PARTITION_3" 2>/dev/null || true
-        dd if=/dev/zero of="$PARTITION_3" bs=1M count=10 2>/dev/null || true
+        wipefs -af ${SELECTED_DISK}3 2>/dev/null || true
+        dd if=/dev/zero of=${SELECTED_DISK}3 bs=1M count=10 2>/dev/null || true
 
-        echo -e "${CYAN}Aplicando cifrado LUKS a $PARTITION_3...${NC}"
+        echo -e "${CYAN}Aplicando cifrado LUKS a ${SELECTED_DISK}3...${NC}"
         echo -e "${YELLOW}IMPORTANTE: Esto puede tomar unos minutos dependiendo del tamaño del disco${NC}"
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase "$PARTITION_3" -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase ${SELECTED_DISK}3 -; then
             echo -e "${RED}ERROR: Falló el cifrado LUKS de la partición${NC}"
             exit 1
         fi
 
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode "$PARTITION_3" cryptlvm -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode ${SELECTED_DISK}3 cryptlvm -; then
             echo -e "${RED}ERROR: No se pudo abrir el dispositivo cifrado${NC}"
             exit 1
         fi
@@ -1853,7 +1242,7 @@ partition_cifrado() {
 
         # Crear backup del header LUKS (recomendación de seguridad)
         echo -e "${CYAN}Creando backup del header LUKS...${NC}"
-        cryptsetup luksHeaderBackup "$PARTITION_3" --header-backup-file /tmp/luks-header-backup
+        cryptsetup luksHeaderBackup ${SELECTED_DISK}3 --header-backup-file /tmp/luks-header-backup
         echo -e "${GREEN}✓ Backup del header LUKS guardado en /tmp/luks-header-backup${NC}"
         echo -e "${YELLOW}IMPORTANTE: Copia este archivo a un lugar seguro después de la instalación${NC}"
 
@@ -1927,13 +1316,12 @@ partition_cifrado() {
 
         # Verificar que las particiones existan antes de montar
         echo -e "${CYAN}Verificando particiones antes del montaje...${NC}"
-        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
-        if [ ! -b "$PARTITION_1" ]; then
-            echo -e "${RED}ERROR: Partición EFI $PARTITION_1 no existe${NC}"
+        if [ ! -b "${SELECTED_DISK}1" ]; then
+            echo -e "${RED}ERROR: Partición EFI ${SELECTED_DISK}1 no existe${NC}"
             exit 1
         fi
-        if [ ! -b "$PARTITION_1" ]; then
-            echo -e "${RED}ERROR: Partición boot $PARTITION_1 no existe${NC}"
+        if [ ! -b "${SELECTED_DISK}1" ]; then
+            echo -e "${RED}ERROR: Partición boot ${SELECTED_DISK}1 no existe${NC}"
             exit 1
         fi
 
@@ -1945,7 +1333,7 @@ partition_cifrado() {
         mkdir -p /mnt/boot
 
         echo -e "${CYAN}Montando partición boot...${NC}"
-        if ! mount "$PARTITION_1" /mnt/boot; then
+        if ! mount ${SELECTED_DISK}1 /mnt/boot; then
             echo -e "${RED}ERROR: Falló el montaje de la partición boot${NC}"
             exit 1
         fi
@@ -1954,7 +1342,7 @@ partition_cifrado() {
         mkdir -p /mnt/boot/efi
 
         echo -e "${CYAN}Montando partición EFI...${NC}"
-        if ! mount "$PARTITION_1" /mnt/boot/efi; then
+        if ! mount ${SELECTED_DISK}1 /mnt/boot/efi; then
             echo -e "${RED}ERROR: Falló el montaje de la partición EFI${NC}"
             exit 1
         fi
@@ -1974,7 +1362,7 @@ partition_cifrado() {
         echo -e "${GREEN}  • UEFI: EFI (512MB) + boot (1GB) sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
-        install_pacstrap_package "cryptsetup lvm2"
+        pacstrap /mnt cryptsetup lvm2
 
     else
         # Configuración para BIOS Legacy con cifrado (siguiendo mejores prácticas)
@@ -2000,7 +1388,7 @@ partition_cifrado() {
         parted $SELECTED_DISK --script --align optimal mkpart primary 513MiB 100%
 
         # Formatear partición boot
-        mkfs.ext4 -F $(get_partition_name "$SELECTED_DISK" "1")
+        mkfs.ext4 -F ${SELECTED_DISK}1
 
         # Sincronizar y esperar reconocimiento de particiones
         echo -e "${CYAN}Sincronizando sistema de archivos...${NC}"
@@ -2016,16 +1404,15 @@ partition_cifrado() {
 
         # Limpiar firmas de sistemas de archivos existentes
         echo -e "${CYAN}Limpiando firmas de sistemas de archivos...${NC}"
-        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
-        wipefs -af "$PARTITION_2" 2>/dev/null || true
-        dd if=/dev/zero of="$PARTITION_2" bs=1M count=10 2>/dev/null || true
+        wipefs -af ${SELECTED_DISK}2 2>/dev/null || true
+        dd if=/dev/zero of=${SELECTED_DISK}2 bs=1M count=10 2>/dev/null || true
 
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase "$PARTITION_2" -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup luksFormat --batch-mode --verify-passphrase ${SELECTED_DISK}2 -; then
             echo -e "${RED}ERROR: Falló el cifrado LUKS de la partición${NC}"
             exit 1
         fi
 
-        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode "$PARTITION_2" cryptlvm -; then
+        if ! echo -n "$ENCRYPTION_PASSWORD" | cryptsetup open --batch-mode ${SELECTED_DISK}2 cryptlvm -; then
             echo -e "${RED}ERROR: No se pudo abrir el dispositivo cifrado${NC}"
             exit 1
         fi
@@ -2038,7 +1425,7 @@ partition_cifrado() {
 
         # Crear backup del header LUKS (recomendación de seguridad)
         echo -e "${CYAN}Creando backup del header LUKS...${NC}"
-        cryptsetup luksHeaderBackup "$PARTITION_2" --header-backup-file /tmp/luks-header-backup
+        cryptsetup luksHeaderBackup ${SELECTED_DISK}2 --header-backup-file /tmp/luks-header-backup
         echo -e "${GREEN}✓ Backup del header LUKS guardado en /tmp/luks-header-backup${NC}"
         echo -e "${YELLOW}IMPORTANTE: Copia este archivo a un lugar seguro después de la instalación${NC}"
 
@@ -2112,9 +1499,8 @@ partition_cifrado() {
 
         # Verificar que la partición boot exista
         echo -e "${CYAN}Verificando partición boot antes del montaje...${NC}"
-        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
-        if [ ! -b "$PARTITION_1" ]; then
-            echo -e "${RED}ERROR: Partición boot $PARTITION_1 no existe${NC}"
+        if [ ! -b "${SELECTED_DISK}1" ]; then
+            echo -e "${RED}ERROR: Partición boot ${SELECTED_DISK}1 no existe${NC}"
             exit 1
         fi
 
@@ -2127,7 +1513,7 @@ partition_cifrado() {
         mkdir -p /mnt/boot
 
         echo -e "${CYAN}Montando partición boot...${NC}"
-        if ! mount "$PARTITION_1" /mnt/boot; then
+        if ! mount ${SELECTED_DISK}1 /mnt/boot; then
             echo -e "${RED}ERROR: Falló el montaje de la partición boot${NC}"
             exit 1
         fi
@@ -2143,7 +1529,7 @@ partition_cifrado() {
         echo -e "${GREEN}  • BIOS Legacy: boot (512MB) sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
-        install_pacstrap_package "cryptsetup lvm2"
+        pacstrap /mnt cryptsetup lvm2
     fi
 }
 
@@ -2393,16 +1779,16 @@ unmount_selected_disk_partitions() {
 
 # Función para configurar montajes necesarios para chroot
 setup_chroot_mounts() {
-    echo -e "${CYAN}Configurando montajes para chroot...${NC}"
-    mount --types proc /proc /mnt/proc
-    mount --rbind /sys /mnt/sys
-    mount --make-rslave /mnt/sys
-    mount --rbind /dev /mnt/dev
-    mount --make-rslave /mnt/dev
-    mount --bind /run /mnt/run
-    mount --make-slave /mnt/run
-    cp /etc/resolv.conf /mnt/etc/
-    echo -e "${GREEN}✓ Montajes para chroot configurados${NC}"
+echo -e "${CYAN}Configurando montajes para chroot...${NC}"
+mount --types proc /proc /mnt/proc
+mount --rbind /sys /mnt/sys
+mount --make-rslave /mnt/sys
+mount --rbind /dev /mnt/dev
+mount --make-rslave /mnt/dev
+mount --bind /run /mnt/run
+mount --make-slave /mnt/run
+cp /etc/resolv.conf /mnt/etc/
+echo -e "${GREEN}✓ Montajes para chroot configurados${NC}"
 }
 
 
@@ -2420,7 +1806,6 @@ cleanup_chroot_mounts() {
 # Ejecutar limpieza de particiones
 unmount_selected_disk_partitions
 cleanup_chroot_mounts
-clear
 
 # Ejecutar particionado según el modo seleccionado
 case "$PARTITION_MODE" in
@@ -2457,45 +1842,37 @@ echo -e "${GREEN}| Instalando paquetes principales de la distribución |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
-install_pacstrap_with_retry "base"
-install_pacstrap_with_retry "base-devel"
-install_pacstrap_with_retry "lsb-release"
-install_pacstrap_with_retry "reflector"
-install_pacstrap_with_retry "python3"
-install_pacstrap_with_retry "rsync"
-install_pacstrap_with_retry "nano"
-install_pacstrap_with_retry "xdg-user-dirs"
-install_pacstrap_with_retry "curl"
-install_pacstrap_with_retry "wget"
-install_pacstrap_with_retry "git"
-clear
-
-
-# Instalar herramientas específicas según el modo de particionado
-if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-    echo -e "${CYAN}Instalando herramientas BTRFS...${NC}"
-    install_pacstrap_with_retry "btrfs-progs"
-elif [ "$PARTITION_MODE" = "cifrado" ]; then
-    echo -e "${CYAN}Instalando herramientas de cifrado...${NC}"
-    install_pacstrap_with_retry "cryptsetup lvm2"
-fi
+pacstrap /mnt base
+pacstrap /mnt base-devel
+pacstrap /mnt reflector python3 rsync
+pacstrap /mnt nano
+pacstrap /mnt xdg-user-dirs
+pacstrap /mnt curl
+pacstrap /mnt wget
+pacstrap /mnt git
 
 # Configurar montajes para chroot
 clear
 sleep 2
 setup_chroot_mounts
 sleep 2
-update_system_chroot
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
 sleep 2
+clear
 
 # Actualización de mirrors en el sistema instalado
-cp /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
-#chroot /mnt /bin/bash -c "reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist"
+chroot /mnt /bin/bash -c "reflector --verbose --latest 6 --protocol https --sort rate --save /etc/pacman.d/mirrorlist"
 clear
 cat /mnt/etc/pacman.d/mirrorlist
 sleep 3
 clear
 
+# Actualización del sistema instalado
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+cp /usr/share/arcrisgui/data/config/pacman.conf /mnt/etc/pacman.conf
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+sleep 5
 
 # Generar fstab
 if [ "$PARTITION_MODE" = "manual" ]; then
@@ -2608,50 +1985,11 @@ chroot /mnt /bin/bash -c "cat /etc/fstab"
 sleep 3
 clear
 
-# Instalación del kernel seleccionado
-echo -e "${GREEN}| Instalando kernel: $SELECTED_KERNEL |${NC}"
-printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-echo ""
-
-case "$SELECTED_KERNEL" in
-    "linux")
-        install_pacman_chroot_with_retry "linux linux-firmware"
-        ;;
-    "linux-hardened")
-        install_pacman_chroot_with_retry "linux-hardened linux-firmware"
-        ;;
-    "linux-lts")
-        install_pacman_chroot_with_retry "linux-lts linux-firmware"
-        ;;
-    "linux-rt-lts")
-        install_pacman_chroot_with_retry "linux-rt-lts linux-firmware"
-        ;;
-    "linux-zen")
-        install_pacman_chroot_with_retry "linux-zen linux-firmware"
-        ;;
-    *)
-        install_pacman_chroot_with_retry "linux linux-firmware"
-        ;;
-esac
-
-sleep 3
-clear
-# Actualización del sistema instalado
-update_system_chroot
-cp /usr/share/arcrisgui/data/config/pacman.conf /mnt/etc/pacman.conf
-update_system_chroot
-update_system_chroot
-sleep 3
-clear
-
-
 # Configuración del sistema
 echo -e "${GREEN}| Configurando sistema base |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
-# Instalación de paquetes principales
-echo -e "${GREEN}| Instalando paquetes principales de la distribución |${NC}"
 # Configuración de zona horaria
 chroot /mnt /bin/bash -c "ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime"
 chroot /mnt /bin/bash -c "hwclock --systohc"
@@ -2662,8 +2000,8 @@ chroot /mnt /bin/bash -c "locale-gen"
 echo "LANG=$LOCALE" > /mnt/etc/locale.conf
 
 # Configuración de teclado
-# echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
-# echo "FONT=lat9w-16" >> /mnt/etc/vconsole.conf
+echo "KEYMAP=$KEYMAP_TTY" > /mnt/etc/vconsole.conf
+echo "FONT=lat9w-16" >> /mnt/etc/vconsole.conf
 
 # Configuración de hostname
 echo "$HOSTNAME" > /mnt/etc/hostname
@@ -2674,6 +2012,47 @@ cat > /mnt/etc/hosts << EOF
 EOF
 
 sleep 3
+clear
+
+# Instalación del kernel seleccionado
+echo -e "${GREEN}| Instalando kernel: $SELECTED_KERNEL |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
+
+case "$SELECTED_KERNEL" in
+    "linux")
+        chroot /mnt /bin/bash -c "pacman -S linux --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        ;;
+    "linux-hardened")
+        chroot /mnt /bin/bash -c "pacman -S linux-hardened --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        ;;
+    "linux-lts")
+        chroot /mnt /bin/bash -c "pacman -S linux-lts --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        ;;
+    "linux-rt-lts")
+        chroot /mnt /bin/bash -c "pacman -S linux-rt-lts --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        ;;
+    "linux-zen")
+        chroot /mnt /bin/bash -c "pacman -S linux-zen --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        ;;
+    *)
+        chroot /mnt /bin/bash -c "pacman -S linux --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S linux-firmware --noconfirm"
+        ;;
+esac
+
+sleep 3
+clear
+echo -e "${GREEN}✓ Instalanado extras${NC}"
+chroot /mnt pacman -S yay-bin --noconfirm
+chroot /mnt pacman -S alsi --noconfirm
+clear
+
 clear
 
 # Configuración de usuarios y contraseñas
@@ -2690,7 +2069,7 @@ echo "$USER:$PASSWORD_USER" | chroot /mnt /bin/bash -c "chpasswd"
 
 
 # Configurar sudo
-install_pacstrap_with_retry "sudo"
+chroot /mnt /bin/bash -c "pacman -S sudo --noconfirm"
 
 # Configuración temporal NOPASSWD para instalaciones
 echo -e "${GREEN}| Configurando permisos sudo temporales |${NC}"
@@ -2703,20 +2082,20 @@ USUARIOS_EXISTENTES=$(awk -F':' '$3 >= 1000 && $3 != 65534 {print $1}' /mnt/etc/
 if [[ -n "$USUARIOS_EXISTENTES" ]]; then
     echo "✓ Usuarios detectados en el sistema:"
     echo "$USUARIOS_EXISTENTES" | while read -r usuario; do
-        echo "  - $usuario"
-        chroot /mnt /bin/bash -c "userdel $usuario"
-        chroot /mnt /bin/bash -c "useradd -m -G wheel,audio,video,optical,storage -s /bin/bash $USER"
-        echo "$USER:$PASSWORD_USER" | chroot /mnt /bin/bash -c "chpasswd"
+echo "  - $usuario"
+chroot /mnt /bin/bash -c "userdel $usuario"
+chroot /mnt /bin/bash -c "useradd -m -G wheel,audio,video,optical,storage -s /bin/bash $USER"
+echo "$USER:$PASSWORD_USER" | chroot /mnt /bin/bash -c "chpasswd"
     done
-    echo ""
+echo ""
 
     # Configurar sudo para todos los usuarios encontrados
     {
-        echo "# Configuración temporal para instalaciones"
-        echo "$USUARIOS_EXISTENTES" | while read -r usuario_encontrado; do
-            echo "$usuario_encontrado ALL=(ALL:ALL) NOPASSWD: ALL"
-        done
-        echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL"
+echo "# Configuración temporal para instalaciones"
+echo "$USUARIOS_EXISTENTES" | while read -r usuario_encontrado; do
+    echo "$usuario_encontrado ALL=(ALL:ALL) NOPASSWD: ALL"
+done
+echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL"
     } > /mnt/etc/sudoers.d/temp-install
 
     echo "✓ Configuración sudo aplicada para usuarios existentes y grupo wheel"
@@ -2726,8 +2105,8 @@ else
 
     # Usar la variable USER proporcionada
     {
-        echo "# Configuración temporal para instalaciones"
-        echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL"
+echo "# Configuración temporal para instalaciones"
+echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL"
     } > /mnt/etc/sudoers.d/temp-install
 
     echo "✓ Configuración sudo aplicada para usuario: $USER"
@@ -2744,7 +2123,7 @@ if chroot /mnt /bin/bash -c "grep -q '^%wheel ALL=(ALL) ALL$' /etc/sudoers" 2>/d
     echo "🔄 Detectada configuración wheel normal, cambiando a NOPASSWD..."
 
     # Cambiar la línea específica
-    sed -i 's/^%wheel ALL=(ALL) ALL$/%wheel ALL=(ALL:ALL) NOPASSWD: ALL/' /mnt/etc/sudoers
+sed -i 's/^%wheel ALL=(ALL) ALL$/%wheel ALL=(ALL:ALL) NOPASSWD: ALL/' /mnt/etc/sudoers
 
     # Verificar que el cambio se aplicó correctamente
     if chroot /mnt /bin/bash -c "grep -q '^%wheel ALL=(ALL:ALL) NOPASSWD: ALL$' /etc/sudoers" 2>/dev/null; then
@@ -2757,16 +2136,9 @@ else
     echo "   No se realizaron cambios"
 fi
 
-sleep 2
-clear
-echo -e "${GREEN}✓ Instalanado extras${NC}"
-# chroot /mnt pacman -S yay-bin --noconfirm
-# chroot /mnt pacman -S alsi --noconfirm
-# Instalar yay-bin desde AUR usando makepkg
-chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
-sleep 2
-# Instalar alsi desde AUR usando makepkg
-chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && cd alsi && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
+
+
+
 sleep 2
 clear
 
@@ -2776,40 +2148,41 @@ printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
 if [ "$PARTITION_MODE" = "cifrado" ]; then
-    echo -e "${GREEN}Configurando mkinitcpio para cifrado LUKS+LVM...${NC}"
+echo -e "${GREEN}Configurando mkinitcpio para cifrado LUKS+LVM...${NC}"
 
-    # Configurar módulos específicos para LUKS+LVM (siguiendo mejores prácticas)
-    echo -e "${CYAN}Configurando módulos del kernel para cifrado...${NC}"
-    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_snapshot dm_mirror)/' /mnt/etc/mkinitcpio.conf
+# Configurar módulos específicos para LUKS+LVM (siguiendo mejores prácticas)
+echo -e "${CYAN}Configurando módulos del kernel para cifrado...${NC}"
+sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_snapshot dm_mirror)/' /mnt/etc/mkinitcpio.conf
 
-    # Configurar hooks para cifrado con LVM - orden crítico: encrypt antes de lvm2
-    echo -e "${CYAN}Configurando hooks - ORDEN CRÍTICO: encrypt debe ir antes de lvm2${NC}"
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+# Configurar hooks para cifrado con LVM - orden crítico: encrypt antes de lvm2
+echo -e "${CYAN}Configurando hooks - ORDEN CRÍTICO: encrypt debe ir antes de lvm2${NC}"
+sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
-    echo -e "${GREEN}✓ Configuración mkinitcpio actualizada para LUKS+LVM${NC}"
-    echo -e "${CYAN}  • Módulos: dm_mod dm_crypt dm_snapshot dm_mirror${NC}"
-    echo -e "${CYAN}  • Hooks: base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck${NC}"
-    echo -e "${YELLOW}  • IMPORTANTE: 'encrypt' DEBE ir antes de 'lvm2' para que funcione correctamente${NC}"
-    echo -e "${YELLOW}  • keyboard y keymap son necesarios para introducir la contraseña en el boot${NC}"
+echo -e "${GREEN}✓ Configuración mkinitcpio actualizada para LUKS+LVM${NC}"
+echo -e "${CYAN}  • Módulos: dm_mod dm_crypt dm_snapshot dm_mirror${NC}"
+echo -e "${CYAN}  • Hooks: base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck${NC}"
+echo -e "${YELLOW}  • IMPORTANTE: 'encrypt' DEBE ir antes de 'lvm2' para que funcione correctamente${NC}"
+echo -e "${YELLOW}  • keyboard y keymap son necesarios para introducir la contraseña en el boot${NC}"
 
-elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-    echo "Configurando mkinitcpio para BTRFS..."
-    # Configurar módulos específicos para BTRFS (agregando módulos de compresión adicionales)
-    sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c zstd lzo lz4 zlib_deflate)/' /mnt/etc/mkinitcpio.conf
-    # Configurar hooks para BTRFS
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+elif [ "$PARTITION_MODE" = "btrfs" ]; then
+echo "Configurando mkinitcpio para BTRFS..."
+# Configurar módulos específicos para BTRFS
+sed -i 's/^MODULES=.*/MODULES=(btrfs crc32c-intel crc32c zstd_compress lzo_compress)/' /mnt/etc/mkinitcpio.conf
+
+# Configurar hooks para BTRFS
+sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
 else
-    echo "Configurando mkinitcpio para sistema estándar..."
-    # Configuración estándar para ext4
-    sed -i 's/^MODULES=.*/MODULES=()/' /mnt/etc/mkinitcpio.conf
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+echo "Configurando mkinitcpio para sistema estándar..."
+# Configuración estándar para ext4
+sed -i 's/^MODULES=.*/MODULES=()/' /mnt/etc/mkinitcpio.conf
+sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 fi
 
 # Regenerar initramfs
 chroot /mnt /bin/bash -c "mkinitcpio -P"
 sleep 2
-clear
+
 # Instalación de bootloader
 # Instalar bootloader para todos los modos (incluyendo manual)
 if true; then
@@ -2821,17 +2194,17 @@ if true; then
         # Verificar que la partición EFI esté montada con debug adicional
         echo -e "${CYAN}Verificando montaje de partición EFI...${NC}"
         if ! mountpoint -q /mnt/boot/efi; then
-            echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot/efi${NC}"
-            echo -e "${YELLOW}Información de debug:${NC}"
-            echo "- Contenido de /mnt/boot:"
-            ls -la /mnt/boot/ 2>/dev/null || echo "  Directorio /mnt/boot no accesible"
-            echo "- Contenido de /mnt/boot/efi:"
-            ls -la /mnt/boot/efi/ 2>/dev/null || echo "  Directorio /mnt/boot/efi no accesible"
-            echo "- Montajes actuales:"
-            mount | grep "/mnt"
-            echo "- Particiones disponibles:"
-            lsblk ${SELECTED_DISK}
-            exit 1
+echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot/efi${NC}"
+echo -e "${YELLOW}Información de debug:${NC}"
+echo "- Contenido de /mnt/boot:"
+ls -la /mnt/boot/ 2>/dev/null || echo "  Directorio /mnt/boot no accesible"
+echo "- Contenido de /mnt/boot/efi:"
+ls -la /mnt/boot/efi/ 2>/dev/null || echo "  Directorio /mnt/boot/efi no accesible"
+echo "- Montajes actuales:"
+mount | grep "/mnt"
+echo "- Particiones disponibles:"
+lsblk ${SELECTED_DISK}
+exit 1
         fi
         echo -e "${GREEN}✓ Partición EFI montada correctamente en /mnt/boot/efi${NC}"
 
@@ -2846,51 +2219,22 @@ if true; then
         echo -e "${GREEN}✓ Sistema en modo UEFI confirmado${NC}"
 
         sleep 4
-        ############################################################################################################
-        # efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
-        # Limpieza UEFI optimizada para el instalador de Arch
-        echo -e "${CYAN}Limpiando entradas UEFI previas de GRUB...${NC}"
-
-        # Verificar que efibootmgr esté disponible (siempre lo está en Arch live)
-        if ! command -v efibootmgr >/dev/null 2>&1; then
-            echo -e "${YELLOW}efibootmgr no disponible, omitiendo limpieza UEFI${NC}"
-        else
-            # Mostrar entradas actuales para debug (útil durante instalación)
-            echo -e "${YELLOW}Entradas UEFI actuales con GRUB:${NC}"
-            GRUB_ENTRIES=$(efibootmgr | grep -i grub | wc -l)
-
-            if [ "$GRUB_ENTRIES" -gt 0 ]; then
-                efibootmgr | grep -i grub
-                echo -e "${CYAN}Eliminando $GRUB_ENTRIES entradas GRUB previas...${NC}"
-
-                # Opción más simple y robusta para el instalador
-                efibootmgr | grep -i grub | while read -r line; do
-                    BOOT_NUM=$(echo "$line" | cut -d'*' -f1 | sed 's/Boot//')
-                    if [ -n "$BOOT_NUM" ] && [ "$BOOT_NUM" != "Boot" ]; then
-                        echo "  Eliminando entrada: $BOOT_NUM"
-                        efibootmgr -b "$BOOT_NUM" -B >/dev/null 2>&1 || true
-                    fi
-                done
-
-                echo -e "${GREEN}✓ Entradas GRUB previas eliminadas${NC}"
-            else
-                echo -e "${GREEN}✓ No se encontraron entradas GRUB previas${NC}"
-            fi
-        fi
-
+        # Limpiar entradas UEFI previas que puedan causar conflictos
+        # echo -e "${CYAN}Limpiando entradas UEFI previas...${NC}"
+        # efibootmgr | awk '/grub/i {gsub(/Boot|\*.*/, ""); system("efibootmgr -b " $1 " -B 2>/dev/null")}'
+        efibootmgr | grep -i grub | cut -d'*' -f1 | sed 's/Boot//' | xargs -I {} efibootmgr -b {} -B 2>/dev/null || true
         sleep 4
 
         # Limpiar directorio EFI previo si existe
-        #if [ -d "/mnt/boot/efi/EFI/GRUB" ]; then
-        #    rm -rf /mnt/boot/efi/EFI/GRUB
-        #fi
+        if [ -d "/mnt/boot/efi/EFI/GRUB" ]; then
+            rm -rf /mnt/boot/efi/EFI/GRUB
+        fi
 
         # Crear directorio EFI si no existe
-        #mkdir -p /mnt/boot/efi/EFI
+        mkdir -p /mnt/boot/efi/EFI
 
         echo -e "${CYAN}Instalando paquetes GRUB para UEFI...${NC}"
-        install_pacman_chroot_with_retry "grub"
-        install_pacman_chroot_with_retry "efibootmgr"
+        chroot /mnt /bin/bash -c "pacman -S grub efibootmgr --noconfirm"
 
         # Configuración específica según el modo de particionado ANTES de instalar
         echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
@@ -2902,88 +2246,85 @@ if true; then
             partprobe $SELECTED_DISK 2>/dev/null || true
             sleep 1
 
-            PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
-            CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_3")
+            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
             # Reintentar si no se obtuvo UUID
             if [ -z "$CRYPT_UUID" ]; then
                 echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
                 sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_3")
+                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
             fi
 
             if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada $PARTITION_3${NC}"
+                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}3${NC}"
                 echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
                 exit 1
             fi
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
             # Configurar GRUB para LUKS+LVM (siguiendo mejores prácticas de la guía)
-            echo -e "${CYAN}Configurando parámetros de kernel para LUKS+LVM...${NC}"
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
+echo -e "${CYAN}Configurando parámetros de kernel para LUKS+LVM...${NC}"
+sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
 
-            # Habilitar soporte para discos cifrados en GRUB
-            echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
+# Habilitar soporte para discos cifrados en GRUB
+echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
 
-            # Precargar módulos necesarios para cifrado
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
+# Precargar módulos necesarios para cifrado
+echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
 
-            # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+# Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
 
-            echo -e "${GREEN}✓ Configuración GRUB para cifrado:${NC}"
-            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
-            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
-            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
-            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
-        elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-            sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=3\"/' /mnt/etc/default/grub
-            sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"/' /mnt/etc/default/grub
-            echo -e "${GREEN}✓ Configuración GRUB UEFI simplificada para BTRFS${NC}"
+echo -e "${GREEN}✓ Configuración GRUB para cifrado:${NC}"
+echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
+echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
+echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
+echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
+        elif [ "$PARTITION_MODE" = "btrfs" ]; then
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
+echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"" >> /mnt/etc/default/grub
         else
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
         fi
-
-        sleep 2
-        clear
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        # Instalar GRUB con entrada NVRAM
-        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force --recheck" || {
-            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
+        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --removable" || {
+            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (modo removible)${NC}"
+            echo -e "${YELLOW}Información adicional:${NC}"
+            echo "- Estado de /boot:"
+            ls -la /mnt/boot/
+            echo "- Estado de /boot/efi:"
+            ls -la /mnt/boot/efi/
+            echo "- Espacio disponible en /boot:"
+            df -h /mnt/boot
+            echo "- Espacio disponible en /boot/efi:"
+            df -h /mnt/boot/efi
             exit 1
         }
+        sleep 5
+        echo -e "${GREEN}✓ GRUB instalado en modo removible (/EFI/BOOT/bootx64.efi)${NC}"
+
+        echo -e "${CYAN}Instalando GRUB con entrada NVRAM...${NC}"
+        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB" || {
+            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (entrada NVRAM)${NC}"
+            echo -e "${YELLOW}Información adicional:${NC}"
+            echo "- Estado de /boot/efi/EFI/:"
+            ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
+            exit 1
+        }
+
         echo -e "${GREEN}✓ GRUB instalado con entrada NVRAM (/EFI/GRUB/grubx64.efi)${NC}"
 
-        # Crear estructura fallback según Arch Wiki
-        echo -e "${CYAN}Creando bootloader fallback...${NC}"
-        mkdir -p /mnt/boot/efi/EFI/BOOT
-
-        # Copiar carpeta grub completa
-        cp -r /mnt/boot/efi/EFI/GRUB /mnt/boot/efi/EFI/BOOT/ || {
-            echo -e "${RED}ERROR: No se pudo copiar la carpeta GRUB${NC}"
-            exit 1
-        }
-
-        # Copiar el binario grubx64.efi como BOOTX64.EFI
-        cp /mnt/boot/efi/EFI/GRUB/grubx64.efi /mnt/boot/efi/EFI/BOOT/BOOTX64.EFI || {
-            echo -e "${RED}ERROR: No se pudo copiar el bootloader fallback${NC}"
-            exit 1
-        }
-        echo -e "${GREEN}✓ Bootloader fallback creado (/EFI/BOOT/BOOTX64.EFI)${NC}"
-
-        # Verificar que ambos bootloaders existan
+        # Verificar que grubx64.efi se haya creado con debug
         if [ ! -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
             echo -e "${RED}ERROR: No se creó grubx64.efi${NC}"
+            echo -e "${YELLOW}Información de debug:${NC}"
+            echo "- Contenido de /mnt/boot/efi/EFI/:"
+            ls -la /mnt/boot/efi/EFI/ 2>/dev/null || echo "  Directorio EFI no existe"
+            echo "- Contenido de /mnt/boot/efi/EFI/GRUB/:"
+            ls -la /mnt/boot/efi/EFI/GRUB/ 2>/dev/null || echo "  Directorio GRUB no existe"
             exit 1
         fi
-        if [ ! -f "/mnt/boot/efi/EFI/BOOT/BOOTX64.EFI" ]; then
-            echo -e "${RED}ERROR: No se creó BOOTX64.EFI${NC}"
-            exit 1
-        fi
-        echo -e "${GREEN}✓ Ambos bootloaders verificados exitosamente${NC}"
-
-#####################################################################
+        echo -e "${GREEN}✓ grubx64.efi creado exitosamente${NC}"
 
         echo -e "${CYAN}Generando configuración de GRUB...${NC}"
         if ! chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
@@ -3000,7 +2341,14 @@ if true; then
         echo -e "${GREEN}✓ GRUB UEFI instalado correctamente${NC}"
     else
         echo -e "${CYAN}Instalando paquetes GRUB para BIOS...${NC}"
-        install_pacman_chroot_with_retry "grub"
+        chroot /mnt /bin/bash -c "pacman -S grub os-prober --noconfirm"
+
+        # Crear directorios necesarios para GRUB
+        echo -e "${CYAN}Creando directorios GRUB...${NC}"
+        mkdir -p /mnt/boot/grub
+        mkdir -p /mnt/boot/grub/i386-pc
+        mkdir -p /mnt/boot/grub/locale
+        mkdir -p /mnt/boot/grub/fonts
 
         # Configuración específica según el modo de particionado ANTES de instalar
         echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
@@ -3012,49 +2360,60 @@ if true; then
             partprobe $SELECTED_DISK 2>/dev/null || true
             sleep 1
 
-            PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
-            CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_2")
+            CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
             # Reintentar si no se obtuvo UUID
             if [ -z "$CRYPT_UUID" ]; then
                 echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
                 sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_2")
+                CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
             fi
 
             if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada $PARTITION_2${NC}"
+                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada ${SELECTED_DISK}2${NC}"
                 echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
                 exit 1
             fi
-            echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
-            # Usar GRUB_CMDLINE_LINUX en lugar de GRUB_CMDLINE_LINUX_DEFAULT para mejores prácticas
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
-            # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
+echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
+# Usar GRUB_CMDLINE_LINUX en lugar de GRUB_CMDLINE_LINUX_DEFAULT para mejores prácticas
+sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
+# Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
+echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
 
-            echo -e "${GREEN}✓ Configuración GRUB para cifrado BIOS Legacy:${NC}"
-            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
-            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
-            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
-            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
-            echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
+echo -e "${GREEN}✓ Configuración GRUB para cifrado BIOS Legacy:${NC}"
+echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
+echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
+echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
+echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
+echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
+        elif [ "$PARTITION_MODE" = "btrfs" ]; then
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="rootflags=subvol=@ loglevel=5"/' /mnt/etc/default/grub
+echo "GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"" >> /mnt/etc/default/grub
+echo "GRUB_ENABLE_BLSCFG=false" >> /mnt/etc/default/grub
+echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
+echo "GRUB_TIMEOUT=10" >> /mnt/etc/default/grub
+echo "GRUB_RECORDFAIL_TIMEOUT=5" >> /mnt/etc/default/grub
 
-        elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-            sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=3\"/' /mnt/etc/default/grub
-            sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"/' /mnt/etc/default/grub
-            echo -e "${GREEN}✓ Configuración GRUB BIOS Legacy simplificada para BTRFS${NC}"
+            # Verificar que el subvolumen @ esté accesible desde GRUB
+            echo -e "${CYAN}Verificando accesibilidad del subvolumen @...${NC}"
+            if chroot /mnt /bin/bash -c "btrfs subvolume show /" > /dev/null 2>&1; then
+                echo -e "${GREEN}✓ Subvolumen @ accesible${NC}"
+            else
+                echo -e "${YELLOW}⚠ Advertencia: Problema detectado con subvolumen @${NC}"
+            fi
         else
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
-            echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
         fi
 
         sleep 4
 
         echo -e "${CYAN}Instalando GRUB en disco...${NC}"
-        if ! chroot /mnt /bin/bash -c "grub-install --target=i386-pc $SELECTED_DISK"; then
+        if ! chroot /mnt /bin/bash -c "grub-install --target=i386-pc --boot-directory=/boot --recheck --force $SELECTED_DISK"; then
             echo -e "${RED}ERROR: Falló la instalación de GRUB BIOS${NC}"
+            echo -e "${YELLOW}Verificando estructura de directorios...${NC}"
+            ls -la /mnt/boot/grub/ 2>/dev/null || echo "Directorio /boot/grub no existe"
             exit 1
         fi
 
@@ -3063,13 +2422,61 @@ if true; then
         echo -e "${CYAN}Generando configuración de GRUB...${NC}"
         if ! chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
             echo -e "${RED}ERROR: Falló la generación de grub.cfg${NC}"
-            exit 1
+            echo -e "${YELLOW}Intentando recuperación automática...${NC}"
+
+            # Recuperación automática
+            chroot /mnt /bin/bash -c "grub-install --target=i386-pc --boot-directory=/boot --recheck --force $SELECTED_DISK"
+            sleep 2
+            chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
+
+            if [ ! -f "/mnt/boot/grub/grub.cfg" ]; then
+                echo -e "${RED}ERROR: Recuperación fallida${NC}"
+                exit 1
+            fi
+            echo -e "${GREEN}✓ Recuperación automática exitosa${NC}"
         fi
 
         # Verificar que grub.cfg se haya creado
         if [ ! -f "/mnt/boot/grub/grub.cfg" ]; then
             echo -e "${RED}ERROR: No se creó grub.cfg${NC}"
             exit 1
+        fi
+
+        # Verificar módulos críticos para BTRFS
+        if [ "$PARTITION_MODE" = "btrfs" ]; then
+            echo -e "${CYAN}Verificando módulos GRUB para BTRFS...${NC}"
+            MODULOS_CRITICOS=("normal.mod" "btrfs.mod" "part_msdos.mod")
+            for modulo in "${MODULOS_CRITICOS[@]}"; do
+                if [ -f "/mnt/boot/grub/i386-pc/$modulo" ]; then
+                    echo -e "${GREEN}✓ $modulo${NC}"
+                else
+                    echo -e "${RED}✗ $modulo (FALTANTE)${NC}"
+                fi
+            done
+        fi
+
+        # Verificación final y creación de script de emergencia
+        if [ "$PARTITION_MODE" = "btrfs" ]; then
+            echo -e "${CYAN}Creando herramientas de emergencia GRUB-BTRFS...${NC}"
+
+            # Script de emergencia en el sistema instalado
+            cat > /mnt/usr/local/bin/emergency_grub_fix << 'EMERGENCY_EOF'
+#!/bin/bash
+echo "=== Reparación de Emergencia GRUB BTRFS ==="
+DISCO=$(lsblk -no PKNAME $(findmnt -n -o SOURCE /) | head -1 2>/dev/null)
+if [ -z "$DISCO" ]; then
+    echo "ERROR: No se pudo detectar el disco"
+    exit 1
+fi
+
+echo "Disco: /dev/$DISCO"
+mkdir -p /boot/grub/i386-pc
+grub-install --target=i386-pc --boot-directory=/boot --recheck --force /dev/$DISCO
+grub-mkconfig -o /boot/grub/grub.cfg
+echo "Reparación completada"
+EMERGENCY_EOF
+            chmod +x /mnt/usr/local/bin/emergency_grub_fix
+            echo -e "${GREEN}✓ Script de emergencia: /usr/local/bin/emergency_grub_fix${NC}"
         fi
 
         echo -e "${GREEN}✓ GRUB BIOS instalado correctamente${NC}"
@@ -3079,27 +2486,92 @@ fi
 # Verificación final del bootloader
 # Verificar bootloader para todos los modos (incluyendo manual)
 if true; then
-    echo -e "${GREEN}| Verificación final del bootloader |${NC}"
-    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-    echo ""
+echo -e "${GREEN}| Verificación final del bootloader |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
 
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
+        if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
             echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente${NC}"
-            echo -e "${GREEN}✓ Modo NVRAM: /EFI/GRUB/grubx64.efi${NC}"
-            echo -e "${GREEN}✓ Modo removible: /EFI/BOOT/bootx64.efi${NC}"
+
+            # Crear entrada UEFI manualmente si no existe
+            if ! efibootmgr | grep -q "GRUB"; then
+                echo -e "${CYAN}Creando entrada UEFI para GRUB...${NC}"
+                efibootmgr --disk $SELECTED_DISK --part 1 --create --label "GRUB" --loader '\EFI\GRUB\grubx64.efi'
+
+                # Hacer que GRUB sea la primera opción de boot
+                GRUB_NUM=$(efibootmgr | grep "GRUB" | head -1 | cut -d'*' -f1 | sed 's/Boot//')
+                if [ -n "$GRUB_NUM" ]; then
+                    CURRENT_ORDER=$(efibootmgr | grep BootOrder | cut -d' ' -f2)
+                    NEW_ORDER="$GRUB_NUM,${CURRENT_ORDER//$GRUB_NUM,/}"
+                    NEW_ORDER="${NEW_ORDER//,,/,}"
+                    NEW_ORDER="${NEW_ORDER%,}"
+                    efibootmgr --bootorder "$NEW_ORDER" 2>/dev/null || true
+                fi
+            fi
         else
             echo -e "${RED}⚠ Problema con la instalación del bootloader UEFI${NC}"
-            echo -e "${YELLOW}Archivos verificados:${NC}"
-            echo "  - /mnt/boot/efi/EFI/GRUB/grubx64.efi: $([ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && echo "✓" || echo "✗")"
-            echo "  - /mnt/boot/efi/EFI/BOOT/bootx64.efi: $([ -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ] && echo "✓" || echo "✗")"
-            echo "  - /mnt/boot/grub/grub.cfg: $([ -f "/mnt/boot/grub/grub.cfg" ] && echo "✓" || echo "✗")"
         fi
     else
         if [ -f "/mnt/boot/grub/grub.cfg" ]; then
             echo -e "${GREEN}✓ Bootloader BIOS verificado correctamente${NC}"
-else
+
+            # Verificaciones adicionales para BTRFS
+            if [ "$PARTITION_MODE" = "btrfs" ]; then
+                echo -e "${CYAN}Verificando instalación GRUB para BTRFS...${NC}"
+
+                # Verificar módulos críticos
+                MODULOS_FALTANTES=0
+                MODULOS_CRITICOS=("normal.mod" "btrfs.mod" "part_msdos.mod" "biosdisk.mod" "search.mod")
+
+                for modulo in "${MODULOS_CRITICOS[@]}"; do
+                    if [ -f "/mnt/boot/grub/i386-pc/$modulo" ]; then
+                        echo -e "${GREEN}  ✓ $modulo${NC}"
+                    else
+                        echo -e "${RED}  ✗ $modulo (FALTANTE)${NC}"
+                        ((MODULOS_FALTANTES++))
+                    fi
+                done
+
+                # Verificar configuración BTRFS en grub.cfg
+                if grep -q "rootflags=subvol=@" /mnt/boot/grub/grub.cfg; then
+                    echo -e "${GREEN}  ✓ Configuración BTRFS en grub.cfg${NC}"
+                else
+                    echo -e "${YELLOW}  ⚠ Configuración BTRFS no encontrada en grub.cfg${NC}"
+                fi
+
+                # Crear script de recuperación
+                echo -e "${CYAN}Creando script de recuperación GRUB...${NC}"
+                cat > /mnt/root/fix_grub_btrfs.sh << 'GRUBFIX_EOF'
+#!/bin/bash
+# Script de recuperación GRUB para BTRFS
+echo "=== Reparación GRUB BTRFS ==="
+
+# Detectar disco
+DISCO=$(lsblk -no PKNAME $(findmnt -n -o SOURCE /) | head -1)
+echo "Disco detectado: /dev/$DISCO"
+
+# Reinstalar GRUB
+echo "Reinstalando GRUB..."
+grub-install --target=i386-pc --boot-directory=/boot --recheck --force /dev/$DISCO
+
+# Regenerar configuración
+echo "Regenerando configuración GRUB..."
+grub-mkconfig -o /boot/grub/grub.cfg
+
+echo "Reparación completada. Reinicia el sistema."
+GRUBFIX_EOF
+                chmod +x /mnt/root/fix_grub_btrfs.sh
+                echo -e "${GREEN}  ✓ Script de recuperación creado: /root/fix_grub_btrfs.sh${NC}"
+
+                if [ $MODULOS_FALTANTES -gt 0 ]; then
+                    echo -e "${YELLOW}⚠ ADVERTENCIA: $MODULOS_FALTANTES módulos GRUB faltantes${NC}"
+                    echo -e "${YELLOW}  Si el sistema no arranca, usa el script /root/fix_grub_btrfs.sh${NC}"
+                fi
+            fi
+        else
             echo -e "${RED}⚠ Problema con la instalación del bootloader BIOS${NC}"
+            echo -e "${RED}  Archivo grub.cfg no encontrado en /boot/grub/${NC}"
         fi
     fi
     sleep 2
@@ -3116,8 +2588,8 @@ printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 # Instalar os-prober para detectar otros sistemas
 echo -e "${CYAN}Instalando os-prober...${NC}"
-install_pacman_chroot_with_retry "os-prober"
-install_pacman_chroot_with_retry "ntfs-3g"
+chroot /mnt /bin/bash -c "sudo -u $USER yay -S os-prober --noansweredit --noconfirm --needed"
+chroot /mnt /bin/bash -c "sudo -u $USER yay -S ntfs-3g --noansweredit --noconfirm --needed"
 echo "GRUB_DISABLE_OS_PROBER=false" >> /mnt/etc/default/grub
 sleep 2
 clear
@@ -3189,7 +2661,7 @@ else
 
     # Método 2: Detectar particiones Windows (NTFS)
     WINDOWS_PARTITIONS=$(blkid -t TYPE=ntfs 2>/dev/null | wc -l || echo "0")
-    if [ "$WINDOWS_PARTITIONS" -gt 0 ]; then
+    if [ $WINDOWS_PARTITIONS -gt 0 ]; then
         echo -e "${CYAN}  • Particiones Windows (NTFS) detectadas: $WINDOWS_PARTITIONS${NC}"
         OS_COUNT=$((OS_COUNT + 1))
     fi
@@ -3201,24 +2673,24 @@ else
     XFS_PARTITIONS=$(blkid -t TYPE=xfs 2>/dev/null | grep -v "$(findmnt -n -o SOURCE /)" | wc -l || echo "0")
     LINUX_PARTITIONS=$((EXT4_PARTITIONS + EXT3_PARTITIONS + BTRFS_PARTITIONS + XFS_PARTITIONS))
 
-    if [ "$LINUX_PARTITIONS" -gt 0 ]; then
+    if [ $LINUX_PARTITIONS -gt 0 ]; then
         echo -e "${CYAN}  • Otras particiones Linux detectadas: $LINUX_PARTITIONS${NC}"
-        [ "$EXT4_PARTITIONS" -gt 0 ] && echo -e "${CYAN}    - ext4: $EXT4_PARTITIONS${NC}"
-        [ "$EXT3_PARTITIONS" -gt 0 ] && echo -e "${CYAN}    - ext3: $EXT3_PARTITIONS${NC}"
-        [ "$BTRFS_PARTITIONS" -gt 0 ] && echo -e "${CYAN}    - btrfs: $BTRFS_PARTITIONS${NC}"
-        [ "$XFS_PARTITIONS" -gt 0 ] && echo -e "${CYAN}    - xfs: $XFS_PARTITIONS${NC}"
+        [ $EXT4_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - ext4: $EXT4_PARTITIONS${NC}"
+        [ $EXT3_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - ext3: $EXT3_PARTITIONS${NC}"
+        [ $BTRFS_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - btrfs: $BTRFS_PARTITIONS${NC}"
+        [ $XFS_PARTITIONS -gt 0 ] && echo -e "${CYAN}    - xfs: $XFS_PARTITIONS${NC}"
         OS_COUNT=$((OS_COUNT + 1))
     fi
 
     # Método 4: Buscar particiones con indicadores de SO
     OTHER_OS=$(blkid 2>/dev/null | grep -E "LABEL.*Windows|LABEL.*Microsoft|TYPE.*fat32" | wc -l || echo "0")
-    if [ "$OTHER_OS" -gt 0 ]; then
+    if [ $OTHER_OS -gt 0 ]; then
         echo -e "${CYAN}  • Otras particiones de SO detectadas: $OTHER_OS${NC}"
         OS_COUNT=$((OS_COUNT + 1))
     fi
 
     # Considerar múltiples sistemas si hay más indicadores de OS o más de 1 partición bootable
-    if [ "$OS_COUNT" -gt 0 ] || [ "$BOOTABLE_PARTITIONS" -gt 1 ]; then
+    if [ $OS_COUNT -gt 0 ] || [ $BOOTABLE_PARTITIONS -gt 1 ]; then
         MULTIPLE_OS_DETECTED=true
         echo -e "${GREEN}✓ Múltiples sistemas operativos detectados en BIOS Legacy${NC}"
     else
@@ -3503,246 +2975,193 @@ case "$DRIVER_VIDEO" in
 
         if echo "$VGA_LINE" | grep -i nvidia > /dev/null; then
             echo "Detectado hardware NVIDIA - Instalando driver open source nouveau"
-            install_pacman_chroot_with_retry "xf86-video-nouveau"
-            install_pacman_chroot_with_retry "vulkan-nouveau"
-            install_pacman_chroot_with_retry "lib32-vulkan-nouveau"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "opencl-mesa"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "libva-utils"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-nouveau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-nouveau lib32-vulkan-nouveau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver lib32-libva-mesa-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
 
         elif echo "$VGA_LINE" | grep -i "amd\|radeon" > /dev/null; then
             echo "Detectado hardware AMD/Radeon - Instalando driver open source amdgpu"
-            install_pacman_chroot_with_retry "xf86-video-amdgpu"
-            install_pacman_chroot_with_retry "xf86-video-ati"
-            install_pacman_chroot_with_retry "vulkan-radeon"
-            install_pacman_chroot_with_retry "lib32-vulkan-radeon"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "opencl-mesa"
-            install_pacman_chroot_with_retry "radeontop"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "libva-utils"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-ati --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-radeon lib32-vulkan-radeon --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S radeontop --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver lib32-libva-mesa-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
 
         elif echo "$VGA_LINE" | grep -i intel > /dev/null; then
             echo "Detectado hardware Intel - Instalando driver open source intel"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "vulkan-intel"
-            install_pacman_chroot_with_retry "lib32-vulkan-intel"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "intel-media-driver"  # Gen 8+ (VA-API moderna)
-            install_pacman_chroot_with_retry "libva-intel-driver"  # Fallback para modelos más viejos
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-            install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
-            install_pacman_chroot_with_retry "intel-gpu-tools"
-            install_pacman_chroot_with_retry "libva-utils"
-            install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "vpl-gpu-rt"
-            install_yay_chroot_with_retry "intel-hybrid-codec-driver-git"
+            chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-intel lib32-vulkan-intel --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S intel-media-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-intel-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S intel-gpu-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
+            chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-compute-runtime --noansweredit --noconfirm --needed"
+            chroot /mnt /bin/bash -c "sudo -u $USER yay -S intel-hybrid-codec-driver-git --noansweredit --noconfirm --needed"
+            chroot /mnt /bin/bash -c "sudo -u $USER yay -S vpl-gpu-rt --noansweredit --noconfirm --needed"
 
         elif echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
 
             echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "xf86-video-fbdev"
-            install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-            install_pacman_chroot_with_retry "spice-vdagent"
-            install_pacman_chroot_with_retry "xf86-video-qxl"
-            install_pacman_chroot_with_retry "qemu-guest-agent"
-            install_pacman_chroot_with_retry "virglrenderer"
-            install_pacman_chroot_with_retry "libgl"
-            install_pacman_chroot_with_retry "libglvnd"
-            chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
-            chroot /mnt /bin/bash -c "systemctl start qemu-guest-agent.service"
+
+            chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
+
+            chroot /mnt /bin/bash -c "pacman -S spice-vdagent --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
+            chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
 
 
         elif echo "$VGA_LINE" | grep -i virtualbox > /dev/null; then
             echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-            install_pacman_chroot_with_retry "virtualbox-guest-utils"
-            install_pacman_chroot_with_retry "virglrenderer"
+
+            chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
+
+            chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
             echo "Detectado VMware - Instalando driver vmware"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-            install_pacman_chroot_with_retry "virtualbox-guest-utils"
-            install_pacman_chroot_with_retry "virglrenderer"
+            echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
+
+            chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
+
+            chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"
-            install_pacman_chroot_with_retry "xorg-server"
-            install_pacman_chroot_with_retry "xorg-xinit"
-            install_pacman_chroot_with_retry "xf86-video-vesa"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+            chroot /mnt /bin/bash -c "pacman -S xorg-server --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xorg-xinit --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-vesa --noconfirm"
+
+            chroot /mnt /bin/bash -c "pacman -S mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
         fi
         ;;
     "nvidia")
         echo "Instalando driver NVIDIA para kernel linux"
-        install_pacman_chroot_with_retry "mesa"
-        install_pacman_chroot_with_retry "lib32-mesa"
-        install_pacman_chroot_with_retry "nvidia"
-        install_pacman_chroot_with_retry "nvidia-utils"
-        install_pacman_chroot_with_retry "lib32-nvidia-utils"
-        install_pacman_chroot_with_retry "nvidia-settings"
-        install_pacman_chroot_with_retry "opencl-nvidia"
-        install_pacman_chroot_with_retry "lib32-opencl-nvidia"
+        chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noansweredit --noconfirm --needed"
+
         ;;
     "nvidia-lts")
         echo "Instalando driver NVIDIA para kernel LTS"
-        install_pacman_chroot_with_retry "mesa"
-        install_pacman_chroot_with_retry "lib32-mesa"
-        install_pacman_chroot_with_retry "nvidia-lts"
-        install_pacman_chroot_with_retry "nvidia-settings"
-        install_pacman_chroot_with_retry "lib32-nvidia-utils"
-        install_pacman_chroot_with_retry "opencl-nvidia"
-        install_pacman_chroot_with_retry "lib32-opencl-nvidia"
+        chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-lts --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noansweredit --noconfirm --needed"
         ;;
     "nvidia-dkms")
         echo "Instalando driver NVIDIA DKMS"
-        install_pacman_chroot_with_retry "mesa"
-        install_pacman_chroot_with_retry "lib32-mesa"
-        install_pacman_chroot_with_retry "nvidia-dkms"
-        install_pacman_chroot_with_retry "nvidia-utils"
-        install_pacman_chroot_with_retry "nvidia-settings"
-        install_pacman_chroot_with_retry "lib32-nvidia-utils"
-        install_pacman_chroot_with_retry "opencl-nvidia"
-        install_pacman_chroot_with_retry "lib32-opencl-nvidia"
+        chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-dkms --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-settings --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia --noansweredit --noconfirm --needed"
         ;;
     "nvidia-470xx-dkms")
         echo "Instalando driver NVIDIA serie 470.xx con DKMS"
-        install_pacman_chroot_with_retry "mesa"
-        install_pacman_chroot_with_retry "lib32-mesa"
-        install_yay_chroot_with_retry "nvidia-470xx-dkms"
-        install_yay_chroot_with_retry "nvidia-470xx-utils"
-        install_yay_chroot_with_retry "opencl-nvidia-470xx"
-        install_yay_chroot_with_retry "nvidia-470xx-settings"
-        install_yay_chroot_with_retry "lib32-nvidia-470xx-utils"
-        install_yay_chroot_with_retry "lib32-opencl-nvidia-470xx"
-        install_yay_chroot_with_retry "mhwd-nvidia-470xx"
+        chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-dkms --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia-470xx --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-470xx-settings --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-470xx-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia-470xx --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S mhwd-nvidia-470xx --noansweredit --noconfirm --needed"
         ;;
     "nvidia-390xx-dkms")
         echo "Instalando driver NVIDIA serie 390.xx con DKMS (hardware antiguo)"
-        install_pacman_chroot_with_retry "mesa"
-        install_pacman_chroot_with_retry "lib32-mesa"
-        install_yay_chroot_with_retry "nvidia-390xx-dkms"
-        install_yay_chroot_with_retry "nvidia-390xx-utils"
-        install_yay_chroot_with_retry "opencl-nvidia-390xx"
-        install_yay_chroot_with_retry "lib32-nvidia-390xx-utils"
-        install_yay_chroot_with_retry "lib32-opencl-nvidia-390xx"
-        install_yay_chroot_with_retry "nvidia-390xx-settings"
-        install_yay_chroot_with_retry "mhwd-nvidia-390xx"
+        chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-dkms --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-nvidia-390xx --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-nvidia-390xx-utils --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-opencl-nvidia-390xx --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nvidia-390xx-settings --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S mhwd-nvidia-390xx --noansweredit --noconfirm --needed"
         ;;
     "AMD Private")
         echo "Instalando drivers privativos de AMDGPUPRO"
-        install_pacman_chroot_with_retry "xf86-video-amdgpu"
-        install_pacman_chroot_with_retry "mesa"
-        install_pacman_chroot_with_retry "lib32-mesa"
-        install_pacman_chroot_with_retry "vulkan-radeon"
-        install_pacman_chroot_with_retry "lib32-vulkan-radeon"
-        install_pacman_chroot_with_retry "vulkan-tools"
-        install_pacman_chroot_with_retry "radeontop"
-        install_pacman_chroot_with_retry "vdpauinfo"
-        install_pacman_chroot_with_retry "libva-utils"
-        install_yay_chroot_with_retry "amf-amdgpu-pro"
-        install_yay_chroot_with_retry "amdgpu-pro-oglp"
-        install_yay_chroot_with_retry "lib32-amdgpu-pro-oglp"
-        install_yay_chroot_with_retry "vulkan-amdgpu-pro"
-        install_yay_chroot_with_retry "lib32-vulkan-amdgpu-pro"
-        install_yay_chroot_with_retry "opencl-amd"
+        chroot /mnt /bin/bash -c "pacman -S xf86-video-amdgpu mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S radeontop --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S amf-amdgpu-pro --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S amdgpu-pro-oglp --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-amdgpu-pro-oglp --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S vulkan-amdgpu-pro --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lib32-vulkan-amdgpu-pro --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S opencl-amd --noansweredit --noconfirm --needed"
         ;;
-    "Intel (Gen 8+)")
-        echo "Detectado hardware Intel - Instalando driver open source intel"
-        # DRI/3D (obligatorio)
-        install_pacman_chroot_with_retry "mesa"
-        install_pacman_chroot_with_retry "lib32-mesa"
-
-        # Vulkan (recomendado para Gen 8+)
-        install_pacman_chroot_with_retry "vulkan-intel"
-        install_pacman_chroot_with_retry "lib32-vulkan-intel"
-        install_pacman_chroot_with_retry "vulkan-tools"
-
-        # Aceleración de video (obligatorio)
-        install_pacman_chroot_with_retry "intel-media-driver"  # Gen 8+ (VA-API moderna)
-        install_pacman_chroot_with_retry "libva-intel-driver"  # Fallback para modelos más viejos
-        install_pacman_chroot_with_retry "mesa-vdpau"
-        install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-
-        # OpenCL (opcional)
-        install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
-        install_pacman_chroot_with_retry "opencl-mesa"    # Alternativa moderna
-
-        # Herramientas de diagnóstico (opcional)
-        install_pacman_chroot_with_retry "intel-gpu-tools"
-        install_pacman_chroot_with_retry "libva-utils"
-        install_pacman_chroot_with_retry "vdpauinfo"
-        install_pacman_chroot_with_retry "vpl-gpu-rt"
-        install_yay_chroot_with_retry "intel-hybrid-codec-driver-git"
-        ;;
-    "Intel (Gen 2-7)")
+    "Intel Gen(4-9)")
         echo "Instalando drivers Modernos de Intel"
-        # DRI/3D (obligatorio)
-        install_pacman_chroot_with_retry "mesa-amber"
-        install_pacman_chroot_with_retry "lib32-mesa-amber"
-
-        # Aceleración de video (obligatorio)
-        install_pacman_chroot_with_retry "libva-intel-driver"  # Para VA-API
-        install_pacman_chroot_with_retry "mesa-vdpau"          # Para VDPAU
-        install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-
-        # OpenCL (opcional, solo si lo necesitas)
-        install_pacman_chroot_with_retry "opencl-mesa"  # Usa Clover
-
-        # Herramientas de diagnóstico (opcional)
-        install_pacman_chroot_with_retry "intel-gpu-tools"
-        install_pacman_chroot_with_retry "libva-utils"
-        install_pacman_chroot_with_retry "vdpauinfo"
+        chroot /mnt /bin/bash -c "pacman -S mesa lib32-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S xf86-video-intel --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S vulkan-intel lib32-vulkan-intel --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S intel-media-driver --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S libva-intel-driver --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S opencl-mesa opencl-rusticl-mesa --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S mesa-vdpau lib32-mesa-vdpau --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S intel-gpu-tools --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S vdpauinfo vainfo --noconfirm"
         ;;
     "Máquina Virtual")
 
@@ -3752,70 +3171,67 @@ case "$DRIVER_VIDEO" in
 
         if  echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
             echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "xf86-video-fbdev"
-            install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+            chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
 
-            install_pacman_chroot_with_retry "spice-vdagent"
-            install_pacman_chroot_with_retry "xf86-video-qxl"
-            install_pacman_chroot_with_retry "qemu-guest-agent"
-            install_pacman_chroot_with_retry "virglrenderer"
-            install_pacman_chroot_with_retry "libgl"
-            install_pacman_chroot_with_retry "libglvnd"
-            chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
-            chroot /mnt /bin/bash -c "systemctl start qemu-guest-agent.service"
+            chroot /mnt /bin/bash -c "pacman -S spice-vdagent --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S xf86-video-qxl --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S qemu-guest-agent --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
+            chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+
 
 
         elif echo "$VGA_LINE" | grep -i virtualbox > /dev/null; then
             echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+            chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
 
-            install_pacman_chroot_with_retry "virtualbox-guest-utils"
-            install_pacman_chroot_with_retry "virglrenderer"
+            chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
             echo "Detectado VMware - Instalando driver vmware"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+            chroot /mnt /bin/bash -c "pacman -S mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver  --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
 
-            install_pacman_chroot_with_retry "virtualbox-guest-utils"
-            install_pacman_chroot_with_retry "virglrenderer"
+            chroot /mnt /bin/bash -c "pacman -S virtualbox-guest-utils --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S virglrenderer --noconfirm"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         else
             echo "Hardware no detectado - Instalando driver genérico vesa"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+            chroot /mnt /bin/bash -c "pacman -S mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-utils --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-mesa-layers --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S vulkan-tools --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S libva-mesa-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S mesa-vdpau --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-libva-mesa-driver --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S lib32-mesa-vdpau --noconfirm"
         fi
         ;;
 esac
@@ -3829,25 +3245,20 @@ echo ""
 
 case "$DRIVER_AUDIO" in
     "Alsa Audio")
-        install_pacman_chroot_with_retry "alsa-utils"
-        install_pacman_chroot_with_retry "alsa-plugins"
+        chroot /mnt /bin/bash -c "pacman -S alsa-utils alsa-plugins --noconfirm"
         ;;
     "pipewire")
-        install_pacman_chroot_with_retry "pipewire"
-        install_pacman_chroot_with_retry "pipewire-pulse"
-        install_pacman_chroot_with_retry "pipewire-alsa"
+        chroot /mnt /bin/bash -c "pacman -S pipewire pipewire-pulse pipewire-alsa --noconfirm"
         ;;
     "pulseaudio")
-        install_pacman_chroot_with_retry "pulseaudio"
-        install_pacman_chroot_with_retry "pulseaudio-alsa"
-        install_pacman_chroot_with_retry "pavucontrol"
+        chroot /mnt /bin/bash -c "pacman -S pulseaudio pulseaudio-alsa pavucontrol --noconfirm"
         ;;
     "Jack2")
-        install_pacman_chroot_with_retry "jack2"
-        install_pacman_chroot_with_retry "lib32-jack2"
-        install_pacman_chroot_with_retry "jack2-dbus"
-        install_pacman_chroot_with_retry "carla"
-        install_pacman_chroot_with_retry "qjackctl"
+        chroot /mnt /bin/bash -c "pacman -S jack2 --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S lib32-jack2 --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S jack2-dbus --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S carla --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S qjackctl --noconfirm"
         ;;
 esac
 
@@ -3863,26 +3274,26 @@ case "$DRIVER_WIFI" in
         echo "Sin drivers de WiFi"
         ;;
     "Open Source")
-        install_pacman_chroot_with_retry "networkmanager"
-        install_pacman_chroot_with_retry "wpa_supplicant"
-        install_pacman_chroot_with_retry "wireless_tools"
-        install_pacman_chroot_with_retry "iw"
+        chroot /mnt /bin/bash -c "pacman -S networkmanager --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S wpa_supplicant --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S wireless_tools --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S iw --noconfirm"
         ;;
     "broadcom-wl")
-        install_pacman_chroot_with_retry "networkmanager"
-        install_pacman_chroot_with_retry "wpa_supplicant"
-        install_pacman_chroot_with_retry "wireless_tools"
-        install_pacman_chroot_with_retry "iw"
-        install_pacman_chroot_with_retry "broadcom-wl"
+        chroot /mnt /bin/bash -c "pacman -S networkmanager --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S wpa_supplicant --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S wireless_tools --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S iw --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S broadcom-wl networkmanager --noconfirm"
         ;;
     "Realtek")
-        install_pacman_chroot_with_retry "networkmanager"
-        install_pacman_chroot_with_retry "wpa_supplicant"
-        install_pacman_chroot_with_retry "wireless_tools"
-        install_pacman_chroot_with_retry "iw"
-        install_yay_chroot_with_retry "rtl8821cu-dkms-git"
-        install_yay_chroot_with_retry "rtl8821ce-dkms-git"
-        install_yay_chroot_with_retry "rtw88-dkms-git"
+        chroot /mnt /bin/bash -c "pacman -S networkmanager --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S wpa_supplicant --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S wireless_tools --noconfirm"
+        chroot /mnt /bin/bash -c "pacman -S iw --noconfirm"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtl8821cu-dkms-git --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtl8821ce-dkms-git --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S rtw88-dkms-git --noansweredit --noconfirm --needed"
         ;;
 esac
 
@@ -3898,14 +3309,11 @@ case "$DRIVER_BLUETOOTH" in
         echo "Sin soporte Bluetooth"
         ;;
     "bluetoothctl (terminal)")
-        install_pacman_chroot_with_retry "bluez"
-        install_pacman_chroot_with_retry "bluez-utils"
+        chroot /mnt /bin/bash -c "pacman -S bluez bluez-utils --noconfirm"
         chroot /mnt /bin/bash -c "systemctl enable bluetooth" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
         ;;
     "blueman (Graphical)")
-        install_pacman_chroot_with_retry "bluez"
-        install_pacman_chroot_with_retry "bluez-utils"
-        install_pacman_chroot_with_retry "blueman"
+        chroot /mnt /bin/bash -c "pacman -S bluez bluez-utils blueman --noconfirm"
         chroot /mnt /bin/bash -c "systemctl enable bluetooth" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
         ;;
 esac
@@ -3918,11 +3326,7 @@ clear
 echo -e "${GREEN}| Instalando herramientas de red |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
-install_pacman_chroot_with_retry "dhcp"
-install_pacman_chroot_with_retry "dhcpcd"
-install_pacman_chroot_with_retry "dhclient"
-install_pacman_chroot_with_retry "networkmanager"
-install_pacman_chroot_with_retry "wpa_supplicant"
+chroot /mnt /bin/bash -c "pacman -S dhcp dhcpcd dhclient networkmanager wpa_supplicant --noconfirm"
 # Deshabilitar dhcpcd para evitar conflictos con NetworkManager
 chroot /mnt /bin/bash -c "systemctl enable dhcpcd" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 chroot /mnt /bin/bash -c "systemctl enable NetworkManager" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
@@ -3963,52 +3367,47 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 
     # Configurar crypttab
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
-        CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_3")
+        CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}3)
     else
-        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
-        CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_2")
+        CRYPT_UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2)
     fi
-    echo "cryptlvm UUID=${CRYPT_UUID} none luks,discard" >> /mnt/etc/crypttab
-    echo -e "${GREEN}✓ Configuración crypttab creada para montaje automático${NC}"
+echo "cryptlvm UUID=${CRYPT_UUID} none luks,discard" >> /mnt/etc/crypttab
+echo -e "${GREEN}✓ Configuración crypttab creada para montaje automático${NC}"
 
-    # Crear archivo de configuración para LVM
-    echo "# LVM devices for encrypted setup" > /mnt/etc/lvm/lvm.conf.local
-    echo -e "${CYAN}Configuración LVM aplicada para sistema cifrado${NC}"
-    echo "activation {" >> /mnt/etc/lvm/lvm.conf.local
-    echo "    udev_sync = 1" >> /mnt/etc/lvm/lvm.conf.local
-    echo "    udev_rules = 1" >> /mnt/etc/lvm/lvm.conf.local
-    echo "}" >> /mnt/etc/lvm/lvm.conf.local
+# Crear archivo de configuración para LVM
+echo "# LVM devices for encrypted setup" > /mnt/etc/lvm/lvm.conf.local
+echo -e "${CYAN}Configuración LVM aplicada para sistema cifrado${NC}"
+echo "activation {" >> /mnt/etc/lvm/lvm.conf.local
+echo "    udev_sync = 1" >> /mnt/etc/lvm/lvm.conf.local
+echo "    udev_rules = 1" >> /mnt/etc/lvm/lvm.conf.local
+echo "}" >> /mnt/etc/lvm/lvm.conf.local
 
-    # Verificar que los servicios LVM estén habilitados
-    chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+# Verificar que los servicios LVM estén habilitados
+chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
-    # Configuración adicional para reducir timeouts de cifrado y LVM
-    echo -e "${CYAN}Aplicando optimizaciones para sistema cifrado...${NC}"
+# Configuración adicional para reducir timeouts de cifrado y LVM
+echo -e "${CYAN}Aplicando optimizaciones para sistema cifrado...${NC}"
 
-    # Asegurar que LVM esté disponible y activo
-    echo -e "${CYAN}Activando volumes LVM...${NC}"
-    chroot /mnt /bin/bash -c "vgchange -ay vg0"
-    chroot /mnt /bin/bash -c "lvchange -ay vg0/root"
-    chroot /mnt /bin/bash -c "lvchange -ay vg0/swap"
+# Asegurar que LVM esté disponible y activo
+echo -e "${CYAN}Activando volumes LVM...${NC}"
+chroot /mnt /bin/bash -c "vgchange -ay vg0"
+chroot /mnt /bin/bash -c "lvchange -ay vg0/root"
+chroot /mnt /bin/bash -c "lvchange -ay vg0/swap"
 
-    # Generar fstab correctamente con nombres de dispositivos apropiados
-    echo -e "${CYAN}Generando fstab con dispositivos LVM...${NC}"
-    # Limpiar fstab existente
-    > /mnt/etc/fstab
-    # Agregar entradas manualmente para asegurar nombres correctos
-    echo "# <file system> <mount point> <type> <options> <dump> <pass>" >> /mnt/etc/fstab
-    echo "/dev/mapper/vg0-root / ext4 rw,relatime 0 1" >> /mnt/etc/fstab
+# Generar fstab correctamente con nombres de dispositivos apropiados
+echo -e "${CYAN}Generando fstab con dispositivos LVM...${NC}"
+# Limpiar fstab existente
+> /mnt/etc/fstab
+# Agregar entradas manualmente para asegurar nombres correctos
+echo "# <file system> <mount point> <type> <options> <dump> <pass>" >> /mnt/etc/fstab
+echo "/dev/mapper/vg0-root / ext4 rw,relatime 0 1" >> /mnt/etc/fstab
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
-        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
-        echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
-        echo "UUID=$(blkid -s UUID -o value "$PARTITION_2") /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
+echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
+echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}2) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
     else
-        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
-        echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
+echo "UUID=$(blkid -s UUID -o value ${SELECTED_DISK}1) /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
     fi
-    echo "/dev/mapper/vg0-swap none swap defaults 0 0" >> /mnt/etc/fstab
+echo "/dev/mapper/vg0-swap none swap defaults 0 0" >> /mnt/etc/fstab
 
     # Regenerar initramfs después de todas las configuraciones
     echo -e "${CYAN}Regenerando initramfs con configuración LVM...${NC}"
@@ -4022,127 +3421,30 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 fi
 
 # Configuración adicional para BTRFS
-if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
+if [ "$PARTITION_MODE" = "btrfs" ]; then
     echo -e "${GREEN}| Configuración adicional para BTRFS |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
 
-    # Verificar que BTRFS esté montado correctamente
-    echo -e "${CYAN}Verificando sistema de archivos BTRFS...${NC}"
-    if ! chroot /mnt /bin/bash -c "btrfs filesystem show" >/dev/null 2>&1; then
-        echo -e "${RED}ERROR: No se pudo verificar el sistema BTRFS${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ Sistema BTRFS verificado${NC}"
-
-    # Configuración básica para BTRFS (sin complicaciones)
-    echo -e "${CYAN}Aplicando configuración básica BTRFS...${NC}"
-
-    # Solo asegurar que el bootloader funcione correctamente
-    echo -e "${GREEN}✓ Configuración BTRFS simplificada completada${NC}"
-
-    # Instalar herramientas adicionales para BTRFS si no están presentes
-    echo -e "${CYAN}Verificando herramientas BTRFS adicionales...${NC}"
-
-    # Intentar instalar btrfs-progs primero, si falla instalar solo grub-btrfs
-    if ! install_pacman_chroot_with_retry "btrfs-progs grub-btrfs" "--needed" 2>/dev/null; then
-        echo -e "${YELLOW}btrfs-progs no disponible, instalando solo grub-btrfs...${NC}"
-        install_pacman_chroot_with_retry "grub-btrfs" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudieron instalar herramientas BTRFS adicionales${NC}"
-    fi
-
     # Habilitar servicios de mantenimiento BTRFS
-    echo -e "${CYAN}Configurando servicios de mantenimiento BTRFS...${NC}"
-    chroot /mnt /bin/bash -c "systemctl enable btrfs-scrub@-.timer" 2>/dev/null || echo -e "${YELLOW}Warning: btrfs-scrub timer no disponible${NC}"
-    chroot /mnt /bin/bash -c "systemctl enable fstrim.timer" || echo -e "${RED}ERROR: Falló habilitar fstrim.timer${NC}"
+    chroot /mnt /bin/bash -c "systemctl enable btrfs-scrub@-.timer" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+    chroot /mnt /bin/bash -c "systemctl enable fstrim.timer" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
     # Configurar snapshots automáticos si snapper está disponible
     if chroot /mnt /bin/bash -c "pacman -Qq snapper" 2>/dev/null; then
-        echo -e "${CYAN}Configurando Snapper para snapshots automáticos...${NC}"
-        chroot /mnt /bin/bash -c "snapper -c root create-config /" || echo -e "${YELLOW}Warning: No se pudo crear config de snapper${NC}"
-        chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer snapper-cleanup.timer" || echo -e "${YELLOW}Warning: Falló habilitar servicios de snapper${NC}"
+        chroot /mnt /bin/bash -c "snapper -c root create-config /"
+        chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer snapper-cleanup.timer" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
     fi
 
     # Optimizar fstab para BTRFS
-    echo -e "${CYAN}Optimizando fstab para BTRFS...${NC}"
-    chroot /mnt /bin/bash -c "sed -i 's/relatime/noatime/g' /etc/fstab"
+    sed -i 's/relatime/noatime/g' /mnt/etc/fstab
 
-    # Agregar opciones de montaje optimizadas si no están presentes
-    chroot /mnt /bin/bash -c "sed -i 's/subvol=@/subvol=@,compress=zstd:3,space_cache=v2,autodefrag/' /etc/fstab" 2>/dev/null || true
-
-    # Verificar configuración final de fstab
-    echo -e "${CYAN}Verificando configuración final de fstab...${NC}"
-    if chroot /mnt /bin/bash -c "mount -a --fake" 2>/dev/null; then
-        echo -e "${GREEN}✓ Configuración fstab válida${NC}"
-    else
-        echo -e "${YELLOW}Warning: Posibles issues en fstab, pero continuando...${NC}"
-    fi
-
-    # Crear script de mantenimiento BTRFS
-    echo -e "${CYAN}Creando script de mantenimiento BTRFS...${NC}"
-    cat > /mnt/usr/local/bin/btrfs-maintenance << 'EOF'
-#!/bin/bash
-# Script de mantenimiento BTRFS automático
-
-echo "Iniciando mantenimiento BTRFS..."
-
-# Balance mensual (solo si es necesario)
-if [ $(date +%d) -eq 01 ]; then
-    echo "Ejecutando balance BTRFS..."
-    btrfs balance start -dusage=50 -musage=50 / 2>/dev/null || true
-fi
-
-# Scrub semanal
-if [ $(date +%w) -eq 0 ]; then
-    echo "Ejecutando scrub BTRFS..."
-    btrfs scrub start / 2>/dev/null || true
-fi
-
-# Desfragmentación ligera
-echo "Ejecutando desfragmentación básica..."
-find /home -type f -size +100M -exec btrfs filesystem defragment {} \; 2>/dev/null || true
-
-echo "Mantenimiento BTRFS completado."
-EOF
-
-    chmod +x /mnt/usr/local/bin/btrfs-maintenance
-
-    # Crear servicio systemd para el mantenimiento
-    cat > /mnt/etc/systemd/system/btrfs-maintenance.service << 'EOF'
-[Unit]
-Description=BTRFS Maintenance
-After=local-fs.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/btrfs-maintenance
-User=root
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    cat > /mnt/etc/systemd/system/btrfs-maintenance.timer << 'EOF'
-[Unit]
-Description=Run BTRFS Maintenance Weekly
-Requires=btrfs-maintenance.service
-
-[Timer]
-OnCalendar=weekly
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-EOF
-
-    chroot /mnt /bin/bash -c "systemctl enable btrfs-maintenance.timer" || echo -e "${YELLOW}Warning: No se pudo habilitar btrfs-maintenance.timer${NC}"
-
-    echo -e "${GREEN}✓ Configuración BTRFS completada${NC}"
     sleep 2
 fi
 
 clear
 # Actualizar base de datos de paquetes
-update_system_chroot
+chroot /mnt /bin/bash -c "pacman -Sy"
 
 clear
 
@@ -4160,333 +3462,329 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar X.org como base para todos los escritorios
         echo -e "${CYAN}Instalando servidor X.org...${NC}"
-        install_pacman_chroot_with_retry "xorg-server"
-        install_pacman_chroot_with_retry "xorg-server-common"
-        install_pacman_chroot_with_retry "xorg-xinit"
-        install_pacman_chroot_with_retry "xorg-xauth"
-        install_pacman_chroot_with_retry "xorg-xsetroot"
-        install_pacman_chroot_with_retry "xorg-xrandr"
-        install_pacman_chroot_with_retry "xorg-setxkbmap"
-        install_pacman_chroot_with_retry "xorg-xrdb"
-        install_pacman_chroot_with_retry "xorg-xwayland"
-        install_pacman_chroot_with_retry "ffmpegthumbs"
-        install_pacman_chroot_with_retry "ffmpegthumbnailer"
-        install_pacman_chroot_with_retry "freetype2"
-        install_pacman_chroot_with_retry "poppler-glib"
-        install_pacman_chroot_with_retry "libgsf"
-        install_pacman_chroot_with_retry "libnotify"
-        install_pacman_chroot_with_retry "tumbler"
-        install_pacman_chroot_with_retry "gdk-pixbuf2"
-        install_pacman_chroot_with_retry "fontconfig"
-        install_pacman_chroot_with_retry "gvfs"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbnailer --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S freetype2 --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S poppler-glib --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S libgsf --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noansweredit --noconfirm --needed"
 
         case "$DESKTOP_ENVIRONMENT" in
             "GNOME")
                 echo -e "${CYAN}Instalando GNOME Desktop...${NC}"
-                install_pacman_chroot_with_retry "gdm"
-                install_pacman_chroot_with_retry "gnome-session"
-                install_pacman_chroot_with_retry "gnome-settings-daemon"
-                install_pacman_chroot_with_retry "gnome-shell"
-                install_pacman_chroot_with_retry "gnome-control-center"
-                install_pacman_chroot_with_retry "nautilus"
-                install_pacman_chroot_with_retry "gvfs"
-                install_pacman_chroot_with_retry "gvfs-goa"
-                install_pacman_chroot_with_retry "gnome-console"
-                install_pacman_chroot_with_retry "gnome-text-editor"
-                install_pacman_chroot_with_retry "gnome-calculator"
-                install_pacman_chroot_with_retry "gnome-system-monitor"
-                install_pacman_chroot_with_retry "gnome-disk-utility"
-                install_pacman_chroot_with_retry "baobab"
-                install_pacman_chroot_with_retry "dconf-editor"
-                install_pacman_chroot_with_retry "gnome-themes-extra"
-                install_pacman_chroot_with_retry "gnome-tweaks"
-                install_pacman_chroot_with_retry "gnome-backgrounds"
-                install_pacman_chroot_with_retry "gnome-keyring"
-                install_pacman_chroot_with_retry "gnome-user-docs"
-                install_pacman_chroot_with_retry "gnome-software"
-                install_pacman_chroot_with_retry "xdg-desktop-portal-gnome"
-                install_pacman_chroot_with_retry "gnome-shell-extensions"
-                install_pacman_chroot_with_retry "gnome-browser-connector"
-                install_pacman_chroot_with_retry "mission-center"
-                install_pacman_chroot_with_retry "loupe"
-                install_pacman_chroot_with_retry "showtime"
-                install_pacman_chroot_with_retry "papers"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-session --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-settings-daemon --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-shell --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-control-center --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S nautilus --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs gvfs-goa --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-text-editor --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-calculator --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-system-monitor --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-disk-utility --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S baobab --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S dconf-editor --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-themes-extra --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-tweaks --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-backgrounds --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-user-docs --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-software --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-gnome --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-shell-extensions --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-browser-connector --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
                 echo "Installing extension-manager..."
-                install_pacman_chroot_with_retry "extension-manager"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S extension-manager --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5-configtool --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5-gtk --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S fcitx5-qt --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable gdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+                # Después de las instalaciones de fcitx5...
+                echo -e "${CYAN}Configurando fcitx5 con keyboard layout: ${KEYBOARD_LAYOUT}${NC}"
 
+# Configurar variables de entorno para fcitx5
+chroot /mnt /bin/bash -c "cat >> /etc/environment << 'EOF'
+GTK_IM_MODULE=fcitx
+QT_IM_MODULE=fcitx
+XMODIFIERS=@im=fcitx
+INPUT_METHOD=fcitx
+SDL_IM_MODULE=fcitx
+GLFW_IM_MODULE=ibus
+EOF"
+
+# Crear directorio de configuración
+chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/fcitx5"
+chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/autostart"
+
+# Usar directamente la variable
+FCITX_LAYOUT="keyboard-$KEYBOARD_LAYOUT"
+
+# Crear configuración de profile
+chroot /mnt /bin/bash -c "sudo -u $USER cat > /home/$USER/.config/fcitx5/profile << EOF
+[Groups/0]
+Name=Default
+Default Layout=$KEYBOARD_LAYOUT
+DefaultIM=$FCITX_LAYOUT
+
+[Groups/0/Items/0]
+Name=$FCITX_LAYOUT
+Layout=
+
+[GroupOrder]
+0=Default
+EOF"
                 ;;
             "BUDGIE")
                 echo -e "${CYAN}Instalando Budgie Desktop...${NC}"
-                install_yay_chroot_with_retry "budgie-desktop"
-                install_yay_chroot_with_retry "budgie-extras"
-                install_yay_chroot_with_retry "budgie-desktop-view"
-                install_yay_chroot_with_retry "budgie-backgrounds"
-                install_yay_chroot_with_retry "network-manager-applet"
-                install_yay_chroot_with_retry "materia-gtk-theme"
-                install_yay_chroot_with_retry "papirus-icon-theme"
-                install_yay_chroot_with_retry "nautilus"
-                install_yay_chroot_with_retry "gvfs"
-                install_yay_chroot_with_retry "gvfs-goa"
-                install_yay_chroot_with_retry "gnome-console"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S budgie-desktop --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S budgie-extras --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S budgie-desktop-view --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S budgie-backgrounds --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S materia-gtk-theme --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S papirus-icon-theme --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S nautilus --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gvfs gvfs-goa --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "CINNAMON")
                 echo -e "${CYAN}Instalando Cinnamon Desktop...${NC}"
-                install_yay_chroot_with_retry "cinnamon"
-                install_yay_chroot_with_retry "cinnamon-translations"
-                install_yay_chroot_with_retry "engrampa"
-                install_yay_chroot_with_retry "gvfs-smb"
-                install_yay_chroot_with_retry "bibata-cursor-theme"
-                install_yay_chroot_with_retry "hicolor-icon-theme"
-                install_yay_chroot_with_retry "mint-backgrounds"
-                install_yay_chroot_with_retry "mint-themes"
-                install_yay_chroot_with_retry "mint-x-icons"
-                install_yay_chroot_with_retry "mint-y-icons"
-                install_yay_chroot_with_retry "mintlocale"
-                install_yay_chroot_with_retry "cinnamon-control-center"
-                install_yay_chroot_with_retry "xed"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
-                install_yay_chroot_with_retry "gnome-console"
-                install_yay_chroot_with_retry "gnome-screenshot"
-                install_yay_chroot_with_retry "gnome-keyring"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cinnamon --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cinnamon-translations --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S bibata-cursor-theme --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hicolor-icon-theme --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mint-backgrounds --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mint-themes --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mint-x-icons --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mint-y-icons --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mintlocale --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cinnamon-control-center --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xed --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-screenshot --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "CUTEFISH")
                 echo -e "${CYAN}Instalando CUTEFISH Desktop...${NC}"
-                install_yay_chroot_with_retry "cutefish"
-                install_yay_chroot_with_retry "polkit-kde-agent"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "gnome-console"
-                install_yay_chroot_with_retry "sddm"
-                install_yay_chroot_with_retry "sddm-kcm"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cutefish --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S polkit-kde-agent --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm-kcm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable sddm"
                 ;;
             "UKUI")
                 echo -e "${CYAN}Instalando UKUI Desktop...${NC}"
-                install_yay_chroot_with_retry "ukui"
-                install_yay_chroot_with_retry "gnome-keyring"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S ukui --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-keyring --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "PANTHEON")
                 echo -e "${CYAN}Instalando PANTHEON Desktop...${NC}"
-                install_yay_chroot_with_retry "pantheon"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
-                install_yay_chroot_with_retry "gnome-console"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-pantheon-greeter"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S pantheon --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gnome-console --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-pantheon-greeter --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
-                chroot /mnt /bin/bash -c "pacman -Rdd orca onboard --noconfirm"
-                sed -i '$d' /mnt/etc/lightdm/Xsession
-                sed -i '$a io.elementary.wingpanel &\nplank &\nexec gala' /mnt/etc/lightdm/Xsession
                 ;;
             "ENLIGHTENMENT")
                 echo -e "${CYAN}Instalando Enlightenment Desktop...${NC}"
-                install_yay_chroot_with_retry "enlightenment"
-                install_yay_chroot_with_retry "terminology"
-                install_yay_chroot_with_retry "evisum"
-                install_yay_chroot_with_retry "econnman"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S enlightenment --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S terminology --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S evisum --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S econnman --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "KDE")
                 echo -e "${CYAN}Instalando KDE Plasma Desktop...${NC}"
-                install_yay_chroot_with_retry "plasma-desktop"
-                install_yay_chroot_with_retry "plasma-workspace"
-                install_yay_chroot_with_retry "plasma-systemmonitor"
-                install_yay_chroot_with_retry "plasma-framework5"
-                install_yay_chroot_with_retry "kwin"
-                install_yay_chroot_with_retry "systemsettings"
-                install_yay_chroot_with_retry "discover"
-                install_yay_chroot_with_retry "flatpak"
-                install_yay_chroot_with_retry "breeze"
-                install_yay_chroot_with_retry "polkit-kde-agent"
-                install_yay_chroot_with_retry "powerdevil"
-                install_yay_chroot_with_retry "plasma-pa"
-                install_yay_chroot_with_retry "plasma-nm"
-                install_yay_chroot_with_retry "konsole"
-                install_yay_chroot_with_retry "dolphin"
-                install_yay_chroot_with_retry "kate"
-                install_yay_chroot_with_retry "spectacle"
-                install_yay_chroot_with_retry "ark"
-                install_yay_chroot_with_retry "kcalc"
-                install_yay_chroot_with_retry "gwenview"
-                install_yay_chroot_with_retry "okular"
-                install_yay_chroot_with_retry "kdeconnect"
-                install_yay_chroot_with_retry "kde-gtk-config"
-                install_yay_chroot_with_retry "kdeplasma-addons"
-                install_yay_chroot_with_retry "kdegraphics-thumbnailers"
-                install_yay_chroot_with_retry "kscreen"
-                install_yay_chroot_with_retry "kinfocenter"
-                install_yay_chroot_with_retry "breeze-gtk"
-                install_yay_chroot_with_retry "xdg-desktop-portal-kde"
-                install_yay_chroot_with_retry "ffmpegthumbs"
-                install_yay_chroot_with_retry "plasma-wayland-session"
-                install_yay_chroot_with_retry "plasma-x11-session"
-                install_yay_chroot_with_retry "sddm"
-                install_yay_chroot_with_retry "sddm-kcm"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-desktop --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-workspace --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-systemmonitor --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-framework5 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kwin --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S systemsettings --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S discover --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S flatpak --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S polkit-kde-agent --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S powerdevil --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-pa --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-nm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S konsole --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S dolphin --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kate --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S spectacle --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S ark --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kcalc --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S gwenview --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S okular --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kdeconnect --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kde-gtk-config --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kdeplasma-addons --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kdegraphics-thumbnailers --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kscreen --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S kinfocenter --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze-gtk --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-kde --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-wayland-session --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S plasma-x11-session --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm-kcm --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable sddm"
                 ;;
             "LXDE")
                 echo -e "${CYAN}Instalando LXDE Desktop...${NC}"
-                install_yay_chroot_with_retry "lxde"
-                install_yay_chroot_with_retry "lxde-common"
-                install_yay_chroot_with_retry "lxsession"
-                install_yay_chroot_with_retry "lxappearance"
-                install_yay_chroot_with_retry "lxappearance-obconf"
-                install_yay_chroot_with_retry "lxpanel"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxde --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxde-common --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxsession --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxappearance --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxappearance-obconf --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxpanel --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "LXQT")
                 echo -e "${CYAN}Instalando LXQt Desktop...${NC}"
-                # Instalar compositor
-                install_pacman_chroot_with_retry "labwc"
-                # Dependencias base
-                install_pacman_chroot_with_retry "wayland"
-                install_pacman_chroot_with_retry "wlroots"
-                install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
-                # LXQt y componentes
-                install_yay_chroot_with_retry "lxqt"
-                install_yay_chroot_with_retry "lxqt-wayland-session"
-                install_yay_chroot_with_retry "breeze-icons"
-                install_yay_chroot_with_retry "leafpad"
-                install_yay_chroot_with_retry "slock"
-                install_yay_chroot_with_retry "nm-tray"
-                # Display manager
-                install_yay_chroot_with_retry "sddm"
-                chroot /mnt /bin/bash -c "systemctl enable sddm"
-                # Herramientas adicionales
-                install_yay_chroot_with_retry "qterminal"
-                install_yay_chroot_with_retry "wofi"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S breeze-icons --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S nm-tray --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxqt-wayland-session --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sddm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "systemctl enable sddm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "MATE")
                 echo -e "${CYAN}Instalando MATE Desktop...${NC}"
-                install_yay_chroot_with_retry "mate"
-                install_yay_chroot_with_retry "mate-extra"
-                install_yay_chroot_with_retry "mate-applet-dock"
-                install_yay_chroot_with_retry "mate-menu"
-                install_yay_chroot_with_retry "mate-tweak"
-                install_yay_chroot_with_retry "brisk-menu"
-                install_yay_chroot_with_retry "mate-control-center"
-                install_yay_chroot_with_retry "network-manager-applet"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "clapper"
-                install_yay_chroot_with_retry "mate-power-manager"
-                install_yay_chroot_with_retry "mate-themes"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-extra --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-applet-dock --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-menu --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-tweak --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S brisk-menu --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-control-center --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-power-manager --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mate-themes --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "XFCE4")
                 echo -e "${CYAN}Instalando XFCE4 Desktop...${NC}"
-                install_yay_chroot_with_retry "xfce4"
-                install_yay_chroot_with_retry "xfce4-goodies"
-                install_yay_chroot_with_retry "network-manager-applet"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
-                install_yay_chroot_with_retry "pavucontrol"
-                install_pacman_chroot_with_retry "gnome-keyring"
-                install_pacman_chroot_with_retry "light-locker"
-                install_pacman_chroot_with_retry "xfce4-screensaver"
-                # Instalar compositor
-                install_pacman_chroot_with_retry "labwc"
-                # Dependencias base
-                install_pacman_chroot_with_retry "wayland"
-                install_pacman_chroot_with_retry "wlroots"
-                install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
-                # lightdm
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
-                sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4-goodies --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S loupe --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S clapper --noansweredit --noconfirm --needed"
+
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-slick-greeter --noansweredit --noconfirm --needed"
+sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "[Greeter]" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S accountsservice --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S mugshot --noansweredit --noconfirm --needed"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             *)
                 echo -e "${YELLOW}Entorno de escritorio no reconocido: $DESKTOP_ENVIRONMENT${NC}"
+                echo -e "${CYAN}Instalando XFCE4 como alternativa...${NC}"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xfce4-goodies --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lightdm-gtk-greeter --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
         esac
         ;;
@@ -4495,52 +3793,51 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar X.org y dependencias base para gestores de ventanas
         echo -e "${CYAN}Instalando servidor X.org y dependencias base...${NC}"
-        install_yay_chroot_with_retry "xorg-server"
-        install_yay_chroot_with_retry "xorg-xinit"
-        install_yay_chroot_with_retry "xorg-xauth"
-        install_yay_chroot_with_retry "xorg-xrandr"
-        install_yay_chroot_with_retry "xsel"
-        install_yay_chroot_with_retry "xterm"
-        install_yay_chroot_with_retry "dmenu"
-        install_yay_chroot_with_retry "wofi"
-        install_yay_chroot_with_retry "nemo"
-        install_yay_chroot_with_retry "dunst"
-        install_yay_chroot_with_retry "nano"
-        install_yay_chroot_with_retry "vim"
-        install_yay_chroot_with_retry "pulseaudio"
-        install_yay_chroot_with_retry "pavucontrol"
-        install_yay_chroot_with_retry "nitrogen"
-        install_yay_chroot_with_retry "feh"
-        install_yay_chroot_with_retry "network-manager-applet"
-        install_yay_chroot_with_retry "lm_sensors"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xauth --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xsetroot --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S xterm --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S dmenu --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S pcmanfm --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S dunst --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nano  --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S vim --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S pulseaudio  --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S pavucontrol --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S nitrogen  --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S feh --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S networkmanager  --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S network-manager-applet --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S lm_sensors --noansweredit --noconfirm --needed"
 
-        install_yay_chroot_with_retry "ffmpegthumbs"
-        install_yay_chroot_with_retry "ffmpegthumbnailer"
-        install_yay_chroot_with_retry "freetype2"
-        install_yay_chroot_with_retry "poppler-glib"
-        install_yay_chroot_with_retry "libgsf"
-        install_yay_chroot_with_retry "tumbler"
-        install_yay_chroot_with_retry "gdk-pixbuf2"
-        install_yay_chroot_with_retry "fontconfig"
-        install_yay_chroot_with_retry "gvfs"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbs --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S ffmpegthumbnailer --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S freetype2 --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S poppler-glib --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S libgsf --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S tumbler --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S gdk-pixbuf2 --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S fontconfig --noansweredit --noconfirm --needed"
 
         # Instalar herramientas adicionales para gestores de ventanas
         echo -e "${CYAN}Instalando Terminales...${NC}"
-        install_yay_chroot_with_retry "alacritty"
-        install_yay_chroot_with_retry "kitty"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S alacritty --noansweredit --noconfirm --needed"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S kitty --noansweredit --noconfirm --needed"
+
 
         # Instalar Ly display manager
         echo -e "${CYAN}Instalando Ly display manager...${NC}"
-        install_yay_chroot_with_retry "ly"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S ly --noansweredit --noconfirm --needed"
         chroot /mnt /bin/bash -c "systemctl enable ly" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         case "$WINDOW_MANAGER" in
             "I3WM"|"I3")
                 echo -e "${CYAN}Instalando i3 Window Manager...${NC}"
-                install_yay_chroot_with_retry "i3-wm"
-                install_yay_chroot_with_retry "i3status"
-                install_yay_chroot_with_retry "i3lock"
-                install_yay_chroot_with_retry "i3blocks"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3-wm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3status --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3lock --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noansweredit --noconfirm --needed"
                 # Crear configuración básica de i3
                 mkdir -p /mnt/home/$USER/.config/i3
                 chroot /mnt /bin/bash -c "install -Dm644 /etc/i3/config /home/$USER/.config/i3/config"
@@ -4548,9 +3845,8 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "AWESOME")
                 echo -e "${CYAN}Instalando Awesome Window Manager...${NC}"
-                install_yay_chroot_with_retry "awesome"
-                install_yay_chroot_with_retry "vicious"
-                install_yay_chroot_with_retry "slock"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S awesome --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S vicious --noansweredit --noconfirm --needed"
                 # Crear configuración básica de awesome
                 mkdir -p /mnt/home/$USER/.config/awesome
                 chroot /mnt /bin/bash -c "install -Dm755 /etc/xdg/awesome/rc.lua /home/$USER/.config/awesome/rc.lua"
@@ -4558,10 +3854,9 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "BSPWM")
                 echo -e "${CYAN}Instalando BSPWM Window Manager...${NC}"
-                install_yay_chroot_with_retry "bspwm"
-                install_yay_chroot_with_retry "sxhkd"
-                install_yay_chroot_with_retry "slock"
-                install_yay_chroot_with_retry "polybar"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S bspwm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sxhkd --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S polybar --noansweredit --noconfirm --needed"
                 # Crear configuración básica de bspwm
                 mkdir -p /mnt/home/$USER/.config/bspwm
                 mkdir -p /mnt/home/$USER/.config/sxhkd
@@ -4574,38 +3869,38 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "DWM")
                 echo -e "${CYAN}Instalando DWM Window Manager...${NC}"
-                install_yay_chroot_with_retry "dwm"
-                install_yay_chroot_with_retry "st"
-                install_yay_chroot_with_retry "slock"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S dwm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S st --noansweredit --noconfirm --needed"
                 ;;
             "DWL")
                 echo -e "${CYAN}Instalando DWL Wayland Compositor...${NC}"
 
                 # Instalar dependencias necesarias
                 echo -e "${YELLOW}Instalando dependencias...${NC}"
-                install_pacman_chroot_with_retry "base-devel"
-                install_pacman_chroot_with_retry "wlroots0.18"
-                install_pacman_chroot_with_retry "tllist"
-                install_pacman_chroot_with_retry "foot"
-                install_pacman_chroot_with_retry "mako"
-                install_pacman_chroot_with_retry "wl-clipboard"
-                install_pacman_chroot_with_retry "jq"
-                install_pacman_chroot_with_retry "git"
-                install_pacman_chroot_with_retry "wayland"
-                install_pacman_chroot_with_retry "wayland-protocols"
-                install_pacman_chroot_with_retry "pixman"
-                install_pacman_chroot_with_retry "libxkbcommon-x11"
-                install_pacman_chroot_with_retry "libxkbcommon"
-                install_pacman_chroot_with_retry "slurp"
-                install_pacman_chroot_with_retry "grim"
-                install_pacman_chroot_with_retry "wofi"
-                install_pacman_chroot_with_retry "waybar"
-                install_pacman_chroot_with_retry "libinput"
-                install_pacman_chroot_with_retry "pkg-config"
-                install_pacman_chroot_with_retry "fcft"
-                install_pacman_chroot_with_retry "pixman"
-                install_pacman_chroot_with_retry "wbg"
-                install_pacman_chroot_with_retry "dwl"
+                chroot /mnt /bin/bash -c "pacman -S base-devel --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wlroots0.18 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S tllist --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S xorg-xwayland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S foot --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S mako --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wl-clipboard --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S jq --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S git --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wayland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wayland-protocols --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S pixman --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S libxkbcommon-x11 --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S libxkbcommon --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S slurp --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S grim --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wofi --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S waybar --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S libinput --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S pkg-config --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S fcft --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S pixman --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S wbg --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "pacman -S dwl --noansweredit --noconfirm --needed"
 
                 # Instalar DWL desde AUR
                 chroot /mnt /bin/bash -c "sudo -u $USER git clone https://github.com/dcalonge/dwl ; cd dwl ; sudo -u $USER make install"
@@ -4619,25 +3914,19 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "HYPRLAND")
                 echo -e "${CYAN}Instalando Hyprland Window Manager...${NC}"
-                install_pacman_chroot_with_retry "wayland"
-                install_pacman_chroot_with_retry "wlroots"
-                install_yay_chroot_with_retry "hyprland"
-                install_yay_chroot_with_retry "waybar"
-                install_yay_chroot_with_retry "wofi"
-                install_yay_chroot_with_retry "nwg-displays"
-                install_yay_chroot_with_retry "xdg-desktop-portal-wlr"
-                install_yay_chroot_with_retry "xdg-desktop-portal-hyprland"
-                install_yay_chroot_with_retry "xdg-desktop-portal-gtk"
-                install_yay_chroot_with_retry "hyprpaper"
-                install_yay_chroot_with_retry "hyprpicker"
-                install_yay_chroot_with_retry "hypridle"
-                install_yay_chroot_with_retry "hyprcursor"
-                install_yay_chroot_with_retry "hyprpolkitagent"
-                install_yay_chroot_with_retry "hyprsunset"
-                install_yay_chroot_with_retry "grim"
-                install_yay_chroot_with_retry "qt5-wayland"
-                install_yay_chroot_with_retry "qt6-wayland"
-                install_yay_chroot_with_retry "xdg-desktop-portal-hyprland"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S waybar --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S wofi --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S nwg-displays --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-wlr --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-hyprland --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xdg-desktop-portal-gtk --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprpaper --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprpicker --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hypridle  --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprcursor --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprpolkitagent --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S hyprsunset --noansweredit --noconfirm --needed"
                 # Crear configuración básica de hyprland
                 mkdir -p /mnt/home/$USER/.config/hypr
                 chroot /mnt /bin/bash -c "install -Dm644 /usr/share/hypr/hyprland.conf /home/$USER/.config/hypr/hyprland.conf"
@@ -4648,14 +3937,14 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "OPENBOX")
                 echo -e "${CYAN}Instalando Openbox Window Manager...${NC}"
-                install_yay_chroot_with_retry "openbox"
-                install_yay_chroot_with_retry "lxappearance-obconf"
-                install_yay_chroot_with_retry "lxinput"
-                install_yay_chroot_with_retry "lxrandr"
-                install_yay_chroot_with_retry "archlinux-xdg-menu"
-                install_yay_chroot_with_retry "menumaker"
-                install_yay_chroot_with_retry "obmenu-generator"
-                install_yay_chroot_with_retry "tint2"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S openbox --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxappearance-obconf --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxinput --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S lxrandr --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S archlinux-xdg-menu --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S menumaker --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S obmenu-generator --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S tint2 --noansweredit --noconfirm --needed"
                 # Crear configuración básica de openbox
                 mkdir -p /mnt/home/$USER/.config/openbox
                 chroot /mnt /bin/bash -c "cp -a /etc/xdg/openbox /home/$USER/.config/"
@@ -4663,30 +3952,19 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "QTITLE"|"QTILE")
                 echo -e "${CYAN}Instalando Qtile Window Manager...${NC}"
-                install_yay_chroot_with_retry "qtile"
-                install_yay_chroot_with_retry "python-pywlroots"
-                install_yay_chroot_with_retry "python-pywayland"
-                install_yay_chroot_with_retry "xorg-xwayland"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S qtile --noansweredit --noconfirm --needed"
+                python-pywlroots
                 # Crear configuración básica de qtile
                 mkdir -p /mnt/home/$USER/.config/qtile
                 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "SWAY")
                 echo -e "${CYAN}Instalando Sway Window Manager...${NC}"
-                install_pacman_chroot_with_retry "wayland"
-                install_pacman_chroot_with_retry "wlroots"
-                install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
-                install_yay_chroot_with_retry "sway"
-                install_yay_chroot_with_retry "xorg-xwayland"
-                install_yay_chroot_with_retry "slurp"
-                install_yay_chroot_with_retry "pavucontrol"
-                install_yay_chroot_with_retry "brightnessctl"
-                install_yay_chroot_with_retry "swaylock"
-                install_yay_chroot_with_retry "swayidle"
-                install_yay_chroot_with_retry "swaybg"
-                install_yay_chroot_with_retry "wmenu"
-                install_yay_chroot_with_retry "waybar"
-                install_yay_chroot_with_retry "grim"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S sway --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S swaylock --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S swayidle --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S swaybg --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S wmenu --noansweredit --noconfirm --needed"
                 # Crear configuración básica de sway
                 mkdir -p /mnt/home/$USER/.config/sway
                 chroot /mnt /bin/bash -c "install -Dm644 /etc/sway/config /home/$USER/.config/sway/config"
@@ -4694,12 +3972,15 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "XMONAD")
                 echo -e "${CYAN}Instalando XMonad Window Manager...${NC}"
-                install_yay_chroot_with_retry "xmonad"
-                install_yay_chroot_with_retry "xmonad-contrib"
-                install_yay_chroot_with_retry "xmobar"
-                install_yay_chroot_with_retry "ghc"
-                install_yay_chroot_with_retry "cabal-install"
-                install_yay_chroot_with_retry "nitrogen"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-server --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xinit --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xorg-xrandr --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmonad --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmonad-contrib --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S xmobar --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S ghc --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S cabal-install --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S nitrogen --noansweredit --noconfirm --needed"
                 # Crear configuración básica de xmonad
                 mkdir -p /mnt/home/$USER/.config/xmonad
                 guardar_configuraciones_xmonad
@@ -4709,17 +3990,24 @@ case "$INSTALLATION_TYPE" in
             *)
                 echo -e "${YELLOW}Gestor de ventanas no reconocido: $WINDOW_MANAGER${NC}"
                 echo -e "${CYAN}Instalando i3 como alternativa...${NC}"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3-wm --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3status --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3lock --noansweredit --noconfirm --needed"
+                chroot /mnt /bin/bash -c "sudo -u $USER yay -S i3blocks --noansweredit --noconfirm --needed"
+                mkdir -p /mnt/home/$USER/.config/i3
+                echo "# i3 config file" > /mnt/home/$USER/.config/i3/config
+                chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
         esac
 
 
 
-        # Configurar terminales con configuraciones básicas
-        echo -e "${CYAN}Configurando terminales...${NC}"
+# Configurar terminales con configuraciones básicas
+echo -e "${CYAN}Configurando terminales...${NC}"
 
-        # Configuración básica para Kitty
-        mkdir -p /mnt/home/$USER/.config/kitty
-        cat > /mnt/home/$USER/.config/kitty/kitty.conf << 'EOF'
+# Configuración básica para Kitty
+mkdir -p /mnt/home/$USER/.config/kitty
+cat > /mnt/home/$USER/.config/kitty/kitty.conf << 'EOF'
 # Font settings
 font_family      JetBrains Mono
 bold_font        auto
@@ -4959,7 +4247,7 @@ EOF
         # Crear archivos .desktop para cada window manager
         case "$WINDOW_MANAGER" in
             "I3WM"|"I3")
-                cat > /mnt/usr/share/xsessions/i3.desktop << EOF
+cat > /mnt/usr/share/xsessions/i3.desktop << EOF
 [Desktop Entry]
 Name=i3
 Comment=improved dynamic tiling window manager
@@ -4972,7 +4260,7 @@ Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;
             "AWESOME")
-                cat > /mnt/usr/share/xsessions/awesome.desktop << EOF
+cat > /mnt/usr/share/xsessions/awesome.desktop << EOF
 [Desktop Entry]
 Name=awesome
 Comment=Highly configurable framework window manager
@@ -4985,7 +4273,7 @@ Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;
             "BSPWM")
-                cat > /mnt/usr/share/xsessions/bspwm.desktop << EOF
+cat > /mnt/usr/share/xsessions/bspwm.desktop << EOF
 [Desktop Entry]
 Name=bspwm
 Comment=Binary space partitioning window manager
@@ -4998,7 +4286,7 @@ Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;
             "DWM")
-                cat > /mnt/usr/share/xsessions/dwm.desktop << EOF
+cat > /mnt/usr/share/xsessions/dwm.desktop << EOF
 [Desktop Entry]
 Name=dwm
 Comment=Dynamic window manager
@@ -5011,7 +4299,7 @@ Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;
             "HYPRLAND")
-                cat > /mnt/usr/share/wayland-sessions/hyprland.desktop << EOF
+cat > /mnt/usr/share/wayland-sessions/hyprland.desktop << EOF
 [Desktop Entry]
 Name=Hyprland
 Comment=An intelligent dynamic tiling Wayland compositor
@@ -5020,7 +4308,7 @@ Type=Application
 EOF
                 ;;
             "OPENBOX")
-                cat > /mnt/usr/share/xsessions/openbox.desktop << EOF
+cat > /mnt/usr/share/xsessions/openbox.desktop << EOF
 [Desktop Entry]
 Name=Openbox
 Comment=A highly configurable, next generation window manager
@@ -5033,7 +4321,7 @@ Keywords=wm;windowmanager;window;manager;
 EOF
                 ;;
             "QTITLE"|"QTILE")
-                cat > /mnt/usr/share/xsessions/qtile.desktop << EOF
+cat > /mnt/usr/share/xsessions/qtile.desktop << EOF
 [Desktop Entry]
 Name=Qtile
 Comment=A full-featured, hackable tiling window manager written in Python
@@ -5046,7 +4334,7 @@ Keywords=tiling;wm;windowmanager;window;manager;
 EOF
                 ;;
             "SWAY")
-                cat > /mnt/usr/share/wayland-sessions/sway.desktop << EOF
+cat > /mnt/usr/share/wayland-sessions/sway.desktop << EOF
 [Desktop Entry]
 Name=Sway
 Comment=An i3-compatible Wayland compositor
@@ -5055,7 +4343,7 @@ Type=Application
 EOF
                 ;;
             "XMONAD")
-                cat > /mnt/usr/share/xsessions/xmonad.desktop << EOF
+cat > /mnt/usr/share/xsessions/xmonad.desktop << EOF
 [Desktop Entry]
 Name=XMonad
 Comment=Lightweight tiling window manager
@@ -5089,27 +4377,26 @@ if [ "${ESSENTIAL_APPS_ENABLED:-false}" = "true" ]; then
 
     case "${SYSTEM_SHELL:-bash}" in
         "bash")
-            install_pacman_chroot_with_retry "bash"
-            install_pacman_chroot_with_retry "bash-completion"
+            chroot /mnt /bin/bash -c "pacman -S bash bash-completion --noconfirm"
             chroot /mnt /bin/bash -c "chsh -s /bin/bash $USER"
             ;;
         "dash")
-            install_pacman_chroot_with_retry "dash"
+            chroot /mnt /bin/bash -c "pacman -S dash --noconfirm"
             chroot /mnt /bin/bash -c "chsh -s /bin/dash $USER"
             ;;
         "ksh")
-            install_pacman_chroot_with_retry "ksh"
+            chroot /mnt /bin/bash -c "pacman -S ksh --noconfirm"
             chroot /mnt /bin/bash -c "chsh -s /usr/bin/ksh $USER"
             ;;
         "fish")
-            install_pacman_chroot_with_retry "fish"
+            chroot /mnt /bin/bash -c "pacman -S fish --noconfirm"
             chroot /mnt /bin/bash -c "chsh -s /usr/bin/fish $USER"
             ;;
         "zsh")
-            install_pacman_chroot_with_retry "zsh"
-            install_pacman_chroot_with_retry "zsh-completions"
-            install_pacman_chroot_with_retry "zsh-syntax-highlighting"
-            install_pacman_chroot_with_retry "zsh-autosuggestions"
+            chroot /mnt /bin/bash -c "pacman -S zsh --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S zsh-completions --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S zsh-syntax-highlighting --noconfirm"
+            chroot /mnt /bin/bash -c "pacman -S zsh-autosuggestions --noconfirm"
             cp /usr/share/arcrisgui/data/config/zshrc /mnt/home/$USER/.zshrc
             cp /usr/share/arcrisgui/data/config/zshrc /mnt/root/.zshrc
             chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.zshrc"
@@ -5117,8 +4404,7 @@ if [ "${ESSENTIAL_APPS_ENABLED:-false}" = "true" ]; then
             ;;
         *)
             echo -e "${YELLOW}Shell no reconocida: ${SYSTEM_SHELL}, usando bash${NC}"
-            install_pacman_chroot_with_retry "bash"
-            install_pacman_chroot_with_retry "bash-completion"
+            chroot /mnt /bin/bash -c "pacman -S bash bash-completion --noconfirm"
             chroot /mnt /bin/bash -c "chsh -s /bin/bash $USER"
             ;;
     esac
@@ -5129,35 +4415,36 @@ fi
 if [ "${FILESYSTEMS_ENABLED:-false}" = "true" ]; then
     echo -e "${CYAN}Instalando herramientas de sistemas de archivos...${NC}"
 
-    install_pacman_chroot_with_retry "android-file-transfer"
-    install_pacman_chroot_with_retry "android-tools"
-    install_pacman_chroot_with_retry "android-udev"
-    install_pacman_chroot_with_retry "msmtp"
-    install_pacman_chroot_with_retry "libmtp"
-    install_pacman_chroot_with_retry "libcddb"
-    install_pacman_chroot_with_retry "gvfs"
-    install_pacman_chroot_with_retry "gvfs-afc"
-    install_pacman_chroot_with_retry "gvfs-smb"
-    install_pacman_chroot_with_retry "gvfs-gphoto2"
-    install_pacman_chroot_with_retry "gvfs-mtp"
-    install_pacman_chroot_with_retry "gvfs-goa"
-    install_pacman_chroot_with_retry "gvfs-nfs"
-    install_pacman_chroot_with_retry "gvfs-google"
-    install_pacman_chroot_with_retry "gst-libav"
-    install_pacman_chroot_with_retry "dosfstools"
-    install_pacman_chroot_with_retry "f2fs-tools"
-    install_pacman_chroot_with_retry "ntfs-3g"
-    install_pacman_chroot_with_retry "udftools"
-    install_pacman_chroot_with_retry "nilfs-utils"
-    install_pacman_chroot_with_retry "polkit"
-    install_pacman_chroot_with_retry "gpart"
-    install_pacman_chroot_with_retry "mtools"
-    install_pacman_chroot_with_retry "cifs-utils"
-    install_pacman_chroot_with_retry "jfsutils"
-    install_pacman_chroot_with_retry "btrfs-progs"
-    install_pacman_chroot_with_retry "xfsprogs"
-    install_pacman_chroot_with_retry "e2fsprogs"
-    install_pacman_chroot_with_retry "exfatprogs"
+    chroot /mnt /bin/bash -c "pacman -S android-file-transfer --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S android-tools --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S android-udev --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S msmtp --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libmtp --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libcddb --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-afc --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-smb --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-gphoto2 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-mtp --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-goa --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-nfs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gvfs-google --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gst-libav --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S dosfstools --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S f2fs-tools --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S ntfs-3g --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S udftools --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S nilfs-utils --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S polkit --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gpart --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S mtools --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S cifs-utils --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S jfsutils --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S btrfs-progs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S xfsprogs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S reiserfsprogs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S e2fsprogs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S exfatprogs --noconfirm"
 
     echo -e "${GREEN}✓ Herramientas de sistemas de archivos instaladas${NC}"
 fi
@@ -5166,28 +4453,28 @@ fi
 if [ "${COMPRESSION_ENABLED:-false}" = "true" ]; then
     echo -e "${CYAN}Instalando herramientas de compresión...${NC}"
 
-    install_pacman_chroot_with_retry "xarchiver"
-    install_pacman_chroot_with_retry "unarchiver"
-    install_pacman_chroot_with_retry "binutils"
-    install_pacman_chroot_with_retry "gzip"
-    install_pacman_chroot_with_retry "lha"
-    install_pacman_chroot_with_retry "lrzip"
-    install_pacman_chroot_with_retry "lzip"
-    install_pacman_chroot_with_retry "lz4"
-    install_pacman_chroot_with_retry "p7zip"
-    install_pacman_chroot_with_retry "tar"
-    install_pacman_chroot_with_retry "xz"
-    install_pacman_chroot_with_retry "bzip2"
-    install_pacman_chroot_with_retry "lbzip2"
-    install_pacman_chroot_with_retry "arj"
-    install_pacman_chroot_with_retry "lzop"
-    install_pacman_chroot_with_retry "cpio"
-    install_pacman_chroot_with_retry "unrar"
-    install_pacman_chroot_with_retry "unzip"
-    install_pacman_chroot_with_retry "zstd"
-    install_pacman_chroot_with_retry "zip"
-    install_pacman_chroot_with_retry "unarj"
-    install_pacman_chroot_with_retry "dpkg"
+    chroot /mnt /bin/bash -c "pacman -S xarchiver --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S unarchiver --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S binutils --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gzip --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lha --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lrzip --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lzip --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lz4 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S p7zip --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S tar --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S xz --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S bzip2 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lbzip2 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S arj --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lzop --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S cpio --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S unrar --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S unzip --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S zstd --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S zip --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S unarj --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S dpkg --noconfirm"
     echo -e "${GREEN}✓ Herramientas de compresión instaladas${NC}"
 fi
 
@@ -5195,41 +4482,41 @@ fi
 if [ "${VIDEO_CODECS_ENABLED:-false}" = "true" ]; then
     echo -e "${CYAN}Instalando codecs de video...${NC}"
 
-    install_pacman_chroot_with_retry "ffmpeg"
-    install_pacman_chroot_with_retry "aom"
-    install_pacman_chroot_with_retry "libde265"
-    install_pacman_chroot_with_retry "x265"
-    install_pacman_chroot_with_retry "x264"
-    install_pacman_chroot_with_retry "libmpeg2"
-    install_pacman_chroot_with_retry "xvidcore"
-    install_pacman_chroot_with_retry "libtheora"
-    install_pacman_chroot_with_retry "libvpx"
-    install_pacman_chroot_with_retry "sdl"
-    install_pacman_chroot_with_retry "gstreamer"
-    install_pacman_chroot_with_retry "gst-plugins-bad"
-    install_pacman_chroot_with_retry "gst-plugins-base"
-    install_pacman_chroot_with_retry "gst-plugins-base-libs"
-    install_pacman_chroot_with_retry "gst-plugins-good"
-    install_pacman_chroot_with_retry "gst-plugins-ugly"
-    install_pacman_chroot_with_retry "xine-lib"
-    install_pacman_chroot_with_retry "libdvdcss"
-    install_pacman_chroot_with_retry "libdvdread"
-    install_pacman_chroot_with_retry "dvd+rw-tools"
-    install_pacman_chroot_with_retry "lame"
-    install_pacman_chroot_with_retry "jasper"
-    install_pacman_chroot_with_retry "libmng"
-    install_pacman_chroot_with_retry "libraw"
-    install_pacman_chroot_with_retry "libkdcraw"
-    install_pacman_chroot_with_retry "vcdimager"
-    install_pacman_chroot_with_retry "mpv"
-    install_pacman_chroot_with_retry "faac"
-    install_pacman_chroot_with_retry "faad2"
-    install_pacman_chroot_with_retry "flac"
-    install_pacman_chroot_with_retry "opus"
-    install_pacman_chroot_with_retry "libvorbis"
-    install_pacman_chroot_with_retry "wavpack"
-    install_pacman_chroot_with_retry "libheif"
-    install_pacman_chroot_with_retry "libavif"
+    chroot /mnt /bin/bash -c "pacman -S ffmpeg --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S aom --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libde265 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S x265 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S x264 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libmpeg2 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S xvidcore --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libtheora --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libvpx --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S sdl --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gstreamer --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gst-plugins-bad --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gst-plugins-base --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gst-plugins-base-libs --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gst-plugins-good --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S gst-plugins-ugly --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S xine-lib --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libdvdcss --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libdvdread --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S dvd+rw-tools --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S lame --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S jasper --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libmng --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libraw --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libkdcraw --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S vcdimager --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S mpv --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S faac --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S faad2 --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S flac --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S opus --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libvorbis --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S wavpack --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libheif --noconfirm"
+    chroot /mnt /bin/bash -c "pacman -S libavif --noconfirm"
 
     echo -e "${GREEN}✓ Codecs de video instalados${NC}"
 fi
@@ -5238,14 +4525,14 @@ sleep 2
 clear
 
 echo -e "${GREEN}✓ Tipografías instaladas${NC}"
-install_pacman_chroot_with_retry "noto-fonts"
-install_pacman_chroot_with_retry "noto-fonts-emoji"
-install_pacman_chroot_with_retry "adobe-source-code-pro-fonts"
-install_pacman_chroot_with_retry "ttf-cascadia-code"
-install_pacman_chroot_with_retry "cantarell-fonts"
-install_pacman_chroot_with_retry "ttf-roboto"
-install_pacman_chroot_with_retry "ttf-ubuntu-font-family"
-install_pacman_chroot_with_retry "gnu-free-fonts"
+chroot /mnt pacman -S noto-fonts --noconfirm
+chroot /mnt pacman -S noto-fonts-emoji --noconfirm
+chroot /mnt pacman -S adobe-source-code-pro-fonts --noconfirm
+chroot /mnt pacman -S ttf-cascadia-code --noconfirm
+chroot /mnt pacman -S cantarell-fonts --noconfirm
+chroot /mnt pacman -S ttf-roboto --noconfirm
+chroot /mnt pacman -S ttf-ubuntu-font-family --noconfirm
+chroot /mnt pacman -S gnu-free-fonts --noconfirm
 sleep 2
 clear
 configurar_teclado
@@ -5260,7 +4547,9 @@ if [ "$UTILITIES_ENABLED" = "true" ] && [ ${#UTILITIES_APPS[@]} -gt 0 ]; then
 
     for app in "${UTILITIES_APPS[@]}"; do
         echo -e "${CYAN}Instalando: $app${NC}"
-        install_yay_chroot_with_retry "$app" "--overwrite '*'"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S $app --noansweredit --noconfirm --needed --overwrite '*'" || {
+            echo -e "${YELLOW}⚠ No se pudo instalar $app, continuando...${NC}"
+        }
         sleep 2
     done
 
@@ -5277,7 +4566,9 @@ if [ "$PROGRAM_EXTRA" = "true" ] && [ ${#EXTRA_PROGRAMS[@]} -gt 0 ]; then
 
     for program in "${EXTRA_PROGRAMS[@]}"; do
         echo -e "${CYAN}Instalando: $program${NC}"
-        install_yay_chroot_with_retry "$program" "--overwrite '*'"
+        chroot /mnt /bin/bash -c "sudo -u $USER yay -S $program --noansweredit --noconfirm --needed --overwrite '*'" || {
+            echo -e "${YELLOW}⚠ No se pudo instalar $program, continuando...${NC}"
+        }
         sleep 2
     done
 
@@ -5289,9 +4580,8 @@ fi
 sleep 3
 clear
 cp /usr/share/arcrisgui/data/config/pacman-chroot.conf /mnt/etc/pacman.conf
-# Actualizar sistema con reintentos
-update_system_chroot
-update_system_chroot
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
+chroot /mnt /bin/bash -c "pacman -Syu --noconfirm"
 sleep 3
 clear
 
@@ -5308,10 +4598,10 @@ echo ""
 
 # Eliminar configuración temporal
 if [[ -f "/mnt/etc/sudoers.d/temp-install" ]]; then
-    chroot /mnt /bin/bash -c "rm -f /etc/sudoers.d/temp-install"
-    echo "✓ Configuración temporal eliminada"
+chroot /mnt /bin/bash -c "rm -f /etc/sudoers.d/temp-install"
+echo "✓ Configuración temporal eliminada"
 else
-    echo "⚠️  Archivo temporal no encontrado (ya fue eliminado)"
+echo "⚠️  Archivo temporal no encontrado (ya fue eliminado)"
 fi
 
 # Verificar y configurar wheel en sudoers
@@ -5322,21 +4612,21 @@ echo "🔧 Configurando grupo wheel en sudoers..."
 
 # Verificar si existe configuración NOPASSWD
 if chroot /mnt /bin/bash -c "grep -q '^%wheel.*NOPASSWD.*ALL' /etc/sudoers" 2>/dev/null; then
-    echo "🔄 Detectada configuración NOPASSWD, cambiando a configuración normal..."
-    # Cambiar de NOPASSWD a configuración normal
-    chroot /mnt /bin/bash -c "sed -i 's/^%wheel.*NOPASSWD.*ALL$/%wheel ALL=(ALL) ALL/' /etc/sudoers"
-    echo "✓ Configuración wheel cambiada a modo normal (con contraseña)"
+echo "🔄 Detectada configuración NOPASSWD, cambiando a configuración normal..."
+# Cambiar de NOPASSWD a configuración normal
+chroot /mnt /bin/bash -c "sed -i 's/^%wheel.*NOPASSWD.*ALL$/%wheel ALL=(ALL) ALL/' /etc/sudoers"
+echo "✓ Configuración wheel cambiada a modo normal (con contraseña)"
 
 # Verificar si existe configuración normal
 elif chroot /mnt /bin/bash -c "grep -q '^%wheel.*ALL.*ALL' /etc/sudoers" 2>/dev/null; then
-    echo "✓ Configuración wheel normal ya existe en sudoers"
+echo "✓ Configuración wheel normal ya existe en sudoers"
 
 # Si no existe ninguna configuración wheel, agregarla
 else
-    echo "➕ No se encontró configuración wheel, agregándola..."
-    echo "# Configuración normal del grupo wheel" >> /mnt/etc/sudoers
-    cp /usr/share/arcrisgui/data/config/sudoers /mnt/etc/sudoers
-    echo "✓ Configuración wheel añadida al archivo sudoers"
+echo "➕ No se encontró configuración wheel, agregándola..."
+echo "# Configuración normal del grupo wheel" >> /mnt/etc/sudoers
+cp /usr/share/arcrisgui/data/config/sudoers /mnt/etc/sudoers
+echo "✓ Configuración wheel añadida al archivo sudoers"
 fi
 
 # Validar sintaxis del sudoers
