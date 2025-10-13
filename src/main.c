@@ -66,12 +66,7 @@ static void activate_cb(GtkApplication *app)
         gtk_icon_theme_add_resource_path(icon_theme, "/org/gtk/arcris/icons/symbolic");
         gtk_icon_theme_add_resource_path(icon_theme, "/org/gtk/arcris/icons/scalable");
 
-        // Forzar recarga del tema para asegurar que los iconos se reconozcan
-        const char *theme_name = gtk_icon_theme_get_theme_name(icon_theme);
-        gtk_icon_theme_set_theme_name(icon_theme, theme_name);
-
         LOG_INFO("Tema de iconos personalizados configurado con recoloreado automático");
-        LOG_INFO("Tema actual: %s", theme_name ? theme_name : "desconocido");
     } else {
         LOG_WARNING("No se pudo obtener el tema de iconos");
     }

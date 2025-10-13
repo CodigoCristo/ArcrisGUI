@@ -329,6 +329,19 @@ disk_manager_get_selected_disk(DiskManager *manager)
     return manager->selected_disk_path;
 }
 
+// Función para establecer el disco seleccionado
+void
+disk_manager_set_selected_disk(DiskManager *manager, const gchar *disk_path)
+{
+    if (!manager) return;
+    
+    // Actualizar disco seleccionado
+    g_free(manager->selected_disk_path);
+    manager->selected_disk_path = g_strdup(disk_path);
+    
+    LOG_INFO("Disco seleccionado programáticamente: %s", disk_path);
+}
+
 // Callback para cuando se selecciona un disco
 void
 on_disk_manager_selection_changed(GObject *object, GParamSpec *pspec, gpointer user_data)

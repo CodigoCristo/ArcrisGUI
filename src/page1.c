@@ -1,4 +1,5 @@
 #include "page1.h"
+#include "page2.h"
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -92,12 +93,23 @@ gboolean page1_check_internet_status(gpointer user_data)
     
     // Solo actualizar UI si el estado cambió
     if (current_status != g_page1_data->has_internet) {
+        gboolean was_disconnected = !g_page1_data->has_internet;
+        gboolean now_connected = current_status;
+        
         g_print("🔄 Cambio de estado de internet: %s -> %s\n", 
                 g_page1_data->has_internet ? "conectado" : "desconectado",
                 current_status ? "conectado" : "desconectado");
         
         g_page1_data->has_internet = current_status;
         update_internet_ui(current_status);
+        
+        // Solo configurar combo rows cuando cambia de desconectado a conectado Y no se ha configurado antes
+        if (was_disconnected && now_connected && !g_page1_data->auto_configured) {
+            g_print("🌐 Configurando automáticamente combo rows con datos de geolocalización...\n");
+            auto_configure_combo_rows();
+            g_page1_data->auto_configured = TRUE;
+            g_print("✅ Configuración automática completada (no se repetirá)\n");
+        }
     }
     
     return TRUE; // Continuar monitoreo
@@ -193,6 +205,7 @@ void page1_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page1_data->revealer = revealer;
     g_page1_data->has_internet = FALSE;
     g_page1_data->internet_monitor_id = 0;
+    g_page1_data->auto_configured = FALSE;
     
     // Cargar la página 1 desde el archivo UI
     GtkBuilder *page_builder = gtk_builder_new_from_resource("/org/gtk/arcris/page1.ui");

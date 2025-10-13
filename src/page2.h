@@ -53,6 +53,9 @@ void open_keyboard_settings(GtkButton *button, gpointer user_data);
 void open_tecla(GtkButton *button, gpointer user_data);
 void save_combo_selections_to_file(void);
 
+// Funciones de configuración automática
+void auto_configure_combo_rows(void);
+
 // Funciones de configuración automática (internas)
 // Las siguientes funciones son privadas del módulo y se ejecutan automáticamente:
 // - page2_get_language_from_api(): Obtiene idioma desde https://ipapi.co/languages

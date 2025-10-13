@@ -62,6 +62,10 @@ void window_hardware_init(WindowHardwareData *data)
     // Cargar configuración desde variables
     window_hardware_load_from_variables(data);
 
+    // Auto-seleccionar siempre el índice 0 en driver_video_combo
+    window_hardware_auto_select_video_driver_index_0(data);
+    LOG_INFO("Auto-selección de driver de video (índice 0) configurada durante inicialización");
+
     data->is_initialized = TRUE;
     LOG_INFO("WindowHardwareData inicializada correctamente");
 }
@@ -167,6 +171,9 @@ void window_hardware_show(WindowHardwareData *data, GtkWindow *parent)
     if (data->hardware_info) {
         window_hardware_update_hardware_descriptions(data);
     }
+
+    // Auto-seleccionar siempre el índice 0 en driver_video_combo antes de mostrar
+    window_hardware_auto_select_video_driver_index_0(data);
 
     gtk_window_present(data->window);
     LOG_INFO("Ventana de hardware mostrada");
@@ -706,6 +713,101 @@ gboolean window_hardware_load_from_variables(WindowHardwareData *data)
 
     LOG_INFO("Configuración de drivers cargada desde variables.sh");
     return TRUE;
+}
+
+// Estructura para pasar datos al callback de timeout del driver de video
+typedef struct {
+    WindowHardwareData *data;
+    int retry_count;
+    int max_retries;
+} VideoDriverAutoSelectData;
+
+// Callback para auto-selección con timeout del driver de video
+static gboolean window_hardware_video_driver_timeout_callback(gpointer user_data)
+{
+    VideoDriverAutoSelectData *callback_data = (VideoDriverAutoSelectData *)user_data;
+    WindowHardwareData *data = callback_data->data;
+    
+    if (!data || !data->driver_video_combo) {
+        LOG_WARNING("Auto-selección driver video fallida: datos no inicializados (intento %d/%d)", 
+                   callback_data->retry_count + 1, callback_data->max_retries);
+        callback_data->retry_count++;
+        
+        if (callback_data->retry_count >= callback_data->max_retries) {
+            g_free(callback_data);
+            return G_SOURCE_REMOVE;
+        }
+        return G_SOURCE_CONTINUE;
+    }
+
+    // Obtener el modelo del combo
+    GtkStringList *model = GTK_STRING_LIST(adw_combo_row_get_model(data->driver_video_combo));
+    if (!model) {
+        LOG_WARNING("Auto-selección driver video fallida: modelo no encontrado (intento %d/%d)", 
+                   callback_data->retry_count + 1, callback_data->max_retries);
+        callback_data->retry_count++;
+        
+        if (callback_data->retry_count >= callback_data->max_retries) {
+            g_free(callback_data);
+            return G_SOURCE_REMOVE;
+        }
+        return G_SOURCE_CONTINUE;
+    }
+
+    guint n_items = g_list_model_get_n_items(G_LIST_MODEL(model));
+    
+    // Si no hay opciones, continuar esperando
+    if (n_items == 0) {
+        LOG_INFO("Esperando que se carguen las opciones del driver de video (intento %d/%d)", 
+                callback_data->retry_count + 1, callback_data->max_retries);
+        callback_data->retry_count++;
+        
+        if (callback_data->retry_count >= callback_data->max_retries) {
+            LOG_WARNING("Timeout: no se encontraron opciones de driver de video después de %d intentos", 
+                       callback_data->max_retries);
+            g_free(callback_data);
+            return G_SOURCE_REMOVE;
+        }
+        return G_SOURCE_CONTINUE;
+    }
+
+    // Seleccionar siempre el índice 0 (primera opción)
+    adw_combo_row_set_selected(data->driver_video_combo, 0);
+    
+    // Actualizar el estado interno
+    data->current_video_driver = VIDEO_DRIVER_OPEN_SOURCE; // índice 0
+    
+    LOG_INFO("Driver de video auto-seleccionado en índice 0");
+    LOG_INFO("Total de opciones disponibles: %u", n_items);
+    
+    // Obtener el texto de la opción seleccionada para logging
+    const gchar *selected_option = gtk_string_list_get_string(model, 0);
+    if (selected_option) {
+        LOG_INFO("Opción seleccionada: %s", selected_option);
+    }
+    
+    g_free(callback_data);
+    return G_SOURCE_REMOVE;
+}
+
+// Función para auto-seleccionar índice 0 en driver_video_combo
+void window_hardware_auto_select_video_driver_index_0(WindowHardwareData *data)
+{
+    if (!data) {
+        LOG_WARNING("No se puede auto-seleccionar driver de video: data es NULL");
+        return;
+    }
+    
+    // Crear datos para el callback de timeout
+    VideoDriverAutoSelectData *callback_data = g_malloc0(sizeof(VideoDriverAutoSelectData));
+    callback_data->data = data;
+    callback_data->retry_count = 0;
+    callback_data->max_retries = 10; // Máximo 10 intentos (2 segundos total)
+    
+    // Programar el callback con un pequeño delay para asegurar que la lista esté poblada
+    g_timeout_add(200, window_hardware_video_driver_timeout_callback, callback_data); // 200ms de delay inicial
+    
+    LOG_INFO("Auto-selección de driver de video programada con timeout de 200ms");
 }
 
 gboolean window_hardware_save_to_variables(WindowHardwareData *data)

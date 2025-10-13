@@ -16,12 +16,12 @@ typedef struct _Page6Data {
     AdwActionRow *kernel_row;
     AdwActionRow *drivers_row;
     AdwSwitchRow *essential_apps_switch;
-    AdwSwitchRow *office_switch;
+    // office_switch eliminado - no existe en el UI
     AdwSwitchRow *utilities_switch;
     GtkButton *kernel_button;
     GtkButton *driver_hardware_button;
     GtkButton *essential_apps_button;
-    GtkButton *office_button;
+    // office_button eliminado - no existe en el UI
     GtkButton *utilities_button;
     AdwButtonRow *program_extra_button;
     
@@ -100,7 +100,7 @@ void page6_open_program_extra_window(Page6Data *data);
 
 // Callbacks para switches
 void on_essential_apps_switch_toggled(GObject *object, GParamSpec *pspec, gpointer user_data);
-void on_office_switch_toggled(GObject *object, GParamSpec *pspec, gpointer user_data);
+// void on_office_switch_toggled eliminado - office_switch no existe en el UI
 void on_utilities_switch_toggled(GObject *object, GParamSpec *pspec, gpointer user_data);
 
 // Callbacks para ventana de kernels

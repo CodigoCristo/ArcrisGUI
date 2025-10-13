@@ -212,7 +212,7 @@ static gpointer auto_config_worker_thread(gpointer user_data)
 }
 
 // Función para configurar automáticamente los ComboRows basándose en el idioma y zona horaria detectados
-static void auto_configure_combo_rows(void)
+void auto_configure_combo_rows(void)
 {
     if (!g_page2_data) return;
 

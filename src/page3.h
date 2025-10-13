@@ -99,6 +99,9 @@ DiskMode page3_get_partition_mode(void);
 // Funciones de actualización
 void page3_refresh_disk_list(void);
 
+// Función para seleccionar automáticamente la opción 0 del disk_combo
+void page3_auto_select_disk_option_1(void);
+
 // Funciones callback para cambios de disco
 void page3_refresh_partitions(void);
 void page3_on_disk_changed(const gchar *disk_path);

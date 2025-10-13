@@ -255,6 +255,9 @@ void page3_load_data(Page3Data *data)
     // Cargar configuración guardada desde variables.sh
     disk_manager_load_from_variables(g_disk_manager);
 
+    // Auto-seleccionar siempre la opción 0 del disk_combo
+    page3_auto_select_disk_option_1();
+
     // Actualizar UI según la configuración cargada
     const char *selected_disk = disk_manager_get_selected_disk(g_disk_manager);
     if (selected_disk) {
@@ -448,6 +451,112 @@ void page3_refresh_disk_list(void)
 {
     if (!g_disk_manager) return;
     disk_manager_refresh(g_disk_manager);
+    
+    // Auto-seleccionar siempre la opción 0 después del refresh
+    page3_auto_select_disk_option_1();
+}
+
+// Estructura para pasar datos al callback de timeout
+typedef struct {
+    int retry_count;
+    int max_retries;
+} AutoSelectData;
+
+// Callback para auto-selección con timeout
+static gboolean page3_auto_select_timeout_callback(gpointer user_data)
+{
+    AutoSelectData *data = (AutoSelectData *)user_data;
+    
+    if (!g_page3_data || !g_page3_data->disk_combo || !g_disk_manager) {
+        LOG_WARNING("Auto-selección fallida: datos no inicializados (intento %d/%d)", 
+                   data->retry_count + 1, data->max_retries);
+        data->retry_count++;
+        
+        if (data->retry_count >= data->max_retries) {
+            g_free(data);
+            return G_SOURCE_REMOVE;
+        }
+        return G_SOURCE_CONTINUE;
+    }
+
+    // Obtener el número total de opciones disponibles
+    GtkStringList *model = GTK_STRING_LIST(adw_combo_row_get_model(g_page3_data->disk_combo));
+    if (!model) {
+        LOG_WARNING("Auto-selección fallida: modelo no encontrado (intento %d/%d)", 
+                   data->retry_count + 1, data->max_retries);
+        data->retry_count++;
+        
+        if (data->retry_count >= data->max_retries) {
+            g_free(data);
+            return G_SOURCE_REMOVE;
+        }
+        return G_SOURCE_CONTINUE;
+    }
+
+    guint n_items = g_list_model_get_n_items(G_LIST_MODEL(model));
+    
+    // Si no hay discos, continuar esperando
+    if (n_items == 0) {
+        LOG_INFO("Esperando que se carguen los discos (intento %d/%d)", 
+                data->retry_count + 1, data->max_retries);
+        data->retry_count++;
+        
+        if (data->retry_count >= data->max_retries) {
+            LOG_WARNING("Timeout: no se encontraron discos después de %d intentos", data->max_retries);
+            g_free(data);
+            return G_SOURCE_REMOVE;
+        }
+        return G_SOURCE_CONTINUE;
+    }
+    
+    // Seleccionar la opción 0 (índice 0, que es la primera opción)
+    adw_combo_row_set_selected(g_page3_data->disk_combo, 0);
+    
+    // Obtener el path real del disco (sin formato) del disk_manager
+    const gchar *selected_disk_path = NULL;
+    if (g_disk_manager) {
+        // Simular el callback de selección para obtener el path correcto
+        on_disk_manager_selection_changed(G_OBJECT(g_page3_data->disk_combo), NULL, g_disk_manager);
+        selected_disk_path = disk_manager_get_selected_disk(g_disk_manager);
+    }
+    
+    if (!selected_disk_path) {
+        LOG_WARNING("No se puede obtener el path del disco después de la selección (intento %d/%d)", 
+                   data->retry_count + 1, data->max_retries);
+        data->retry_count++;
+        
+        if (data->retry_count >= data->max_retries) {
+            g_free(data);
+            return G_SOURCE_REMOVE;
+        }
+        return G_SOURCE_CONTINUE;
+    }
+    
+    LOG_INFO("Opción 0 del disk_combo seleccionada automáticamente: %s", selected_disk_path);
+    LOG_INFO("Total de discos disponibles: %u", n_items);
+    
+    // Obtener el texto de la opción seleccionada para logging (texto formateado)
+    const gchar *selected_option = gtk_string_list_get_string(model, 0);
+    if (selected_option) {
+        LOG_INFO("Texto mostrado: %s", selected_option);
+    }
+    
+    g_free(data);
+    return G_SOURCE_REMOVE;
+}
+
+// Función para seleccionar automáticamente la opción 0 del disk_combo
+void page3_auto_select_disk_option_1(void)
+{
+    // Crear datos para el callback de timeout
+    AutoSelectData *data = g_malloc0(sizeof(AutoSelectData));
+    data->retry_count = 0;
+    data->max_retries = 10; // Máximo 10 intentos (2 segundos total)
+    
+    // Programar el callback con un pequeño delay para asegurar que la lista esté poblada
+    g_timeout_add(200, page3_auto_select_timeout_callback, data); // 200ms de delay inicial
+    
+    LOG_INFO("Auto-selección de disco programada con timeout de 200ms");
 }
 
 // Función para verificar si la configuración es válida
@@ -676,13 +785,26 @@ void page3_navigate_back_to_disk_selection(Page3Data *data)
 // Función para actualizar información de particiones manuales
 void page3_update_manual_partitions_info(Page3Data *data)
 {
-    if (!data) return;
+    if (!data) {
+        LOG_WARNING("page3_update_manual_partitions_info: data es NULL");
+        return;
+    }
+
+    if (!data->udisks_client) {
+        LOG_WARNING("page3_update_manual_partitions_info: udisks_client no inicializado");
+        return;
+    }
 
     LOG_INFO("=== INICIANDO page3_update_manual_partitions_info ===");
 
     const char *selected_disk = page3_get_selected_disk();
     if (!selected_disk) {
         LOG_WARNING("No hay disco seleccionado para mostrar información");
+        return;
+    }
+
+    if (strlen(selected_disk) == 0) {
+        LOG_WARNING("Disco seleccionado está vacío");
         return;
     }
 
@@ -934,8 +1056,18 @@ void page3_clear_partitions(Page3Data *data)
 // Función para poblar particiones
 void page3_populate_partitions(Page3Data *data, const gchar *disk_path)
 {
-    if (!data || !disk_path || !data->udisks_client) {
-        LOG_WARNING("page3_populate_partitions: parámetros inválidos");
+    if (!data) {
+        LOG_WARNING("page3_populate_partitions: data es NULL");
+        return;
+    }
+    
+    if (!disk_path || strlen(disk_path) == 0) {
+        LOG_WARNING("page3_populate_partitions: disk_path es NULL o está vacío");
+        return;
+    }
+    
+    if (!data->udisks_client) {
+        LOG_WARNING("page3_populate_partitions: udisks_client no está inicializado");
         return;
     }
 

@@ -42,6 +42,7 @@ gboolean disk_manager_setup_udisks(DiskManager *manager);
 void disk_manager_populate_list(DiskManager *manager);
 void disk_manager_refresh(DiskManager *manager);
 const gchar* disk_manager_get_selected_disk(DiskManager *manager);
+void disk_manager_set_selected_disk(DiskManager *manager, const gchar *disk_path);
 
 // Funciones para guardar/cargar variables
 gboolean disk_manager_save_to_variables(DiskManager *manager);

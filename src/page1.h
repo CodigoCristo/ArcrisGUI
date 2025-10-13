@@ -14,6 +14,7 @@ typedef struct _Page1Data {
     GtkWidget *start_button;
     guint internet_monitor_id;
     gboolean has_internet;
+    gboolean auto_configured;
 } Page1Data;
 
 // Funciones principales de la página 1

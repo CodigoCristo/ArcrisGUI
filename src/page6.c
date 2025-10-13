@@ -96,12 +96,12 @@ void page6_get_ui_widgets(Page6Data *data, GtkBuilder *builder)
 
     // Obtener los switches
     data->essential_apps_switch = ADW_SWITCH_ROW(gtk_builder_get_object(builder, "essential_apps_switch"));
-    data->office_switch = ADW_SWITCH_ROW(gtk_builder_get_object(builder, "office_switch"));
+    // office_switch no existe en el UI
     data->utilities_switch = ADW_SWITCH_ROW(gtk_builder_get_object(builder, "utilities_switch"));
 
     // Obtener los botones de los switches
     data->essential_apps_button = GTK_BUTTON(gtk_builder_get_object(builder, "essential_apps_button"));
-    data->office_button = GTK_BUTTON(gtk_builder_get_object(builder, "office_button"));
+    // office_button no existe en el UI
     data->utilities_button = GTK_BUTTON(gtk_builder_get_object(builder, "utilities_button"));
 
     // Obtener el botón de programas extra
@@ -109,10 +109,10 @@ void page6_get_ui_widgets(Page6Data *data, GtkBuilder *builder)
 
     // Verificar que se obtuvieron correctamente
     if (!data->essential_apps_switch) LOG_WARNING("No se pudo obtener essential_apps_switch");
-    if (!data->office_switch) LOG_WARNING("No se pudo obtener office_switch");
+
     if (!data->utilities_switch) LOG_WARNING("No se pudo obtener utilities_switch");
     if (!data->essential_apps_button) LOG_WARNING("No se pudo obtener essential_apps_button");
-    if (!data->office_button) LOG_WARNING("No se pudo obtener office_button");
+
     if (!data->utilities_button) LOG_WARNING("No se pudo obtener utilities_button");
     if (!data->driver_hardware_button) LOG_WARNING("No se pudo obtener driver_hardware_button");
     if (!data->program_extra_button) LOG_WARNING("No se pudo obtener program_extra_button");
@@ -122,7 +122,7 @@ void page6_get_ui_widgets(Page6Data *data, GtkBuilder *builder)
 
     // Inicializar estados por defecto
     data->essential_apps_enabled = TRUE;
-    data->office_enabled = FALSE;
+    data->office_enabled = FALSE; // Office switch no existe en UI, mantener desactivado
     data->utilities_enabled = FALSE;
 
     LOG_INFO("Widgets de página 6 obtenidos");
@@ -201,10 +201,7 @@ void page6_connect_signals(Page6Data *data)
         LOG_INFO("Señal de essential_apps_switch conectada");
     }
 
-    if (data->office_switch) {
-        g_signal_connect(data->office_switch, "notify::active", G_CALLBACK(on_office_switch_toggled), data);
-        LOG_INFO("Señal de office_switch conectada");
-    }
+    // office_switch no existe en el UI
 
     if (data->utilities_switch) {
         g_signal_connect(data->utilities_switch, "notify::active", G_CALLBACK(on_utilities_switch_toggled), data);
@@ -266,13 +263,13 @@ void page6_on_essential_apps_toggled(Page6Data *data, gboolean active)
 }
 
 // Función para manejar cambio en Office
-void page6_on_office_toggled(Page6Data *data, gboolean active)
-{
-    if (!data) return;
-
-    data->office_enabled = active;
-    LOG_INFO("Office %s", active ? "activado" : "desactivado");
-}
+// Función eliminada - office_switch no existe en el UI
+// void page6_on_office_toggled(Page6Data *data, gboolean active)
+// {
+//     if (!data) return;
+//     data->office_enabled = active;
+//     LOG_INFO("Office %s", active ? "activado" : "desactivado");
+// }
 
 // Función para manejar cambio en utilidades útiles
 void page6_on_utilities_toggled(Page6Data *data, gboolean active)
@@ -587,19 +584,7 @@ gboolean page6_update_kernel_ui_delayed(gpointer user_data)
 
 
 
-void on_office_switch_toggled(GObject *object, GParamSpec *pspec, gpointer user_data)
-{
-    Page6Data *data = (Page6Data *)user_data;
-    if (!data || !data->office_switch || !data->office_button) return;
-
-    gboolean active = adw_switch_row_get_active(data->office_switch);
-    gtk_widget_set_sensitive(GTK_WIDGET(data->office_button), active);
-
-    data->office_enabled = active;
-    LOG_INFO("Office %s - botón %s",
-             active ? "activado" : "desactivado",
-             active ? "habilitado" : "deshabilitado");
-}
+// Función eliminada - office_switch no existe en el UI
 
 void on_utilities_switch_toggled(GObject *object, GParamSpec *pspec, gpointer user_data)
 {
