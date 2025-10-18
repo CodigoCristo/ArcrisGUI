@@ -3181,42 +3181,35 @@ if true; then
         clear
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        # Instalar GRUB con entrada NVRAM
+
+        # Instalar GRUB en modo removible (crea /EFI/BOOT/bootx64.efi)
+        echo -e "${CYAN}Instalando GRUB en modo removible...${NC}"
+        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --removable --force --recheck" || {
+            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (modo removible)${NC}"
+            exit 1
+        }
+        echo -e "${GREEN}✓ GRUB instalado en modo removible (/EFI/BOOT/bootx64.efi)${NC}"
+
+        # Instalar GRUB con entrada NVRAM (crea /EFI/GRUB/grubx64.efi)
+        echo -e "${CYAN}Instalando GRUB con entrada NVRAM...${NC}"
         chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force --recheck" || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
             exit 1
         }
         echo -e "${GREEN}✓ GRUB instalado con entrada NVRAM (/EFI/GRUB/grubx64.efi)${NC}"
 
-        # Crear estructura fallback según Arch Wiki
-        echo -e "${CYAN}Creando bootloader fallback...${NC}"
-        mkdir -p /mnt/boot/efi/EFI/BOOT
-
-        # Copiar carpeta grub completa
-        cp -r /mnt/boot/efi/EFI/GRUB /mnt/boot/efi/EFI/BOOT/ || {
-            echo -e "${RED}ERROR: No se pudo copiar la carpeta GRUB${NC}"
+        # Verificar que ambos bootloaders se hayan creado
+        if [ ! -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ]; then
+            echo -e "${RED}ERROR: No se creó bootx64.efi${NC}"
             exit 1
-        }
+        fi
 
-        # Copiar el binario grubx64.efi como BOOTX64.EFI
-        cp /mnt/boot/efi/EFI/GRUB/grubx64.efi /mnt/boot/efi/EFI/BOOT/BOOTX64.EFI || {
-            echo -e "${RED}ERROR: No se pudo copiar el bootloader fallback${NC}"
-            exit 1
-        }
-        echo -e "${GREEN}✓ Bootloader fallback creado (/EFI/BOOT/BOOTX64.EFI)${NC}"
-
-        # Verificar que ambos bootloaders existan
         if [ ! -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
             echo -e "${RED}ERROR: No se creó grubx64.efi${NC}"
             exit 1
         fi
-        if [ ! -f "/mnt/boot/efi/EFI/BOOT/BOOTX64.EFI" ]; then
-            echo -e "${RED}ERROR: No se creó BOOTX64.EFI${NC}"
-            exit 1
-        fi
-        echo -e "${GREEN}✓ Ambos bootloaders verificados exitosamente${NC}"
 
-#####################################################################
+        echo -e "${GREEN}✓ Ambos bootloaders creados exitosamente${NC}"
 
         echo -e "${CYAN}Generando configuración de GRUB...${NC}"
         if ! chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
