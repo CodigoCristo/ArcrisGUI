@@ -2125,7 +2125,8 @@ partition_cifrado() {
         echo -e "${GREEN}  • UEFI: EFI (512MB) + boot (1GB) sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
-        install_pacstrap_package "cryptsetup lvm2"
+        install_pacstrap_package "cryptsetup"
+        install_pacstrap_package "lvm2"
 
     else
         # Configuración para BIOS Legacy con cifrado (siguiendo mejores prácticas)
@@ -2313,7 +2314,8 @@ partition_cifrado() {
         echo -e "${GREEN}  • BIOS Legacy: boot (512MB) sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
-        install_pacstrap_package "cryptsetup lvm2"
+        install_pacstrap_package "cryptsetup"
+        install_pacstrap_package "lvm2"
     fi
 }
 
@@ -2650,7 +2652,8 @@ if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     install_pacstrap_with_retry "btrfs-progs"
 elif [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${CYAN}Instalando herramientas de cifrado...${NC}"
-    install_pacstrap_with_retry "cryptsetup lvm2"
+    install_pacstrap_package "cryptsetup"
+    install_pacstrap_package "lvm2"
 fi
 
 # Configurar montajes para chroot
