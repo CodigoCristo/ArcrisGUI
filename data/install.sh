@@ -3184,36 +3184,35 @@ if true; then
         clear
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
-        # Instalar GRUB con entrada NVRAM --recheck
-        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --no-nvram --force" || {
+
+        # Instalar GRUB en modo removible (crea /EFI/BOOT/bootx64.efi)
+        echo -e "${CYAN}Instalando GRUB en modo removible...${NC}"
+        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --removable --force --recheck" || {
+            echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (modo removible)${NC}"
+            exit 1
+        }
+        echo -e "${GREEN}✓ GRUB instalado en modo removible (/EFI/BOOT/bootx64.efi)${NC}"
+
+        # Instalar GRUB con entrada NVRAM (crea /EFI/GRUB/grubx64.efi)
+        echo -e "${CYAN}Instalando GRUB con entrada NVRAM...${NC}"
+        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force --recheck" || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
             exit 1
         }
         echo -e "${GREEN}✓ GRUB instalado con entrada NVRAM (/EFI/GRUB/grubx64.efi)${NC}"
 
-        # Crear estructura fallback según Arch Wiki
-        echo -e "${CYAN}Creando bootloader fallback...${NC}"
-        mkdir -p /mnt/boot/efi/EFI/BOOT
-
-        # Copiar el binario grubx64.efi como BOOTX64.EFI
-        cp /mnt/boot/efi/EFI/GRUB/grubx64.efi /mnt/boot/efi/EFI/BOOT/BOOTX64.EFI || {
-            echo -e "${RED}ERROR: No se pudo copiar el bootloader fallback${NC}"
+        # Verificar que ambos bootloaders se hayan creado
+        if [ ! -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ]; then
+            echo -e "${RED}ERROR: No se creó bootx64.efi${NC}"
             exit 1
-        }
-        echo -e "${GREEN}✓ Bootloader fallback creado (/EFI/BOOT/BOOTX64.EFI)${NC}"
+        fi
 
-        # Verificar que ambos bootloaders existan
         if [ ! -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
             echo -e "${RED}ERROR: No se creó grubx64.efi${NC}"
             exit 1
         fi
-        if [ ! -f "/mnt/boot/efi/EFI/BOOT/BOOTX64.EFI" ]; then
-            echo -e "${RED}ERROR: No se creó BOOTX64.EFI${NC}"
-            exit 1
-        fi
-        echo -e "${GREEN}✓ Ambos bootloaders verificados exitosamente${NC}"
 
-#####################################################################
+        echo -e "${GREEN}✓ Ambos bootloaders creados exitosamente${NC}"
 
         echo -e "${CYAN}Generando configuración de GRUB...${NC}"
         if ! chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"; then
@@ -4061,16 +4060,35 @@ case "$DRIVER_AUDIO" in
         install_pacman_chroot_with_retry "alsa-plugins"
         ;;
     "pipewire")
+        chroot /mnt /bin/bash -c "pacman -Q pulseaudio >/dev/null 2>&1 && pacman -Rdd pulseaudio --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q pulseaudio-alsa >/dev/null 2>&1 && pacman -Rdd pulseaudio --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q jack2 >/dev/null 2>&1 && pacman -Rdd jack2 --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q lib32-jack2 >/dev/null 2>&1 && pacman -Rdd lib32-jack2 --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q jack2-dbus >/dev/null 2>&1 && pacman -Rdd jack2-dbus --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q carla >/dev/null 2>&1 && pacman -Rdd carla --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q qjackctl >/dev/null 2>&1 && pacman -Rdd qjackctl --noconfirm; exit 0"
         install_pacman_chroot_with_retry "pipewire"
         install_pacman_chroot_with_retry "pipewire-pulse"
         install_pacman_chroot_with_retry "pipewire-alsa"
         ;;
     "pulseaudio")
+        chroot /mnt /bin/bash -c "pacman -Q pipewire >/dev/null 2>&1 && pacman -Rdd pipewire --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q pipewire-pulse >/dev/null 2>&1 && pacman -Rdd pipewire-pulse --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q pipewire-alsa >/dev/null 2>&1 && pacman -Rdd pipewire-alsa --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q jack2 >/dev/null 2>&1 && pacman -Rdd jack2 --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q lib32-jack2 >/dev/null 2>&1 && pacman -Rdd lib32-jack2 --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q jack2-dbus >/dev/null 2>&1 && pacman -Rdd jack2-dbus --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q carla >/dev/null 2>&1 && pacman -Rdd carla --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q qjackctl >/dev/null 2>&1 && pacman -Rdd qjackctl --noconfirm; exit 0"
         install_pacman_chroot_with_retry "pulseaudio"
         install_pacman_chroot_with_retry "pulseaudio-alsa"
         install_pacman_chroot_with_retry "pavucontrol"
         ;;
     "Jack2")
+        chroot /mnt /bin/bash -c "pacman -Q pipewire >/dev/null 2>&1 && pacman -Rdd pipewire --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q pipewire-pulse >/dev/null 2>&1 && pacman -Rdd pipewire-pulse --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q pipewire-alsa >/dev/null 2>&1 && pacman -Rdd pipewire-alsa --noconfirm; exit 0"
+        chroot /mnt /bin/bash -c "pacman -Q pipewire-jack >/dev/null 2>&1 && pacman -Rdd pipewire-jack --noconfirm; exit 0"
         install_pacman_chroot_with_retry "jack2"
         install_pacman_chroot_with_retry "lib32-jack2"
         install_pacman_chroot_with_retry "jack2-dbus"
@@ -4558,7 +4576,8 @@ case "$INSTALLATION_TYPE" in
                 install_yay_chroot_with_retry "lightdm"
                 install_yay_chroot_with_retry "lightdm-pantheon-greeter"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
-                chroot /mnt /bin/bash -c "pacman -Rdd orca onboard --noconfirm"
+                chroot /mnt /bin/bash -c "pacman -Q orca >/dev/null 2>&1 && pacman -Rdd orca --noconfirm; exit 0"
+                chroot /mnt /bin/bash -c "pacman -Q onboard >/dev/null 2>&1 && pacman -Rdd onboard --noconfirm; exit 0"
                 sed -i '$d' /mnt/etc/lightdm/Xsession
                 sed -i '$a io.elementary.wingpanel &\nplank &\nexec gala' /mnt/etc/lightdm/Xsession
                 ;;
@@ -4737,12 +4756,10 @@ case "$INSTALLATION_TYPE" in
         install_yay_chroot_with_retry "xterm"
         install_yay_chroot_with_retry "dmenu"
         install_yay_chroot_with_retry "wofi"
-        install_yay_chroot_with_retry "nemo"
+        install_yay_chroot_with_retry "pcmanfm"
         install_yay_chroot_with_retry "dunst"
         install_yay_chroot_with_retry "nano"
         install_yay_chroot_with_retry "vim"
-        install_yay_chroot_with_retry "pulseaudio"
-        install_yay_chroot_with_retry "pavucontrol"
         install_yay_chroot_with_retry "nitrogen"
         install_yay_chroot_with_retry "feh"
         install_yay_chroot_with_retry "network-manager-applet"
@@ -4837,20 +4854,31 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "libinput"
                 install_pacman_chroot_with_retry "pkg-config"
                 install_pacman_chroot_with_retry "fcft"
-                install_pacman_chroot_with_retry "wbg"
+                install_yay_chroot_with_retry "wbg"
                 install_yay_chroot_with_retry "dwl"
 
-                # Instalar DWL desde AUR
-                chroot /mnt /bin/bash -c "sudo -u $USER git clone https://github.com/tonybanters/dwl ; cd dwl ; sudo -u $USER make clean install"
-                chroot /mnt /bin/bash -c "sudo -u $USER git clone https://git.suckless.org/slstatus ; cd slstatus ; sudo -u $USER make clean install"
-                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
+                # Crear directorio temporal para compilación
+                chroot /mnt /bin/bash -c "mkdir -p /tmp/build && chown $USER:$USER /tmp/build"
+
+                # Compilar e instalar dwl
+                chroot /mnt /bin/bash -c "cd /tmp/build && sudo -u $USER git clone https://github.com/tonybanters/dwl"
+                chroot /mnt /bin/bash -c "cd /tmp/build/dwl && sudo -u $USER make clean && sudo make install"
+
+                # Compilar e instalar slstatus
+                chroot /mnt /bin/bash -c "cd /tmp/build && sudo -u $USER git clone https://git.suckless.org/slstatus"
+                chroot /mnt /bin/bash -c "cd /tmp/build/slstatus && sudo -u $USER make clean && sudo make install"
+
+                # Limpiar directorio temporal
+                chroot /mnt /bin/bash -c "rm -rf /tmp/build"
+
+                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpg
 
                 # Crear script start_dwl.sh en el home del usuario
                 echo -e "${YELLOW}Creando script de inicio start_dwl.sh...${NC}"
                 cat > /mnt/home/$USER/start_dwl.sh << 'EOF'
 #!/bin/sh
 
-# Configurar teclado en español
+# Configurar teclado
 export XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT
 
 # Configurar pantalla con wlr-randr (ajusta según tu monitor)
