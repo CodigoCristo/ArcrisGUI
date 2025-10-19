@@ -2561,7 +2561,6 @@ unmount_selected_disk_partitions() {
     echo ""
 }
 
-# Función para configurar montajes necesarios para chroot
 setup_chroot_mounts() {
     echo -e "${CYAN}Configurando montajes para chroot...${NC}"
     mount --types proc /proc /mnt/proc
@@ -2571,21 +2570,25 @@ setup_chroot_mounts() {
     mount --make-rslave /mnt/dev
     mount --bind /run /mnt/run
     mount --make-slave /mnt/run
+
+    # IMPORTANTE: Montar efivars para sistemas UEFI
+    if [ -d /sys/firmware/efi/efivars ]; then
+        mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars 2>/dev/null || true
+    fi
+
     cp /etc/resolv.conf /mnt/etc/
     echo -e "${GREEN}✓ Montajes para chroot configurados${NC}"
 }
 
-
-# Función para limpiar montajes de chroot
 cleanup_chroot_mounts() {
     echo -e "${CYAN}Limpiando montajes de chroot...${NC}"
+    umount -l /mnt/sys/firmware/efi/efivars 2>/dev/null || true
     umount -l /mnt/run 2>/dev/null || true
     umount -l /mnt/dev 2>/dev/null || true
     umount -l /mnt/sys 2>/dev/null || true
     umount -l /mnt/proc 2>/dev/null || true
     echo -e "${GREEN}✓ Montajes de chroot limpiados${NC}"
 }
-
 
 # Ejecutar limpieza de particiones
 unmount_selected_disk_partitions
@@ -3182,7 +3185,7 @@ if true; then
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
         # Instalar GRUB con entrada NVRAM --recheck
-        grub-install --target=x86_64-efi --efi-directory=/mnt/boot/efi --bootloader-id=GRUB --force --recheck || {
+        grub-install --target=x86_64-efi --efi-directory=/mnt/boot/efi --bootloader-id=GRUB --no-nvram --force || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
             exit 1
         }
