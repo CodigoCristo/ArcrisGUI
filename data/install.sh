@@ -3182,7 +3182,7 @@ if true; then
 
         echo -e "${CYAN}Instalando GRUB en partición EFI...${NC}"
         # Instalar GRUB con entrada NVRAM --recheck
-        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force" || {
+        grub-install --target=x86_64-efi --efi-directory=/mnt/boot/efi --bootloader-id=GRUB --force --recheck || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
             exit 1
         }
