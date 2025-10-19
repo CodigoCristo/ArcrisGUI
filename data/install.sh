@@ -4817,37 +4817,64 @@ case "$INSTALLATION_TYPE" in
 
                 # Instalar dependencias necesarias
                 echo -e "${YELLOW}Instalando dependencias...${NC}"
-                install_pacman_chroot_with_retry "base-devel"
-                install_pacman_chroot_with_retry "wlroots0.18"
-                install_pacman_chroot_with_retry "tllist"
-                install_pacman_chroot_with_retry "foot"
-                install_pacman_chroot_with_retry "mako"
-                install_pacman_chroot_with_retry "wl-clipboard"
-                install_pacman_chroot_with_retry "jq"
-                install_pacman_chroot_with_retry "git"
                 install_pacman_chroot_with_retry "wayland"
                 install_pacman_chroot_with_retry "wayland-protocols"
+                install_pacman_chroot_with_retry "wlroots0.19"
+                install_pacman_chroot_with_retry "foot"
+                install_pacman_chroot_with_retry "wmenu"
+                install_pacman_chroot_with_retry "wl-clipboard"
+                install_pacman_chroot_with_retry "grim"
+                install_pacman_chroot_with_retry "slurp"
+                install_pacman_chroot_with_retry "swaybg"
+                install_pacman_chroot_with_retry "ttf-jetbrains-mono-nerd"
+                install_pacman_chroot_with_retry "tllist"
+                install_pacman_chroot_with_retry "mako"
+                install_pacman_chroot_with_retry "jq"
                 install_pacman_chroot_with_retry "pixman"
                 install_pacman_chroot_with_retry "libxkbcommon-x11"
                 install_pacman_chroot_with_retry "libxkbcommon"
-                install_pacman_chroot_with_retry "slurp"
-                install_pacman_chroot_with_retry "grim"
                 install_pacman_chroot_with_retry "wofi"
-                install_pacman_chroot_with_retry "waybar"
                 install_pacman_chroot_with_retry "libinput"
                 install_pacman_chroot_with_retry "pkg-config"
                 install_pacman_chroot_with_retry "fcft"
-                install_pacman_chroot_with_retry "pixman"
                 install_pacman_chroot_with_retry "wbg"
-                install_pacman_chroot_with_retry "dwl"
+                install_yay_chroot_with_retry "dwl"
 
                 # Instalar DWL desde AUR
-                chroot /mnt /bin/bash -c "sudo -u $USER git clone https://github.com/dcalonge/dwl ; cd dwl ; sudo -u $USER make install"
+                chroot /mnt /bin/bash -c "sudo -u $USER git clone https://github.com/tonybanters/dwl ; cd dwl ; sudo -u $USER make clean install"
+                chroot /mnt /bin/bash -c "sudo -u $USER git clone https://git.suckless.org/slstatus ; cd slstatus ; sudo -u $USER make clean install"
+                cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
 
-                # Crear directorio de configuración
-                chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/waybar"
-                chroot /mnt /bin/bash -c "sudo -u $USER mkdir -p /home/$USER/.config/foot"
-                chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                # Crear script start_dwl.sh en el home del usuario
+                echo -e "${YELLOW}Creando script de inicio start_dwl.sh...${NC}"
+                cat > /mnt/home/$USER/start_dwl.sh << 'EOF'
+#!/bin/sh
+
+# Configurar teclado en español
+export XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT
+
+# Configurar pantalla con wlr-randr (ajusta según tu monitor)
+# wlr-randr --output HDMI-A-1 --mode 1920x1080 --rate 60 &
+
+# Iniciar dwl con slstatus
+slstatus -s | dwl -s "sh -c 'swaybg -i /usr/share/pixmaps/backgroundarch.jpge &'"
+EOF
+
+                # Dar permisos de ejecución al script
+                chmod +x /mnt/home/$USER/start_dwl.sh
+                chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/start_dwl.sh"
+
+                # Crear/modificar el archivo dwl.desktop
+                echo -e "${YELLOW}Configurando dwl.desktop...${NC}"
+                mkdir -p /mnt/usr/share/wayland-sessions
+                cat > /mnt/usr/share/wayland-sessions/dwl.desktop << EOF
+[Desktop Entry]
+Name=dwl
+Comment=dwl with slstatus
+Exec=/home/$USER/start_dwl.sh
+Type=Application
+DesktopNames=dwl
+EOF
 
                 echo -e "${GREEN}DWL instalado correctamente!${NC}"
                 ;;
