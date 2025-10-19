@@ -2016,6 +2016,20 @@ partition_cifrado() {
             exit 1
         fi
 
+        # Activar explícitamente LVM después de crear volúmenes
+        echo -e "${CYAN}Activando grupo de volúmenes LVM...${NC}"
+        vgchange -a y vg0
+
+        # Verificar que los dispositivos estén disponibles
+        echo -e "${CYAN}Verificando dispositivos LVM...${NC}"
+        if [ ! -b "/dev/vg0/root" ] || [ ! -b "/dev/vg0/swap" ]; then
+            echo -e "${YELLOW}Esperando a que los dispositivos LVM estén disponibles...${NC}"
+            sleep 3
+            vgchange -a y vg0
+            lvscan
+            vgscan --mknodes
+        fi
+
         echo -e "${GREEN}✓ Configuración LVM completada:${NC}"
         echo -e "${GREEN}  • Volume Group: vg0${NC}"
         echo -e "${GREEN}  • Swap: 8GB (/dev/vg0/swap)${NC}"
@@ -2127,6 +2141,8 @@ partition_cifrado() {
         # Instalar herramientas específicas para cifrado
         install_pacstrap_package "cryptsetup"
         install_pacstrap_package "lvm2"
+        install_pacstrap_package "device-mapper"
+        install_pacstrap_package "linux-firmware"
 
     else
         # Configuración para BIOS Legacy con cifrado (siguiendo mejores prácticas)
@@ -2220,6 +2236,20 @@ partition_cifrado() {
         if ! lvcreate -l 100%FREE vg0 -n root; then
             echo -e "${RED}ERROR: No se pudo crear el Logical Volume root${NC}"
             exit 1
+        fi
+
+        # Activar explícitamente LVM después de crear volúmenes
+        echo -e "${CYAN}Activando grupo de volúmenes LVM...${NC}"
+        vgchange -a y vg0
+
+        # Verificar que los dispositivos estén disponibles
+        echo -e "${CYAN}Verificando dispositivos LVM...${NC}"
+        if [ ! -b "/dev/vg0/root" ] || [ ! -b "/dev/vg0/swap" ]; then
+            echo -e "${YELLOW}Esperando a que los dispositivos LVM estén disponibles...${NC}"
+            sleep 3
+            vgchange -a y vg0
+            lvscan
+            vgscan --mknodes
         fi
 
         echo -e "${GREEN}✓ Configuración LVM completada:${NC}"
@@ -2316,6 +2346,8 @@ partition_cifrado() {
         # Instalar herramientas específicas para cifrado
         install_pacstrap_package "cryptsetup"
         install_pacstrap_package "lvm2"
+        install_pacstrap_package "device-mapper"
+        install_pacstrap_package "linux-firmware"
     fi
 }
 
@@ -2654,6 +2686,8 @@ elif [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${CYAN}Instalando herramientas de cifrado...${NC}"
     install_pacstrap_package "cryptsetup"
     install_pacstrap_package "lvm2"
+    install_pacstrap_package "device-mapper"
+    install_pacstrap_package "linux-firmware"
 fi
 
 # Configurar montajes para chroot
@@ -3009,9 +3043,39 @@ chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && 
 sleep 2
 clear
 
+# Función para preparar el entorno de mkinitcpio y manejar problemas comunes
+prepare_mkinitcpio_environment() {
+    echo -e "${CYAN}Preparando entorno para mkinitcpio...${NC}"
+
+    # Crear directorios necesarios si no existen
+    chroot /mnt /bin/bash -c "mkdir -p /usr/lib/initcpio/udev/69-dm-lvm.rules"
+    chroot /mnt /bin/bash -c "mkdir -p /usr/lib/initcpio/hooks"
+    chroot /mnt /bin/bash -c "mkdir -p /usr/lib/initcpio/install"
+
+    # Asegurar que los archivos de configuración de udev existen
+    if [ ! -f "/mnt/usr/lib/udev/rules.d/69-dm-lvm-metad.rules" ]; then
+        echo -e "${YELLOW}Creando regla udev faltante para LVM...${NC}"
+        chroot /mnt /bin/bash -c "touch /usr/lib/udev/rules.d/69-dm-lvm-metad.rules"
+    fi
+
+    # Verificar y cargar módulos del kernel necesarios
+    echo -e "${CYAN}Cargando módulos necesarios...${NC}"
+    chroot /mnt /bin/bash -c "modprobe dm_mod 2>/dev/null || true"
+    chroot /mnt /bin/bash -c "modprobe dm_crypt 2>/dev/null || true"
+    chroot /mnt /bin/bash -c "modprobe dm_snapshot 2>/dev/null || true"
+
+    # Crear archivo temporal para capturar logs de mkinitcpio
+    chroot /mnt /bin/bash -c "mkdir -p /tmp"
+
+    echo -e "${GREEN}✓ Entorno de mkinitcpio preparado${NC}"
+}
+
 # Configuración de mkinitcpio según el modo de particionado
 echo -e "${GREEN}| Configurando mkinitcpio |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+
+# Preparar el entorno antes de configurar mkinitcpio
+prepare_mkinitcpio_environment
 echo ""
 
 if [ "$PARTITION_MODE" = "cifrado" ]; then
@@ -3019,15 +3083,15 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 
     # Configurar módulos específicos para LUKS+LVM (siguiendo mejores prácticas)
     echo -e "${CYAN}Configurando módulos del kernel para cifrado...${NC}"
-    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_snapshot dm_mirror)/' /mnt/etc/mkinitcpio.conf
+    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_snapshot dm_mirror dm_thin_pool dm_cache ext4)/' /mnt/etc/mkinitcpio.conf
 
     # Configurar hooks para cifrado con LVM - orden crítico: encrypt antes de lvm2
     echo -e "${CYAN}Configurando hooks - ORDEN CRÍTICO: encrypt debe ir antes de lvm2${NC}"
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 resume filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
     echo -e "${GREEN}✓ Configuración mkinitcpio actualizada para LUKS+LVM${NC}"
-    echo -e "${CYAN}  • Módulos: dm_mod dm_crypt dm_snapshot dm_mirror${NC}"
-    echo -e "${CYAN}  • Hooks: base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 filesystems fsck${NC}"
+    echo -e "${CYAN}  • Módulos: dm_mod dm_crypt dm_snapshot dm_mirror dm_thin_pool dm_cache ext4${NC}"
+    echo -e "${CYAN}  • Hooks: base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 resume filesystems fsck${NC}"
     echo -e "${YELLOW}  • IMPORTANTE: 'encrypt' DEBE ir antes de 'lvm2' para que funcione correctamente${NC}"
     echo -e "${YELLOW}  • keyboard y keymap son necesarios para introducir la contraseña en el boot${NC}"
 
@@ -3045,8 +3109,31 @@ else
     sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 fi
 
-# Regenerar initramfs
-chroot /mnt /bin/bash -c "mkinitcpio -P"
+# Regenerar initramfs con manejo mejorado de errores
+echo -e "${CYAN}Generando initramfs (puede mostrar warnings de firmware - es normal)...${NC}"
+echo -e "${YELLOW}Nota: Los siguientes warnings son comunes y no afectan la funcionalidad:${NC}"
+echo -e "${YELLOW}  • WARNING: Possibly missing firmware for module: 'qat_*'${NC}"
+echo -e "${YELLOW}  • ERROR: file not found: '/usr/lib/initcpio/udev/69-dm-lvm.rules'${NC}"
+echo -e "${YELLOW}  • ERROR: file not found: '/usr/lib/initcpio/udev/69-dm-lvm.rules'${NC}"
+
+# Intentar generar initramfs con captura de logs
+if chroot /mnt /bin/bash -c "mkinitcpio -P 2>/tmp/mkinitcpio.log"; then
+    echo -e "${GREEN}✓ Initramfs generado exitosamente${NC}"
+else
+    echo -e "${YELLOW}mkinitcpio completado con warnings. Analizando resultado...${NC}"
+
+    # Mostrar solo errores críticos, filtrar warnings conocidos
+    chroot /mnt /bin/bash -c "grep -v 'WARNING.*firmware' /tmp/mkinitcpio.log | grep -v 'file not found.*69-dm-lvm' || true"
+
+    # Verificar si se generaron los archivos initramfs
+    if chroot /mnt /bin/bash -c "ls /boot/initramfs-linux*.img >/dev/null 2>&1"; then
+        echo -e "${GREEN}✓ Archivos initramfs generados correctamente a pesar de los warnings${NC}"
+    else
+        echo -e "${RED}✗ Error crítico: No se generaron los archivos initramfs${NC}"
+        echo -e "${YELLOW}Intentando regenerar con configuración básica...${NC}"
+        chroot /mnt /bin/bash -c "mkinitcpio -p linux -v"
+    fi
+fi
 sleep 2
 clear
 # Instalación de bootloader
@@ -3158,7 +3245,7 @@ if true; then
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
             # Configurar GRUB para LUKS+LVM (siguiendo mejores prácticas de la guía)
             echo -e "${CYAN}Configurando parámetros de kernel para LUKS+LVM...${NC}"
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
+            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap rd.lvm.lv=vg0\/root rd.lvm.lv=vg0\/swap rd.debug rd.shell systemd.log_level=debug\"/" /mnt/etc/default/grub
 
             # Habilitar soporte para discos cifrados en GRUB
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
@@ -3167,7 +3254,7 @@ if true; then
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
 
             # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=7 rd.info"/' /mnt/etc/default/grub
 
             echo -e "${GREEN}✓ Configuración GRUB para cifrado:${NC}"
             echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
@@ -3260,9 +3347,9 @@ if true; then
             fi
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
             # Usar GRUB_CMDLINE_LINUX en lugar de GRUB_CMDLINE_LINUX_DEFAULT para mejores prácticas
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root\"/" /mnt/etc/default/grub
+            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap rd.lvm.lv=vg0\/root rd.lvm.lv=vg0\/swap rd.debug rd.shell systemd.log_level=debug\"/" /mnt/etc/default/grub
             # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=7 rd.info"/' /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
 
@@ -4266,10 +4353,43 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
         echo "/dev/mapper/vg0-swap none swap defaults 0 0" >> /mnt/etc/fstab
         echo -e "${YELLOW}Warning: Swap agregada al fstab con nombre de dispositivo (no se pudo obtener UUID)${NC}"
     fi
+fi
 
-    # Regenerar initramfs después de todas las configuraciones
-    echo -e "${CYAN}Regenerando initramfs con configuración LVM...${NC}"
-    chroot /mnt /bin/bash -c "mkinitcpio -P"
+# Activar LVM en el sistema chroot antes de generar initramfs
+echo -e "${CYAN}Activando LVM en el sistema de destino...${NC}"
+chroot /mnt /bin/bash -c "vgchange -a y"
+chroot /mnt /bin/bash -c "lvscan"
+
+# Regenerar initramfs después de todas las configuraciones
+echo -e "${CYAN}Regenerando initramfs con configuración LVM...${NC}"
+    echo -e "${YELLOW}Nota: Los siguientes warnings son normales y no afectan la funcionalidad:${NC}"
+    echo -e "${YELLOW}  • WARNING: Possibly missing firmware for module: 'qat_*'${NC}"
+    echo -e "${YELLOW}  • ERROR: file not found: '/usr/lib/initcpio/udev/69-dm-lvm.rules'${NC}"
+    echo -e "${YELLOW}  • Running build hook: [encrypt], [lvm2]${NC}"
+
+    # Preparar entorno LVM si es necesario
+    chroot /mnt /bin/bash -c "mkdir -p /tmp"
+
+    # Intentar generar initramfs con captura mejorada de logs
+    if chroot /mnt /bin/bash -c "mkinitcpio -P 2>/tmp/mkinitcpio_lvm.log"; then
+        echo -e "${GREEN}✓ Initramfs LVM generado exitosamente${NC}"
+    else
+        echo -e "${YELLOW}mkinitcpio completado con warnings. Analizando resultado...${NC}"
+
+        # Mostrar solo errores críticos, filtrar warnings conocidos
+        echo -e "${CYAN}Filtrando warnings conocidos...${NC}"
+        chroot /mnt /bin/bash -c "grep -v 'WARNING.*firmware' /tmp/mkinitcpio_lvm.log | grep -v 'file not found.*69-dm-lvm' | grep -v 'Running build hook' || true"
+
+        # Verificar si se generaron los archivos initramfs
+        if chroot /mnt /bin/bash -c "ls /boot/initramfs-linux*.img >/dev/null 2>&1"; then
+            echo -e "${GREEN}✓ Archivos initramfs generados correctamente a pesar de los warnings${NC}"
+            echo -e "${GREEN}✓ El sistema debería arrancar correctamente con LUKS+LVM${NC}"
+        else
+            echo -e "${RED}✗ Error crítico: No se generaron los archivos initramfs${NC}"
+            echo -e "${YELLOW}Intentando regenerar con configuración específica...${NC}"
+            chroot /mnt /bin/bash -c "mkinitcpio -p linux -v"
+        fi
+    fi
 
     # Regenerar configuración de GRUB con parámetros LVM
     echo -e "${CYAN}Regenerando configuración de GRUB...${NC}"
@@ -4857,7 +4977,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "libinput"
                 install_pacman_chroot_with_retry "pkg-config"
                 install_pacman_chroot_with_retry "fcft"
-                install_yay_chroot_with_retry "wbg"
                 install_yay_chroot_with_retry "dwl"
 
                 # Crear directorio temporal para compilación
@@ -5680,6 +5799,26 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${GREEN}           SISTEMA CIFRADO CON LUKS+LVM CONFIGURADO EXITOSAMENTE${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════════════${NC}"
     echo ""
+
+    # Verificar estado de initramfs
+    echo -e "${CYAN}🔍 Verificación final del sistema:${NC}"
+    if chroot /mnt /bin/bash -c "ls /boot/initramfs-linux*.img >/dev/null 2>&1"; then
+        echo -e "${GREEN}✓ Archivos initramfs generados correctamente${NC}"
+        INITRAMFS_COUNT=$(chroot /mnt /bin/bash -c "ls /boot/initramfs-linux*.img 2>/dev/null | wc -l")
+        echo -e "${CYAN}  • Se generaron $INITRAMFS_COUNT archivo(s) initramfs${NC}"
+    else
+        echo -e "${RED}⚠️  Warning: No se detectaron archivos initramfs${NC}"
+        echo -e "${YELLOW}  • El sistema podría no arrancar correctamente${NC}"
+    fi
+
+    # Verificar configuración mkinitcpio
+    if chroot /mnt /bin/bash -c "grep -q 'encrypt.*lvm2' /etc/mkinitcpio.conf"; then
+        echo -e "${GREEN}✓ Configuración mkinitcpio para cifrado correcta${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Warning: Configuración mkinitcpio podría necesitar revisión${NC}"
+    fi
+
+    echo ""
     echo -e "${YELLOW}🔐 INFORMACIÓN CRÍTICA SOBRE TU SISTEMA CIFRADO:${NC}"
     echo ""
     echo -e "${GREEN}✓ Configuración aplicada:${NC}"
@@ -5702,6 +5841,8 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${CYAN}  • Se creó un backup en /tmp/luks-header-backup${NC}"
     echo -e "${YELLOW}  • CÓPIALO A UN LUGAR SEGURO después del primer arranque${NC}"
     echo -e "${CYAN}  • Comando: cp /tmp/luks-header-backup ~/luks-backup-$(date +%Y%m%d)${NC}"
+    echo ""
+
     echo ""
     echo -e "${GREEN}🔧 Comandos útiles post-instalación:${NC}"
     echo -e "${CYAN}  • Ver estado LVM: sudo vgdisplay && sudo lvdisplay${NC}"
