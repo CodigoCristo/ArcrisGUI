@@ -2142,7 +2142,7 @@ partition_cifrado() {
         install_pacstrap_package "cryptsetup"
         install_pacstrap_package "lvm2"
         install_pacstrap_package "device-mapper"
-        install_pacstrap_package "linux-firmware"
+        install_pacstrap_package "thin-provisioning-tools"
 
     else
         # Configuración para BIOS Legacy con cifrado (siguiendo mejores prácticas)
@@ -2347,7 +2347,7 @@ partition_cifrado() {
         install_pacstrap_package "cryptsetup"
         install_pacstrap_package "lvm2"
         install_pacstrap_package "device-mapper"
-        install_pacstrap_package "linux-firmware"
+        install_pacstrap_package "thin-provisioning-tools"
     fi
 }
 
@@ -2687,8 +2687,13 @@ elif [ "$PARTITION_MODE" = "cifrado" ]; then
     install_pacstrap_package "cryptsetup"
     install_pacstrap_package "lvm2"
     install_pacstrap_package "device-mapper"
-    install_pacstrap_package "linux-firmware"
+    install_pacstrap_package "thin-provisioning-tools"
 fi
+
+# Configurar consolefont para evitar warnings de mkinitcpio
+echo -e "${CYAN}Configurando vconsole...${NC}"
+echo "KEYMAP=es" > /mnt/etc/vconsole.conf
+echo "FONT=" >> /mnt/etc/vconsole.conf
 
 # Configurar montajes para chroot
 clear
@@ -3048,14 +3053,16 @@ prepare_mkinitcpio_environment() {
     echo -e "${CYAN}Preparando entorno para mkinitcpio...${NC}"
 
     # Crear directorios necesarios si no existen
-    chroot /mnt /bin/bash -c "mkdir -p /usr/lib/initcpio/udev/69-dm-lvm.rules"
+    chroot /mnt /bin/bash -c "mkdir -p /usr/lib/initcpio/udev"
     chroot /mnt /bin/bash -c "mkdir -p /usr/lib/initcpio/hooks"
     chroot /mnt /bin/bash -c "mkdir -p /usr/lib/initcpio/install"
 
     # Asegurar que los archivos de configuración de udev existen
-    if [ ! -f "/mnt/usr/lib/udev/rules.d/69-dm-lvm-metad.rules" ]; then
-        echo -e "${YELLOW}Creando regla udev faltante para LVM...${NC}"
-        chroot /mnt /bin/bash -c "touch /usr/lib/udev/rules.d/69-dm-lvm-metad.rules"
+    chroot /mnt /bin/bash -c "mkdir -p /usr/lib/udev/rules.d"
+    if [ ! -f "/mnt/usr/lib/udev/rules.d/69-dm-lvm.rules" ]; then
+        echo -e "${YELLOW}Creando reglas udev faltantes para LVM...${NC}"
+        chroot /mnt /bin/bash -c "touch /usr/lib/udev/rules.d/69-dm-lvm.rules"
+        chroot /mnt /bin/bash -c "touch /usr/lib/udev/rules.d/11-dm-lvm.rules"
     fi
 
     # Verificar y cargar módulos del kernel necesarios
@@ -3066,6 +3073,10 @@ prepare_mkinitcpio_environment() {
 
     # Crear archivo temporal para capturar logs de mkinitcpio
     chroot /mnt /bin/bash -c "mkdir -p /tmp"
+
+    # Configurar archivos LVM necesarios
+    chroot /mnt /bin/bash -c "echo 'devices { obtain_device_list_from_udev = 1 }' > /etc/lvm/lvm.conf"
+    chroot /mnt /bin/bash -c "echo 'activation { udev_sync = 1 }' >> /etc/lvm/lvm.conf"
 
     echo -e "${GREEN}✓ Entorno de mkinitcpio preparado${NC}"
 }
@@ -3083,11 +3094,11 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 
     # Configurar módulos específicos para LUKS+LVM (siguiendo mejores prácticas)
     echo -e "${CYAN}Configurando módulos del kernel para cifrado...${NC}"
-    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_snapshot dm_mirror dm_thin_pool dm_cache ext4)/' /mnt/etc/mkinitcpio.conf
+    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt dm_snapshot dm_mirror ext4)/' /mnt/etc/mkinitcpio.conf
 
     # Configurar hooks para cifrado con LVM - orden crítico: encrypt antes de lvm2
     echo -e "${CYAN}Configurando hooks - ORDEN CRÍTICO: encrypt debe ir antes de lvm2${NC}"
-    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block encrypt lvm2 resume filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect modconf block encrypt lvm2 filesystems keyboard fsck)/' /mnt/etc/mkinitcpio.conf
 
     echo -e "${GREEN}✓ Configuración mkinitcpio actualizada para LUKS+LVM${NC}"
     echo -e "${CYAN}  • Módulos: dm_mod dm_crypt dm_snapshot dm_mirror dm_thin_pool dm_cache ext4${NC}"
@@ -4353,7 +4364,6 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
         echo "/dev/mapper/vg0-swap none swap defaults 0 0" >> /mnt/etc/fstab
         echo -e "${YELLOW}Warning: Swap agregada al fstab con nombre de dispositivo (no se pudo obtener UUID)${NC}"
     fi
-fi
 
 # Activar LVM en el sistema chroot antes de generar initramfs
 echo -e "${CYAN}Activando LVM en el sistema de destino...${NC}"
@@ -4361,7 +4371,8 @@ chroot /mnt /bin/bash -c "vgchange -a y"
 chroot /mnt /bin/bash -c "lvscan"
 
 # Regenerar initramfs después de todas las configuraciones
-echo -e "${CYAN}Regenerando initramfs con configuración LVM...${NC}"
+if [ "$PARTITION_MODE" = "cifrado" ]; then
+    echo -e "${CYAN}Regenerando initramfs con configuración LVM...${NC}"
     echo -e "${YELLOW}Nota: Los siguientes warnings son normales y no afectan la funcionalidad:${NC}"
     echo -e "${YELLOW}  • WARNING: Possibly missing firmware for module: 'qat_*'${NC}"
     echo -e "${YELLOW}  • ERROR: file not found: '/usr/lib/initcpio/udev/69-dm-lvm.rules'${NC}"
@@ -4396,6 +4407,7 @@ echo -e "${CYAN}Regenerando initramfs con configuración LVM...${NC}"
     chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
 
     sleep 2
+fi
 fi
 
 # Configuración adicional para BTRFS
