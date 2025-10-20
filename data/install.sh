@@ -4842,18 +4842,18 @@ case "$INSTALLATION_TYPE" in
                 install_yay_chroot_with_retry "dwl"
 
                 # Crear directorio temporal para compilación
-                chroot /mnt /bin/bash -c "mkdir -p /tmp/build && chown $USER:$USER /tmp/build"
+                chroot /mnt /bin/bash -c "mkdir -p /home/$USER/.config/src && chown $USER:$USER /home/$USER/.config/src"
 
                 # Compilar e instalar dwl
-                chroot /mnt /bin/bash -c "cd /tmp/build && sudo -u $USER git clone https://github.com/tonybanters/dwl"
-                chroot /mnt /bin/bash -c "cd /tmp/build/dwl && sudo -u $USER make clean && sudo make install"
+                chroot /mnt /bin/bash -c "cd /home/$USER/.config/src && sudo -u $USER git clone https://github.com/tonybanters/dwl"
+                chroot /mnt /bin/bash -c "cd /home/$USER/.config/src/dwl && sudo -u $USER make clean && sudo make install"
 
                 # Compilar e instalar slstatus
-                chroot /mnt /bin/bash -c "cd /tmp/build && sudo -u $USER git clone https://git.suckless.org/slstatus"
-                chroot /mnt /bin/bash -c "cd /tmp/build/slstatus && sudo -u $USER make clean && sudo make install"
+                chroot /mnt /bin/bash -c "cd /home/$USER/.config/src && sudo -u $USER git clone https://git.suckless.org/slstatus"
+                chroot /mnt /bin/bash -c "cd /home/$USER/.config/src/slstatus && sudo -u $USER make clean && sudo make install"
 
-                # Limpiar directorio temporal
-                chroot /mnt /bin/bash -c "rm -rf /tmp/build"
+                # Mantener directorio src para futuras compilaciones y configuraciones personalizadas
+                # chroot /mnt /bin/bash -c "rm -rf /home/$USER/.config/src"
 
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpg
 
