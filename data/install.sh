@@ -72,7 +72,7 @@ wait_for_internet() {
         echo -e "${BLUE}      • Contactar ISP si el problema persiste${NC}"
         echo ""
         echo -e "${GREEN}⏳ La instalación continuará automáticamente cuando se restablezca la conexión${NC}"
-        echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
         # Mostrar comando útil para verificar conectividad manualmente
         if [ $((attempt % 3)) -eq 0 ]; then
@@ -86,7 +86,7 @@ wait_for_internet() {
         if (( attempt % 5 == 0 )); then
             clear
             echo -e "${YELLOW}🌐 ESPERANDO CONEXIÓN A INTERNET${NC}"
-            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
             echo -e "${YELLOW}⏱️  Intento #$attempt - Tiempo transcurrido: $((attempt * 10)) segundos${NC}"
             echo ""
         fi
@@ -101,7 +101,7 @@ wait_for_internet() {
 
     echo -e "${GREEN}🎉 ¡CONEXIÓN A INTERNET RESTABLECIDA!${NC}"
     echo -e "${CYAN}⏰ Continuando con la instalación...${NC}"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     sleep 3
     clear
 }
@@ -110,13 +110,13 @@ wait_for_internet() {
 
 
 
-# Función para actualizar sistema con pacman en chroot con reintentos limitados (30 intentos)
+# Función para actualizar sistema con pacman en chroot con bucle infinito
 update_system_chroot() {
     local attempt=1
 
     echo -e "${GREEN}🔄 Actualizando sistema en chroot con pacman${NC}"
 
-    while [ $attempt -le 30 ]; do
+    while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para actualizar sistema${NC}"
 
         # Verificar conectividad antes del intento
@@ -135,20 +135,16 @@ update_system_chroot() {
         fi
     done
 
-    # Si superó los 30 intentos
-    if [ $attempt -gt 30 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo actualizar el sistema después de 30 intentos${NC}"
-        return 1
-    fi
+
 }
 
-# Función para actualizar repositorios con pacman con reintentos limitados (30 intentos)
+# Función para actualizar repositorios con pacman con bucle infinito
 update_repositories() {
     local attempt=1
 
     echo -e "${GREEN}🔄 Actualizando repositorios con pacman${NC}"
 
-    while [ $attempt -le 30 ]; do
+    while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para actualizar repositorios${NC}"
 
         # Verificar conectividad antes del intento
@@ -167,14 +163,10 @@ update_repositories() {
         fi
     done
 
-    # Si superó los 30 intentos
-    if [ $attempt -gt 30 ]; then
-        echo -e "${RED}❌ ERROR: No se pudieron actualizar los repositorios después de 30 intentos${NC}"
-        return 1
-    fi
+
 }
 
-# Función para instalar paquete con pacstrap con reintentos limitados (30 intentos)
+# Función para instalar paquete con pacstrap con bucle infinito
 install_pacstrap_with_retry() {
     local package="$1"
     local attempt=1
@@ -186,7 +178,7 @@ install_pacstrap_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacstrap${NC}"
 
-    while [ $attempt -le 30 ]; do
+    while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -205,14 +197,10 @@ install_pacstrap_with_retry() {
         fi
     done
 
-    # Si superó los 30 intentos
-    if [ $attempt -gt 30 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo instalar $package con pacstrap después de 30 intentos${NC}"
-        return 1
-    fi
+
 }
 
-# Función para instalar paquete con pacman en chroot con reintentos limitados (30 intentos)
+# Función para instalar paquete con pacman en chroot con bucle infinito
 install_pacman_chroot_with_retry() {
     local package="$1"
     local extra_args="${2:-}"
@@ -225,7 +213,7 @@ install_pacman_chroot_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman en chroot${NC}"
 
-    while [ $attempt -le 30 ]; do
+    while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -244,11 +232,7 @@ install_pacman_chroot_with_retry() {
         fi
     done
 
-    # Si superó los 30 intentos
-    if [ $attempt -gt 30 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo instalar $package con pacman en chroot después de 30 intentos${NC}"
-        return 1
-    fi
+
 }
 
 # Función para instalar paquete con yay en chroot con reintentos limitados (30 intentos)
@@ -291,7 +275,7 @@ install_yay_chroot_with_retry() {
     fi
 }
 
-# Función para instalar paquete localmente en LiveCD con reintentos limitados (30 intentos)
+# Función para instalar paquete localmente en LiveCD con bucle infinito
 install_pacman_livecd_with_retry() {
     local package="$1"
     local attempt=1
@@ -303,7 +287,7 @@ install_pacman_livecd_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman en LiveCD${NC}"
 
-    while [ $attempt -le 30 ]; do
+    while true; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -322,11 +306,7 @@ install_pacman_livecd_with_retry() {
         fi
     done
 
-    # Si superó los 30 intentos
-    if [ $attempt -gt 30 ]; then
-        echo -e "${RED}❌ ERROR: No se pudo instalar $package en LiveCD después de 30 intentos${NC}"
-        return 1
-    fi
+
 }
 
 # ================================================================================================
