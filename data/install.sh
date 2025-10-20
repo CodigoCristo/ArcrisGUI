@@ -2637,6 +2637,8 @@ elif [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${CYAN}Instalando herramientas de cifrado...${NC}"
     install_pacstrap_with_retry "cryptsetup"
     install_pacstrap_with_retry "lvm2"
+    install_pacstrap_with_retry "device-mapper"
+    install_pacstrap_with_retry "thin-provisioning-tools"
 fi
 
 # Configurar montajes para chroot
@@ -3147,7 +3149,7 @@ if true; then
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
             # Configurar GRUB para LUKS+LVM (Simplificado)
             echo -e "${CYAN}Configurando parámetros de kernel...${NC}"
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap\"/" /mnt/etc/default/grub
+            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap quiet splash loglevel=0 rd.systemd.show_status=false rd.udev.log_level=0\"/" /mnt/etc/default/grub
 
             # Habilitar soporte para discos cifrados en GRUB
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
@@ -3156,7 +3158,7 @@ if true; then
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
 
             # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
-            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=7 rd.info"/' /mnt/etc/default/grub
+            sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
 
             echo -e "${GREEN}✓ Configuración GRUB para cifrado:${NC}"
             echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
@@ -3249,7 +3251,7 @@ if true; then
             fi
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
             # Configurar GRUB para LUKS+LVM (Simplificado)
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap\"/" /mnt/etc/default/grub
+            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap quiet splash loglevel=0 rd.systemd.show_status=false rd.udev.log_level=0\"/" /mnt/etc/default/grub
             # Configurar nivel de log básico
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
@@ -4857,7 +4859,7 @@ case "$INSTALLATION_TYPE" in
 
                 # Crear script start_dwl.sh en el home del usuario
                 echo -e "${YELLOW}Creando script de inicio start_dwl.sh...${NC}"
-                cat > /mnt/home/$USER/start_dwl.sh << 'EOF'
+                cat > /mnt/home/$USER/start_dwl.sh << EOF
 #!/bin/sh
 
 # Configurar teclado
