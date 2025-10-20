@@ -3149,7 +3149,7 @@ if true; then
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
             # Configurar GRUB para LUKS+LVM (Simplificado)
             echo -e "${CYAN}Configurando parámetros de kernel...${NC}"
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap quiet splash loglevel=0 rd.systemd.show_status=false rd.udev.log_level=0\"/" /mnt/etc/default/grub
+            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap splash loglevel=0 rd.systemd.show_status=false rd.udev.log_level=0\"/" /mnt/etc/default/grub
 
             # Habilitar soporte para discos cifrados en GRUB
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
@@ -3188,7 +3188,7 @@ if true; then
         echo -e "${GREEN}✓ GRUB instalado en modo removible (/EFI/BOOT/bootx64.efi)${NC}"
 
         # Instalar GRUB con entrada NVRAM (crea /EFI/GRUB/grubx64.efi)
-        echo -e "${CYAN}Instalando GRUB con entrada NVRAM...${NC}"
+        echo -e "${CYAN}Instalando GRUB...${NC}"
         chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force --recheck" || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
             exit 1
@@ -3251,7 +3251,7 @@ if true; then
             fi
             echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
             # Configurar GRUB para LUKS+LVM (Simplificado)
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap quiet splash loglevel=0 rd.systemd.show_status=false rd.udev.log_level=0\"/" /mnt/etc/default/grub
+            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap splash loglevel=0 rd.systemd.show_status=false rd.udev.log_level=0\"/" /mnt/etc/default/grub
             # Configurar nivel de log básico
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
