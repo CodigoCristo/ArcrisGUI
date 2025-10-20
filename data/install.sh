@@ -1744,7 +1744,7 @@ partition_auto_btrfs() {
         mount "$PARTITION_1" /mnt/boot/efi
 
         # Instalar herramientas específicas para BTRFS
-        install_pacstrap_package "btrfs-progs"
+        install_pacstrap_with_retry "btrfs-progs"
 
     else
         # Configuración para BIOS Legacy
@@ -1899,7 +1899,7 @@ partition_auto_btrfs() {
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "$PARTITION_3" /mnt/tmp
 
         # Instalar herramientas específicas para BTRFS
-        install_pacstrap_package "btrfs-progs"
+        install_pacstrap_with_retry "btrfs-progs"
     fi
 }
 
@@ -2115,10 +2115,10 @@ partition_cifrado() {
         echo -e "${GREEN}  • UEFI: EFI (512MB) + boot (1GB) sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
-        install_pacstrap_package "cryptsetup"
-        install_pacstrap_package "lvm2"
-        install_pacstrap_package "device-mapper"
-        install_pacstrap_package "thin-provisioning-tools"
+        install_pacstrap_with_retry "cryptsetup"
+        install_pacstrap_with_retry "lvm2"
+        install_pacstrap_with_retry "device-mapper"
+        install_pacstrap_with_retry "thin-provisioning-tools"
 
     else
         # Configuración para BIOS Legacy con cifrado (siguiendo mejores prácticas)
@@ -2295,10 +2295,10 @@ partition_cifrado() {
         echo -e "${GREEN}  • BIOS Legacy: boot (512MB) sin cifrar, resto cifrado${NC}"
 
         # Instalar herramientas específicas para cifrado
-        install_pacstrap_package "cryptsetup"
-        install_pacstrap_package "lvm2"
-        install_pacstrap_package "device-mapper"
-        install_pacstrap_package "thin-provisioning-tools"
+        install_pacstrap_with_retry "cryptsetup"
+        install_pacstrap_with_retry "lvm2"
+        install_pacstrap_with_retry "device-mapper"
+        install_pacstrap_with_retry "thin-provisioning-tools"
     fi
 }
 
@@ -2635,8 +2635,8 @@ if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     install_pacstrap_with_retry "btrfs-progs"
 elif [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${CYAN}Instalando herramientas de cifrado...${NC}"
-    install_pacstrap_package "cryptsetup"
-    install_pacstrap_package "lvm2"
+    install_pacstrap_with_retry "cryptsetup"
+    install_pacstrap_with_retry "lvm2"
 fi
 
 # Configurar montajes para chroot
