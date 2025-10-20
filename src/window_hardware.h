@@ -92,8 +92,7 @@ void window_hardware_setup_widgets(WindowHardwareData *data);
 void window_hardware_connect_signals(WindowHardwareData *data);
 void window_hardware_load_widgets_from_builder(WindowHardwareData *data);
 
-// Función para auto-seleccionar índice 0 en driver_video_combo
-void window_hardware_auto_select_video_driver_index_0(WindowHardwareData *data);
+
 
 // Funciones de detección de hardware
 HardwareInfo* window_hardware_detect_hardware(void);
