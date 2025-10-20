@@ -1914,27 +1914,8 @@ partition_cifrado() {
     echo -e "${CYAN}  • ⚠️  SIN LA CONTRASEÑA PERDERÁS TODOS LOS DATOS${NC}"
     echo ""
 
-    # Solicitar contraseña de cifrado
-    echo -e "${YELLOW}Introduce la contraseña para el cifrado del disco:${NC}"
-    while true; do
-        read -s -p "Contraseña LUKS: " ENCRYPTION_PASSWORD
-        echo ""
-        read -s -p "Confirma contraseña: " ENCRYPTION_PASSWORD_CONFIRM
-        echo ""
-
-        if [ "$ENCRYPTION_PASSWORD" = "$ENCRYPTION_PASSWORD_CONFIRM" ]; then
-            if [ ${#ENCRYPTION_PASSWORD} -ge 8 ]; then
-                break
-            else
-                echo -e "${RED}La contraseña debe tener al menos 8 caracteres${NC}"
-            fi
-        else
-            echo -e "${RED}Las contraseñas no coinciden. Inténtalo de nuevo.${NC}"
-        fi
-    done
-
-    echo -e "${GREEN}✓ Contraseña configurada correctamente${NC}"
-    sleep 2
+    echo -e "${GREEN}✓ Usando contraseña de cifrado configurada${NC}"
+    sleep 1
 
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         # Configuración para UEFI con cifrado (siguiendo mejores prácticas)
