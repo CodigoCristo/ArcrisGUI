@@ -3703,22 +3703,62 @@ case "$DRIVER_VIDEO" in
         # Detección automática de hardware de video usando VGA controller
         VGA_LINE=$(lspci | grep -i "vga compatible controller")
         echo -e "${CYAN}Tarjeta de video detectada: $VGA_LINE${NC}"
+        install_pacman_chroot_with_retry "mesa"
+        install_pacman_chroot_with_retry "lib32-mesa"
+        install_pacman_chroot_with_retry "mesa-utils"
+        install_pacman_chroot_with_retry "opencl-mesa"
+        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "libva-utils"
+        install_pacman_chroot_with_retry "vulkan-tools"
+        install_pacman_chroot_with_retry "vulkan-mesa-layers"
 
-        if echo "$VGA_LINE" | grep -i nvidia > /dev/null; then
+        # Detectar si hay múltiples GPUs para casos híbridos
+        ALL_GPUS=$(lspci | grep -i -E "(vga|display)")
+        HAS_NVIDIA=$(echo "$ALL_GPUS" | grep -i nvidia > /dev/null && echo "yes" || echo "no")
+        HAS_AMD=$(echo "$ALL_GPUS" | grep -i -E "amd|radeon" > /dev/null && echo "yes" || echo "no")
+        HAS_INTEL=$(echo "$ALL_GPUS" | grep -i intel > /dev/null && echo "yes" || echo "no")
+
+        # Configuración para GPUs híbridas Intel + NVIDIA
+        if [[ "$HAS_INTEL" == "yes" && "$HAS_NVIDIA" == "yes" ]]; then
+            echo -e "${YELLOW}Detectada configuración híbrida Intel + NVIDIA - Instalando drivers para ambas${NC}"
+            # Drivers Intel
+            install_pacman_chroot_with_retry "vulkan-intel"
+            install_pacman_chroot_with_retry "lib32-vulkan-intel"
+            install_pacman_chroot_with_retry "intel-media-driver"  # Gen 8+ (VA-API moderna)
+            install_pacman_chroot_with_retry "libva-intel-driver"  # Fallback para modelos más viejos
+            install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
+            install_pacman_chroot_with_retry "intel-gpu-tools"
+            install_pacman_chroot_with_retry "vpl-gpu-rt"
+            # Drivers NVIDIA open source
+            install_pacman_chroot_with_retry "xf86-video-nouveau"
+            install_pacman_chroot_with_retry "vulkan-nouveau"
+            install_pacman_chroot_with_retry "lib32-vulkan-nouveau"
+
+        # Configuración para GPUs híbridas Intel + AMD
+        elif [[ "$HAS_INTEL" == "yes" && "$HAS_AMD" == "yes" ]]; then
+            echo -e "${YELLOW}Detectada configuración híbrida Intel + AMD - Instalando drivers para ambas${NC}"
+            # Drivers Intel
+            install_pacman_chroot_with_retry "vulkan-intel"
+            install_pacman_chroot_with_retry "lib32-vulkan-intel"
+            install_pacman_chroot_with_retry "intel-media-driver"  # Gen 8+ (VA-API moderna)
+            install_pacman_chroot_with_retry "libva-intel-driver"  # Fallback para modelos más viejos
+            install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
+            install_pacman_chroot_with_retry "intel-gpu-tools"
+            install_pacman_chroot_with_retry "vpl-gpu-rt"
+            # Drivers AMD
+            install_pacman_chroot_with_retry "xf86-video-amdgpu"
+            install_pacman_chroot_with_retry "xf86-video-ati"
+            install_pacman_chroot_with_retry "vulkan-radeon"
+            install_pacman_chroot_with_retry "lib32-vulkan-radeon"
+            install_pacman_chroot_with_retry "radeontop"
+            install_pacman_chroot_with_retry "clinfo"
+            install_pacman_chroot_with_retry "ocl-icd"
+
+        elif echo "$VGA_LINE" | grep -i nvidia > /dev/null; then
             echo "Detectado hardware NVIDIA - Instalando driver open source nouveau"
             install_pacman_chroot_with_retry "xf86-video-nouveau"
             install_pacman_chroot_with_retry "vulkan-nouveau"
             install_pacman_chroot_with_retry "lib32-vulkan-nouveau"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "opencl-mesa"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "libva-utils"
 
         elif echo "$VGA_LINE" | grep -i "amd\|radeon" > /dev/null; then
             echo "Detectado hardware AMD/Radeon - Instalando driver open source amdgpu"
@@ -3726,51 +3766,24 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "xf86-video-ati"
             install_pacman_chroot_with_retry "vulkan-radeon"
             install_pacman_chroot_with_retry "lib32-vulkan-radeon"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "opencl-mesa"
             install_pacman_chroot_with_retry "radeontop"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "vdpauinfo"
             install_pacman_chroot_with_retry "clinfo"
             install_pacman_chroot_with_retry "ocl-icd"
-            install_pacman_chroot_with_retry "libva-utils"
-            install_pacman_chroot_with_retry "radeontop"
 
         elif echo "$VGA_LINE" | grep -i intel > /dev/null; then
             echo "Detectado hardware Intel - Instalando driver open source intel"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
             install_pacman_chroot_with_retry "vulkan-intel"
             install_pacman_chroot_with_retry "lib32-vulkan-intel"
-            install_pacman_chroot_with_retry "vulkan-tools"
             install_pacman_chroot_with_retry "intel-media-driver"  # Gen 8+ (VA-API moderna)
             install_pacman_chroot_with_retry "libva-intel-driver"  # Fallback para modelos más viejos
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
             install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
             install_pacman_chroot_with_retry "intel-gpu-tools"
-            install_pacman_chroot_with_retry "libva-utils"
-            install_pacman_chroot_with_retry "vdpauinfo"
             install_pacman_chroot_with_retry "vpl-gpu-rt"
 
         elif echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
 
             echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
             install_pacman_chroot_with_retry "xf86-video-fbdev"
-            install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
             install_pacman_chroot_with_retry "spice-vdagent"
             install_pacman_chroot_with_retry "xf86-video-qxl"
             install_pacman_chroot_with_retry "qemu-guest-agent"
@@ -3784,30 +3797,14 @@ case "$DRIVER_VIDEO" in
 
         elif echo "$VGA_LINE" | grep -i virtualbox > /dev/null; then
             echo "Detectado VirtualBox - Instalando guest utils y driver vmware"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+            install_pacman_chroot_with_retry "xf86-video-fbdev"
             install_pacman_chroot_with_retry "virtualbox-guest-utils"
             install_pacman_chroot_with_retry "virglrenderer"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
             echo "Detectado VMware - Instalando driver vmware"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+            install_pacman_chroot_with_retry "xf86-video-fbdev"
             install_pacman_chroot_with_retry "virtualbox-guest-utils"
             install_pacman_chroot_with_retry "virglrenderer"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
@@ -3817,15 +3814,6 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "xorg-server"
             install_pacman_chroot_with_retry "xorg-xinit"
             install_pacman_chroot_with_retry "xf86-video-vesa"
-            install_pacman_chroot_with_retry "mesa"
-            install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
         fi
         ;;
     "nvidia")
@@ -3886,23 +3874,18 @@ case "$DRIVER_VIDEO" in
         ;;
     "AMD Private")
         echo "Instalando drivers privativos de AMDGPUPRO"
+        install_pacman_chroot_with_retry "mesa"
+        install_pacman_chroot_with_retry "lib32-mesa"
+        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "libva-utils"
+        install_pacman_chroot_with_retry "vulkan-tools"
+        install_pacman_chroot_with_retry "vulkan-mesa-layers"
         install_pacman_chroot_with_retry "xf86-video-amdgpu"
         install_pacman_chroot_with_retry "vulkan-radeon"
         install_pacman_chroot_with_retry "lib32-vulkan-radeon"
-        install_pacman_chroot_with_retry "vulkan-tools"
-        install_pacman_chroot_with_retry "mesa"
-        install_pacman_chroot_with_retry "lib32-mesa"
-        install_pacman_chroot_with_retry "opencl-mesa"
         install_pacman_chroot_with_retry "radeontop"
-        install_pacman_chroot_with_retry "mesa-vdpau"
-        install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-        install_pacman_chroot_with_retry "libva-mesa-driver"
-        install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-        install_pacman_chroot_with_retry "vdpauinfo"
         install_pacman_chroot_with_retry "clinfo"
         install_pacman_chroot_with_retry "ocl-icd"
-        install_pacman_chroot_with_retry "libva-utils"
-        install_pacman_chroot_with_retry "radeontop"
         install_yay_chroot_with_retry "amf-amdgpu-pro"
         install_yay_chroot_with_retry "amdgpu-pro-oglp"
         install_yay_chroot_with_retry "lib32-amdgpu-pro-oglp"
@@ -3966,14 +3949,12 @@ case "$DRIVER_VIDEO" in
             echo "Detectado hardware virtual (QEMU/KVM/Virtio) - Instalando driver genérico"
             install_pacman_chroot_with_retry "mesa"
             install_pacman_chroot_with_retry "lib32-mesa"
-            install_pacman_chroot_with_retry "xf86-video-fbdev"
             install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
+            install_pacman_chroot_with_retry "opencl-mesa"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "libva-utils"
             install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+            install_pacman_chroot_with_retry "vulkan-mesa-layers"
 
             install_pacman_chroot_with_retry "spice-vdagent"
             install_pacman_chroot_with_retry "xf86-video-qxl"
@@ -3990,12 +3971,11 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "mesa"
             install_pacman_chroot_with_retry "lib32-mesa"
             install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
+            install_pacman_chroot_with_retry "opencl-mesa"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "libva-utils"
             install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+            install_pacman_chroot_with_retry "vulkan-mesa-layers"
 
             install_pacman_chroot_with_retry "virtualbox-guest-utils"
             install_pacman_chroot_with_retry "virglrenderer"
@@ -4006,12 +3986,11 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "mesa"
             install_pacman_chroot_with_retry "lib32-mesa"
             install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
+            install_pacman_chroot_with_retry "opencl-mesa"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "libva-utils"
             install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+            install_pacman_chroot_with_retry "vulkan-mesa-layers"
 
             install_pacman_chroot_with_retry "virtualbox-guest-utils"
             install_pacman_chroot_with_retry "virglrenderer"
@@ -4022,12 +4001,11 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "mesa"
             install_pacman_chroot_with_retry "lib32-mesa"
             install_pacman_chroot_with_retry "mesa-utils"
-            install_pacman_chroot_with_retry "vulkan-mesa-layers"
+            install_pacman_chroot_with_retry "opencl-mesa"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "libva-utils"
             install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "libva-mesa-driver"
-            install_pacman_chroot_with_retry "mesa-vdpau"
-            install_pacman_chroot_with_retry "lib32-libva-mesa-driver"
-            install_pacman_chroot_with_retry "lib32-mesa-vdpau"
+            install_pacman_chroot_with_retry "vulkan-mesa-layers"
         fi
         ;;
 esac
@@ -4398,11 +4376,11 @@ case "$INSTALLATION_TYPE" in
         install_pacman_chroot_with_retry "xorg-xrandr"
         install_pacman_chroot_with_retry "xorg-setxkbmap"
         install_pacman_chroot_with_retry "xorg-xrdb"
-        install_pacman_chroot_with_retry "xorg-xwayland"
+        install_pacman_chroot_with_retry "wayland"            # Protocolo Wayland
+        install_pacman_chroot_with_retry "xorg-xwayland"      # Compatibilidad con apps X11
         install_pacman_chroot_with_retry "ffmpegthumbs"
         install_pacman_chroot_with_retry "ffmpegthumbnailer"
         install_pacman_chroot_with_retry "freetype2"
-        install_pacman_chroot_with_retry "poppler-glib"
         install_pacman_chroot_with_retry "libgsf"
         install_pacman_chroot_with_retry "libnotify"
         install_pacman_chroot_with_retry "tumbler"
@@ -4418,6 +4396,8 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "gnome-settings-daemon"
                 install_pacman_chroot_with_retry "gnome-shell"
                 install_pacman_chroot_with_retry "gnome-control-center"
+                install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
+                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
                 install_pacman_chroot_with_retry "nautilus"
                 install_pacman_chroot_with_retry "gvfs"
                 install_pacman_chroot_with_retry "gvfs-goa"
@@ -4448,22 +4428,23 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "BUDGIE")
                 echo -e "${CYAN}Instalando Budgie Desktop...${NC}"
-                install_yay_chroot_with_retry "budgie-desktop"
-                install_yay_chroot_with_retry "budgie-extras"
-                install_yay_chroot_with_retry "budgie-desktop-view"
-                install_yay_chroot_with_retry "budgie-backgrounds"
-                install_yay_chroot_with_retry "network-manager-applet"
-                install_yay_chroot_with_retry "materia-gtk-theme"
-                install_yay_chroot_with_retry "papirus-icon-theme"
-                install_yay_chroot_with_retry "nautilus"
-                install_yay_chroot_with_retry "gvfs"
-                install_yay_chroot_with_retry "gvfs-goa"
-                install_yay_chroot_with_retry "gnome-console"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
+                install_pacman_chroot_with_retry "budgie-desktop"
+                install_pacman_chroot_with_retry "budgie-extras"
+                install_pacman_chroot_with_retry "budgie-desktop-view"
+                install_pacman_chroot_with_retry "budgie-backgrounds"
+                install_pacman_chroot_with_retry "network-manager-applet"
+                install_pacman_chroot_with_retry "materia-gtk-theme"
+                install_pacman_chroot_with_retry "papirus-icon-theme"
+                install_pacman_chroot_with_retry "nautilus"
+                install_pacman_chroot_with_retry "gvfs-goa"
+                install_pacman_chroot_with_retry "gnome-console"
+                install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
+                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
+                install_pacman_chroot_with_retry "loupe"
+                install_pacman_chroot_with_retry "showtime"
+                install_pacman_chroot_with_retry "papers"
+                install_pacman_chroot_with_retry "lightdm"
+                install_pacman_chroot_with_retry "lightdm-slick-greeter"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4471,33 +4452,34 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                install_pacman_chroot_with_retry "accountsservice"
+                install_pacman_chroot_with_retry "mugshot"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "CINNAMON")
                 echo -e "${CYAN}Instalando Cinnamon Desktop...${NC}"
-                install_yay_chroot_with_retry "cinnamon"
-                install_yay_chroot_with_retry "cinnamon-translations"
-                install_yay_chroot_with_retry "engrampa"
-                install_yay_chroot_with_retry "gvfs-smb"
+                install_pacman_chroot_with_retry "cinnamon"
+                install_pacman_chroot_with_retry "cinnamon-translations"
+                install_pacman_chroot_with_retry "engrampa"
+                install_pacman_chroot_with_retry "gvfs-smb"
                 install_yay_chroot_with_retry "bibata-cursor-theme"
-                install_yay_chroot_with_retry "hicolor-icon-theme"
+                install_pacman_chroot_with_retry "hicolor-icon-theme"
                 install_yay_chroot_with_retry "mint-backgrounds"
                 install_yay_chroot_with_retry "mint-themes"
                 install_yay_chroot_with_retry "mint-x-icons"
                 install_yay_chroot_with_retry "mint-y-icons"
                 install_yay_chroot_with_retry "mintlocale"
-                install_yay_chroot_with_retry "cinnamon-control-center"
-                install_yay_chroot_with_retry "xed"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
-                install_yay_chroot_with_retry "gnome-console"
-                install_yay_chroot_with_retry "gnome-screenshot"
-                install_yay_chroot_with_retry "gnome-keyring"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
+                install_pacman_chroot_with_retry "cinnamon-control-center"
+                install_pacman_chroot_with_retry "xed"
+                install_pacman_chroot_with_retry "loupe"
+                install_pacman_chroot_with_retry "showtime"
+                install_pacman_chroot_with_retry "papers"
+                install_pacman_chroot_with_retry "gnome-console"
+                install_pacman_chroot_with_retry "gnome-screenshot"
+                install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
+                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
+                install_pacman_chroot_with_retry "lightdm"
+                install_pacman_chroot_with_retry "lightdm-slick-greeter"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4505,32 +4487,34 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                install_pacman_chroot_with_retry "accountsservice"
+                install_pacman_chroot_with_retry "mugshot"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "CUTEFISH")
                 echo -e "${CYAN}Instalando CUTEFISH Desktop...${NC}"
-                install_yay_chroot_with_retry "cutefish"
-                install_yay_chroot_with_retry "polkit-kde-agent"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "gnome-console"
-                install_yay_chroot_with_retry "sddm"
-                install_yay_chroot_with_retry "sddm-kcm"
-                chroot /mnt /bin/bash -c "systemctl enable sddm"
+                install_pacman_chroot_with_retry "cutefish"
+                install_pacman_chroot_with_retry "polkit-kde-agent"
+                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
+                install_pacman_chroot_with_retry "loupe"
+                install_pacman_chroot_with_retry "showtime"
+                install_pacman_chroot_with_retry "papers"
+                install_pacman_chroot_with_retry "lightdm"
+                install_pacman_chroot_with_retry "gnome-console"
+                install_pacman_chroot_with_retry "sddm"
+                install_pacman_chroot_with_retry "sddm-kcm"
+                chroot /mnt /bin/bash -c "systemctl enable sddm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "UKUI")
                 echo -e "${CYAN}Instalando UKUI Desktop...${NC}"
-                install_yay_chroot_with_retry "ukui"
-                install_yay_chroot_with_retry "gnome-keyring"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
+                install_pacman_chroot_with_retry "ukui"
+                install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
+                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
+                install_pacman_chroot_with_retry "loupe"
+                install_pacman_chroot_with_retry "showtime"
+                install_pacman_chroot_with_retry "papers"
+                install_pacman_chroot_with_retry "lightdm"
+                install_pacman_chroot_with_retry "lightdm-slick-greeter"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4538,19 +4522,20 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                install_pacman_chroot_with_retry "accountsservice"
+                install_pacman_chroot_with_retry "mugshot"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "PANTHEON")
                 echo -e "${CYAN}Instalando PANTHEON Desktop...${NC}"
-                install_yay_chroot_with_retry "pantheon"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
-                install_yay_chroot_with_retry "gnome-console"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-pantheon-greeter"
+                install_pacman_chroot_with_retry "pantheon"
+                install_pacman_chroot_with_retry "udisks2"               # Montaje automático de discos
+                install_pacman_chroot_with_retry "loupe"
+                install_pacman_chroot_with_retry "showtime"
+                install_pacman_chroot_with_retry "papers"
+                install_pacman_chroot_with_retry "gnome-console"
+                install_pacman_chroot_with_retry "lightdm"
+                install_pacman_chroot_with_retry "lightdm-pantheon-greeter"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 chroot /mnt /bin/bash -c "pacman -Q orca >/dev/null 2>&1 && pacman -Rdd orca --noconfirm; exit 0"
                 chroot /mnt /bin/bash -c "pacman -Q onboard >/dev/null 2>&1 && pacman -Rdd onboard --noconfirm; exit 0"
@@ -4559,12 +4544,18 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "ENLIGHTENMENT")
                 echo -e "${CYAN}Instalando Enlightenment Desktop...${NC}"
-                install_yay_chroot_with_retry "enlightenment"
-                install_yay_chroot_with_retry "terminology"
-                install_yay_chroot_with_retry "evisum"
-                install_yay_chroot_with_retry "econnman"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
+                install_pacman_chroot_with_retry "enlightenment"
+                install_pacman_chroot_with_retry "terminology"
+                install_pacman_chroot_with_retry "evisum"
+                install_pacman_chroot_with_retry "network-manager-applet"  # Si prefieres NetworkManager
+                install_pacman_chroot_with_retry "udisks2"               # Montaje automático de discos
+                install_pacman_chroot_with_retry "lightdm"           # Display Manager
+                install_pacman_chroot_with_retry "lightdm-slick-greeter"  # Greeter moderno
+                install_pacman_chroot_with_retry "lightdm-gtk-greeter-settings"  # Configurar greeter
+                install_pacman_chroot_with_retry "ephoto"            # Visor de imágenes EFL
+                install_pacman_chroot_with_retry "rage"              # Reproductor de video EFL (opcional)
+                install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
+                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4572,58 +4563,112 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                install_pacman_chroot_with_retry "accountsservice"
+                install_pacman_chroot_with_retry "mugshot"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "KDE")
                 echo -e "${CYAN}Instalando KDE Plasma Desktop...${NC}"
-                install_yay_chroot_with_retry "plasma-desktop"
-                install_yay_chroot_with_retry "plasma-workspace"
-                install_yay_chroot_with_retry "plasma-systemmonitor"
-                install_yay_chroot_with_retry "plasma-framework5"
-                install_yay_chroot_with_retry "kwin"
-                install_yay_chroot_with_retry "systemsettings"
-                install_yay_chroot_with_retry "discover"
-                install_yay_chroot_with_retry "flatpak"
-                install_yay_chroot_with_retry "breeze"
-                install_yay_chroot_with_retry "polkit-kde-agent"
-                install_yay_chroot_with_retry "powerdevil"
-                install_yay_chroot_with_retry "plasma-pa"
-                install_yay_chroot_with_retry "plasma-nm"
-                install_yay_chroot_with_retry "konsole"
-                install_yay_chroot_with_retry "dolphin"
-                install_yay_chroot_with_retry "kate"
-                install_yay_chroot_with_retry "spectacle"
-                install_yay_chroot_with_retry "ark"
-                install_yay_chroot_with_retry "kcalc"
-                install_yay_chroot_with_retry "gwenview"
-                install_yay_chroot_with_retry "okular"
-                install_yay_chroot_with_retry "kdeconnect"
-                install_yay_chroot_with_retry "kde-gtk-config"
-                install_yay_chroot_with_retry "kdeplasma-addons"
-                install_yay_chroot_with_retry "kdegraphics-thumbnailers"
-                install_yay_chroot_with_retry "kscreen"
-                install_yay_chroot_with_retry "kinfocenter"
-                install_yay_chroot_with_retry "breeze-gtk"
-                install_yay_chroot_with_retry "xdg-desktop-portal-kde"
-                install_yay_chroot_with_retry "ffmpegthumbs"
-                install_yay_chroot_with_retry "plasma-wayland-session"
-                install_yay_chroot_with_retry "plasma-x11-session"
-                install_yay_chroot_with_retry "sddm"
-                install_yay_chroot_with_retry "sddm-kcm"
-                chroot /mnt /bin/bash -c "systemctl enable sddm"
+                # Base Xorg/Wayland
+                install_pacman_chroot_with_retry "xorg-server"           # Para sesión X11
+                install_pacman_chroot_with_retry "wayland"               # Para sesión Wayland
+
+                # Plasma Core (lo esencial)
+                install_pacman_chroot_with_retry "plasma-desktop"        # Escritorio base
+                install_pacman_chroot_with_retry "plasma-workspace"      # Workspace
+                install_pacman_chroot_with_retry "plasma-wayland-session"  # Sesión Wayland
+                install_pacman_chroot_with_retry "plasma-x11-session"    # Sesión X11 (obsoleto en Plasma 6, pero útil)
+                install_pacman_chroot_with_retry "kwin"                  # Compositor/WM
+
+                # Configuración y sistema
+                install_pacman_chroot_with_retry "systemsettings"        # Configuración del sistema
+                install_pacman_chroot_with_retry "kinfocenter"          # Información del sistema
+                install_pacman_chroot_with_retry "kscreen"              # Gestión de pantallas
+
+                # Display Manager
+                install_pacman_chroot_with_retry "sddm"                  # Display Manager
+                install_pacman_chroot_with_retry "sddm-kcm"             # Configurar SDDM desde Plasma
+
+                # Gestión de energía y hardware
+                install_pacman_chroot_with_retry "powerdevil"            # Gestión de energía
+                install_pacman_chroot_with_retry "plasma-pa"             # Control de audio PulseAudio
+                install_pacman_chroot_with_retry "plasma-nm"             # NetworkManager
+                install_pacman_chroot_with_retry "bluedevil"             # Bluetooth
+
+                # Autenticación y seguridad
+                install_pacman_chroot_with_retry "polkit-kde-agent"      # Autenticación
+                install_pacman_chroot_with_retry "kwallet"               # Gestor de contraseñas
+                install_pacman_chroot_with_retry "kwalletmanager"        # GUI para kwallet
+
+                # Portales XDG
+                install_pacman_chroot_with_retry "xdg-desktop-portal-kde"  # Portal KDE
+                install_pacman_chroot_with_retry "xdg-desktop-portal"    # Base de portales
+
+                # Tema y apariencia
+                install_pacman_chroot_with_retry "breeze"                # Tema Plasma
+                install_pacman_chroot_with_retry "breeze-gtk"            # Tema GTK
+                install_pacman_chroot_with_retry "kde-gtk-config"        # Configurar apps GTK
+                install_pacman_chroot_with_retry "kdeplasma-addons"      # Widgets adicionales
+
+                # Aplicaciones KDE básicas
+                install_pacman_chroot_with_retry "konsole"               # Terminal
+                install_pacman_chroot_with_retry "dolphin"               # Gestor de archivos
+                install_pacman_chroot_with_retry "kate"                  # Editor de texto
+                install_pacman_chroot_with_retry "spectacle"             # Capturas de pantalla
+                install_pacman_chroot_with_retry "ark"                   # Compresor
+                install_pacman_chroot_with_retry "kcalc"                 # Calculadora
+                install_pacman_chroot_with_retry "gwenview"              # Visor de imágenes
+                install_pacman_chroot_with_retry "okular"                # Visor de PDFs
+                install_pacman_chroot_with_retry "kdeconnect"            # Integración con móvil
+
+                # Sistema de archivos y multimedia
+                install_pacman_chroot_with_retry "kdegraphics-thumbnailers"  # Miniaturas
+                install_pacman_chroot_with_retry "ffmpegthumbs"          # Miniaturas de video
+                install_pacman_chroot_with_retry "kimageformats"         # Formatos de imagen adicionales
+                install_pacman_chroot_with_retry "qt6-imageformats"      # Más formatos de imagen
+
+                # Herramientas del sistema
+                install_pacman_chroot_with_retry "plasma-systemmonitor"  # Monitor de sistema
+                install_pacman_chroot_with_retry "partitionmanager"      # Gestor de particiones
+
+                # Gestor de software
+                install_pacman_chroot_with_retry "discover"              # Centro de software
+                install_pacman_chroot_with_retry "packagekit-qt6"        # Backend para Discover
+                install_pacman_chroot_with_retry "flatpak"               # Soporte Flatpak
+
+                # Extras útiles
+                install_pacman_chroot_with_retry "plasma-browser-integration"  # Integración con navegadores
+                install_pacman_chroot_with_retry "plasma-firewall"       # Configurar firewall
+                install_pacman_chroot_with_retry "kgamma"                # Calibración de gamma
+
+                chroot /mnt /bin/bash -c "systemctl enable sddm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "LXDE")
                 echo -e "${CYAN}Instalando LXDE Desktop...${NC}"
-                install_yay_chroot_with_retry "lxde"
-                install_yay_chroot_with_retry "lxde-common"
-                install_yay_chroot_with_retry "lxsession"
-                install_yay_chroot_with_retry "lxappearance"
-                install_yay_chroot_with_retry "lxappearance-obconf"
-                install_yay_chroot_with_retry "lxpanel"
+                install_pacman_chroot_with_retry "lxde"
                 install_yay_chroot_with_retry "lightdm"
                 install_yay_chroot_with_retry "lightdm-slick-greeter"
+                # Extras útiles
+                install_pacman_chroot_with_retry "gvfs-mtp"              # Soporte MTP (móviles Android)
+                install_pacman_chroot_with_retry "udisks2"               # Montaje automático de discos
+                install_pacman_chroot_with_retry "ntfs-3g"               # Soporte NTFS
+                install_pacman_chroot_with_retry "gpicview"              # Visor de imágenes ligero
+                install_pacman_chroot_with_retry "xpad"                  # Notas adhesivas
+                install_pacman_chroot_with_retry "leafpad"               # Editor de texto simple
+                # Sistema
+                install_pacman_chroot_with_retry "network-manager-applet"  # Applet de red
+                install_pacman_chroot_with_retry "pavucontrol"           # Control de volumen
+                install_pacman_chroot_with_retry "volumeicon"            # Icono de volumen en panel
+                install_pacman_chroot_with_retry "polkit-gnome"          # Autenticación
+                install_pacman_chroot_with_retry "gnome-keyring"         # Gestor de contraseñas
+                install_pacman_chroot_with_retry "xfce4-power-manager"   # Gestión de energía
+                # Bloqueo de pantalla
+                install_pacman_chroot_with_retry "xss-lock"              # Activador de bloqueo
+                install_pacman_chroot_with_retry "slock"                 # Bloqueador
+                # Menús
+                install_pacman_chroot_with_retry "lxmenu-data"           # Datos de menú
+                install_pacman_chroot_with_retry "menu-cache"            # Cache de menú
+
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4631,47 +4676,63 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                install_pacman_chroot_with_retry "accountsservice"
+                install_pacman_chroot_with_retry "mugshot"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "LXQT")
                 echo -e "${CYAN}Instalando LXQt Desktop...${NC}"
-                # Instalar compositor
-                install_pacman_chroot_with_retry "labwc"
-                # Dependencias base
+                # Soporte Xorg
+                install_pacman_chroot_with_retry "xorg-server"
+                install_pacman_chroot_with_retry "xorg-xinit"
+                install_pacman_chroot_with_retry "xorg-xauth"
+                install_pacman_chroot_with_retry "xf86-input-libinput"
+                # Soporte Wayland
                 install_pacman_chroot_with_retry "wayland"
+                install_pacman_chroot_with_retry "labwc"
+                install_pacman_chroot_with_retry "xdg-desktop-portal"
                 install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
-                # LXQt y componentes
-                install_yay_chroot_with_retry "lxqt"
-                install_yay_chroot_with_retry "lxqt-wayland-session"
-                install_yay_chroot_with_retry "breeze-icons"
-                install_yay_chroot_with_retry "leafpad"
-                install_yay_chroot_with_retry "slock"
+                install_pacman_chroot_with_retry "layer-shell-qt"
+                install_pacman_chroot_with_retry "qtxdg-tools"
+                # LXQt grupo completo (paquetes oficiales)
+                install_pacman_chroot_with_retry "lxqt"
+                install_pacman_chroot_with_retry "lxqt-wayland-session"
+                install_pacman_chroot_with_retry "lxqt-menu-data"
+                install_pacman_chroot_with_retry "breeze-icons"
+                # Utilidades del sistema
+                install_pacman_chroot_with_retry "xss-lock"              # Activador de bloqueo
+                install_pacman_chroot_with_retry "slock"                 # Bloqueador
                 install_yay_chroot_with_retry "nm-tray"
                 # Display manager
-                install_yay_chroot_with_retry "sddm"
+                install_pacman_chroot_with_retry "sddm"
                 chroot /mnt /bin/bash -c "systemctl enable sddm"
-                # Herramientas adicionales
-                install_yay_chroot_with_retry "qterminal"
-                install_yay_chroot_with_retry "wofi"
                 ;;
             "MATE")
                 echo -e "${CYAN}Instalando MATE Desktop...${NC}"
-                install_yay_chroot_with_retry "mate"
-                install_yay_chroot_with_retry "mate-extra"
-                install_yay_chroot_with_retry "mate-applet-dock"
-                install_yay_chroot_with_retry "mate-menu"
+                # Soporte Xorg
+                install_pacman_chroot_with_retry "xorg-server"
+                install_pacman_chroot_with_retry "xorg-xinit"
+                install_pacman_chroot_with_retry "xorg-xauth"
+                install_pacman_chroot_with_retry "xf86-input-libinput"
+                # Grupos MATE oficiales
+                install_pacman_chroot_with_retry "mate"
+                install_pacman_chroot_with_retry "mate-extra"
+                # Aplicaciones esenciales MATE oficiales
+                install_pacman_chroot_with_retry "pluma"
+                install_pacman_chroot_with_retry "atril"
+                install_pacman_chroot_with_retry "engrampa"
+                install_pacman_chroot_with_retry "eom"
+                # Componentes del sistema oficiales
+                install_pacman_chroot_with_retry "network-manager-applet"
+                install_pacman_chroot_with_retry "lightdm"
+                install_pacman_chroot_with_retry "lightdm-slick-greeter"
+                install_pacman_chroot_with_retry "accountsservice"
+                # Paquetes de AUR (solo los que realmente están en AUR)
+                install_pacman_chroot_with_retry "mate-applet-dock"
                 install_yay_chroot_with_retry "mate-tweak"
                 install_yay_chroot_with_retry "brisk-menu"
-                install_yay_chroot_with_retry "mate-control-center"
-                install_yay_chroot_with_retry "network-manager-applet"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "clapper"
-                install_yay_chroot_with_retry "mate-power-manager"
-                install_yay_chroot_with_retry "mate-themes"
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
+                install_pacman_chroot_with_retry "mugshot"
+                # Configuración de LightDM
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4679,20 +4740,19 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             "XFCE4")
                 echo -e "${CYAN}Instalando XFCE4 Desktop...${NC}"
-                install_yay_chroot_with_retry "xfce4"
-                install_yay_chroot_with_retry "xfce4-goodies"
-                install_yay_chroot_with_retry "network-manager-applet"
-                install_yay_chroot_with_retry "loupe"
-                install_yay_chroot_with_retry "showtime"
-                install_yay_chroot_with_retry "papers"
-                install_yay_chroot_with_retry "pavucontrol"
-                install_pacman_chroot_with_retry "gnome-keyring"
+                install_pacman_chroot_with_retry "xfce4"
+                install_pacman_chroot_with_retry "xfce4-goodies"
+                install_pacman_chroot_with_retry "network-manager-applet"
+                install_pacman_chroot_with_retry "loupe"
+                install_pacman_chroot_with_retry "showtime"
+                install_pacman_chroot_with_retry "papers"
+                install_pacman_chroot_with_retry "pavucontrol"
+                install_pacman_chroot_with_retry "polkit-gnome"          # Autenticación
+                install_pacman_chroot_with_retry "gnome-keyring"         # Gestor de contraseñas
                 install_pacman_chroot_with_retry "light-locker"
                 install_pacman_chroot_with_retry "xfce4-screensaver"
                 # Instalar compositor
@@ -4701,8 +4761,8 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "wayland"
                 install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
                 # lightdm
-                install_yay_chroot_with_retry "lightdm"
-                install_yay_chroot_with_retry "lightdm-slick-greeter"
+                install_pacman_chroot_with_retry "lightdm"
+                install_pacman_chroot_with_retry "lightdm-slick-greeter"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -4710,8 +4770,8 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "background=/usr/share/pixmaps/backgroundarch.jpge" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "theme-name=Adwaita-dark" >> /etc/lightdm/slick-greeter.conf"
                 chroot /mnt /bin/bash -c "sudo -u $USER echo "clock-format=%b %e %H:%M" >> /etc/lightdm/slick-greeter.conf"
-                install_yay_chroot_with_retry "accountsservice"
-                install_yay_chroot_with_retry "mugshot"
+                install_pacman_chroot_with_retry "accountsservice"
+                install_pacman_chroot_with_retry "mugshot"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
             *)
@@ -4724,38 +4784,16 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar X.org y dependencias base para gestores de ventanas
         echo -e "${CYAN}Instalando servidor X.org y dependencias base...${NC}"
-        install_yay_chroot_with_retry "xorg-server"
-        install_yay_chroot_with_retry "xorg-xinit"
-        install_yay_chroot_with_retry "xorg-xauth"
-        install_yay_chroot_with_retry "xorg-xrandr"
-        install_yay_chroot_with_retry "xsel"
-        install_yay_chroot_with_retry "xterm"
-        install_yay_chroot_with_retry "dmenu"
-        install_yay_chroot_with_retry "wofi"
-        install_yay_chroot_with_retry "pcmanfm"
-        install_yay_chroot_with_retry "dunst"
-        install_yay_chroot_with_retry "nano"
-        install_yay_chroot_with_retry "vim"
-        install_yay_chroot_with_retry "nitrogen"
-        install_yay_chroot_with_retry "feh"
-        install_yay_chroot_with_retry "network-manager-applet"
-        install_yay_chroot_with_retry "lm_sensors"
-
-        install_yay_chroot_with_retry "ffmpegthumbs"
-        install_yay_chroot_with_retry "ffmpegthumbnailer"
-        install_yay_chroot_with_retry "freetype2"
-        install_yay_chroot_with_retry "poppler-glib"
-        install_yay_chroot_with_retry "libgsf"
-        install_yay_chroot_with_retry "tumbler"
-        install_yay_chroot_with_retry "gdk-pixbuf2"
-        install_yay_chroot_with_retry "fontconfig"
-        install_yay_chroot_with_retry "gvfs"
-
-        # Instalar herramientas adicionales para gestores de ventanas
-        echo -e "${CYAN}Instalando Terminales...${NC}"
-        install_yay_chroot_with_retry "alacritty"
-        install_yay_chroot_with_retry "kitty"
-
+        install_pacman_chroot_with_retry "pcmanfm"
+        install_pacman_chroot_with_retry "gvfs"
+        install_pacman_chroot_with_retry "lm_sensors"
+        install_pacman_chroot_with_retry "tumbler"
+        install_pacman_chroot_with_retry "ffmpegthumbs"
+        install_pacman_chroot_with_retry "ffmpegthumbnailer"
+        install_pacman_chroot_with_retry "freetype2"
+        install_pacman_chroot_with_retry "libgsf"
+        install_pacman_chroot_with_retry "gdk-pixbuf2"
+        install_pacman_chroot_with_retry "fontconfig"
         # Instalar Ly display manager
         echo -e "${CYAN}Instalando Ly display manager...${NC}"
         install_yay_chroot_with_retry "ly"
@@ -4763,21 +4801,64 @@ case "$INSTALLATION_TYPE" in
 
         case "$WINDOW_MANAGER" in
             "I3WM"|"I3")
+                echo -e "${CYAN}Instalando Extras de i3 Window Manager...${NC}"
+                install_pacman_chroot_with_retry "xorg-server" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xinit" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xauth" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xrandr" #Configurar pantallas en tiempo real en el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xterm" #Terminal para el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "network-manager-applet" #Para gestionar conexiones de red desde la bandeja del sistema.
+                install_pacman_chroot_with_retry "rofi" #Lanzadores de aplicaciones. Rofi es más moderno y configurable.
+                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
+                install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
+                install_pacman_chroot_with_retry "pavucontrol" #Control de volumen gráfico para PulseAudio/PipeWire.
+                install_pacman_chroot_with_retry "dunst" #Notificaciones en pantalla.
+                install_pacman_chroot_with_retry "lxappearance" #Para configurar temas GTK.
+                install_pacman_chroot_with_retry "xss-lock"           # Activador de bloqueo automático
+                install_pacman_chroot_with_retry "slock"              # Bloqueador de pantalla.
+                install_pacman_chroot_with_retry "maim" #Captura de pantalla.
+                install_pacman_chroot_with_retry "xclip" #Copiar y pegar texto entre aplicaciones.
+                install_pacman_chroot_with_retry "arandr" #Configuración de monitores.
+                install_pacman_chroot_with_retry "polkit-gnome" #Para gestionar contraseñas de administración.
+                install_pacman_chroot_with_retry "unclutter" #Oculta el cursor tras inactividad.
+                echo -e "${CYAN}Instalando Terminales...${NC}"
+                install_pacman_chroot_with_retry "alacritty" #Emulador de terminal acelerado por GPU
                 echo -e "${CYAN}Instalando i3 Window Manager...${NC}"
-                install_yay_chroot_with_retry "i3-wm"
-                install_yay_chroot_with_retry "i3status"
-                install_yay_chroot_with_retry "i3lock"
-                install_yay_chroot_with_retry "i3blocks"
+                install_pacman_chroot_with_retry "i3-wm"
+                install_pacman_chroot_with_retry "i3status"
+                install_pacman_chroot_with_retry "i3lock"
+                install_pacman_chroot_with_retry "i3blocks"
                 # Crear configuración básica de i3
                 mkdir -p /mnt/home/$USER/.config/i3
                 chroot /mnt /bin/bash -c "install -Dm644 /etc/i3/config /home/$USER/.config/i3/config"
                 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "AWESOME")
+                echo -e "${CYAN}Instalando Extras de Awesome Window Manager...${NC}"
+                install_pacman_chroot_with_retry "xorg-server" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xinit" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xauth" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xrandr" #Configurar pantallas en tiempo real en el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xterm" #Terminal para el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "network-manager-applet" #Para gestionar conexiones de red desde la bandeja del sistema.
+                install_pacman_chroot_with_retry "rofi" #Lanzadores de aplicaciones. Rofi es más moderno y configurable.
+                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
+                install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
+                install_pacman_chroot_with_retry "pavucontrol" #Control de volumen gráfico para PulseAudio/PipeWire.
+                install_pacman_chroot_with_retry "dunst" #Notificaciones en pantalla.
+                install_pacman_chroot_with_retry "lxappearance" #Para configurar temas GTK.
+                install_pacman_chroot_with_retry "xss-lock"           # Activador de bloqueo automático
+                install_pacman_chroot_with_retry "slock"              # Bloqueador de pantalla
+                install_pacman_chroot_with_retry "maim" #Captura de pantalla.
+                install_pacman_chroot_with_retry "xclip" #Copiar y pegar texto entre aplicaciones.
+                install_pacman_chroot_with_retry "arandr" #Configuración de monitores.
+                install_pacman_chroot_with_retry "polkit-gnome" #Para gestionar contraseñas de administración.
+                install_pacman_chroot_with_retry "unclutter" #Oculta el cursor tras inactividad.
+                echo -e "${CYAN}Instalando Terminales...${NC}"
+                install_pacman_chroot_with_retry "alacritty" #Emulador de terminal acelerado por GPU
                 echo -e "${CYAN}Instalando Awesome Window Manager...${NC}"
-                install_yay_chroot_with_retry "awesome"
-                install_yay_chroot_with_retry "vicious"
-                install_yay_chroot_with_retry "slock"
+                install_pacman_chroot_with_retry "awesome"
+                install_pacman_chroot_with_retry "vicious"
                 # Crear configuración básica de awesome
                 mkdir -p /mnt/home/$USER/.config/awesome
                 chroot /mnt /bin/bash -c "install -Dm755 /etc/xdg/awesome/rc.lua /home/$USER/.config/awesome/rc.lua"
@@ -4785,10 +4866,32 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "BSPWM")
                 echo -e "${CYAN}Instalando BSPWM Window Manager...${NC}"
-                install_yay_chroot_with_retry "bspwm"
-                install_yay_chroot_with_retry "sxhkd"
-                install_yay_chroot_with_retry "slock"
-                install_yay_chroot_with_retry "polybar"
+                install_pacman_chroot_with_retry "xorg-server" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xinit" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xauth" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xrandr" #Configurar pantallas en tiempo real en el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xterm" #Terminal para el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "network-manager-applet" #Para gestionar conexiones de red desde la bandeja del sistema.
+                install_pacman_chroot_with_retry "rofi" #Lanzadores de aplicaciones. Rofi es más moderno y configurable.
+                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
+                install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
+                install_pacman_chroot_with_retry "pavucontrol" #Control de volumen gráfico para PulseAudio/PipeWire.
+                install_pacman_chroot_with_retry "dunst" #Notificaciones en pantalla.
+                install_pacman_chroot_with_retry "lxappearance" #Para configurar temas GTK.
+                install_pacman_chroot_with_retry "xss-lock"           # Activador de bloqueo automático
+                install_pacman_chroot_with_retry "slock"              # Bloqueador de pantalla
+                install_pacman_chroot_with_retry "maim" #Captura de pantalla.
+                install_pacman_chroot_with_retry "xclip" #Copiar y pegar texto entre aplicaciones.
+                install_pacman_chroot_with_retry "arandr" #Configuración de monitores.
+                install_pacman_chroot_with_retry "polkit-gnome" #Para gestionar contraseñas de administración.
+                install_pacman_chroot_with_retry "unclutter" #Oculta el cursor tras inactividad.
+                echo -e "${CYAN}Instalando Terminales...${NC}"
+                install_pacman_chroot_with_retry "alacritty" #Emulador de terminal acelerado por GPU
+                echo -e "${CYAN}Instalando BSPWM Window Manager...${NC}"
+                install_pacman_chroot_with_retry "bspwm"
+                install_pacman_chroot_with_retry "sxhkd"
+                install_pacman_chroot_with_retry "slock"
+                install_pacman_chroot_with_retry "polybar"
                 # Crear configuración básica de bspwm
                 mkdir -p /mnt/home/$USER/.config/bspwm
                 mkdir -p /mnt/home/$USER/.config/sxhkd
@@ -4800,20 +4903,45 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "DWM")
+                echo -e "${CYAN}Instalando Extras Window Manager...${NC}"
+                install_pacman_chroot_with_retry "xorg-server" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xinit" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xauth" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xrandr" #Configurar pantallas en tiempo real en el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xterm" #Terminal para el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "network-manager-applet" #Para gestionar conexiones de red desde la bandeja del sistema.
+                install_pacman_chroot_with_retry "rofi" #Lanzadores de aplicaciones. Rofi es más moderno y configurable.
+                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
+                install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
+                install_pacman_chroot_with_retry "pavucontrol" #Control de volumen gráfico para PulseAudio/PipeWire.
+                install_pacman_chroot_with_retry "dunst" #Notificaciones en pantalla.
+                install_pacman_chroot_with_retry "lxappearance" #Para configurar temas GTK.
+                install_pacman_chroot_with_retry "xss-lock"           # Activador de bloqueo automático
+                install_pacman_chroot_with_retry "slock"              # Bloqueador de pantalla
+                install_pacman_chroot_with_retry "maim" #Captura de pantalla.
+                install_pacman_chroot_with_retry "xclip" #Copiar y pegar texto entre aplicaciones.
+                install_pacman_chroot_with_retry "arandr" #Configuración de monitores.
+                install_pacman_chroot_with_retry "polkit-gnome" #Para gestionar contraseñas de administración.
+                install_pacman_chroot_with_retry "unclutter" #Oculta el cursor tras inactividad.
+                echo -e "${CYAN}Instalando Terminales...${NC}"
+                install_pacman_chroot_with_retry "alacritty" #Emulador de terminal acelerado por GPU
                 echo -e "${CYAN}Instalando DWM Window Manager...${NC}"
                 install_yay_chroot_with_retry "dwm"
                 install_yay_chroot_with_retry "st"
                 install_yay_chroot_with_retry "slock"
                 ;;
             "DWL")
-                echo -e "${CYAN}Instalando DWL Wayland Compositor...${NC}"
-
-                # Instalar dependencias necesarias
-                echo -e "${YELLOW}Instalando dependencias...${NC}"
+                echo -e "${YELLOW}Instalando dependencias de DWL...${NC}"
                 install_pacman_chroot_with_retry "wayland"
                 install_pacman_chroot_with_retry "wayland-protocols"
+                install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
                 install_pacman_chroot_with_retry "wlroots0.19"
                 install_pacman_chroot_with_retry "foot"
+                install_pacman_chroot_with_retry "dunst"
+                install_pacman_chroot_with_retry "swaylock"
+                install_pacman_chroot_with_retry "swayidle"
+                install_pacman_chroot_with_retry "brightnessctl"
+                install_pacman_chroot_with_retry "polkit-gnome"
                 install_pacman_chroot_with_retry "wmenu"
                 install_pacman_chroot_with_retry "wl-clipboard"
                 install_pacman_chroot_with_retry "grim"
@@ -4827,9 +4955,13 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "libxkbcommon-x11"
                 install_pacman_chroot_with_retry "libxkbcommon"
                 install_pacman_chroot_with_retry "wofi"
+                install_pacman_chroot_with_retry "fuzzel"
                 install_pacman_chroot_with_retry "libinput"
                 install_pacman_chroot_with_retry "pkg-config"
                 install_pacman_chroot_with_retry "fcft"
+                install_pacman_chroot_with_retry "kitty"
+                install_pacman_chroot_with_retry "kanshi"             # Gestión automática de monitores
+                echo -e "${CYAN}Instalando DWL Wayland Compositor...${NC}"
                 install_yay_chroot_with_retry "dwl"
 
                 # Crear directorio temporal para compilación
@@ -4888,7 +5020,6 @@ EOF
                 install_pacman_chroot_with_retry "waybar"
                 install_pacman_chroot_with_retry "wofi"
                 install_pacman_chroot_with_retry "nwg-displays"
-                install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
                 install_pacman_chroot_with_retry "xdg-desktop-portal-hyprland"
                 install_pacman_chroot_with_retry "xdg-desktop-portal-gtk"
                 install_pacman_chroot_with_retry "hyprpaper"
@@ -4897,9 +5028,19 @@ EOF
                 install_pacman_chroot_with_retry "hyprcursor"
                 install_pacman_chroot_with_retry "hyprpolkitagent"
                 install_pacman_chroot_with_retry "hyprsunset"
+                install_pacman_chroot_with_retry "wl-clipboard"
                 install_pacman_chroot_with_retry "grim"
+                install_pacman_chroot_with_retry "slurp"
                 install_pacman_chroot_with_retry "qt5-wayland"
                 install_pacman_chroot_with_retry "qt6-wayland"
+                install_pacman_chroot_with_retry "kitty"
+                install_pacman_chroot_with_retry "dunst"
+                install_pacman_chroot_with_retry "polkit-gnome"
+                install_yay_chroot_with_retry "wlogout"            # Menú de apagado/cierre
+                install_pacman_chroot_with_retry "kanshi"             # Gestión automática de monitores
+                install_pacman_chroot_with_retry "nwg-look"
+                install_pacman_chroot_with_retry "xdg-utils"
+                install_pacman_chroot_with_retry "brightnessctl"
                 # Crear configuración básica de hyprland
                 mkdir -p /mnt/home/$USER/.config/hypr
                 chroot /mnt /bin/bash -c "install -Dm644 /usr/share/hypr/hyprland.conf /home/$USER/.config/hypr/hyprland.conf"
@@ -4910,44 +5051,133 @@ EOF
                 ;;
             "OPENBOX")
                 echo -e "${CYAN}Instalando Openbox Window Manager...${NC}"
-                install_yay_chroot_with_retry "openbox"
-                install_yay_chroot_with_retry "lxappearance-obconf"
-                install_yay_chroot_with_retry "lxinput"
-                install_yay_chroot_with_retry "lxrandr"
-                install_yay_chroot_with_retry "archlinux-xdg-menu"
-                install_yay_chroot_with_retry "menumaker"
+                install_pacman_chroot_with_retry "xorg-server" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xinit" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xauth" #necesarios para correr el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xorg-xrandr" #Configurar pantallas en tiempo real en el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "xterm" #Terminal para el entorno gráfico Xorg.
+                install_pacman_chroot_with_retry "network-manager-applet" #Para gestionar conexiones de red desde la bandeja del sistema.
+                install_pacman_chroot_with_retry "openbox"
+                install_pacman_chroot_with_retry "lxappearance"
+                install_pacman_chroot_with_retry "obconf-qt"
+                install_pacman_chroot_with_retry "dmenu"
+                install_pacman_chroot_with_retry "xfce4-power-manager"
+                install_pacman_chroot_with_retry "volumeicon"
+                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
+                install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
+                install_pacman_chroot_with_retry "pavucontrol" #Control de volumen gráfico para PulseAudio/PipeWire.
+                install_pacman_chroot_with_retry "dunst" #Notificaciones en pantalla.
+                install_pacman_chroot_with_retry "lxappearance" #Para configurar temas GTK.
+                install_pacman_chroot_with_retry "xss-lock"           # Activador de bloqueo automático
+                install_pacman_chroot_with_retry "slock"              # Bloqueador de pantalla
+                install_pacman_chroot_with_retry "maim" #Captura de pantalla.
+                install_pacman_chroot_with_retry "xclip" #Copiar y pegar texto entre aplicaciones.
+                install_pacman_chroot_with_retry "arandr" #Configuración de monitores.
+                install_pacman_chroot_with_retry "polkit-gnome" #Para gestionar contraseñas de administración.
+                install_pacman_chroot_with_retry "unclutter" #Oculta el cursor tras inactividad.
+                install_pacman_chroot_with_retry "lxinput"
+                install_pacman_chroot_with_retry "tint2"
                 install_yay_chroot_with_retry "obmenu-generator"
-                install_yay_chroot_with_retry "tint2"
+                echo -e "${CYAN}Instalando Terminales...${NC}"
+                install_pacman_chroot_with_retry "alacritty" #Emulador de terminal acelerado por GPU
                 # Crear configuración básica de openbox
                 mkdir -p /mnt/home/$USER/.config/openbox
+                chroot /mnt /bin/bash -c "obmenu-generator -i -p"
                 chroot /mnt /bin/bash -c "cp -a /etc/xdg/openbox /home/$USER/.config/"
                 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "QTITLE"|"QTILE")
                 echo -e "${CYAN}Instalando Qtile Window Manager...${NC}"
-                install_yay_chroot_with_retry "qtile"
-                install_yay_chroot_with_retry "python-pywlroots"
-                install_yay_chroot_with_retry "python-pywayland"
-                install_yay_chroot_with_retry "xorg-xwayland"
+                # Base Xorg
+                install_pacman_chroot_with_retry "xorg-server"        # Servidor gráfico Xorg
+                install_pacman_chroot_with_retry "xorg-xinit"         # Iniciar sesión X11
+                install_pacman_chroot_with_retry "xorg-xauth"         # Autenticación X11
+                install_pacman_chroot_with_retry "xorg-xrandr"        # Configurar pantallas
+
+                # Qtile y dependencias Python
+                install_pacman_chroot_with_retry "qtile"              # Window Manager
+                install_pacman_chroot_with_retry "python-psutil"      # Widgets de sistema (CPU, RAM)
+                install_pacman_chroot_with_retry "python-dbus-next"   # Notificaciones
+                install_pacman_chroot_with_retry "python-iwlib"       # Widget WiFi (opcional)
+                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
+                install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
+
+                # Lanzadores y utilidades
+                install_pacman_chroot_with_retry "rofi"               # Lanzador de aplicaciones
+                install_pacman_chroot_with_retry "dunst"              # Notificaciones
+                install_pacman_chroot_with_retry "maim"               # Capturas de pantalla
+                install_pacman_chroot_with_retry "xclip"              # Portapapeles
+
+                # Apariencia y configuración
+                install_pacman_chroot_with_retry "lxappearance"       # Temas GTK
+                install_pacman_chroot_with_retry "arandr"             # Configuración de monitores gráfica
+
+                # Sistema y seguridad
+                install_pacman_chroot_with_retry "network-manager-applet"  # Applet de red
+                install_pacman_chroot_with_retry "pavucontrol"        # Control de volumen
+                install_pacman_chroot_with_retry "polkit-gnome"       # Autenticación gráfica
+                install_pacman_chroot_with_retry "xss-lock"           # Activador de bloqueo automático
+                install_pacman_chroot_with_retry "slock"              # Bloqueador de pantalla
+                install_pacman_chroot_with_retry "unclutter"          # Ocultar cursor inactivo
+
+                echo -e "${CYAN}Instalando Terminales...${NC}"
+                install_pacman_chroot_with_retry "xterm"              # Terminal básica
+                install_pacman_chroot_with_retry "alacritty"          # Terminal moderna
                 # Crear configuración básica de qtile
                 mkdir -p /mnt/home/$USER/.config/qtile
                 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "SWAY")
                 echo -e "${CYAN}Instalando Sway Window Manager...${NC}"
-                install_pacman_chroot_with_retry "wayland"
-                install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
-                install_yay_chroot_with_retry "sway"
-                install_yay_chroot_with_retry "xorg-xwayland"
-                install_yay_chroot_with_retry "slurp"
-                install_yay_chroot_with_retry "pavucontrol"
-                install_yay_chroot_with_retry "brightnessctl"
-                install_yay_chroot_with_retry "swaylock"
-                install_yay_chroot_with_retry "swayidle"
-                install_yay_chroot_with_retry "swaybg"
-                install_yay_chroot_with_retry "wmenu"
-                install_yay_chroot_with_retry "waybar"
-                install_yay_chroot_with_retry "grim"
+                # Base Wayland
+                install_pacman_chroot_with_retry "wayland"            # Protocolo Wayland
+                install_pacman_chroot_with_retry "xorg-xwayland"      # Compatibilidad con apps X11
+
+                # Sway y componentes principales
+                install_pacman_chroot_with_retry "sway"               # Window Manager
+                install_pacman_chroot_with_retry "swaybg"             # Fondos de pantalla
+                install_pacman_chroot_with_retry "swaylock"           # Bloqueador de pantalla
+                install_pacman_chroot_with_retry "swayidle"           # Gestión de inactividad
+
+                # Portales XDG
+                install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"  # Portal para screensharing
+                install_pacman_chroot_with_retry "xdg-desktop-portal-gtk"  # Portal GTK
+
+                # Barra y menús
+                install_pacman_chroot_with_retry "waybar"             # Barra de estado
+                install_pacman_chroot_with_retry "wofi"               # Lanzador de aplicaciones (más completo que wmenu)
+                install_pacman_chroot_with_retry "wmenu"              # Lanzador minimalista
+
+                # Capturas de pantalla
+                install_pacman_chroot_with_retry "grim"               # Capturas de pantalla
+                install_pacman_chroot_with_retry "slurp"              # Seleccionar región de pantalla
+
+                # Portapapeles
+                install_pacman_chroot_with_retry "wl-clipboard"       # Portapapeles Wayland
+                install_pacman_chroot_with_retry "cliphist"           # Historial de portapapeles
+
+                # Notificaciones
+                install_pacman_chroot_with_retry "mako"               # Notificaciones para Wayland
+                install_pacman_chroot_with_retry "libnotify"          # Soporte de notificaciones
+
+                # Sistema
+                install_pacman_chroot_with_retry "pavucontrol"        # Control de volumen
+                install_pacman_chroot_with_retry "brightnessctl"      # Control de brillo
+                install_pacman_chroot_with_retry "polkit-gnome"       # Autenticación gráfica
+                install_pacman_chroot_with_retry "network-manager-applet"  # Applet de red
+
+                # Apariencia
+                install_pacman_chroot_with_retry "nwg-look"           # Configurar temas GTK en Wayland
+                install_pacman_chroot_with_retry "qt5-wayland"        # Soporte Qt5
+                install_pacman_chroot_with_retry "qt6-wayland"        # Soporte Qt6
+
+                # Utilidades
+                install_yay_chroot_with_retry "wlogout"            # Menú de apagado/cierre
+                install_pacman_chroot_with_retry "kanshi"             # Gestión automática de monitores
+                install_pacman_chroot_with_retry "foot"               # Terminal nativa Wayland (ligera)
+
+                # Aplicaciones básicas
+                install_pacman_chroot_with_retry "kitty"              # Terminal moderna con buen soporte Wayland
                 # Crear configuración básica de sway
                 mkdir -p /mnt/home/$USER/.config/sway
                 chroot /mnt /bin/bash -c "install -Dm644 /etc/sway/config /home/$USER/.config/sway/config"
@@ -4955,12 +5185,49 @@ EOF
                 ;;
             "XMONAD")
                 echo -e "${CYAN}Instalando XMonad Window Manager...${NC}"
-                install_yay_chroot_with_retry "xmonad"
-                install_yay_chroot_with_retry "xmonad-contrib"
-                install_yay_chroot_with_retry "xmobar"
-                install_yay_chroot_with_retry "ghc"
-                install_yay_chroot_with_retry "cabal-install"
-                install_yay_chroot_with_retry "nitrogen"
+                # Base Xorg
+                install_pacman_chroot_with_retry "xorg-server"        # Servidor gráfico Xorg
+                install_pacman_chroot_with_retry "xorg-xinit"         # Iniciar sesión X11
+                install_pacman_chroot_with_retry "xorg-xauth"         # Autenticación X11
+                install_pacman_chroot_with_retry "xorg-xrandr"        # Configurar pantallas
+
+                # XMonad y herramientas Haskell
+                install_pacman_chroot_with_retry "xmonad"             # Window Manager
+                install_pacman_chroot_with_retry "xmonad-contrib"     # Extensiones y layouts adicionales
+                install_pacman_chroot_with_retry "xmobar"             # Barra de estado
+                install_pacman_chroot_with_retry "ghc"                # Compilador Haskell
+                install_pacman_chroot_with_retry "cabal-install"      # Gestor de paquetes Haskell
+
+                # Compositor y fondos
+                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
+                install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
+
+                # Lanzadores y utilidades
+                install_pacman_chroot_with_retry "rofi"               # Lanzador de aplicaciones
+                install_pacman_chroot_with_retry "dmenu"              # Lanzador alternativo (más ligero)
+                install_pacman_chroot_with_retry "dunst"              # Notificaciones
+                install_pacman_chroot_with_retry "maim"               # Capturas de pantalla
+                install_pacman_chroot_with_retry "xclip"              # Portapapeles
+
+                # Apariencia y configuración
+                install_pacman_chroot_with_retry "lxappearance"       # Temas GTK
+                install_pacman_chroot_with_retry "arandr"             # Configuración de monitores
+
+                # Sistema y seguridad
+                install_pacman_chroot_with_retry "network-manager-applet"  # Applet de red
+                install_pacman_chroot_with_retry "pavucontrol"        # Control de volumen
+                install_pacman_chroot_with_retry "polkit-gnome"       # Autenticación gráfica
+                install_pacman_chroot_with_retry "xss-lock"           # Activador de bloqueo automático
+                install_pacman_chroot_with_retry "slock"              # Bloqueador de pantalla
+                install_pacman_chroot_with_retry "unclutter"          # Ocultar cursor inactivo
+
+                # Bandeja del sistema
+                install_pacman_chroot_with_retry "trayer"             # Bandeja del sistema (si no usas xmobar con tray)
+                #install_pacman_chroot_with_retry "stalonetray"        # Alternativa a trayer
+
+                # Aplicaciones básicas
+                install_pacman_chroot_with_retry "xterm"              # Terminal básica
+                install_pacman_chroot_with_retry "alacritty"          # Terminal moderna
                 # Crear configuración básica de xmonad
                 mkdir -p /mnt/home/$USER/.config/xmonad
                 guardar_configuraciones_xmonad
