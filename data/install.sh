@@ -4376,6 +4376,7 @@ case "$INSTALLATION_TYPE" in
         install_pacman_chroot_with_retry "xorg-xrandr"
         install_pacman_chroot_with_retry "xorg-setxkbmap"
         install_pacman_chroot_with_retry "xorg-xrdb"
+        install_pacman_chroot_with_retry "xterm"
         install_pacman_chroot_with_retry "wayland"            # Protocolo Wayland
         install_pacman_chroot_with_retry "xorg-xwayland"      # Compatibilidad con apps X11
         install_pacman_chroot_with_retry "ffmpegthumbs"
