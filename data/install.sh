@@ -4744,6 +4744,11 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "XFCE4")
                 echo -e "${CYAN}Instalando XFCE4 Desktop...${NC}"
+                # Soporte Xorg
+                install_pacman_chroot_with_retry "xorg-server"
+                install_pacman_chroot_with_retry "xorg-xinit"
+                install_pacman_chroot_with_retry "xorg-xauth"
+                install_pacman_chroot_with_retry "xf86-input-libinput"
                 install_pacman_chroot_with_retry "xfce4"
                 install_pacman_chroot_with_retry "xfce4-goodies"
                 install_pacman_chroot_with_retry "network-manager-applet"
@@ -4755,10 +4760,10 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "gnome-keyring"         # Gestor de contraseñas
                 install_pacman_chroot_with_retry "light-locker"
                 install_pacman_chroot_with_retry "xfce4-screensaver"
-                # Instalar compositor
-                install_pacman_chroot_with_retry "labwc"
-                # Dependencias base
+                # Soporte Wayland
                 install_pacman_chroot_with_retry "wayland"
+                install_pacman_chroot_with_retry "labwc"
+                install_pacman_chroot_with_retry "xdg-desktop-portal"
                 install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
                 # lightdm
                 install_pacman_chroot_with_retry "lightdm"
