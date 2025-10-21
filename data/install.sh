@@ -4650,25 +4650,11 @@ case "$INSTALLATION_TYPE" in
                 install_yay_chroot_with_retry "lightdm"
                 install_yay_chroot_with_retry "lightdm-slick-greeter"
                 # Extras útiles
-                install_pacman_chroot_with_retry "gvfs-mtp"              # Soporte MTP (móviles Android)
                 install_pacman_chroot_with_retry "udisks2"               # Montaje automático de discos
-                install_pacman_chroot_with_retry "ntfs-3g"               # Soporte NTFS
-                install_pacman_chroot_with_retry "gpicview"              # Visor de imágenes ligero
-                install_pacman_chroot_with_retry "xpad"                  # Notas adhesivas
                 install_pacman_chroot_with_retry "leafpad"               # Editor de texto simple
                 # Sistema
                 install_pacman_chroot_with_retry "network-manager-applet"  # Applet de red
                 install_pacman_chroot_with_retry "pavucontrol"           # Control de volumen
-                install_pacman_chroot_with_retry "volumeicon"            # Icono de volumen en panel
-                install_pacman_chroot_with_retry "polkit-gnome"          # Autenticación
-                install_pacman_chroot_with_retry "gnome-keyring"         # Gestor de contraseñas
-                install_pacman_chroot_with_retry "xfce4-power-manager"   # Gestión de energía
-                # Bloqueo de pantalla
-                install_pacman_chroot_with_retry "xss-lock"              # Activador de bloqueo
-                install_pacman_chroot_with_retry "slock"                 # Bloqueador
-                # Menús
-                install_pacman_chroot_with_retry "lxmenu-data"           # Datos de menú
-                install_pacman_chroot_with_retry "menu-cache"            # Cache de menú
 
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
