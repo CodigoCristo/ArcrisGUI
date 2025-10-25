@@ -213,20 +213,33 @@ char* window_hardware_get_graphics_card_info(void)
     char *result = NULL;
     FILE *fp;
     char buffer[512];
+    GString *gpu_list = g_string_new("");
+
+    // Comando para extraer el nombre de la GPU
+    const char *cmd = "lspci | grep -i -E \"(vga|3d|display)\" | grep -oP '\\[\\K[^\\]]*'";
 
     // Intentar obtener información con lspci
-    fp = popen("lspci | grep -i 'vga' | sed -E 's/.*\\[([^][]+)\\].*/\\1/' | cut -d':' -f3 | sed -e 's/^ //' -e 's/ (rev.*)//'", "r");
+    fp = popen(cmd, "r");
     if (fp) {
-        if (fgets(buffer, sizeof(buffer), fp)) {
+        while (fgets(buffer, sizeof(buffer), fp)) {
             // Remover el salto de línea
             char *newline = strchr(buffer, '\n');
             if (newline) *newline = '\0';
-            // El comando sed ya extrae solo el nombre que necesitamos
+
             if (strlen(buffer) > 0) {
-                result = g_strdup(buffer);
+                if (gpu_list->len > 0) {
+                    g_string_append(gpu_list, "\n");  // Separador entre GPUs
+                }
+                g_string_append(gpu_list, buffer);
             }
         }
         pclose(fp);
+
+        if (gpu_list->len > 0) {
+            result = g_string_free(gpu_list, FALSE);  // FALSE para mantener el string
+        } else {
+            g_string_free(gpu_list, TRUE);
+        }
     }
 
     // Si no se pudo obtener información, usar un valor por defecto
@@ -377,9 +390,9 @@ void window_hardware_update_video_description(WindowHardwareData *data, const ch
         return;
     }
 
-    // Crear el texto con formato y color verde negrita con salto de línea
+    // Crear el texto con formato y color azul negrita con salto de línea
     char *description_markup = g_strdup_printf(
-        "Tu tarjeta Gráfica es:\n<span color='#28b463' weight='bold'>%s</span>",
+        "Tu tarjeta Gráfica es:\n<span color='#5fa3f5' weight='bold'>%s</span>",
         graphics_card
     );
 
@@ -403,7 +416,7 @@ void window_hardware_update_audio_description(WindowHardwareData *data, const ch
 
     // Crear el texto con formato con salto de línea
     char *description_markup = g_strdup_printf(
-        "Tu tarjeta Audio es:\n<span color='#28b463' weight='bold'>%s</span>",
+        "Tu tarjeta Audio es:\n<span color='#5fa3f5' weight='bold'>%s</span>",
         audio_card
     );
 
