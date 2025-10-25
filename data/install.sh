@@ -3040,26 +3040,57 @@ echo -e "${CYAN}  • RAM total: ${TOTAL_RAM_GB}GB (${TOTAL_RAM_MB}MB)${NC}"
 echo -e "${CYAN}  • zram calculado: ${ZRAM_SIZE_GB}GB (${ZRAM_SIZE_MB}MB)${NC}"
 echo ""
 
-# Instalar zram-generator (parte de systemd moderno)
-install_pacman_chroot_with_retry "zram-generator"
+# Crear script manual para configuración de zram
+cat > /mnt/usr/local/bin/setup-zram.sh << 'EOF'
+#!/bin/bash
+# Script de configuración manual de zram
+# Configuración automática basada en RAM detectada
 
-# Crear configuración para zram-generator
-cat > /mnt/etc/systemd/zram-generator.conf << EOF
-# Configuración zram nativo systemd
-# RAM detectada: ${TOTAL_RAM_GB}GB
-# zram configurado: ${ZRAM_SIZE_GB}GB (50% de RAM total)
+# Detectar RAM total
+TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024))
+ZRAM_SIZE_MB=$((TOTAL_RAM_MB / 2))
 
-[zram0]
-zram-size = ${ZRAM_SIZE_MB}M
-compression-algorithm = zstd
-swap-priority = 100
-fs-type = swap
+# Verificar si zram ya está configurado
+if [ -e /dev/zram0 ]; then
+    echo "zram ya configurado"
+    exit 0
+fi
+
+# Cargar módulo zram
+modprobe zram num_devices=1
+
+# Configurar algoritmo de compresión
+echo zstd > /sys/block/zram0/comp_algorithm 2>/dev/null || echo lz4 > /sys/block/zram0/comp_algorithm
+
+# Configurar tamaño de zram
+echo "${ZRAM_SIZE_MB}M" > /sys/block/zram0/disksize
+
+# Crear swap en zram
+mkswap /dev/zram0
+swapon /dev/zram0 -p 100
+
+echo "zram configurado: ${ZRAM_SIZE_MB}MB con compresión zstd/lz4"
 EOF
 
-# Habilitar zswap en kernel (compresión adicional en RAM)
-echo 'zstd' > /mnt/sys/module/zswap/parameters/compressor 2>/dev/null || true
-echo 'z3fold' > /mnt/sys/module/zswap/parameters/zpool 2>/dev/null || true
-echo '1' > /mnt/sys/module/zswap/parameters/enabled 2>/dev/null || true
+chmod +x /mnt/usr/local/bin/setup-zram.sh
+
+# Crear servicio systemd para zram
+cat > /mnt/etc/systemd/system/zram-setup.service << EOF
+[Unit]
+Description=Setup zram swap device
+After=multi-user.target
+Before=swap.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/setup-zram.sh
+ExecStop=/bin/sh -c 'swapoff /dev/zram0 2>/dev/null || true; echo 1 > /sys/block/zram0/reset 2>/dev/null || true'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
 
 # Crear configuración persistente de zswap
 mkdir -p /mnt/etc/tmpfiles.d
@@ -3071,8 +3102,8 @@ w /sys/module/zswap/parameters/zpool - - - - z3fold
 w /sys/module/zswap/parameters/max_pool_percent - - - - 25
 EOF
 
-# Habilitar servicios de zram
-chroot /mnt /bin/bash -c "systemctl enable systemd-zram-setup@zram0.service" || {
+# Habilitar servicio personalizado de zram
+chroot /mnt /bin/bash -c "systemctl enable zram-setup.service" || {
     echo -e "${YELLOW}⚠️  Error habilitando zram, continuando...${NC}"
 }
 
@@ -3084,13 +3115,13 @@ echo "zswap.enabled=1 zswap.compressor=zstd zswap.zpool=z3fold" >> /mnt/etc/kern
     fi
 }
 
-echo -e "${GREEN}✓ zram nativo configurado automáticamente:${NC}"
+echo -e "${GREEN}✓ zram configurado automáticamente con método robusto:${NC}"
 echo -e "${CYAN}  • RAM total detectada: ${TOTAL_RAM_GB}GB${NC}"
-echo -e "${CYAN}  • zram: ${ZRAM_SIZE_GB}GB con compresión zstd (prioridad alta: 100)${NC}"
+echo -e "${CYAN}  • zram: ${ZRAM_SIZE_GB}GB con compresión zstd/lz4 (prioridad alta: 100)${NC}"
 echo -e "${CYAN}  • zswap: compresión zstd habilitada (25% pool máximo)${NC}"
 echo -e "${CYAN}  • swap tradicional: mantiene prioridad baja automática${NC}"
 echo -e "${YELLOW}  • Fórmula aplicada: zram = RAM / 2 (50% de RAM total)${NC}"
-echo -e "${YELLOW}  • Usando systemd nativo (zram-generator)${NC}"
+echo -e "${YELLOW}  • Usando script personalizado más robusto${NC}"
 
 sleep 3
 clear
