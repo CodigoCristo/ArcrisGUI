@@ -2733,7 +2733,7 @@ if [ "$PARTITION_MODE" = "manual" ]; then
         if [ "$mountpoint" = "swap" ]; then
             SWAP_UUID=$(blkid -s UUID -o value $device)
             if [ -n "$SWAP_UUID" ]; then
-                echo "UUID=$SWAP_UUID none swap defaults 0 0" >> /mnt/etc/fstab
+                echo "UUID=$SWAP_UUID none swap defaults,pri=10 0 0" >> /mnt/etc/fstab
             fi
         fi
     done
@@ -2742,6 +2742,11 @@ if [ "$PARTITION_MODE" = "manual" ]; then
 else
     # Usar genfstab para modos automáticos
     genfstab -U /mnt > /mnt/etc/fstab
+
+    # Modificar prioridad del swap tradicional de -2 a 10 (menor que zram que tiene 100)
+    echo -e "${CYAN}Configurando prioridad del swap tradicional a 10...${NC}"
+    sed -i 's/\(.*swap.*defaults\)\(.*0.*0\)/\1,pri=10\2/' /mnt/etc/fstab
+    echo -e "${GREEN}✓ Prioridad del swap tradicional configurada a 10${NC}"
 
     # Verificar UUIDs de swap en fstab después de genfstab
     echo -e "${CYAN}Verificando UUIDs de swap en fstab...${NC}"
@@ -3031,22 +3036,30 @@ TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024))
 TOTAL_RAM_GB=$((TOTAL_RAM_MB / 1024))
 
+# Calcular zram exacto: 50% de RAM, máximo 8GB
+ZRAM_SIZE_MB=$((TOTAL_RAM_MB / 2))
+if [ $ZRAM_SIZE_MB -gt 8192 ]; then
+    ZRAM_SIZE_MB=8192
+fi
+ZRAM_SIZE_GB=$((ZRAM_SIZE_MB / 1024))
+
 echo -e "${CYAN}📊 Detección de memoria del sistema:${NC}"
 echo -e "${CYAN}  • RAM total: ${TOTAL_RAM_GB}GB (${TOTAL_RAM_MB}MB)${NC}"
-echo -e "${CYAN}  • zram será configurado: 50% de RAM total${NC}"
+echo -e "${CYAN}  • zram calculado: ${ZRAM_SIZE_GB}GB (${ZRAM_SIZE_MB}MB)${NC}"
 echo ""
 
 # Instalar zram-generator (método oficial)
 install_pacman_chroot_with_retry "zram-generator"
 
-# Crear configuración oficial de zram-generator
-cat > /mnt/etc/systemd/zram-generator.conf << 'EOF'
+# Crear configuración oficial de zram-generator con valor exacto
+cat > /mnt/etc/systemd/zram-generator.conf << EOF
 # Configuración oficial zram-generator
-# Basado en documentación ArchWiki
+# RAM detectada: ${TOTAL_RAM_GB}GB (${TOTAL_RAM_MB}MB)
+# zram calculado: ${ZRAM_SIZE_GB}GB (${ZRAM_SIZE_MB}MB exactos)
 
 [zram0]
-# Tamaño: 50% de RAM total, mínimo 512MB, máximo 8GB
-zram-size = min(ram / 2, 8192)
+# Tamaño exacto calculado: 50% de RAM total
+zram-size = ${ZRAM_SIZE_MB}
 # Algoritmo de compresión zstd (mejor ratio)
 compression-algorithm = zstd
 # Prioridad alta para zram
@@ -3070,11 +3083,11 @@ vm.page-cluster = 0
 EOF
 
 echo -e "${GREEN}✓ zram configurado con método oficial:${NC}"
-echo -e "${CYAN}  • RAM total detectada: ${TOTAL_RAM_GB}GB${NC}"
-echo -e "${CYAN}  • zram: 50% de RAM (máx 8GB) con compresión zstd${NC}"
+echo -e "${CYAN}  • RAM total detectada: ${TOTAL_RAM_GB}GB (${TOTAL_RAM_MB}MB)${NC}"
+echo -e "${CYAN}  • zram: ${ZRAM_SIZE_GB}GB (${ZRAM_SIZE_MB}MB exactos) con zstd${NC}"
 echo -e "${CYAN}  • zswap: DESHABILITADO (evita conflictos)${NC}"
 echo -e "${CYAN}  • swap tradicional: mantiene prioridad baja${NC}"
-echo -e "${YELLOW}  • Método: zram-generator oficial de systemd${NC}"
+echo -e "${YELLOW}  • Método: zram-generator con cálculo exacto${NC}"
 echo -e "${YELLOW}  • Optimización: parámetros VM ajustados para zram${NC}"
 
 sleep 3
@@ -4280,10 +4293,10 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     # Usar UUID para swap LVM si está disponible, sino usar nombre de dispositivo como fallback
     SWAP_UUID=$(blkid -s UUID -o value /dev/mapper/vg0-swap 2>/dev/null)
     if [ -n "$SWAP_UUID" ]; then
-        echo "UUID=$SWAP_UUID none swap defaults 0 0" >> /mnt/etc/fstab
+        echo "UUID=$SWAP_UUID none swap defaults,pri=10 0 0" >> /mnt/etc/fstab
         echo -e "${GREEN}✓ Swap agregada al fstab con UUID: $SWAP_UUID${NC}"
     else
-        echo "/dev/mapper/vg0-swap none swap defaults 0 0" >> /mnt/etc/fstab
+        echo "/dev/mapper/vg0-swap none swap defaults,pri=10 0 0" >> /mnt/etc/fstab
         echo -e "${YELLOW}Warning: Swap agregada al fstab con nombre de dispositivo (no se pudo obtener UUID)${NC}"
     fi
 
