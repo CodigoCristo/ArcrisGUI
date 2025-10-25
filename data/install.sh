@@ -3036,12 +3036,41 @@ TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024))
 TOTAL_RAM_GB=$((TOTAL_RAM_MB / 1024))
 
-# Calcular zram exacto: 50% de RAM, máximo 8GB
-ZRAM_SIZE_MB=$((TOTAL_RAM_MB / 2))
-if [ $ZRAM_SIZE_MB -gt 8192 ]; then
-    ZRAM_SIZE_MB=8192
-fi
-ZRAM_SIZE_GB=$((ZRAM_SIZE_MB / 1024))
+# Usar tabla de valores fijos para cálculos exactos de zram
+# Esto evita problemas de redondeo con diferentes interpretaciones de RAM
+case "$TOTAL_RAM_GB" in
+    1|2|3)
+        ZRAM_SIZE_MB=1024   # 1GB para sistemas pequeños
+        ZRAM_SIZE_GB=1
+        ;;
+    4)
+        ZRAM_SIZE_MB=2048   # 2GB para 4GB RAM
+        ZRAM_SIZE_GB=2
+        ;;
+    8)
+        ZRAM_SIZE_MB=4096   # 4GB para 8GB RAM
+        ZRAM_SIZE_GB=4
+        ;;
+    16)
+        ZRAM_SIZE_MB=8192   # 8GB para 16GB RAM
+        ZRAM_SIZE_GB=8
+        ;;
+    32|64|128)
+        ZRAM_SIZE_MB=8192   # Máximo 8GB para sistemas grandes
+        ZRAM_SIZE_GB=8
+        ;;
+    *)
+        # Cálculo fallback para casos no contemplados
+        ZRAM_CALC_MB=$((TOTAL_RAM_MB / 2))
+        if [ $ZRAM_CALC_MB -gt 8192 ]; then
+            ZRAM_SIZE_MB=8192
+            ZRAM_SIZE_GB=8
+        else
+            ZRAM_SIZE_MB=$ZRAM_CALC_MB
+            ZRAM_SIZE_GB=$((ZRAM_SIZE_MB / 1024))
+        fi
+        ;;
+esac
 
 echo -e "${CYAN}📊 Detección de memoria del sistema:${NC}"
 echo -e "${CYAN}  • RAM total: ${TOTAL_RAM_GB}GB (${TOTAL_RAM_MB}MB)${NC}"
@@ -3058,8 +3087,8 @@ cat > /mnt/etc/systemd/zram-generator.conf << EOF
 # zram calculado: ${ZRAM_SIZE_GB}GB (${ZRAM_SIZE_MB}MB exactos)
 
 [zram0]
-# Tamaño exacto calculado: 50% de RAM total
-zram-size = ${ZRAM_SIZE_MB}
+# Tamaño fijo exacto en MB (tabla de valores precisos)
+zram-size = ${ZRAM_SIZE_MB}M
 # Algoritmo de compresión zstd (mejor ratio)
 compression-algorithm = zstd
 # Prioridad alta para zram
@@ -3084,7 +3113,7 @@ EOF
 
 echo -e "${GREEN}✓ zram configurado con método oficial:${NC}"
 echo -e "${CYAN}  • RAM total detectada: ${TOTAL_RAM_GB}GB (${TOTAL_RAM_MB}MB)${NC}"
-echo -e "${CYAN}  • zram: ${ZRAM_SIZE_GB}GB (${ZRAM_SIZE_MB}MB exactos) con zstd${NC}"
+echo -e "${CYAN}  • zram: ${ZRAM_SIZE_GB}GB (${ZRAM_SIZE_MB}MB exactos) con zstd [TABLA FIJA]${NC}"
 echo -e "${CYAN}  • zswap: DESHABILITADO (evita conflictos)${NC}"
 echo -e "${CYAN}  • swap tradicional: mantiene prioridad baja${NC}"
 echo -e "${YELLOW}  • Método: zram-generator con cálculo exacto${NC}"
