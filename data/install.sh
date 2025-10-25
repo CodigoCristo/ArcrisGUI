@@ -3021,8 +3021,8 @@ fi
 sleep 2
 clear
 
-# Configuración de zram nativo con systemd
-echo -e "${GREEN}| Configurando zram nativo con systemd |${NC}"
+# Configuración oficial de zram usando zram-generator
+echo -e "${GREEN}| Configurando zram oficial con zram-generator |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
@@ -3031,97 +3031,51 @@ TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024))
 TOTAL_RAM_GB=$((TOTAL_RAM_MB / 1024))
 
-# Aplicar fórmula: Zram = RAM / 2 (50% de la RAM total)
-ZRAM_SIZE_MB=$((TOTAL_RAM_MB / 2))
-ZRAM_SIZE_GB=$((TOTAL_RAM_GB / 2))
-
 echo -e "${CYAN}📊 Detección de memoria del sistema:${NC}"
 echo -e "${CYAN}  • RAM total: ${TOTAL_RAM_GB}GB (${TOTAL_RAM_MB}MB)${NC}"
-echo -e "${CYAN}  • zram calculado: ${ZRAM_SIZE_GB}GB (${ZRAM_SIZE_MB}MB)${NC}"
+echo -e "${CYAN}  • zram será configurado: 50% de RAM total${NC}"
 echo ""
 
-# Crear script manual para configuración de zram
-cat > /mnt/usr/local/bin/setup-zram.sh << 'EOF'
-#!/bin/bash
-# Script de configuración manual de zram
-# Configuración automática basada en RAM detectada
+# Instalar zram-generator (método oficial)
+install_pacman_chroot_with_retry "zram-generator"
 
-# Detectar RAM total
-TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024))
-ZRAM_SIZE_MB=$((TOTAL_RAM_MB / 2))
+# Crear configuración oficial de zram-generator
+cat > /mnt/etc/systemd/zram-generator.conf << 'EOF'
+# Configuración oficial zram-generator
+# Basado en documentación ArchWiki
 
-# Verificar si zram ya está configurado
-if [ -e /dev/zram0 ]; then
-    echo "zram ya configurado"
-    exit 0
+[zram0]
+# Tamaño: 50% de RAM total, mínimo 512MB, máximo 8GB
+zram-size = min(ram / 2, 8192)
+# Algoritmo de compresión zstd (mejor ratio)
+compression-algorithm = zstd
+# Prioridad alta para zram
+swap-priority = 100
+EOF
+
+# Deshabilitar zswap para evitar conflictos (recomendación oficial)
+# zswap interfiere con zram según ArchWiki
+if [ -f /mnt/etc/default/grub ]; then
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&zswap.enabled=0 /' /mnt/etc/default/grub
 fi
 
-# Cargar módulo zram
-modprobe zram num_devices=1
-
-# Configurar algoritmo de compresión
-echo zstd > /sys/block/zram0/comp_algorithm 2>/dev/null || echo lz4 > /sys/block/zram0/comp_algorithm
-
-# Configurar tamaño de zram
-echo "${ZRAM_SIZE_MB}M" > /sys/block/zram0/disksize
-
-# Crear swap en zram
-mkswap /dev/zram0
-swapon /dev/zram0 -p 100
-
-echo "zram configurado: ${ZRAM_SIZE_MB}MB con compresión zstd/lz4"
+# Configurar parámetros optimizados para zram según Pop!_OS
+cat > /mnt/etc/sysctl.d/99-vm-zram-parameters.conf << 'EOF'
+# Optimización para zram según mejores prácticas
+# Fuente: Pop!_OS y documentación oficial
+vm.swappiness = 180
+vm.watermark_boost_factor = 0
+vm.watermark_scale_factor = 125
+vm.page-cluster = 0
 EOF
 
-chmod +x /mnt/usr/local/bin/setup-zram.sh
-
-# Crear servicio systemd para zram
-cat > /mnt/etc/systemd/system/zram-setup.service << EOF
-[Unit]
-Description=Setup zram swap device
-After=multi-user.target
-Before=swap.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/setup-zram.sh
-ExecStop=/bin/sh -c 'swapoff /dev/zram0 2>/dev/null || true; echo 1 > /sys/block/zram0/reset 2>/dev/null || true'
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Crear configuración persistente de zswap
-mkdir -p /mnt/etc/tmpfiles.d
-cat > /mnt/etc/tmpfiles.d/zswap.conf << EOF
-# Configuración zswap persistente
-w /sys/module/zswap/parameters/enabled - - - - 1
-w /sys/module/zswap/parameters/compressor - - - - zstd
-w /sys/module/zswap/parameters/zpool - - - - z3fold
-w /sys/module/zswap/parameters/max_pool_percent - - - - 25
-EOF
-
-# Habilitar servicio personalizado de zram
-chroot /mnt /bin/bash -c "systemctl enable zram-setup.service" || {
-    echo -e "${YELLOW}⚠️  Error habilitando zram, continuando...${NC}"
-}
-
-# Configurar parámetros del kernel para zswap
-echo "zswap.enabled=1 zswap.compressor=zstd zswap.zpool=z3fold" >> /mnt/etc/kernel/cmdline 2>/dev/null || {
-    # Si no existe el directorio, agregar a grub
-    if [ -f /mnt/etc/default/grub ]; then
-        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&zswap.enabled=1 zswap.compressor=zstd zswap.zpool=z3fold /' /mnt/etc/default/grub
-    fi
-}
-
-echo -e "${GREEN}✓ zram configurado automáticamente con método robusto:${NC}"
+echo -e "${GREEN}✓ zram configurado con método oficial:${NC}"
 echo -e "${CYAN}  • RAM total detectada: ${TOTAL_RAM_GB}GB${NC}"
-echo -e "${CYAN}  • zram: ${ZRAM_SIZE_GB}GB con compresión zstd/lz4 (prioridad alta: 100)${NC}"
-echo -e "${CYAN}  • zswap: compresión zstd habilitada (25% pool máximo)${NC}"
-echo -e "${CYAN}  • swap tradicional: mantiene prioridad baja automática${NC}"
-echo -e "${YELLOW}  • Fórmula aplicada: zram = RAM / 2 (50% de RAM total)${NC}"
-echo -e "${YELLOW}  • Usando script personalizado más robusto${NC}"
+echo -e "${CYAN}  • zram: 50% de RAM (máx 8GB) con compresión zstd${NC}"
+echo -e "${CYAN}  • zswap: DESHABILITADO (evita conflictos)${NC}"
+echo -e "${CYAN}  • swap tradicional: mantiene prioridad baja${NC}"
+echo -e "${YELLOW}  • Método: zram-generator oficial de systemd${NC}"
+echo -e "${YELLOW}  • Optimización: parámetros VM ajustados para zram${NC}"
 
 sleep 3
 clear
