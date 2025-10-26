@@ -352,7 +352,10 @@ void page9_execute_restart(void)
     
     // Sincronizar discos antes del reinicio
     LOG_INFO("Sincronizando discos...");
-    system("sync");
+    int sync_result = system("sync");
+    if (sync_result != 0) {
+        LOG_WARNING("Advertencia: sync falló con código %d", sync_result);
+    }
     sleep(1);
     
     // Intentar varios métodos de reinicio
@@ -406,7 +409,10 @@ void page9_execute_exit(void)
     
     // Sincronizar discos para asegurar que todos los datos estén escritos
     LOG_INFO("Sincronizando discos antes de salir...");
-    system("sync");
+    int sync_result = system("sync");
+    if (sync_result != 0) {
+        LOG_WARNING("Advertencia: sync falló con código %d", sync_result);
+    }
     
     // Limpiar recursos de la página 9
     LOG_INFO("Limpiando recursos de página 9...");

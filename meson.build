@@ -2,8 +2,7 @@
 project('Arcris', 'c',
   version : '0.1')
 
-# Agregar flags de compilación                                                                        (10-26 01:16)
-add_project_arguments('-Wunused-result', language : 'c')
+
 
 subdir('data')
 subdir('src')

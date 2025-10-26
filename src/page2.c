@@ -951,7 +951,7 @@ void open_keyboard_settings(GtkButton *button, gpointer user_data)
     // Abrir la aplicación de configuración de teclado del sistema
     const char* cmd = arcris_get_keyboard_settings_command();
     gchar *full_command = g_strdup_printf("%s &", cmd);
-    system(full_command);
+    (void)system(full_command);
     g_free(full_command);
 }
 
@@ -980,13 +980,13 @@ static gpointer open_tecla_task(gpointer data) {
     if (keyboard_layout && keymap_tty) {
         // Abrir kbd-layout-viewer5 con el layout seleccionado
         gchar *viewer_command = g_strdup_printf("kbd-layout-viewer5 -l %s &", keyboard_layout);
-        system(viewer_command);
+        (void)system(viewer_command);
         g_free(viewer_command);
         g_print("Abriendo visualización de teclado para: %s\n", keyboard_layout);
 
         // Ejecutar comandos para cambiar el idioma en el sistema
         gchar *x11_command = g_strdup_printf("sudo setxkbmap %s 2>/dev/null || true", keyboard_layout);
-        system(x11_command);
+        (void)system(x11_command);
         g_free(x11_command);
         g_print("Configurando teclado X11: %s\n", keyboard_layout);
     }
