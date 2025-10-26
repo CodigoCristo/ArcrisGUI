@@ -40,6 +40,7 @@ executable('arcris',
     'partition_manager.c'
   ],
   dependencies : [gtkdep, glib_dep, gio_dep, adwaita, libsoup, udisks2, vte_dep, arcris_resources_dep],
+  c_args : ['-Wunused-result'],
   install : true,
   install_dir : get_option('bindir')
 )
