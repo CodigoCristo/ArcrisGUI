@@ -215,8 +215,8 @@ char* window_hardware_get_graphics_card_info(void)
     char buffer[512];
     GString *gpu_list = g_string_new("");
 
-    // Comando para extraer la información completa de la GPU
-    const char *cmd = "lspci | grep -i -E \"(vga|display)\" | sed 's/.*: //' | sed 's/ (rev.*//'";
+    // Comando para extraer el nombre de la GPU
+    const char *cmd = "lspci | grep -i -E \"(vga|3d|display)\" | grep -oP '\\[\\K[^\\]]*'";
 
     // Intentar obtener información con lspci
     fp = popen(cmd, "r");
@@ -259,7 +259,7 @@ char* window_hardware_get_audio_card_info(void)
     char buffer[512];
 
     // Comando para extraer solo el nombre de la tarjeta de audio
-    const char *cmd = "lspci | grep -i audio | head -1 | sed 's/.*: //' | sed 's/ (rev.*//'";
+    const char *cmd = "lspci | grep -i audio | head -1 | sed 's/.*: //' | sed 's/ (rev.*//' | sed 's/ Audio Controller$//'";
 
     // Intentar obtener información con lspci
     fp = popen(cmd, "r");
