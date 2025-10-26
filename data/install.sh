@@ -1419,8 +1419,8 @@ partition_auto() {
         fi
 
         swapon "$SWAP_PARTITION"
-        mkdir -p /mnt/boot/efi
-        mount $(get_partition_name "$SELECTED_DISK" "1") /mnt/boot/efi
+        mkdir -p /mnt/boot
+        mount $(get_partition_name "$SELECTED_DISK" "1") /mnt/boot
 
     else
         # Configuración para BIOS Legacy
@@ -1721,7 +1721,7 @@ partition_auto_btrfs() {
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@var "$PARTITION_3" /mnt/var
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "$PARTITION_3" /mnt/tmp
-        mount "$PARTITION_1" /mnt/boot/efi
+        mount "$PARTITION_1" /mnt/boot
 
         # Instalar herramientas específicas para BTRFS
         install_pacstrap_with_retry "btrfs-progs"
@@ -2071,11 +2071,11 @@ partition_cifrado() {
             exit 1
         fi
 
-        echo -e "${CYAN}Creando directorio EFI dentro de boot...${NC}"
-        mkdir -p /mnt/boot/efi
+        echo -e "${CYAN}Creando directorio boot...${NC}"
+        mkdir -p /mnt/boot
 
         echo -e "${CYAN}Montando partición EFI...${NC}"
-        if ! mount "$PARTITION_1" /mnt/boot/efi; then
+        if ! mount "$PARTITION_1" /mnt/boot; then
             echo -e "${RED}ERROR: Falló el montaje de la partición EFI${NC}"
             exit 1
         fi
@@ -2085,8 +2085,8 @@ partition_cifrado() {
             echo -e "${RED}ERROR: /mnt/boot no está montado correctamente${NC}"
             exit 1
         fi
-        if ! mountpoint -q /mnt/boot/efi; then
-            echo -e "${RED}ERROR: /mnt/boot/efi no está montado correctamente${NC}"
+        if ! mountpoint -q /mnt/boot; then
+            echo -e "${RED}ERROR: /mnt/boot no está montado correctamente${NC}"
             exit 1
         fi
 
@@ -2411,10 +2411,10 @@ partition_manual() {
     for partition_config in "${PARTITIONS[@]}"; do
         IFS=' ' read -r device format mountpoint <<< "$partition_config"
         if [ "$mountpoint" = "/boot/EFI" ]; then
-            echo -e "${GREEN}| Montando EFI: $device -> /mnt/boot/efi |${NC}"
-            mkdir -p /mnt/boot/efi
-            mount $device /mnt/boot/efi
-            echo -e "${CYAN}Partición EFI montada en /mnt/boot/efi${NC}"
+            echo -e "${GREEN}| Montando EFI: $device -> /mnt/boot |${NC}"
+            mkdir -p /mnt/boot
+            mount $device /mnt/boot
+            echo -e "${CYAN}Partición EFI montada en /mnt/boot${NC}"
             break
         fi
     done
@@ -2678,7 +2678,7 @@ if [ "$PARTITION_MODE" = "manual" ]; then
                 "mkfs.fat32"|"mkfs.fat16"|"vfat")
                     FS_TYPE="vfat"
                     if [ "$mountpoint" = "/boot/EFI" ]; then
-                        echo "UUID=$PART_UUID /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
+                        echo "UUID=$PART_UUID /boot vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
                     else
                         echo "UUID=$PART_UUID $mountpoint vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
                     fi
@@ -3103,20 +3103,20 @@ if true; then
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         # Verificar que la partición EFI esté montada con debug adicional
         echo -e "${CYAN}Verificando montaje de partición EFI...${NC}"
-        if ! mountpoint -q /mnt/boot/efi; then
-            echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot/efi${NC}"
+        if ! mountpoint -q /mnt/boot; then
+            echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot${NC}"
             echo -e "${YELLOW}Información de debug:${NC}"
             echo "- Contenido de /mnt/boot:"
             ls -la /mnt/boot/ 2>/dev/null || echo "  Directorio /mnt/boot no accesible"
-            echo "- Contenido de /mnt/boot/efi:"
-            ls -la /mnt/boot/efi/ 2>/dev/null || echo "  Directorio /mnt/boot/efi no accesible"
+            echo "- Contenido de /mnt/boot:"
+            ls -la /mnt/boot/ 2>/dev/null || echo "  Directorio /mnt/boot no accesible"
             echo "- Montajes actuales:"
             mount | grep "/mnt"
             echo "- Particiones disponibles:"
             lsblk ${SELECTED_DISK}
             exit 1
         fi
-        echo -e "${GREEN}✓ Partición EFI montada correctamente en /mnt/boot/efi${NC}"
+        echo -e "${GREEN}✓ Partición EFI montada correctamente en /mnt/boot${NC}"
 
         # Verificar sistema UEFI con debug
         echo -e "${CYAN}Verificando sistema UEFI...${NC}"
@@ -3164,12 +3164,12 @@ if true; then
         sleep 4
 
         # Limpiar directorio EFI previo si existe
-        #if [ -d "/mnt/boot/efi/EFI/GRUB" ]; then
-        #    rm -rf /mnt/boot/efi/EFI/GRUB
+        #if [ -d "/mnt/boot/EFI/GRUB" ]; then
+        #    rm -rf /mnt/boot/EFI/GRUB
         #fi
 
         # Crear directorio EFI si no existe
-        #mkdir -p /mnt/boot/efi/EFI
+        #mkdir -p /mnt/boot/EFI
 
         echo -e "${CYAN}Instalando paquetes GRUB para UEFI...${NC}"
         install_pacman_chroot_with_retry "grub"
@@ -3234,7 +3234,7 @@ if true; then
 
         # Instalar GRUB en modo removible (crea /EFI/BOOT/bootx64.efi)
         echo -e "${CYAN}Instalando GRUB en modo removible...${NC}"
-        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --removable --force --recheck" || {
+        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot --removable --force --recheck" || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (modo removible)${NC}"
             exit 1
         }
@@ -3242,19 +3242,19 @@ if true; then
 
         # Instalar GRUB con entrada NVRAM (crea /EFI/GRUB/grubx64.efi)
         echo -e "${CYAN}Instalando GRUB...${NC}"
-        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force --recheck" || {
+        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --force --recheck" || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
             exit 1
         }
         echo -e "${GREEN}✓ GRUB instalado con entrada NVRAM (/EFI/GRUB/grubx64.efi)${NC}"
 
         # Verificar que ambos bootloaders se hayan creado
-        if [ ! -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ]; then
+        if [ ! -f "/mnt/boot/EFI/BOOT/bootx64.efi" ]; then
             echo -e "${RED}ERROR: No se creó bootx64.efi${NC}"
             exit 1
         fi
 
-        if [ ! -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
+        if [ ! -f "/mnt/boot/EFI/GRUB/grubx64.efi" ]; then
             echo -e "${RED}ERROR: No se creó grubx64.efi${NC}"
             exit 1
         fi
@@ -3360,15 +3360,15 @@ if true; then
     echo ""
 
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
+        if [ -f "/mnt/boot/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/EFI/BOOT/bootx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
             echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente${NC}"
             echo -e "${GREEN}✓ Modo NVRAM: /EFI/GRUB/grubx64.efi${NC}"
             echo -e "${GREEN}✓ Modo removible: /EFI/BOOT/bootx64.efi${NC}"
         else
             echo -e "${RED}⚠ Problema con la instalación del bootloader UEFI${NC}"
             echo -e "${YELLOW}Archivos verificados:${NC}"
-            echo "  - /mnt/boot/efi/EFI/GRUB/grubx64.efi: $([ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && echo "✓" || echo "✗")"
-            echo "  - /mnt/boot/efi/EFI/BOOT/bootx64.efi: $([ -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ] && echo "✓" || echo "✗")"
+            echo "  - /mnt/boot/EFI/GRUB/grubx64.efi: $([ -f "/mnt/boot/EFI/GRUB/grubx64.efi" ] && echo "✓" || echo "✗")"
+            echo "  - /mnt/boot/EFI/BOOT/bootx64.efi: $([ -f "/mnt/boot/EFI/BOOT/bootx64.efi" ] && echo "✓" || echo "✗")"
             echo "  - /mnt/boot/grub/grub.cfg: $([ -f "/mnt/boot/grub/grub.cfg" ] && echo "✓" || echo "✗")"
         fi
     else
@@ -4283,9 +4283,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo "/dev/mapper/vg0-root / ext4 rw,relatime 0 1" >> /mnt/etc/fstab
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
-        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
-        echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
-        echo "UUID=$(blkid -s UUID -o value "$PARTITION_2") /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
+        echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
     else
         PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
         echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
