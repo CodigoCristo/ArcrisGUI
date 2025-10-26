@@ -352,10 +352,10 @@ void page9_execute_restart(void)
     
     // Sincronizar discos antes del reinicio
     LOG_INFO("Sincronizando discos...");
-    int sync_result = system("sync");
-    if (sync_result != 0) {
-        LOG_WARNING("Advertencia: sync falló con código %d", sync_result);
-    }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+    system("sync");
+#pragma GCC diagnostic pop
     sleep(1);
     
     // Intentar varios métodos de reinicio
@@ -409,10 +409,10 @@ void page9_execute_exit(void)
     
     // Sincronizar discos para asegurar que todos los datos estén escritos
     LOG_INFO("Sincronizando discos antes de salir...");
-    int sync_result = system("sync");
-    if (sync_result != 0) {
-        LOG_WARNING("Advertencia: sync falló con código %d", sync_result);
-    }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+    system("sync");
+#pragma GCC diagnostic pop
     
     // Limpiar recursos de la página 9
     LOG_INFO("Limpiando recursos de página 9...");
