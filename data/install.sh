@@ -275,6 +275,41 @@ install_yay_chroot_with_retry() {
     fi
 }
 
+# Función para instalar paquete de AUR con bucle infinito
+install_aur_with_retry() {
+    local package="$1"
+    local attempt=1
+
+    if [[ -z "$package" ]]; then
+        echo -e "${RED}❌ Error: No se especificó paquete AUR${NC}"
+        return 1
+    fi
+
+    echo -e "${GREEN}📦 Instalando paquete AUR: ${YELLOW}$package${GREEN} desde AUR${NC}"
+
+    while true; do
+        echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
+
+        # Verificar conectividad antes del intento
+        wait_for_internet
+
+        # Ejecutar instalación desde AUR
+        if chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/$package.git && cd $package && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"; then
+            echo -e "${GREEN}✅ $package instalado correctamente desde AUR${NC}"
+            sleep 2
+            return 0
+        else
+            echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
+            echo -e "${RED}🔍 Comando ejecutado: chroot /mnt bash -c \"cd /tmp && git clone https://aur.archlinux.org/$package.git && cd $package && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'\"${NC}"
+            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
+            # Limpiar directorio en caso de fallo
+            chroot /mnt bash -c "rm -rf /tmp/$package" 2>/dev/null || true
+            sleep 5
+            ((attempt++))
+        fi
+    done
+}
+
 # Función para instalar paquete localmente en LiveCD con bucle infinito
 install_pacman_livecd_with_retry() {
     local package="$1"
@@ -2972,10 +3007,15 @@ echo -e "${GREEN}✓ Instalanado extras${NC}"
 # chroot /mnt pacman -S yay-bin --noconfirm
 # chroot /mnt pacman -S alsi --noconfirm
 # Instalar yay-bin desde AUR usando makepkg
-chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
-sleep 2
+#chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
+#sleep 2
 # Instalar alsi desde AUR usando makepkg
-chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && cd alsi && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
+#chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && cd alsi && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
+#sleep 2
+
+install_aur_with_retry "yay-bin"
+sleep 2
+install_aur_with_retry "alsi"
 sleep 2
 clear
 
@@ -5829,14 +5869,13 @@ sleep 2
 clear
 
 echo -e "${GREEN}✓ Tipografías instaladas${NC}"
+# Fuentes base
 install_pacman_chroot_with_retry "noto-fonts"
-install_pacman_chroot_with_retry "noto-fonts-emoji"
-install_pacman_chroot_with_retry "adobe-source-code-pro-fonts"
-install_pacman_chroot_with_retry "ttf-cascadia-code"
-install_pacman_chroot_with_retry "cantarell-fonts"
-install_pacman_chroot_with_retry "ttf-roboto"
-install_pacman_chroot_with_retry "ttf-ubuntu-font-family"
 install_pacman_chroot_with_retry "gnu-free-fonts"
+install_pacman_chroot_with_retry "ttf-0xproto-nerd"
+# Iconos
+install_pacman_chroot_with_retry "ttf-nerd-fonts-symbols-common"
+install_pacman_chroot_with_retry "ttf-nerd-fonts-symbols-mono"
 sleep 2
 clear
 configurar_teclado
