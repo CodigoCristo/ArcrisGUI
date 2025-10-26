@@ -3012,7 +3012,7 @@ echo -e "${GREEN}✓ Instalanado extras${NC}"
 # Instalar alsi desde AUR usando makepkg
 #chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && cd alsi && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
 #sleep 2
-
+sleep 3
 install_aur_with_retry "yay-bin"
 sleep 2
 install_aur_with_retry "alsi"
