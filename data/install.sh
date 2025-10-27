@@ -5123,7 +5123,6 @@ EOF
                 install_pacman_chroot_with_retry "wlr-randr"                    # Gestor de pantallas para Wayland
                 install_pacman_chroot_with_retry "hyprland"                     # Compositor Wayland dinámico con animaciones y efectos
                 install_pacman_chroot_with_retry "hyprpaper"                    # Gestor de wallpapers para Hyprland
-                install_pacman_chroot_with_retry "hyprpicker"                   # Selector de colores para Hyprland
                 install_pacman_chroot_with_retry "hypridle"                     # Gestor de inactividad/idle para Hyprland
                 install_pacman_chroot_with_retry "hyprcursor"                   # Gestor de cursores para Hyprland
                 install_pacman_chroot_with_retry "hyprpolkitagent"              # Agente de autenticación PolicyKit para Hyprland
@@ -5140,7 +5139,6 @@ EOF
                 install_pacman_chroot_with_retry "qt6-wayland"                  # Soporte de Wayland para aplicaciones Qt6
                 install_pacman_chroot_with_retry "kitty"                        # Emulador de terminal acelerado por GPU
                 install_pacman_chroot_with_retry "dunst"                        # Demonio de notificaciones ligero y personalizable
-                install_yay_chroot_with_retry "wdisplays"                       # Gestor gráfico de resolución y monitores Wayland
                 install_pacman_chroot_with_retry "nwg-look"                     # Configurador de temas GTK para Wayland
                 install_pacman_chroot_with_retry "xdg-utils"                    # Herramientas para integración de escritorio (abrir archivos, URLs)
                 install_pacman_chroot_with_retry "brightnessctl"                # Control de brillo de pantalla desde terminal
