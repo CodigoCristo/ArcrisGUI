@@ -3013,7 +3013,7 @@ echo -e "${GREEN}✓ Instalanado extras${NC}"
 #chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && cd alsi && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
 #sleep 2
 sleep 3
-install_aur_with_retry "yay-bin"
+install_aur_with_retry "yay"
 sleep 2
 install_aur_with_retry "alsi"
 sleep 2
@@ -5035,7 +5035,8 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "DWL")
                 echo -e "${YELLOW}Instalando dependencias de DWL...${NC}"
-                install_pacman_chroot_with_retry "wayland"
+                install_pacman_chroot_with_retry "wayland"                      # Protocolo de servidor de display moderno (reemplazo de X11)
+                install_pacman_chroot_with_retry "wlr-randr"                    # Gestor de pantallas para Wayland
                 install_pacman_chroot_with_retry "wayland-protocols"
                 install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
                 install_pacman_chroot_with_retry "wlroots0.19"
@@ -5063,7 +5064,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "pkg-config"
                 install_pacman_chroot_with_retry "fcft"
                 install_pacman_chroot_with_retry "kitty"
-                install_pacman_chroot_with_retry "kanshi"             # Gestión automática de monitores
+                install_yay_chroot_with_retry "wdisplays"                       # Gestor gráfico de resolución y monitores Wayland
                 echo -e "${CYAN}Instalando DWL Wayland Compositor...${NC}"
                 install_yay_chroot_with_retry "dwl"
 
@@ -5118,32 +5119,31 @@ EOF
                 ;;
             "HYPRLAND")
                 echo -e "${CYAN}Instalando Hyprland Window Manager...${NC}"
-                install_pacman_chroot_with_retry "wayland"
-                install_pacman_chroot_with_retry "hyprland"
-                install_pacman_chroot_with_retry "waybar"
-                install_pacman_chroot_with_retry "wofi"
-                install_pacman_chroot_with_retry "nwg-displays"
-                install_pacman_chroot_with_retry "xdg-desktop-portal-hyprland"
-                install_pacman_chroot_with_retry "xdg-desktop-portal-gtk"
-                install_pacman_chroot_with_retry "hyprpaper"
-                install_pacman_chroot_with_retry "hyprpicker"
-                install_pacman_chroot_with_retry "hypridle"
-                install_pacman_chroot_with_retry "hyprcursor"
-                install_pacman_chroot_with_retry "hyprpolkitagent"
-                install_pacman_chroot_with_retry "hyprsunset"
-                install_pacman_chroot_with_retry "wl-clipboard"
-                install_pacman_chroot_with_retry "grim"
-                install_pacman_chroot_with_retry "slurp"
-                install_pacman_chroot_with_retry "qt5-wayland"
-                install_pacman_chroot_with_retry "qt6-wayland"
-                install_pacman_chroot_with_retry "kitty"
-                install_pacman_chroot_with_retry "dunst"
-                install_pacman_chroot_with_retry "polkit-gnome"
-                install_yay_chroot_with_retry "wlogout"            # Menú de apagado/cierre
-                install_pacman_chroot_with_retry "kanshi"             # Gestión automática de monitores
-                install_pacman_chroot_with_retry "nwg-look"
-                install_pacman_chroot_with_retry "xdg-utils"
-                install_pacman_chroot_with_retry "brightnessctl"
+                install_pacman_chroot_with_retry "wayland"                      # Protocolo de servidor de display moderno (reemplazo de X11)
+                install_pacman_chroot_with_retry "wlr-randr"                    # Gestor de pantallas para Wayland
+                install_pacman_chroot_with_retry "hyprland"                     # Compositor Wayland dinámico con animaciones y efectos
+                install_pacman_chroot_with_retry "hyprpaper"                    # Gestor de wallpapers para Hyprland
+                install_pacman_chroot_with_retry "hyprpicker"                   # Selector de colores para Hyprland
+                install_pacman_chroot_with_retry "hypridle"                     # Gestor de inactividad/idle para Hyprland
+                install_pacman_chroot_with_retry "hyprcursor"                   # Gestor de cursores para Hyprland
+                install_pacman_chroot_with_retry "hyprpolkitagent"              # Agente de autenticación PolicyKit para Hyprland
+                install_pacman_chroot_with_retry "hyprsunset"                   # Filtro de luz azul/ajuste de temperatura de color
+                install_pacman_chroot_with_retry "waybar"                       # Barra de estado personalizable para Wayland
+                install_pacman_chroot_with_retry "wofi"                         # Launcher de aplicaciones para Wayland (estilo rofi)
+                install_pacman_chroot_with_retry "nwg-displays"                 # Configurador gráfico de pantallas para Wayland
+                install_pacman_chroot_with_retry "xdg-desktop-portal-hyprland"  # Portal XDG específico para Hyprland (compartir pantalla, etc.)
+                install_pacman_chroot_with_retry "xdg-desktop-portal-gtk"       # Portal XDG con backend GTK (diálogos de archivos, etc.)
+                install_pacman_chroot_with_retry "wl-clipboard"                 # Utilidades de portapapeles para Wayland
+                install_pacman_chroot_with_retry "grim"                         # Captura de pantalla para Wayland
+                install_pacman_chroot_with_retry "slurp"                        # Selector de región de pantalla (usado con grim)
+                install_pacman_chroot_with_retry "qt5-wayland"                  # Soporte de Wayland para aplicaciones Qt5
+                install_pacman_chroot_with_retry "qt6-wayland"                  # Soporte de Wayland para aplicaciones Qt6
+                install_pacman_chroot_with_retry "kitty"                        # Emulador de terminal acelerado por GPU
+                install_pacman_chroot_with_retry "dunst"                        # Demonio de notificaciones ligero y personalizable
+                install_yay_chroot_with_retry "wdisplays"                       # Gestor gráfico de resolución y monitores Wayland
+                install_pacman_chroot_with_retry "nwg-look"                     # Configurador de temas GTK para Wayland
+                install_pacman_chroot_with_retry "xdg-utils"                    # Herramientas para integración de escritorio (abrir archivos, URLs)
+                install_pacman_chroot_with_retry "brightnessctl"                # Control de brillo de pantalla desde terminal
                 # Crear configuración básica de hyprland
                 mkdir -p /mnt/home/$USER/.config/hypr
                 chroot /mnt /bin/bash -c "install -Dm644 /usr/share/hypr/hyprland.conf /home/$USER/.config/hypr/hyprland.conf"
@@ -5233,7 +5233,8 @@ EOF
             "SWAY")
                 echo -e "${CYAN}Instalando Sway Window Manager...${NC}"
                 # Base Wayland
-                install_pacman_chroot_with_retry "wayland"            # Protocolo Wayland
+                install_pacman_chroot_with_retry "wayland"                      # Protocolo de servidor de display moderno (reemplazo de X11)
+                install_pacman_chroot_with_retry "wlr-randr"                    # Gestor de pantallas para Wayland
                 install_pacman_chroot_with_retry "xorg-xwayland"      # Compatibilidad con apps X11
 
                 # Sway y componentes principales
@@ -5275,8 +5276,7 @@ EOF
                 install_pacman_chroot_with_retry "qt6-wayland"        # Soporte Qt6
 
                 # Utilidades
-                install_yay_chroot_with_retry "wlogout"            # Menú de apagado/cierre
-                install_pacman_chroot_with_retry "kanshi"             # Gestión automática de monitores
+                install_yay_chroot_with_retry "wdisplays"             # Gestor gráfico de resolución y monitores Wayland
                 install_pacman_chroot_with_retry "foot"               # Terminal nativa Wayland (ligera)
 
                 # Aplicaciones básicas
