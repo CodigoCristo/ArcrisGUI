@@ -3073,13 +3073,16 @@ echo ""
 
 # Detectar RAM total del sistema
 TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024))
+TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024 + 900))
 TOTAL_RAM_GB=$((TOTAL_RAM_MB / 1024))
 
-# Calcular zram exacto: 50% de RAM, máximo 8GB
+# Calcular zram exacto: 50% de RAM, máximo 8GB, mínimo 2GB
 ZRAM_SIZE_MB=$((TOTAL_RAM_MB / 2))
 if [ $ZRAM_SIZE_MB -gt 8192 ]; then
     ZRAM_SIZE_MB=8192
+fi
+if [ $ZRAM_SIZE_MB -lt 2048 ]; then
+    ZRAM_SIZE_MB=2048
 fi
 ZRAM_SIZE_GB=$((ZRAM_SIZE_MB / 1024))
 
@@ -5037,6 +5040,7 @@ case "$INSTALLATION_TYPE" in
                 echo -e "${YELLOW}Instalando dependencias de DWL...${NC}"
                 install_pacman_chroot_with_retry "wayland"                      # Protocolo de servidor de display moderno (reemplazo de X11)
                 install_pacman_chroot_with_retry "wlr-randr"                    # Gestor de pantallas para Wayland
+                install_pacman_chroot_with_retry "xorg-xwayland"                # Compatibilidad con apps X11
                 install_pacman_chroot_with_retry "wayland-protocols"
                 install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
                 install_pacman_chroot_with_retry "wlroots0.19"
@@ -5121,6 +5125,7 @@ EOF
                 echo -e "${CYAN}Instalando Hyprland Window Manager...${NC}"
                 install_pacman_chroot_with_retry "wayland"                      # Protocolo de servidor de display moderno (reemplazo de X11)
                 install_pacman_chroot_with_retry "wlr-randr"                    # Gestor de pantallas para Wayland
+                install_pacman_chroot_with_retry "xorg-xwayland"                # Compatibilidad con apps X11
                 install_pacman_chroot_with_retry "hyprland"                     # Compositor Wayland dinámico con animaciones y efectos
                 install_pacman_chroot_with_retry "hyprpaper"                    # Gestor de wallpapers para Hyprland
                 install_pacman_chroot_with_retry "hypridle"                     # Gestor de inactividad/idle para Hyprland
