@@ -21,6 +21,7 @@ typedef struct _Page9Data {
     GtkLabel *info_label;
     
     // Botones de acción
+    GtkButton *shutdown_button;
     GtkButton *restart_button;
     GtkButton *exit_button;
     
@@ -45,6 +46,7 @@ void page9_show_completion_animation(Page9Data *data);
 void page9_fade_in_elements(Page9Data *data);
 
 // Callbacks de botones
+void on_shutdown_button_clicked(GtkButton *button, gpointer user_data);
 void on_restart_button_clicked(GtkButton *button, gpointer user_data);
 void on_exit_button_clicked(GtkButton *button, gpointer user_data);
 
@@ -55,10 +57,12 @@ void page9_on_page_shown(void);
 void page9_on_page_hidden(void);
 
 // Funciones de sistema
+void page9_execute_shutdown(void);
 void page9_execute_restart(void);
 void page9_execute_exit(void);
 
 // Funciones de validación
+gboolean page9_can_shutdown(void);
 gboolean page9_can_restart(void);
 gboolean page9_can_exit(void);
 

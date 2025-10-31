@@ -12,6 +12,7 @@
 static Page9Data *g_page9_data = NULL;
 
 // Forward declarations for static functions
+static void on_shutdown_dialog_response(AdwAlertDialog *dialog, GAsyncResult *result, gpointer user_data);
 static void on_restart_dialog_response(AdwAlertDialog *dialog, GAsyncResult *result, gpointer user_data);
 static void on_exit_dialog_response(AdwAlertDialog *dialog, GAsyncResult *result, gpointer user_data);
 
@@ -57,21 +58,22 @@ void page9_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page9_data->info_label = GTK_LABEL(gtk_builder_get_object(page_builder, "info_label"));
     
     // Obtener botones
+    g_page9_data->shutdown_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "shutdown_button"));
     g_page9_data->restart_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "restart_button"));
     g_page9_data->exit_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "exit_button"));
     
-    LOG_INFO("DEBUG: Widgets obtenidos - success_icon=%p, completion_message=%p, restart_button=%p, exit_button=%p",
+    LOG_INFO("DEBUG: Widgets obtenidos - success_icon=%p, completion_message=%p, shutdown_button=%p, restart_button=%p, exit_button=%p",
              g_page9_data->success_icon, g_page9_data->completion_message, 
-             g_page9_data->restart_button, g_page9_data->exit_button);
+             g_page9_data->shutdown_button, g_page9_data->restart_button, g_page9_data->exit_button);
     
     // Verificar que se obtuvieron todos los widgets necesarios
     if (!g_page9_data->success_icon || !g_page9_data->completion_message ||
         !g_page9_data->secondary_message || !g_page9_data->info_label ||
-        !g_page9_data->restart_button || !g_page9_data->exit_button) {
+        !g_page9_data->shutdown_button || !g_page9_data->restart_button || !g_page9_data->exit_button) {
         LOG_ERROR("No se pudieron obtener todos los widgets necesarios de page9.ui");
-        LOG_ERROR("DEBUG: success_icon=%p, completion_message=%p, restart_button=%p, exit_button=%p",
+        LOG_ERROR("DEBUG: success_icon=%p, completion_message=%p, shutdown_button=%p, restart_button=%p, exit_button=%p",
                   g_page9_data->success_icon, g_page9_data->completion_message,
-                  g_page9_data->restart_button, g_page9_data->exit_button);
+                  g_page9_data->shutdown_button, g_page9_data->restart_button, g_page9_data->exit_button);
         g_object_unref(page_builder);
         return;
     }
@@ -99,6 +101,8 @@ void page9_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     
     // Conectar señales
     LOG_INFO("DEBUG: Conectando señales...");
+    g_signal_connect(g_page9_data->shutdown_button, "clicked", 
+                     G_CALLBACK(on_shutdown_button_clicked), g_page9_data);
     g_signal_connect(g_page9_data->restart_button, "clicked", 
                      G_CALLBACK(on_restart_button_clicked), g_page9_data);
     g_signal_connect(g_page9_data->exit_button, "clicked", 
@@ -148,11 +152,15 @@ void page9_setup_widgets(Page9Data *data)
     }
     
     // Configurar botones con estilos específicos
-    if (data->restart_button) {
-        gtk_widget_add_css_class(GTK_WIDGET(data->restart_button), "restart-button");
-        gtk_widget_add_css_class(GTK_WIDGET(data->restart_button), "destructive-action");
+    if (data->shutdown_button) {
+        gtk_widget_add_css_class(GTK_WIDGET(data->shutdown_button), "shutdown-button");
+        gtk_widget_add_css_class(GTK_WIDGET(data->shutdown_button), "destructive-action");
     }
     
+    if (data->restart_button) {
+        gtk_widget_add_css_class(GTK_WIDGET(data->restart_button), "restart-button");
+    }
+
     if (data->exit_button) {
         gtk_widget_add_css_class(GTK_WIDGET(data->exit_button), "exit-button");
         gtk_widget_add_css_class(GTK_WIDGET(data->exit_button), "suggested-action");
@@ -178,14 +186,23 @@ void page9_setup_styles(Page9Data *data)
         "  color: #26a269; "
         "  font-weight: bold; "
         "} "
-        ".restart-button { "
-        "  background: linear-gradient(to bottom, #e01b24, #c01c28); "
+        ".shutdown-button { "
+        "  background: linear-gradient(to bottom, #a51d2d, #8b1a1a); "
         "  color: white; "
-        "  border: 1px solid #a51d2d; "
+        "  border: 1px solid #721e20; "
+        "  font-weight: bold; "
+        "} "
+        ".shutdown-button:hover { "
+        "  background: linear-gradient(to bottom, #c01c28, #a51d2d); "
+        "} "
+        ".restart-button { "
+        "  background: linear-gradient(to bottom, #ff7800, #e66100); "
+        "  color: white; "
+        "  border: 1px solid #cc5500; "
         "  font-weight: bold; "
         "} "
         ".restart-button:hover { "
-        "  background: linear-gradient(to bottom, #ed333b, #e01b24); "
+        "  background: linear-gradient(to bottom, #ff8533, #ff7800); "
         "} "
         ".exit-button { "
         "  background: linear-gradient(to bottom, #3584e4, #1c71d8); "
@@ -314,6 +331,37 @@ void on_exit_button_clicked(GtkButton *button, gpointer user_data)
     }
 }
 
+// Callback del botón apagar
+void on_shutdown_button_clicked(GtkButton *button, gpointer user_data)
+{
+    LOG_INFO("Botón 'Apagar' presionado");
+    
+    if (!page9_can_shutdown()) {
+        LOG_WARNING("No se puede apagar en este momento");
+        return;
+    }
+    
+    // Mostrar diálogo de confirmación usando AdwAlertDialog
+    AdwAlertDialog *dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new(
+        "¿Está seguro que desea apagar el sistema ahora?",
+        "El sistema se apagará completamente. Asegúrese de haber guardado todo su trabajo."
+    ));
+    
+    adw_alert_dialog_add_response(dialog, "cancel", "Cancelar");
+    adw_alert_dialog_add_response(dialog, "shutdown", "Apagar");
+    adw_alert_dialog_set_response_appearance(dialog, "shutdown", ADW_RESPONSE_DESTRUCTIVE);
+    
+    // Obtener la ventana principal para mostrar el diálogo
+    GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(g_page9_data->main_content)));
+    if (parent_window) {
+        adw_alert_dialog_choose(dialog, GTK_WIDGET(parent_window), NULL, 
+                               (GAsyncReadyCallback)on_shutdown_dialog_response, NULL);
+    } else {
+        adw_alert_dialog_choose(dialog, NULL, NULL, 
+                               (GAsyncReadyCallback)on_shutdown_dialog_response, NULL);
+    }
+}
+
 // Función llamada cuando se muestra la página 9
 void page9_on_page_shown(void)
 {
@@ -343,6 +391,63 @@ void page9_on_page_hidden(void)
     LOG_INFO("Página 9 ocultada");
     
     // Limpiar cualquier timer o animación si es necesario
+}
+
+// Ejecutar apagado del sistema
+void page9_execute_shutdown(void)
+{
+    LOG_INFO("Ejecutando apagado del sistema...");
+    
+    // Sincronizar discos antes del apagado
+    LOG_INFO("Sincronizando discos...");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+    system("sync");
+#pragma GCC diagnostic pop
+    sleep(1);
+    
+    // Intentar varios métodos de apagado
+    LOG_INFO("Intentando apagado con systemctl...");
+    int result = system("systemctl poweroff");
+    
+    if (result != 0) {
+        LOG_WARNING("systemctl poweroff falló, intentando con shutdown...");
+        result = system("shutdown -h now");
+        
+        if (result != 0) {
+            LOG_WARNING("shutdown falló, intentando con poweroff...");
+            result = system("poweroff");
+            
+            if (result != 0) {
+                LOG_ERROR("Todos los métodos de apagado fallaron");
+                
+                // Mostrar diálogo de error usando AdwAlertDialog
+                AdwAlertDialog *error_dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new(
+                    "Error al apagar el sistema",
+                    "No se pudo ejecutar el comando de apagado automático.\n\n"
+                    "Por favor:\n"
+                    "1. Cierre todas las aplicaciones\n"
+                    "2. Abra una terminal como root\n"
+                    "3. Ejecute: systemctl poweroff\n\n"
+                    "O use el botón de apagado físico del equipo."
+                ));
+                
+                adw_alert_dialog_add_response(error_dialog, "ok", "Entendido");
+                adw_alert_dialog_set_response_appearance(error_dialog, "ok", ADW_RESPONSE_SUGGESTED);
+                
+                // Obtener la ventana principal para mostrar el diálogo
+                GtkWindow *parent_window = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(g_page9_data->main_content)));
+                if (parent_window) {
+                    adw_alert_dialog_choose(error_dialog, GTK_WIDGET(parent_window), NULL, NULL, NULL);
+                } else {
+                    adw_alert_dialog_choose(error_dialog, NULL, NULL, NULL, NULL);
+                }
+                return;
+            }
+        }
+    }
+    
+    LOG_INFO("Comando de apagado ejecutado exitosamente");
 }
 
 // Ejecutar reinicio del sistema
@@ -448,6 +553,33 @@ void page9_execute_exit(void)
     }
     
     LOG_INFO("Secuencia de salida iniciada");
+}
+
+// Verificar si se puede apagar
+gboolean page9_can_shutdown(void)
+{
+    LOG_INFO("Verificando si se puede apagar el sistema...");
+    
+    // Verificar que no haya procesos críticos ejecutándose
+    if (page9_check_critical_processes()) {
+        LOG_WARNING("Hay procesos críticos ejecutándose, no se puede apagar");
+        return FALSE;
+    }
+    
+    // Verificar que tengamos permisos de root
+    if (!page9_check_root_permissions()) {
+        LOG_WARNING("No se tienen permisos de root para apagar");
+        return FALSE;
+    }
+    
+    // Verificar que estemos en un Live CD o sistema instalado
+    if (!page9_check_system_state()) {
+        LOG_WARNING("Estado del sistema no válido para apagado");
+        return FALSE;
+    }
+    
+    LOG_INFO("Sistema listo para apagar");
+    return TRUE;
 }
 
 // Verificar si se puede reiniciar
@@ -677,13 +809,26 @@ void page9_remove_installation_lock(void)
     }
 }
 
-// Callback para respuesta del diálogo de salida
+// Callback del diálogo de apagado
+static void on_shutdown_dialog_response(AdwAlertDialog *dialog, GAsyncResult *result, gpointer user_data)
+{
+    const char *response = adw_alert_dialog_choose_finish(dialog, result);
+    
+    if (g_strcmp0(response, "shutdown") == 0) {
+        LOG_INFO("Usuario confirmó apagar el sistema");
+        page9_execute_shutdown();
+    } else {
+        LOG_INFO("Usuario canceló el apagado");
+    }
+}
+
+// Callback del diálogo de salida
 static void on_exit_dialog_response(AdwAlertDialog *dialog, GAsyncResult *result, gpointer user_data)
 {
     const char *response = adw_alert_dialog_choose_finish(dialog, result);
     
     if (g_strcmp0(response, "exit") == 0) {
-        LOG_INFO("Usuario confirmó salida del instalador");
+        LOG_INFO("Usuario confirmó salir del instalador");
         page9_execute_exit();
     } else {
         LOG_INFO("Usuario canceló la salida");

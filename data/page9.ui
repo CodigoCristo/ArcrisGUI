@@ -77,14 +77,31 @@
             <property name="orientation">horizontal</property>
             <property name="halign">center</property>
             <property name="valign">center</property>
-            <property name="spacing">24</property>
+            <property name="spacing">16</property>
             <property name="homogeneous">true</property>
 
-            <!-- Botón Reiniciar (ROJO) -->
+            <!-- Botón Apagar (ROJO OSCURO) -->
+            <child>
+              <object class="GtkButton" id="shutdown_button">
+                <property name="label">Apagar</property>
+                <property name="width-request">120</property>
+                <property name="height-request">48</property>
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="tooltip-text">Apagar el sistema ahora</property>
+                <style>
+                  <class name="pill"/>
+                  <class name="shutdown-button"/>
+                  <class name="destructive-action"/>
+                </style>
+              </object>
+            </child>
+
+            <!-- Botón Reiniciar (NARANJA) -->
             <child>
               <object class="GtkButton" id="restart_button">
                 <property name="label">Reiniciar</property>
-                <property name="width-request">140</property>
+                <property name="width-request">120</property>
                 <property name="height-request">48</property>
                 <property name="halign">center</property>
                 <property name="valign">center</property>
@@ -92,7 +109,6 @@
                 <style>
                   <class name="pill"/>
                   <class name="restart-button"/>
-                  <class name="destructive-action"/>
                 </style>
               </object>
             </child>
@@ -101,7 +117,7 @@
             <child>
               <object class="GtkButton" id="exit_button">
                 <property name="label">Salir</property>
-                <property name="width-request">140</property>
+                <property name="width-request">120</property>
                 <property name="height-request">48</property>
                 <property name="halign">center</property>
                 <property name="valign">center</property>
@@ -127,7 +143,7 @@
 
             <child>
               <object class="GtkLabel" id="info_label">
-                <property name="label">Nota: Si elige "Salir", podrá reiniciar manualmente más tarde</property>
+                <property name="label">Apagar: Cierra el sistema completamente • Reiniciar: Reinicia el sistema • Salir: Cierra el instalador</property>
                 <property name="halign">center</property>
                 <property name="valign">center</property>
                 <property name="wrap">true</property>
