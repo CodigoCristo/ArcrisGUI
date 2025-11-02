@@ -213,7 +213,7 @@ install_pacman_chroot_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman en chroot${NC}"
 
-    while true; do
+    while [[ $attempt -le 30 ]]; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -231,6 +231,11 @@ install_pacman_chroot_with_retry() {
             ((attempt++))
         fi
     done
+
+    # Si llegamos aquí, significa que se agotaron los 30 intentos
+    echo -e "${RED}❌ Error: Se agotaron los 30 intentos para instalar $package con pacman en chroot${NC}"
+    return 1
+
 
 
 }
@@ -4691,8 +4696,8 @@ case "$INSTALLATION_TYPE" in
                 # Plasma Core (lo esencial)
                 install_pacman_chroot_with_retry "plasma-desktop"        # Escritorio base
                 install_pacman_chroot_with_retry "plasma-workspace"      # Workspace
-                install_pacman_chroot_with_retry "plasma-wayland-session"  # Sesión Wayland
-                install_pacman_chroot_with_retry "plasma-x11-session"    # Sesión X11 (obsoleto en Plasma 6, pero útil)
+                install_pacman_chroot_with_retry "kwayland"  # Sesión Wayland
+                install_pacman_chroot_with_retry "kwin-x11"    # Sesión X11 (obsoleto en Plasma 6, pero útil)
                 install_pacman_chroot_with_retry "kwin"                  # Compositor/WM
 
                 # Configuración y sistema
