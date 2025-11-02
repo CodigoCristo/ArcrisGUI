@@ -4693,12 +4693,10 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "xorg-server"           # Para sesión X11
                 install_pacman_chroot_with_retry "wayland"               # Para sesión Wayland
 
-                # Plasma Core (lo esencial)
-                install_pacman_chroot_with_retry "plasma-desktop"        # Escritorio base
-                install_pacman_chroot_with_retry "plasma-workspace"      # Workspace
-                install_pacman_chroot_with_retry "kwayland"  # Sesión Wayland
-                install_pacman_chroot_with_retry "kwin-x11"    # Sesión X11 (obsoleto en Plasma 6, pero útil)
-                install_pacman_chroot_with_retry "kwin"                  # Compositor/WM
+                # Plasma Core Mínimo
+                install_pacman_chroot_with_retry "plasma-desktop"   # Escritorio base
+                install_pacman_chroot_with_retry "plasma-workspace" # Workspace esencial
+                install_pacman_chroot_with_retry "kwin"            # Compositor (Wayland + X11)
 
                 # Configuración y sistema
                 install_pacman_chroot_with_retry "systemsettings"        # Configuración del sistema
@@ -4709,11 +4707,11 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "sddm"                  # Display Manager
                 install_pacman_chroot_with_retry "sddm-kcm"             # Configurar SDDM desde Plasma
 
-                # Gestión de energía y hardware
-                install_pacman_chroot_with_retry "powerdevil"            # Gestión de energía
-                install_pacman_chroot_with_retry "plasma-pa"             # Control de audio PulseAudio
-                install_pacman_chroot_with_retry "plasma-nm"             # NetworkManager
-                install_pacman_chroot_with_retry "bluedevil"             # Bluetooth
+                # Hardware y Red (Esencial)
+                install_pacman_chroot_with_retry "plasma-nm"       # NetworkManager
+                install_pacman_chroot_with_retry "powerdevil"      # Gestión de energía
+                install_pacman_chroot_with_retry "plasma-pa"       # Control de audio
+                install_pacman_chroot_with_retry "bluedevil"        # Bluetooth
 
                 # Autenticación y seguridad
                 install_pacman_chroot_with_retry "polkit-kde-agent"      # Autenticación
