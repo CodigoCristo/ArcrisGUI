@@ -1730,7 +1730,7 @@ partition_auto_btrfs() {
         echo -e "${CYAN}Creando subvolúmenes BTRFS...${NC}"
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
-        btrfs subvolume create /mnt/@snapshots
+        btrfs subvolume create /mnt/@var_log
         umount /mnt
 
         # Montar subvolúmenes
@@ -1757,8 +1757,9 @@ partition_auto_btrfs() {
 
         echo -e "${CYAN}Activando partición swap...${NC}"
         swapon "$PARTITION_2"
-        mkdir -p /mnt/{boot/efi,home}
+        mkdir -p /mnt/{boot/efi,home,var/log}
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var_log "$PARTITION_3" /mnt/var/log
         mount "$PARTITION_1" /mnt/boot
 
         # Instalar herramientas específicas para BTRFS
@@ -1882,7 +1883,7 @@ partition_auto_btrfs() {
         echo -e "${CYAN}Creando subvolúmenes BTRFS...${NC}"
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
-        btrfs subvolume create /mnt/@snapshots
+        btrfs subvolume create /mnt/@var_log
         umount /mnt
 
         # Montar subvolúmenes
@@ -1909,9 +1910,10 @@ partition_auto_btrfs() {
 
         echo -e "${CYAN}Activando partición swap...${NC}"
         swapon "$PARTITION_2"
-        mkdir -p /mnt/{boot,home}
+        mkdir -p /mnt/{boot,home,var/log}
         mount "$PARTITION_1" /mnt/boot
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var_log "$PARTITION_3" /mnt/var/log
 
         # Instalar herramientas específicas para BTRFS
         install_pacstrap_with_retry "btrfs-progs"
@@ -4381,27 +4383,13 @@ if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     if chroot /mnt /bin/bash -c "pacman -Qq snapper" 2>/dev/null; then
         echo -e "${CYAN}Configurando Snapper para snapshots automáticos...${NC}"
 
-        # Crear configuración para el subvolumen raíz de manera compatible
-        echo -e "${CYAN}Preparando estructura para snapper...${NC}"
-
-        # Crear directorio .snapshots temporalmente para que snapper pueda crear su configuración
+        # Crear configuración para el subvolumen raíz (esto crea automáticamente /.snapshots)
+        echo -e "${CYAN}Snapper creará automáticamente el subvolumen /.snapshots...${NC}"
         if chroot /mnt /bin/bash -c "snapper create-config /"; then
-            echo -e "${GREEN}✓ Configuración base de snapper creada${NC}"
-
-            # Ahora reemplazar el subvolumen .snapshots creado por snapper con nuestro @snapshots
-            echo -e "${CYAN}Configurando para usar subvolumen @snapshots...${NC}"
-            chroot /mnt /bin/bash -c "umount /.snapshots" 2>/dev/null || true
-            chroot /mnt /bin/bash -c "btrfs subvolume delete /.snapshots" 2>/dev/null || true
-            chroot /mnt /bin/bash -c "mkdir -p /.snapshots"
-            chroot /mnt /bin/bash -c "mount -o noatime,compress=zstd,space_cache=v2,subvol=@snapshots /dev/\$(lsblk -no PKNAME \$(findmnt -n -o SOURCE /) | head -1)3 /.snapshots" || {
-                # Fallback: obtener dispositivo de manera más directa
-                PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
-                chroot /mnt /bin/bash -c "mount -o noatime,compress=zstd,space_cache=v2,subvol=@snapshots $PARTITION_3 /.snapshots"
-            }
-            echo -e "${GREEN}✓ Subvolumen @snapshots montado en /.snapshots${NC}"
+            echo -e "${GREEN}✓ Configuración de snapper y subvolumen /.snapshots creados exitosamente${NC}"
         else
             echo -e "${RED}ERROR: No se pudo crear la configuración de snapper${NC}"
-            echo -e "${YELLOW}Continuando sin snapshots automáticos${NC}"
+            echo -e "${YELLOW}Saltando configuración automática de snapshots${NC}"
             return
         fi
 
@@ -4447,30 +4435,16 @@ SNAPCONF
         chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer" || echo -e "${YELLOW}Warning: Falló habilitar snapper-timeline.timer${NC}"
         chroot /mnt /bin/bash -c "systemctl enable snapper-cleanup.timer" || echo -e "${YELLOW}Warning: Falló habilitar snapper-cleanup.timer${NC}"
 
-        # Actualizar fstab para montar @snapshots en /.snapshots permanentemente
-        echo -e "${CYAN}Actualizando fstab para @snapshots...${NC}"
-        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
-        UUID_ROOT=$(chroot /mnt /bin/bash -c "blkid -s UUID -o value $PARTITION_3")
-        if [ -n "$UUID_ROOT" ]; then
-            echo "UUID=$UUID_ROOT /.snapshots btrfs subvol=@snapshots,compress=zstd:3,space_cache=v2,noatime 0 0" >> /mnt/etc/fstab
-            echo -e "${GREEN}✓ Entrada fstab para @snapshots agregada${NC}"
-        fi
-
-        # Verificar que la configuración existe y crear snapshot inicial
+        # Verificar que la configuración existe antes de crear snapshot
         if chroot /mnt /bin/bash -c "snapper list-configs" | grep -q "root"; then
             echo -e "${CYAN}Creando snapshot inicial del sistema...${NC}"
-            # Asegurar que /.snapshots esté montado antes de crear snapshot
-            chroot /mnt /bin/bash -c "mountpoint -q /.snapshots" || {
-                echo -e "${YELLOW}Montando /.snapshots antes de crear snapshot...${NC}"
-                chroot /mnt /bin/bash -c "mount /.snapshots"
-            }
             if chroot /mnt /bin/bash -c "snapper create --description 'Sistema recién instalado - Estado inicial'"; then
                 echo -e "${GREEN}✓ Snapshot inicial creado exitosamente${NC}"
             else
-                echo -e "${YELLOW}Warning: No se pudo crear snapshot inicial, pero la configuración está lista${NC}"
+                echo -e "${YELLOW}Warning: No se pudo crear snapshot inicial${NC}"
             fi
         else
-            echo -e "${YELLOW}Warning: Configuración root no encontrada${NC}"
+            echo -e "${YELLOW}Warning: Configuración root no encontrada, saltando snapshot inicial${NC}"
         fi
 
         echo -e "${GREEN}✓ Snapper configurado con snapshots automáticos:${NC}"
@@ -4480,6 +4454,13 @@ SNAPCONF
         echo -e "${CYAN}  • Mensualmente: mantiene 6 snapshots${NC}"
         echo -e "${CYAN}  • Anualmente: mantiene 2 snapshots${NC}"
         echo -e "${CYAN}  • Límite total: 50 snapshots + 10 importantes${NC}"
+        echo -e "${GREEN}  • Subvolumen /.snapshots creado automáticamente${NC}"
+
+        echo -e "\n${GREEN}✓ Estructura final de subvolúmenes BTRFS:${NC}"
+        echo -e "${CYAN}  • @ - Raíz del sistema (/)${NC}"
+        echo -e "${CYAN}  • @home - Directorios de usuarios (/home)${NC}"
+        echo -e "${CYAN}  • @var_log - Logs del sistema (/var/log)${NC}"
+        echo -e "${CYAN}  • /.snapshots - Snapshots automáticos (por Snapper)${NC}"
 
     else
         echo -e "${RED}ERROR: No se pudo instalar Snapper${NC}"
@@ -4641,6 +4622,7 @@ show_snapshots() {
     echo -e "${CYAN}  • Snapshots mensuales: mantiene 6${NC}"
     echo -e "${CYAN}  • Snapshots anuales: mantiene 2${NC}"
     echo -e "${CYAN}  • Límite total: 50 snapshots + 10 importantes${NC}"
+    echo -e "${CYAN}  • Subvolumen /.snapshots creado automáticamente por Snapper${NC}"
 
     show_section "📋 Comandos Básicos de Snapper"
     echo -e "${WHITE}Listar snapshots disponibles:${NC}"
@@ -4680,29 +4662,21 @@ show_snapshots() {
     show_command "sudo snapper list | grep -E 'pre|post' | head -10    # Ver snapshots de actualizaciones"
 
     show_section "⚙️ Configuración de Snapper"
-    echo -e "${WHITE}${BOLD}✓ Sistema ya configurado automáticamente${NC}"
-    echo -e "${CYAN}El sistema usa subvolumen @snapshots montado en /.snapshots${NC}"
-
-    echo -e "\n${WHITE}Crear configuración adicional (para otros subvolúmenes):${NC}"
+    echo -e "${WHITE}Crear nueva configuración (si no existe):${NC}"
+    show_command "sudo snapper create-config /                   # Crear config para subvolumen raíz"
     show_command "sudo snapper create-config /home              # Crear config para /home"
-    show_command "sudo snapper create-config /var               # Crear config para /var"
 
     echo -e "\n${WHITE}Gestionar configuraciones existentes:${NC}"
     show_command "sudo snapper list-configs                     # Ver configuraciones disponibles"
     show_command "sudo snapper -c root get-config               # Ver configuración actual"
     show_command "sudo vim /etc/snapper/configs/root            # Editar configuración"
 
-    echo -e "\n${WHITE}Solución de problemas de configuración:${NC}"
-    show_command "sudo mountpoint /.snapshots                   # Verificar que esté montado"
-    show_command "sudo ls -la /.snapshots                       # Ver contenido de snapshots"
-    show_command "sudo btrfs subvolume list / | grep snapshots  # Ver subvolúmenes relacionados"
-
     echo -e "\n${WHITE}Ver estado de servicios automáticos:${NC}"
     show_command "sudo systemctl status snapper-timeline.timer  # Estado snapshots automáticos"
     show_command "sudo systemctl status snapper-cleanup.timer   # Estado limpieza automática"
     show_command "sudo systemctl list-timers snapper-*          # Ver próximas ejecuciones"
 
-    echo -e "\n${GREEN}${BOLD}IMPORTANTE:${NC} ${GREEN}Los snapshots se almacenan en /.snapshots (subvolumen @snapshots)${NC}"
+    echo -e "\n${GREEN}${BOLD}IMPORTANTE:${NC} ${GREEN}Los snapshots se almacenan en /.snapshots (subvolumen creado automáticamente por Snapper)${NC}"
 
     echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
     read
@@ -4818,22 +4792,6 @@ show_troubleshooting() {
     show_command "sudo btrfs balance start -musage=5 /       # Balance de metadatos"
     show_command "sudo btrfs balance start -dusage=10 /      # Balance de datos"
 
-    echo -e "\n${RED}${BOLD}PROBLEMA: Snapper no puede crear snapshots${NC}"
-    echo -e "${WHITE}Causa: Problemas con /.snapshots o configuración${NC}"
-    echo -e "${WHITE}Solución:${NC}"
-    show_command "sudo mountpoint /.snapshots                # Verificar montaje"
-    show_command "sudo snapper list-configs                  # Ver configuraciones"
-    show_command "sudo systemctl status snapper-timeline.timer  # Ver estado del servicio"
-    show_command "sudo journalctl -u snapper-timeline.timer  # Ver logs de errores"
-
-    echo -e "\n${RED}${BOLD}PROBLEMA: \"subvolume .snapshots already exists\"${NC}"
-    echo -e "${WHITE}Causa: Conflicto entre subvolumen manual y automático${NC}"
-    echo -e "${WHITE}Solución:${NC}"
-    show_command "sudo umount /.snapshots                    # Desmontar temporal"
-    show_command "sudo btrfs subvolume delete /.snapshots    # Eliminar subvolumen conflictivo"
-    show_command "sudo mount /.snapshots                     # Remontar subvolumen @snapshots"
-    show_command "sudo snapper list                          # Verificar funcionamiento"
-
     echo -e "\n${RED}${BOLD}PROBLEMA: Filesystem de solo lectura${NC}"
     echo -e "${WHITE}Causa: Errores detectados por BTRFS${NC}"
     echo -e "${WHITE}Solución:${NC}"
@@ -4938,7 +4896,8 @@ show_subvolumes() {
     echo -e "${WHITE}Estructura configurada:${NC}"
     echo -e "• ${CYAN}@${NC} - Raíz del sistema (/)"
     echo -e "• ${CYAN}@home${NC} - Directorios de usuarios (/home)"
-    echo -e "• ${CYAN}@snapshots${NC} - Almacén de snapshots (/.snapshots)"
+    echo -e "• ${CYAN}@var_log${NC} - Logs del sistema (/var/log)"
+    echo -e "• ${CYAN}/.snapshots${NC} - Snapshots (creado automáticamente por Snapper)"
 
     show_section "🔍 Verificar Configuración Actual"
     show_command "sudo btrfs subvolume list /                      # Listar todos los subvolúmenes"
@@ -4972,8 +4931,9 @@ show_subvolumes() {
     echo -e "${WHITE}Para un sistema completo, considera:${NC}"
     echo -e "• ${CYAN}@${NC} - Sistema base"
     echo -e "• ${CYAN}@home${NC} - Datos de usuario"
-    echo -e "• ${CYAN}@snapshots${NC} - Snapshots"
-    echo -e "• ${CYAN}@var${NC} - Logs y datos variables (opcional)"
+    echo -e "• ${CYAN}@var_log${NC} - Logs del sistema"
+    echo -e "• ${CYAN}/.snapshots${NC} - Snapshots (automático por Snapper)"
+    echo -e "• ${CYAN}@var${NC} - Datos variables adicionales (opcional)"
     echo -e "• ${CYAN}@srv${NC} - Datos de servicios (opcional)"
 
     echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
@@ -5001,15 +4961,6 @@ show_current_status() {
         echo -e "${YELLOW}Snapper no está instalado${NC}"
     fi
 
-    echo -e "\n${CYAN}${BOLD}🔍 Verificación del Sistema de Snapshots:${NC}"
-    if mountpoint -q /.snapshots 2>/dev/null; then
-        echo -e "${GREEN}✓ /.snapshots montado correctamente${NC}"
-        SNAPSHOTS_SUBVOL=$(findmnt -n -o OPTIONS /.snapshots | grep -o 'subvol=[^,]*' | cut -d'=' -f2)
-        echo -e "${WHITE}Subvolumen: ${CYAN}$SNAPSHOTS_SUBVOL${NC}"
-    else
-        echo -e "${RED}✗ /.snapshots no está montado${NC}"
-    fi
-
     echo -e "\n${CYAN}${BOLD}🔧 Estado de Servicios:${NC}"
     echo -e "${WHITE}Mantenimiento BTRFS:${NC} $(systemctl is-active btrfs-maintenance.timer 2>/dev/null || echo -e "${YELLOW}inactivo${NC}")"
     if command -v snapper >/dev/null 2>&1; then
@@ -5022,10 +4973,6 @@ show_current_status() {
             TIMELINE_SNAPSHOTS=$(sudo snapper list -t timeline 2>/dev/null | wc -l)
             echo -e "${WHITE}Total de snapshots: ${CYAN}$((TOTAL_SNAPSHOTS-2))${NC}"  # -2 para quitar header
             echo -e "${WHITE}Snapshots automáticos: ${CYAN}$((TIMELINE_SNAPSHOTS-2))${NC}"
-
-            # Mostrar espacio usado por snapshots
-            SNAPSHOTS_SIZE=$(du -sh /.snapshots 2>/dev/null | cut -f1)
-            echo -e "${WHITE}Espacio usado por snapshots: ${CYAN}${SNAPSHOTS_SIZE:-"N/A"}${NC}"
         else
             echo -e "${YELLOW}No se pudieron obtener estadísticas de snapshots${NC}"
         fi
