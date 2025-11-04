@@ -5270,7 +5270,6 @@ case "$INSTALLATION_TYPE" in
 
                 # Gestor de software
                 install_pacman_chroot_with_retry "discover"              # Centro de software
-                install_pacman_chroot_with_retry "packagekit-qt6"        # Backend para Discover
                 install_pacman_chroot_with_retry "flatpak"               # Soporte Flatpak
 
                 # Extras útiles
