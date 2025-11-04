@@ -4743,7 +4743,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "kdegraphics-thumbnailers"  # Miniaturas
                 install_pacman_chroot_with_retry "ffmpegthumbs"          # Miniaturas de video
                 install_pacman_chroot_with_retry "kimageformats"         # Formatos de imagen adicionales
-                install_pacman_chroot_with_retry "qt6-imageformats"      # Más formatos de imagen
 
                 # Herramientas del sistema
                 install_pacman_chroot_with_retry "plasma-systemmonitor"  # Monitor de sistema
