@@ -4385,7 +4385,7 @@ if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
 
         # Crear configuración para el subvolumen raíz (esto crea automáticamente /.snapshots)
         echo -e "${CYAN}Snapper creará automáticamente el subvolumen /.snapshots...${NC}"
-        if chroot /mnt /bin/bash -c "snapper create-config /"; then
+        if chroot /mnt /bin/bash -c "snapper --no-dbus create-config /"; then
             echo -e "${GREEN}✓ Configuración de snapper y subvolumen /.snapshots creados exitosamente${NC}"
         else
             echo -e "${RED}ERROR: No se pudo crear la configuración de snapper${NC}"
