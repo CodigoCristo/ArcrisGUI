@@ -213,7 +213,7 @@ install_pacman_chroot_with_retry() {
 
     echo -e "${GREEN}📦 Instalando: ${YELLOW}$package${GREEN} con pacman en chroot${NC}"
 
-    while true; do
+    while [[ $attempt -le 30 ]]; do
         echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
 
         # Verificar conectividad antes del intento
@@ -231,6 +231,11 @@ install_pacman_chroot_with_retry() {
             ((attempt++))
         fi
     done
+
+    # Si llegamos aquí, significa que se agotaron los 30 intentos
+    echo -e "${RED}❌ Error: Se agotaron los 30 intentos para instalar $package con pacman en chroot${NC}"
+    return 1
+
 
 
 }
@@ -273,6 +278,41 @@ install_yay_chroot_with_retry() {
         echo -e "${RED}❌ ERROR: No se pudo instalar $package con yay en chroot después de 30 intentos${NC}"
         return 1
     fi
+}
+
+# Función para instalar paquete de AUR con bucle infinito
+install_aur_with_retry() {
+    local package="$1"
+    local attempt=1
+
+    if [[ -z "$package" ]]; then
+        echo -e "${RED}❌ Error: No se especificó paquete AUR${NC}"
+        return 1
+    fi
+
+    echo -e "${GREEN}📦 Instalando paquete AUR: ${YELLOW}$package${GREEN} desde AUR${NC}"
+
+    while true; do
+        echo -e "${CYAN}🔄 Intento #$attempt para instalar: $package${NC}"
+
+        # Verificar conectividad antes del intento
+        wait_for_internet
+
+        # Ejecutar instalación desde AUR
+        if chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/$package.git && cd $package && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"; then
+            echo -e "${GREEN}✅ $package instalado correctamente desde AUR${NC}"
+            sleep 2
+            return 0
+        else
+            echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
+            echo -e "${RED}🔍 Comando ejecutado: chroot /mnt bash -c \"cd /tmp && git clone https://aur.archlinux.org/$package.git && cd $package && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'\"${NC}"
+            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
+            # Limpiar directorio en caso de fallo
+            chroot /mnt bash -c "rm -rf /tmp/$package" 2>/dev/null || true
+            sleep 5
+            ((attempt++))
+        fi
+    done
 }
 
 # Función para instalar paquete localmente en LiveCD con bucle infinito
@@ -1419,8 +1459,8 @@ partition_auto() {
         fi
 
         swapon "$SWAP_PARTITION"
-        mkdir -p /mnt/boot/efi
-        mount $(get_partition_name "$SELECTED_DISK" "1") /mnt/boot/efi
+        mkdir -p /mnt/boot
+        mount $(get_partition_name "$SELECTED_DISK" "1") /mnt/boot
 
     else
         # Configuración para BIOS Legacy
@@ -1721,7 +1761,7 @@ partition_auto_btrfs() {
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@var "$PARTITION_3" /mnt/var
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "$PARTITION_3" /mnt/tmp
-        mount "$PARTITION_1" /mnt/boot/efi
+        mount "$PARTITION_1" /mnt/boot
 
         # Instalar herramientas específicas para BTRFS
         install_pacstrap_with_retry "btrfs-progs"
@@ -2071,11 +2111,11 @@ partition_cifrado() {
             exit 1
         fi
 
-        echo -e "${CYAN}Creando directorio EFI dentro de boot...${NC}"
-        mkdir -p /mnt/boot/efi
+        echo -e "${CYAN}Creando directorio boot...${NC}"
+        mkdir -p /mnt/boot
 
         echo -e "${CYAN}Montando partición EFI...${NC}"
-        if ! mount "$PARTITION_1" /mnt/boot/efi; then
+        if ! mount "$PARTITION_1" /mnt/boot; then
             echo -e "${RED}ERROR: Falló el montaje de la partición EFI${NC}"
             exit 1
         fi
@@ -2085,8 +2125,8 @@ partition_cifrado() {
             echo -e "${RED}ERROR: /mnt/boot no está montado correctamente${NC}"
             exit 1
         fi
-        if ! mountpoint -q /mnt/boot/efi; then
-            echo -e "${RED}ERROR: /mnt/boot/efi no está montado correctamente${NC}"
+        if ! mountpoint -q /mnt/boot; then
+            echo -e "${RED}ERROR: /mnt/boot no está montado correctamente${NC}"
             exit 1
         fi
 
@@ -2411,10 +2451,10 @@ partition_manual() {
     for partition_config in "${PARTITIONS[@]}"; do
         IFS=' ' read -r device format mountpoint <<< "$partition_config"
         if [ "$mountpoint" = "/boot/EFI" ]; then
-            echo -e "${GREEN}| Montando EFI: $device -> /mnt/boot/efi |${NC}"
-            mkdir -p /mnt/boot/efi
-            mount $device /mnt/boot/efi
-            echo -e "${CYAN}Partición EFI montada en /mnt/boot/efi${NC}"
+            echo -e "${GREEN}| Montando EFI: $device -> /mnt/boot |${NC}"
+            mkdir -p /mnt/boot
+            mount $device /mnt/boot
+            echo -e "${CYAN}Partición EFI montada en /mnt/boot${NC}"
             break
         fi
     done
@@ -2678,7 +2718,7 @@ if [ "$PARTITION_MODE" = "manual" ]; then
                 "mkfs.fat32"|"mkfs.fat16"|"vfat")
                     FS_TYPE="vfat"
                     if [ "$mountpoint" = "/boot/EFI" ]; then
-                        echo "UUID=$PART_UUID /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
+                        echo "UUID=$PART_UUID /boot vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
                     else
                         echo "UUID=$PART_UUID $mountpoint vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
                     fi
@@ -2972,10 +3012,15 @@ echo -e "${GREEN}✓ Instalanado extras${NC}"
 # chroot /mnt pacman -S yay-bin --noconfirm
 # chroot /mnt pacman -S alsi --noconfirm
 # Instalar yay-bin desde AUR usando makepkg
-chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
-sleep 2
+#chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/yay-bin.git && cd yay-bin && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
+#sleep 2
 # Instalar alsi desde AUR usando makepkg
-chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && cd alsi && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
+#chroot /mnt bash -c "cd /tmp && git clone https://aur.archlinux.org/alsi.git && cd alsi && chown -R $USER:$USER . && su $USER -c 'makepkg -si --noconfirm'"
+#sleep 2
+sleep 3
+install_aur_with_retry "yay"
+sleep 2
+install_aur_with_retry "alsi"
 sleep 2
 clear
 
@@ -3033,13 +3078,16 @@ echo ""
 
 # Detectar RAM total del sistema
 TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024))
+TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024 + 900))
 TOTAL_RAM_GB=$((TOTAL_RAM_MB / 1024))
 
-# Calcular zram exacto: 50% de RAM, máximo 8GB
+# Calcular zram exacto: 50% de RAM, máximo 8GB, mínimo 2GB
 ZRAM_SIZE_MB=$((TOTAL_RAM_MB / 2))
 if [ $ZRAM_SIZE_MB -gt 8192 ]; then
     ZRAM_SIZE_MB=8192
+fi
+if [ $ZRAM_SIZE_MB -lt 2048 ]; then
+    ZRAM_SIZE_MB=2048
 fi
 ZRAM_SIZE_GB=$((ZRAM_SIZE_MB / 1024))
 
@@ -3103,20 +3151,20 @@ if true; then
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         # Verificar que la partición EFI esté montada con debug adicional
         echo -e "${CYAN}Verificando montaje de partición EFI...${NC}"
-        if ! mountpoint -q /mnt/boot/efi; then
-            echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot/efi${NC}"
+        if ! mountpoint -q /mnt/boot; then
+            echo -e "${RED}ERROR: Partición EFI no está montada en /mnt/boot${NC}"
             echo -e "${YELLOW}Información de debug:${NC}"
             echo "- Contenido de /mnt/boot:"
             ls -la /mnt/boot/ 2>/dev/null || echo "  Directorio /mnt/boot no accesible"
-            echo "- Contenido de /mnt/boot/efi:"
-            ls -la /mnt/boot/efi/ 2>/dev/null || echo "  Directorio /mnt/boot/efi no accesible"
+            echo "- Contenido de /mnt/boot:"
+            ls -la /mnt/boot/ 2>/dev/null || echo "  Directorio /mnt/boot no accesible"
             echo "- Montajes actuales:"
             mount | grep "/mnt"
             echo "- Particiones disponibles:"
             lsblk ${SELECTED_DISK}
             exit 1
         fi
-        echo -e "${GREEN}✓ Partición EFI montada correctamente en /mnt/boot/efi${NC}"
+        echo -e "${GREEN}✓ Partición EFI montada correctamente en /mnt/boot${NC}"
 
         # Verificar sistema UEFI con debug
         echo -e "${CYAN}Verificando sistema UEFI...${NC}"
@@ -3164,12 +3212,12 @@ if true; then
         sleep 4
 
         # Limpiar directorio EFI previo si existe
-        #if [ -d "/mnt/boot/efi/EFI/GRUB" ]; then
-        #    rm -rf /mnt/boot/efi/EFI/GRUB
+        #if [ -d "/mnt/boot/EFI/GRUB" ]; then
+        #    rm -rf /mnt/boot/EFI/GRUB
         #fi
 
         # Crear directorio EFI si no existe
-        #mkdir -p /mnt/boot/efi/EFI
+        #mkdir -p /mnt/boot/EFI
 
         echo -e "${CYAN}Instalando paquetes GRUB para UEFI...${NC}"
         install_pacman_chroot_with_retry "grub"
@@ -3234,7 +3282,7 @@ if true; then
 
         # Instalar GRUB en modo removible (crea /EFI/BOOT/bootx64.efi)
         echo -e "${CYAN}Instalando GRUB en modo removible...${NC}"
-        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --removable --force --recheck" || {
+        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot --removable --force --recheck" || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI (modo removible)${NC}"
             exit 1
         }
@@ -3242,19 +3290,19 @@ if true; then
 
         # Instalar GRUB con entrada NVRAM (crea /EFI/GRUB/grubx64.efi)
         echo -e "${CYAN}Instalando GRUB...${NC}"
-        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --force --recheck" || {
+        chroot /mnt /bin/bash -c "grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --force --recheck" || {
             echo -e "${RED}ERROR: Falló la instalación de GRUB UEFI${NC}"
             exit 1
         }
         echo -e "${GREEN}✓ GRUB instalado con entrada NVRAM (/EFI/GRUB/grubx64.efi)${NC}"
 
         # Verificar que ambos bootloaders se hayan creado
-        if [ ! -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ]; then
+        if [ ! -f "/mnt/boot/EFI/BOOT/bootx64.efi" ]; then
             echo -e "${RED}ERROR: No se creó bootx64.efi${NC}"
             exit 1
         fi
 
-        if [ ! -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ]; then
+        if [ ! -f "/mnt/boot/EFI/GRUB/grubx64.efi" ]; then
             echo -e "${RED}ERROR: No se creó grubx64.efi${NC}"
             exit 1
         fi
@@ -3360,15 +3408,15 @@ if true; then
     echo ""
 
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        if [ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
+        if [ -f "/mnt/boot/EFI/GRUB/grubx64.efi" ] && [ -f "/mnt/boot/EFI/BOOT/bootx64.efi" ] && [ -f "/mnt/boot/grub/grub.cfg" ]; then
             echo -e "${GREEN}✓ Bootloader UEFI verificado correctamente${NC}"
             echo -e "${GREEN}✓ Modo NVRAM: /EFI/GRUB/grubx64.efi${NC}"
             echo -e "${GREEN}✓ Modo removible: /EFI/BOOT/bootx64.efi${NC}"
         else
             echo -e "${RED}⚠ Problema con la instalación del bootloader UEFI${NC}"
             echo -e "${YELLOW}Archivos verificados:${NC}"
-            echo "  - /mnt/boot/efi/EFI/GRUB/grubx64.efi: $([ -f "/mnt/boot/efi/EFI/GRUB/grubx64.efi" ] && echo "✓" || echo "✗")"
-            echo "  - /mnt/boot/efi/EFI/BOOT/bootx64.efi: $([ -f "/mnt/boot/efi/EFI/BOOT/bootx64.efi" ] && echo "✓" || echo "✗")"
+            echo "  - /mnt/boot/EFI/GRUB/grubx64.efi: $([ -f "/mnt/boot/EFI/GRUB/grubx64.efi" ] && echo "✓" || echo "✗")"
+            echo "  - /mnt/boot/EFI/BOOT/bootx64.efi: $([ -f "/mnt/boot/EFI/BOOT/bootx64.efi" ] && echo "✓" || echo "✗")"
             echo "  - /mnt/boot/grub/grub.cfg: $([ -f "/mnt/boot/grub/grub.cfg" ] && echo "✓" || echo "✗")"
         fi
     else
@@ -4283,9 +4331,7 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo "/dev/mapper/vg0-root / ext4 rw,relatime 0 1" >> /mnt/etc/fstab
     if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
-        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
-        echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
-        echo "UUID=$(blkid -s UUID -o value "$PARTITION_2") /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
+        echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
     else
         PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
         echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
@@ -4647,12 +4693,10 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "xorg-server"           # Para sesión X11
                 install_pacman_chroot_with_retry "wayland"               # Para sesión Wayland
 
-                # Plasma Core (lo esencial)
-                install_pacman_chroot_with_retry "plasma-desktop"        # Escritorio base
-                install_pacman_chroot_with_retry "plasma-workspace"      # Workspace
-                install_pacman_chroot_with_retry "plasma-wayland-session"  # Sesión Wayland
-                install_pacman_chroot_with_retry "plasma-x11-session"    # Sesión X11 (obsoleto en Plasma 6, pero útil)
-                install_pacman_chroot_with_retry "kwin"                  # Compositor/WM
+                # Plasma Core Mínimo
+                install_pacman_chroot_with_retry "plasma-desktop"   # Escritorio base
+                install_pacman_chroot_with_retry "plasma-workspace" # Workspace esencial
+                install_pacman_chroot_with_retry "kwin"            # Compositor (Wayland + X11)
 
                 # Configuración y sistema
                 install_pacman_chroot_with_retry "systemsettings"        # Configuración del sistema
@@ -4663,11 +4707,11 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "sddm"                  # Display Manager
                 install_pacman_chroot_with_retry "sddm-kcm"             # Configurar SDDM desde Plasma
 
-                # Gestión de energía y hardware
-                install_pacman_chroot_with_retry "powerdevil"            # Gestión de energía
-                install_pacman_chroot_with_retry "plasma-pa"             # Control de audio PulseAudio
-                install_pacman_chroot_with_retry "plasma-nm"             # NetworkManager
-                install_pacman_chroot_with_retry "bluedevil"             # Bluetooth
+                # Hardware y Red (Esencial)
+                install_pacman_chroot_with_retry "plasma-nm"       # NetworkManager
+                install_pacman_chroot_with_retry "powerdevil"      # Gestión de energía
+                install_pacman_chroot_with_retry "plasma-pa"       # Control de audio
+                install_pacman_chroot_with_retry "bluedevil"        # Bluetooth
 
                 # Autenticación y seguridad
                 install_pacman_chroot_with_retry "polkit-kde-agent"      # Autenticación
@@ -4699,7 +4743,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "kdegraphics-thumbnailers"  # Miniaturas
                 install_pacman_chroot_with_retry "ffmpegthumbs"          # Miniaturas de video
                 install_pacman_chroot_with_retry "kimageformats"         # Formatos de imagen adicionales
-                install_pacman_chroot_with_retry "qt6-imageformats"      # Más formatos de imagen
 
                 # Herramientas del sistema
                 install_pacman_chroot_with_retry "plasma-systemmonitor"  # Monitor de sistema
@@ -4997,7 +5040,9 @@ case "$INSTALLATION_TYPE" in
                 ;;
             "DWL")
                 echo -e "${YELLOW}Instalando dependencias de DWL...${NC}"
-                install_pacman_chroot_with_retry "wayland"
+                install_pacman_chroot_with_retry "wayland"                      # Protocolo de servidor de display moderno (reemplazo de X11)
+                install_pacman_chroot_with_retry "wlr-randr"                    # Gestor de pantallas para Wayland
+                install_pacman_chroot_with_retry "xorg-xwayland"                # Compatibilidad con apps X11
                 install_pacman_chroot_with_retry "wayland-protocols"
                 install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"
                 install_pacman_chroot_with_retry "wlroots0.19"
@@ -5025,7 +5070,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "pkg-config"
                 install_pacman_chroot_with_retry "fcft"
                 install_pacman_chroot_with_retry "kitty"
-                install_pacman_chroot_with_retry "kanshi"             # Gestión automática de monitores
+                install_yay_chroot_with_retry "wdisplays"                       # Gestor gráfico de resolución y monitores Wayland
                 echo -e "${CYAN}Instalando DWL Wayland Compositor...${NC}"
                 install_yay_chroot_with_retry "dwl"
 
@@ -5080,32 +5125,30 @@ EOF
                 ;;
             "HYPRLAND")
                 echo -e "${CYAN}Instalando Hyprland Window Manager...${NC}"
-                install_pacman_chroot_with_retry "wayland"
-                install_pacman_chroot_with_retry "hyprland"
-                install_pacman_chroot_with_retry "waybar"
-                install_pacman_chroot_with_retry "wofi"
-                install_pacman_chroot_with_retry "nwg-displays"
-                install_pacman_chroot_with_retry "xdg-desktop-portal-hyprland"
-                install_pacman_chroot_with_retry "xdg-desktop-portal-gtk"
-                install_pacman_chroot_with_retry "hyprpaper"
-                install_pacman_chroot_with_retry "hyprpicker"
-                install_pacman_chroot_with_retry "hypridle"
-                install_pacman_chroot_with_retry "hyprcursor"
-                install_pacman_chroot_with_retry "hyprpolkitagent"
-                install_pacman_chroot_with_retry "hyprsunset"
-                install_pacman_chroot_with_retry "wl-clipboard"
-                install_pacman_chroot_with_retry "grim"
-                install_pacman_chroot_with_retry "slurp"
-                install_pacman_chroot_with_retry "qt5-wayland"
-                install_pacman_chroot_with_retry "qt6-wayland"
-                install_pacman_chroot_with_retry "kitty"
-                install_pacman_chroot_with_retry "dunst"
-                install_pacman_chroot_with_retry "polkit-gnome"
-                install_yay_chroot_with_retry "wlogout"            # Menú de apagado/cierre
-                install_pacman_chroot_with_retry "kanshi"             # Gestión automática de monitores
-                install_pacman_chroot_with_retry "nwg-look"
-                install_pacman_chroot_with_retry "xdg-utils"
-                install_pacman_chroot_with_retry "brightnessctl"
+                install_pacman_chroot_with_retry "wayland"                      # Protocolo de servidor de display moderno (reemplazo de X11)
+                install_pacman_chroot_with_retry "wlr-randr"                    # Gestor de pantallas para Wayland
+                install_pacman_chroot_with_retry "xorg-xwayland"                # Compatibilidad con apps X11
+                install_pacman_chroot_with_retry "hyprland"                     # Compositor Wayland dinámico con animaciones y efectos
+                install_pacman_chroot_with_retry "hyprpaper"                    # Gestor de wallpapers para Hyprland
+                install_pacman_chroot_with_retry "hypridle"                     # Gestor de inactividad/idle para Hyprland
+                install_pacman_chroot_with_retry "hyprcursor"                   # Gestor de cursores para Hyprland
+                install_pacman_chroot_with_retry "hyprpolkitagent"              # Agente de autenticación PolicyKit para Hyprland
+                install_pacman_chroot_with_retry "hyprsunset"                   # Filtro de luz azul/ajuste de temperatura de color
+                install_pacman_chroot_with_retry "waybar"                       # Barra de estado personalizable para Wayland
+                install_pacman_chroot_with_retry "wofi"                         # Launcher de aplicaciones para Wayland (estilo rofi)
+                install_pacman_chroot_with_retry "nwg-displays"                 # Configurador gráfico de pantallas para Wayland
+                install_pacman_chroot_with_retry "xdg-desktop-portal-hyprland"  # Portal XDG específico para Hyprland (compartir pantalla, etc.)
+                install_pacman_chroot_with_retry "xdg-desktop-portal-gtk"       # Portal XDG con backend GTK (diálogos de archivos, etc.)
+                install_pacman_chroot_with_retry "wl-clipboard"                 # Utilidades de portapapeles para Wayland
+                install_pacman_chroot_with_retry "grim"                         # Captura de pantalla para Wayland
+                install_pacman_chroot_with_retry "slurp"                        # Selector de región de pantalla (usado con grim)
+                install_pacman_chroot_with_retry "qt5-wayland"                  # Soporte de Wayland para aplicaciones Qt5
+                install_pacman_chroot_with_retry "qt6-wayland"                  # Soporte de Wayland para aplicaciones Qt6
+                install_pacman_chroot_with_retry "kitty"                        # Emulador de terminal acelerado por GPU
+                install_pacman_chroot_with_retry "dunst"                        # Demonio de notificaciones ligero y personalizable
+                install_pacman_chroot_with_retry "nwg-look"                     # Configurador de temas GTK para Wayland
+                install_pacman_chroot_with_retry "xdg-utils"                    # Herramientas para integración de escritorio (abrir archivos, URLs)
+                install_pacman_chroot_with_retry "brightnessctl"                # Control de brillo de pantalla desde terminal
                 # Crear configuración básica de hyprland
                 mkdir -p /mnt/home/$USER/.config/hypr
                 chroot /mnt /bin/bash -c "install -Dm644 /usr/share/hypr/hyprland.conf /home/$USER/.config/hypr/hyprland.conf"
@@ -5195,7 +5238,8 @@ EOF
             "SWAY")
                 echo -e "${CYAN}Instalando Sway Window Manager...${NC}"
                 # Base Wayland
-                install_pacman_chroot_with_retry "wayland"            # Protocolo Wayland
+                install_pacman_chroot_with_retry "wayland"                      # Protocolo de servidor de display moderno (reemplazo de X11)
+                install_pacman_chroot_with_retry "wlr-randr"                    # Gestor de pantallas para Wayland
                 install_pacman_chroot_with_retry "xorg-xwayland"      # Compatibilidad con apps X11
 
                 # Sway y componentes principales
@@ -5237,8 +5281,7 @@ EOF
                 install_pacman_chroot_with_retry "qt6-wayland"        # Soporte Qt6
 
                 # Utilidades
-                install_yay_chroot_with_retry "wlogout"            # Menú de apagado/cierre
-                install_pacman_chroot_with_retry "kanshi"             # Gestión automática de monitores
+                install_yay_chroot_with_retry "wdisplays"             # Gestor gráfico de resolución y monitores Wayland
                 install_pacman_chroot_with_retry "foot"               # Terminal nativa Wayland (ligera)
 
                 # Aplicaciones básicas
@@ -5831,14 +5874,13 @@ sleep 2
 clear
 
 echo -e "${GREEN}✓ Tipografías instaladas${NC}"
+# Fuentes base
 install_pacman_chroot_with_retry "noto-fonts"
-install_pacman_chroot_with_retry "noto-fonts-emoji"
-install_pacman_chroot_with_retry "adobe-source-code-pro-fonts"
-install_pacman_chroot_with_retry "ttf-cascadia-code"
-install_pacman_chroot_with_retry "cantarell-fonts"
-install_pacman_chroot_with_retry "ttf-roboto"
-install_pacman_chroot_with_retry "ttf-ubuntu-font-family"
 install_pacman_chroot_with_retry "gnu-free-fonts"
+install_pacman_chroot_with_retry "ttf-0xproto-nerd"
+# Iconos
+install_pacman_chroot_with_retry "ttf-nerd-fonts-symbols-common"
+install_pacman_chroot_with_retry "ttf-nerd-fonts-symbols-mono"
 sleep 2
 clear
 configurar_teclado

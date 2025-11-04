@@ -1522,6 +1522,7 @@ partition_auto() {
     fi
 }
 
+#en la # Configuración adicional para BTRFS en la linea 4351 hasta 4468
 # Función para particionado automático btrfs
 partition_auto_btrfs() {
     echo -e "${GREEN}| Particionando automáticamente disco: $SELECTED_DISK (BTRFS) |${NC}"
@@ -1729,8 +1730,7 @@ partition_auto_btrfs() {
         echo -e "${CYAN}Creando subvolúmenes BTRFS...${NC}"
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
-        btrfs subvolume create /mnt/@var
-        btrfs subvolume create /mnt/@tmp
+        btrfs subvolume create /mnt/@snapshots
         umount /mnt
 
         # Montar subvolúmenes
@@ -1757,10 +1757,9 @@ partition_auto_btrfs() {
 
         echo -e "${CYAN}Activando partición swap...${NC}"
         swapon "$PARTITION_2"
-        mkdir -p /mnt/{boot/efi,home,var,tmp}
+        mkdir -p /mnt/{boot/efi,home,.snapshots}
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var "$PARTITION_3" /mnt/var
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "$PARTITION_3" /mnt/tmp
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@snapshots "$PARTITION_3" /mnt/.snapshots
         mount "$PARTITION_1" /mnt/boot
 
         # Instalar herramientas específicas para BTRFS
@@ -1884,8 +1883,7 @@ partition_auto_btrfs() {
         echo -e "${CYAN}Creando subvolúmenes BTRFS...${NC}"
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
-        btrfs subvolume create /mnt/@var
-        btrfs subvolume create /mnt/@tmp
+        btrfs subvolume create /mnt/@snapshots
         umount /mnt
 
         # Montar subvolúmenes
@@ -1912,11 +1910,10 @@ partition_auto_btrfs() {
 
         echo -e "${CYAN}Activando partición swap...${NC}"
         swapon "$PARTITION_2"
-        mkdir -p /mnt/{boot,home,var,tmp}
+        mkdir -p /mnt/{boot,home,.snapshots}
         mount "$PARTITION_1" /mnt/boot
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var "$PARTITION_3" /mnt/var
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "$PARTITION_3" /mnt/tmp
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@snapshots "$PARTITION_3" /mnt/.snapshots
 
         # Instalar herramientas específicas para BTRFS
         install_pacstrap_with_retry "btrfs-progs"
@@ -2651,8 +2648,8 @@ clear
 
 # Instalar herramientas específicas según el modo de particionado
 if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-    echo -e "${CYAN}Instalando herramientas BTRFS...${NC}"
-    install_pacstrap_with_retry "btrfs-progs"
+    echo -e "${CYAN}Verificando herramientas BTRFS ya instaladas...${NC}"
+    # btrfs-progs ya se instaló en partition_auto_btrfs
 elif [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${CYAN}Instalando herramientas de cifrado...${NC}"
     install_pacstrap_with_retry "cryptsetup"
@@ -4371,22 +4368,80 @@ if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     # Instalar herramientas adicionales para BTRFS si no están presentes
     echo -e "${CYAN}Verificando herramientas BTRFS adicionales...${NC}"
 
-    # Intentar instalar btrfs-progs primero, si falla instalar solo grub-btrfs
-    if ! install_pacman_chroot_with_retry "btrfs-progs grub-btrfs" "--needed" 2>/dev/null; then
-        echo -e "${YELLOW}btrfs-progs no disponible, instalando solo grub-btrfs...${NC}"
-        install_pacman_chroot_with_retry "grub-btrfs" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudieron instalar herramientas BTRFS adicionales${NC}"
-    fi
+    # Solo instalar grub-btrfs ya que btrfs-progs ya está instalado
+    install_pacman_chroot_with_retry "grub-btrfs" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo instalar grub-btrfs${NC}"
 
     # Habilitar servicios de mantenimiento BTRFS
     echo -e "${CYAN}Configurando servicios de mantenimiento BTRFS...${NC}"
     chroot /mnt /bin/bash -c "systemctl enable btrfs-scrub@-.timer" 2>/dev/null || echo -e "${YELLOW}Warning: btrfs-scrub timer no disponible${NC}"
     chroot /mnt /bin/bash -c "systemctl enable fstrim.timer" || echo -e "${RED}ERROR: Falló habilitar fstrim.timer${NC}"
 
-    # Configurar snapshots automáticos si snapper está disponible
+    # Instalar y configurar snapshots automáticos con Snapper
+    echo -e "${CYAN}Instalando Snapper para snapshots automáticos...${NC}"
+    install_pacman_chroot_with_retry "snapper" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo instalar snapper${NC}"
+
     if chroot /mnt /bin/bash -c "pacman -Qq snapper" 2>/dev/null; then
         echo -e "${CYAN}Configurando Snapper para snapshots automáticos...${NC}"
+
+        # Crear configuración para el subvolumen raíz
         chroot /mnt /bin/bash -c "snapper -c root create-config /" || echo -e "${YELLOW}Warning: No se pudo crear config de snapper${NC}"
-        chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer snapper-cleanup.timer" || echo -e "${YELLOW}Warning: Falló habilitar servicios de snapper${NC}"
+
+        # Configurar frecuencias de snapshots automáticos
+        echo -e "${CYAN}Configurando frecuencias de snapshots...${NC}"
+        cat > /mnt/etc/snapper/configs/root << 'SNAPCONF'
+# Configuración de Snapper para subvolumen raíz
+SUBVOLUME="/"
+FSTYPE="btrfs"
+
+# Configuración de snapshots automáticos por tiempo (timeline)
+TIMELINE_CREATE="yes"
+TIMELINE_CLEANUP="yes"
+
+# Límites de retención de snapshots
+TIMELINE_LIMIT_HOURLY="5"       # 5 snapshots por hora
+TIMELINE_LIMIT_DAILY="7"        # 7 snapshots diarios
+TIMELINE_LIMIT_WEEKLY="4"       # 4 snapshots semanales
+TIMELINE_LIMIT_MONTHLY="6"      # 6 snapshots mensuales
+TIMELINE_LIMIT_YEARLY="2"       # 2 snapshots anuales
+
+# Configuración de limpieza
+EMPTY_PRE_POST_CLEANUP="yes"
+EMPTY_PRE_POST_MIN_AGE="1800"   # 30 minutos
+
+# Permitir a usuarios del grupo wheel gestionar snapshots
+ALLOW_USERS=""
+ALLOW_GROUPS="wheel"
+
+# Sincronización con ACL
+SYNC_ACL="no"
+
+# Configuración de número (automático)
+NUMBER_CLEANUP="yes"
+NUMBER_MIN_AGE="1800"
+NUMBER_LIMIT="50"               # Máximo 50 snapshots numerados
+NUMBER_LIMIT_IMPORTANT="10"     # Máximo 10 snapshots importantes
+SNAPCONF
+
+        echo -e "${GREEN}✓ Configuración personalizada de Snapper creada${NC}"
+
+        # Habilitar servicios de Snapper
+        chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer" || echo -e "${YELLOW}Warning: Falló habilitar snapper-timeline.timer${NC}"
+        chroot /mnt /bin/bash -c "systemctl enable snapper-cleanup.timer" || echo -e "${YELLOW}Warning: Falló habilitar snapper-cleanup.timer${NC}"
+
+        # Crear primer snapshot del sistema limpio
+        echo -e "${CYAN}Creando snapshot inicial del sistema...${NC}"
+        chroot /mnt /bin/bash -c "snapper -c root create --description 'Sistema recién instalado - Estado inicial'" || echo -e "${YELLOW}Warning: No se pudo crear snapshot inicial${NC}"
+
+        echo -e "${GREEN}✓ Snapper configurado con snapshots automáticos:${NC}"
+        echo -e "${CYAN}  • Cada hora: mantiene 5 snapshots${NC}"
+        echo -e "${CYAN}  • Diariamente: mantiene 7 snapshots${NC}"
+        echo -e "${CYAN}  • Semanalmente: mantiene 4 snapshots${NC}"
+        echo -e "${CYAN}  • Mensualmente: mantiene 6 snapshots${NC}"
+        echo -e "${CYAN}  • Anualmente: mantiene 2 snapshots${NC}"
+        echo -e "${CYAN}  • Límite total: 50 snapshots + 10 importantes${NC}"
+
+    else
+        echo -e "${RED}ERROR: No se pudo instalar Snapper${NC}"
     fi
 
     # Optimizar fstab para BTRFS
@@ -4462,6 +4517,470 @@ WantedBy=timers.target
 EOF
 
     chroot /mnt /bin/bash -c "systemctl enable btrfs-maintenance.timer" || echo -e "${YELLOW}Warning: No se pudo habilitar btrfs-maintenance.timer${NC}"
+
+    # Crear script de documentación interactiva BTRFS y Snapper
+    echo -e "${CYAN}Creando guía interactiva BTRFS y Snapper...${NC}"
+    cat > /mnt/usr/local/bin/btrfs-guide << 'EOF'
+#!/bin/bash
+# Guía Interactiva BTRFS y Snapper
+# Documentación completa para administración de BTRFS
+
+# Colores para mejor legibilidad
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
+NC='\033[0m' # No Color
+BOLD='\033[1m'
+
+# Función para mostrar encabezados
+show_header() {
+    echo -e "\n${PURPLE}${BOLD}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${PURPLE}${BOLD}║                         $1${NC}"
+    echo -e "${PURPLE}${BOLD}╚════════════════════════════════════════════════════════════════╝${NC}\n"
+}
+
+# Función para mostrar secciones
+show_section() {
+    echo -e "\n${CYAN}${BOLD}▶ $1${NC}"
+    echo -e "${BLUE}─────────────────────────────────────────────────────${NC}"
+}
+
+# Función para mostrar comandos
+show_command() {
+    echo -e "${GREEN}${BOLD}$ $1${NC}"
+}
+
+# Función para mostrar notas importantes
+show_note() {
+    echo -e "${YELLOW}${BOLD}⚠️  NOTA:${NC} ${YELLOW}$1${NC}"
+}
+
+# Función para mostrar tips
+show_tip() {
+    echo -e "${BLUE}${BOLD}💡 TIP:${NC} ${BLUE}$1${NC}"
+}
+
+# Función principal del menú
+show_menu() {
+    clear
+    echo -e "${PURPLE}${BOLD}"
+    echo "╔════════════════════════════════════════════════════════════════╗"
+    echo "║                    GUÍA BTRFS & SNAPPER                        ║"
+    echo "║                   Sistema de Archivos BTRFS                    ║"
+    echo "╚════════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+
+    echo -e "${WHITE}Selecciona una opción:${NC}\n"
+    echo -e "${CYAN}1)${NC} 📸 Gestión de Snapshots con Snapper"
+    echo -e "${CYAN}2)${NC} 🔧 Mantenimiento de BTRFS"
+    echo -e "${CYAN}3)${NC} 📊 Monitoreo y Estado del Sistema"
+    echo -e "${CYAN}4)${NC} 🚨 Solución de Problemas"
+    echo -e "${CYAN}5)${NC} ⚙️  Comandos Avanzados de BTRFS"
+    echo -e "${CYAN}6)${NC} 📋 Configuración de Subvolúmenes"
+    echo -e "${CYAN}7)${NC} 🔍 Ver Estado Actual del Sistema"
+    echo -e "${CYAN}0)${NC} ❌ Salir"
+
+    echo -e "\n${YELLOW}Ingresa tu opción: ${NC}"
+}
+
+# Función para gestión de snapshots
+show_snapshots() {
+    clear
+    show_header "GESTIÓN DE SNAPSHOTS CON SNAPPER"
+
+    show_section "📋 Configuración Automática de Snapshots"
+    echo -e "${WHITE}${BOLD}✓ Snapper está configurado automáticamente con:${NC}"
+    echo -e "${CYAN}  • Snapshots cada hora: mantiene 5${NC}"
+    echo -e "${CYAN}  • Snapshots diarios: mantiene 7${NC}"
+    echo -e "${CYAN}  • Snapshots semanales: mantiene 4${NC}"
+    echo -e "${CYAN}  • Snapshots mensuales: mantiene 6${NC}"
+    echo -e "${CYAN}  • Snapshots anuales: mantiene 2${NC}"
+    echo -e "${CYAN}  • Límite total: 50 snapshots + 10 importantes${NC}"
+
+    show_section "📋 Comandos Básicos de Snapper"
+    echo -e "${WHITE}Listar snapshots disponibles:${NC}"
+    show_command "sudo snapper list"
+    show_command "sudo snapper list -t timeline    # Solo snapshots automáticos"
+
+    echo -e "\n${WHITE}Ver diferencias entre snapshots:${NC}"
+    show_command "sudo snapper status 1..5    # Compara snapshot 1 con 5"
+    show_command "sudo snapper diff 1..5      # Ver archivos modificados en detalle"
+
+    show_section "🔄 MÉTODOS DE RESTAURACIÓN"
+
+    echo -e "${WHITE}${BOLD}MÉTODO A - Rollback Completo (Recomendado para fallos críticos):${NC}"
+    show_command "sudo snapper rollback 5     # Rollback al snapshot 5"
+    show_command "sudo reboot                 # Reiniciar para aplicar cambios"
+    show_note "Este método revierte todo el sistema al estado del snapshot seleccionado"
+
+    echo -e "\n${WHITE}${BOLD}MÉTODO B - Restaurar archivos específicos:${NC}"
+    show_command "sudo snapper -c root undochange 1..5    # Deshacer cambios entre snapshots"
+    show_tip "Útil para deshacer cambios específicos sin afectar todo el sistema"
+
+    echo -e "\n${WHITE}${BOLD}MÉTODO C - Restaurar desde GRUB (Sin acceso al sistema):${NC}"
+    echo -e "1. ${CYAN}Reiniciar el sistema${NC}"
+    echo -e "2. ${CYAN}En GRUB, seleccionar 'Arch Linux snapshots'${NC}"
+    echo -e "3. ${CYAN}Elegir el snapshot deseado${NC}"
+    echo -e "4. ${CYAN}Una vez iniciado, ejecutar:${NC}"
+    show_command "sudo snapper rollback"
+    show_note "grub-btrfs debe estar instalado para este método"
+
+    show_section "📸 Crear Snapshots Manuales"
+    show_command "sudo snapper create --description \"Antes de actualizar sistema\""
+    show_command "sudo snapper create --description \"Configuración funcionando\" --userdata \"stable=yes\""
+
+    show_section "🧹 Limpieza de Snapshots"
+    show_command "sudo snapper cleanup timeline    # Limpia según configuración automática"
+    show_command "sudo snapper delete 1 2 3       # Eliminar snapshots específicos"
+    show_command "sudo snapper list | grep -E 'pre|post' | head -10    # Ver snapshots de actualizaciones"
+
+    show_section "⚙️ Configuración de Snapper"
+    show_command "sudo snapper list-configs        # Ver configuraciones disponibles"
+    show_command "sudo snapper -c root get-config  # Ver configuración actual"
+    show_command "sudo vim /etc/snapper/configs/root    # Editar configuración"
+
+    echo -e "\n${WHITE}Ver estado de servicios automáticos:${NC}"
+    show_command "sudo systemctl status snapper-timeline.timer    # Estado snapshots automáticos"
+    show_command "sudo systemctl status snapper-cleanup.timer     # Estado limpieza automática"
+    show_command "sudo systemctl list-timers snapper-*           # Ver próximas ejecuciones"
+
+    echo -e "\n${GREEN}${BOLD}IMPORTANTE:${NC} ${GREEN}Los snapshots se almacenan en /.snapshots (subvolumen @snapshots)${NC}"
+
+    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
+    read
+}
+
+# Función para mantenimiento
+show_maintenance() {
+    clear
+    show_header "MANTENIMIENTO DE BTRFS"
+
+    show_section "🔄 Balance de BTRFS"
+    echo -e "${WHITE}Ver estado del filesystem antes del balance:${NC}"
+    show_command "sudo btrfs filesystem usage /"
+    show_command "sudo btrfs filesystem show"
+
+    echo -e "\n${WHITE}Comandos de balance:${NC}"
+    show_command "sudo btrfs balance start -dusage=50 -musage=50 /    # Balance inteligente (recomendado)"
+    show_command "sudo btrfs balance start /                         # Balance completo (lento)"
+    show_command "sudo btrfs balance status /                        # Ver progreso del balance"
+
+    show_note "El balance reorganiza datos para optimizar espacio y rendimiento"
+    show_tip "Ejecuta balance cuando veas fragmentación o problemas de espacio"
+
+    show_section "🔍 Scrub - Verificación de Integridad"
+    show_command "sudo btrfs scrub start /          # Iniciar verificación"
+    show_command "sudo btrfs scrub status /         # Ver progreso"
+    show_command "sudo btrfs scrub status -d /      # Ver historial detallado"
+
+    show_note "Scrub verifica y repara automáticamente la integridad de los datos"
+    show_tip "Ejecuta scrub mensualmente para detectar problemas temprano"
+
+    show_section "🧹 Desfragmentación"
+    show_command "sudo btrfs filesystem defragment /path/to/file              # Archivo específico"
+    show_command "sudo btrfs filesystem defragment -czstd /path/to/file       # Con compresión"
+    show_command "sudo btrfs filesystem defragment -r /home/usuario/Videos    # Directorio recursivo"
+
+    echo -e "\n${WHITE}Encontrar archivos fragmentados:${NC}"
+    show_command "sudo btrfs filesystem defragment -v /path/to/file           # Ver fragmentación"
+    show_command "find /home -size +100M -type f -exec btrfs filesystem defragment {} \\;    # Auto-desfragmentar archivos grandes"
+
+    show_section "📊 Script de Mantenimiento Automático"
+    echo -e "${WHITE}El sistema incluye un script automático que ejecuta:${NC}"
+    echo -e "• ${CYAN}Balance mensual (día 1)${NC}"
+    echo -e "• ${CYAN}Scrub semanal (domingos)${NC}"
+    echo -e "• ${CYAN}Desfragmentación de archivos >100MB${NC}"
+
+    echo -e "\n${WHITE}Control del mantenimiento automático:${NC}"
+    show_command "sudo systemctl status btrfs-maintenance.timer      # Ver estado"
+    show_command "sudo systemctl enable btrfs-maintenance.timer      # Habilitar"
+    show_command "sudo systemctl disable btrfs-maintenance.timer     # Deshabilitar"
+    show_command "sudo /usr/local/bin/btrfs-maintenance              # Ejecutar manualmente"
+
+    show_section "🚨 Consideraciones Importantes"
+    echo -e "• ${YELLOW}Balance:${NC} Puede tardar horas, usar con equipo conectado a corriente"
+    echo -e "• ${YELLOW}Scrub:${NC} Seguro ejecutar con sistema en uso, genera actividad de disco"
+    echo -e "• ${YELLOW}Desfragmentación:${NC} Puede romper compresión existente, usar con moderación"
+
+    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
+    read
+}
+
+# Función para monitoreo
+show_monitoring() {
+    clear
+    show_header "MONITOREO Y ESTADO DEL SISTEMA"
+
+    show_section "📊 Información del Sistema de Archivos"
+    show_command "sudo btrfs filesystem show                    # Ver todos los filesystems BTRFS"
+    show_command "sudo btrfs filesystem usage /                # Uso detallado del espacio"
+    show_command "sudo btrfs filesystem df /                   # Resumen de espacio usado"
+    show_command "sudo btrfs subvolume list /                  # Listar subvolúmenes"
+
+    show_section "🔍 Estado de Operaciones"
+    show_command "sudo btrfs scrub status /                    # Estado del scrub"
+    show_command "sudo btrfs balance status /                  # Estado del balance"
+    show_command "sudo btrfs device stats /                    # Estadísticas del dispositivo"
+
+    echo -e "\n${WHITE}Estado de Snapshots Automáticos:${NC}"
+    show_command "sudo snapper list -t timeline                # Ver snapshots automáticos"
+    show_command "sudo systemctl list-timers snapper-*         # Ver programación de snapshots"
+
+    show_section "📋 Logs y Servicios"
+    show_command "sudo journalctl -u btrfs-maintenance.service         # Logs de mantenimiento"
+    show_command "sudo systemctl list-timers btrfs-maintenance.timer   # Próxima ejecución"
+    show_command "sudo journalctl -f                                   # Ver logs en tiempo real"
+    show_command "dmesg | grep -i btrfs                               # Mensajes del kernel BTRFS"
+
+    show_section "⚡ Monitoreo de Rendimiento"
+    show_command "sudo iotop -a                                       # Monitor de I/O"
+    show_command "sudo btrfs filesystem usage / | grep 'Device size'   # Tamaño total"
+    show_command "sudo compsize /                                      # Ratio de compresión (si está instalado)"
+
+    show_section "🔔 Alertas y Notificaciones"
+    echo -e "${WHITE}Para configurar alertas automáticas:${NC}"
+    show_command "# Agregar a crontab para verificaciones periódicas"
+    show_command "0 6 * * 1 /usr/local/bin/btrfs-maintenance > /var/log/btrfs-maintenance.log 2>&1"
+
+    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
+    read
+}
+
+# Función para solución de problemas
+show_troubleshooting() {
+    clear
+    show_header "SOLUCIÓN DE PROBLEMAS BTRFS"
+
+    show_section "🚨 Problemas Comunes y Soluciones"
+
+    echo -e "${RED}${BOLD}PROBLEMA: \"No space left on device\" con espacio aparente disponible${NC}"
+    echo -e "${WHITE}Causa: Chunks fragmentados o metadatos llenos${NC}"
+    echo -e "${WHITE}Solución:${NC}"
+    show_command "sudo btrfs filesystem usage /              # Verificar uso real"
+    show_command "sudo btrfs balance start -musage=5 /       # Balance de metadatos"
+    show_command "sudo btrfs balance start -dusage=10 /      # Balance de datos"
+
+    echo -e "\n${RED}${BOLD}PROBLEMA: Filesystem de solo lectura${NC}"
+    echo -e "${WHITE}Causa: Errores detectados por BTRFS${NC}"
+    echo -e "${WHITE}Solución:${NC}"
+    show_command "sudo dmesg | tail -50                      # Ver errores recientes"
+    show_command "sudo btrfs scrub start /                   # Verificar y reparar"
+    show_command "sudo mount -o remount,rw /                 # Intentar remount RW"
+
+    echo -e "\n${RED}${BOLD}PROBLEMA: Rendimiento lento${NC}"
+    echo -e "${WHITE}Posibles causas y soluciones:${NC}"
+    show_command "sudo btrfs filesystem defragment -r /      # Desfragmentar (CUIDADO: puede tardar mucho)"
+    show_command "sudo mount -o remount,autodefrag /         # Habilitar autodefrag temporal"
+    show_command "sudo btrfs filesystem usage /             # Verificar fragmentación"
+
+    show_section "🔧 Comandos de Reparación"
+    show_command "sudo btrfs check /dev/sdXY                 # Verificar filesystem (SOLO en modo RO)"
+    show_command "sudo btrfs rescue chunk-recover /dev/sdXY  # Recuperar chunks dañados"
+    show_command "sudo btrfs rescue super-recover /dev/sdXY  # Recuperar superbloque"
+
+    show_note "NUNCA ejecutes 'btrfs check --repair' sin hacer backup completo primero"
+
+    show_section "💾 Backup y Recuperación"
+    echo -e "${WHITE}Backup de subvolúmenes:${NC}"
+    show_command "sudo btrfs send /path/to/snapshot | sudo btrfs receive /backup/location/"
+    show_command "sudo btrfs subvolume snapshot -r / /snapshots/emergency-backup"
+
+    echo -e "\n${WHITE}Clonar filesystem completo:${NC}"
+    show_command "sudo dd if=/dev/source of=/dev/destination bs=64K conv=noerror,sync"
+    show_command "sudo btrfs-clone /dev/source /dev/destination    # Si está disponible"
+
+    show_section "⚠️ Cuándo Buscar Ayuda"
+    echo -e "• ${RED}Filesystem corrupto que no se puede montar${NC}"
+    echo -e "• ${RED}Errores de I/O persistentes en logs${NC}"
+    echo -e "• ${RED}Pérdida de datos importante${NC}"
+    echo -e "• ${RED}Comandos de reparación fallan repetidamente${NC}"
+
+    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
+    read
+}
+
+# Función para comandos avanzados
+show_advanced() {
+    clear
+    show_header "COMANDOS AVANZADOS DE BTRFS"
+
+    show_section "🔄 Gestión de Subvolúmenes"
+    show_command "sudo btrfs subvolume create /mnt/nombre          # Crear subvolumen"
+    show_command "sudo btrfs subvolume delete /mnt/nombre          # Eliminar subvolumen"
+    show_command "sudo btrfs subvolume snapshot / /snapshots/name  # Crear snapshot"
+    show_command "sudo btrfs subvolume snapshot -r / /snapshots/ro # Snapshot solo lectura"
+    show_command "sudo btrfs subvolume list /                      # Listar subvolúmenes"
+    show_command "sudo btrfs subvolume show /                      # Info del subvolumen actual"
+
+    show_section "💾 Send/Receive (Backup Incremental)"
+    echo -e "${WHITE}Backup inicial:${NC}"
+    show_command "sudo btrfs subvolume snapshot -r /home /snapshots/home-backup"
+    show_command "sudo btrfs send /snapshots/home-backup | sudo btrfs receive /backup/"
+
+    echo -e "\n${WHITE}Backup incremental:${NC}"
+    show_command "sudo btrfs subvolume snapshot -r /home /snapshots/home-backup-new"
+    show_command "sudo btrfs send -p /snapshots/home-backup /snapshots/home-backup-new | sudo btrfs receive /backup/"
+
+    show_section "🗜️ Compresión"
+    show_command "sudo mount -o remount,compress=zstd:9 /           # Compresión máxima"
+    show_command "sudo mount -o remount,compress=lzo /              # Compresión rápida"
+    show_command "sudo btrfs filesystem defragment -czstd /file     # Recomprimir archivo"
+    show_command "sudo compsize /                                   # Ver ratio compresión"
+
+    show_section "🏷️ Quotas y Límites"
+    show_command "sudo btrfs quota enable /                        # Habilitar quotas"
+    show_command "sudo btrfs qgroup limit 10G /home                # Limitar a 10GB"
+    show_command "sudo btrfs qgroup show /                         # Ver uso de quotas"
+    show_command "sudo btrfs quota disable /                       # Deshabilitar quotas"
+
+    show_section "🔍 Información Detallada"
+    show_command "sudo btrfs filesystem show --all-devices          # Todos los dispositivos"
+    show_command "sudo btrfs device scan                           # Escanear dispositivos"
+    show_command "sudo btrfs property list /                       # Propiedades del filesystem"
+    show_command "sudo btrfs inspect-internal dump-tree /dev/sdXY  # Dump del árbol de metadatos"
+
+    show_section "⚙️ Opciones de Montaje Útiles"
+    echo -e "${WHITE}En /etc/fstab:${NC}"
+    echo -e "${CYAN}subvol=@,compress=zstd:3,space_cache=v2,autodefrag,noatime${NC}"
+
+    echo -e "\n${WHITE}Explicación de opciones:${NC}"
+    echo -e "• ${YELLOW}compress=zstd:3${NC} - Compresión balanceada"
+    echo -e "• ${YELLOW}space_cache=v2${NC} - Cache de espacio mejorado"
+    echo -e "• ${YELLOW}autodefrag${NC} - Desfragmentación automática"
+    echo -e "• ${YELLOW}noatime${NC} - No actualizar tiempo de acceso"
+    echo -e "• ${YELLOW}ssd${NC} - Optimizaciones para SSD"
+    echo -e "• ${YELLOW}discard=async${NC} - TRIM asíncrono"
+
+    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
+    read
+}
+
+# Función para configuración de subvolúmenes
+show_subvolumes() {
+    clear
+    show_header "CONFIGURACIÓN DE SUBVOLÚMENES"
+
+    show_section "📋 Subvolúmenes Actuales del Sistema"
+    echo -e "${WHITE}Estructura configurada:${NC}"
+    echo -e "• ${CYAN}@${NC} - Raíz del sistema (/)"
+    echo -e "• ${CYAN}@home${NC} - Directorios de usuarios (/home)"
+    echo -e "• ${CYAN}@snapshots${NC} - Almacén de snapshots (/.snapshots)"
+
+    show_section "🔍 Verificar Configuración Actual"
+    show_command "sudo btrfs subvolume list /                      # Listar todos los subvolúmenes"
+    show_command "sudo findmnt -t btrfs                           # Ver montajes BTRFS"
+    show_command "cat /etc/fstab | grep btrfs                     # Ver configuración fstab"
+
+    show_section "➕ Crear Nuevos Subvolúmenes"
+    echo -e "${WHITE}Para agregar más subvolúmenes (ej: @var, @tmp):${NC}"
+    show_command "sudo btrfs subvolume create /.snapshots/@var    # Crear subvolumen"
+    show_command "sudo mkdir -p /mnt/var-backup                   # Crear punto de montaje temporal"
+    show_command "sudo rsync -avxHAX /var/ /mnt/var-backup/       # Copiar contenido"
+    show_command "# Agregar entrada en /etc/fstab"
+    show_command "# UUID=xxx /var btrfs subvol=@var,compress=zstd:3,space_cache=v2,noatime 0 0"
+
+    show_section "🔄 Reorganizar Subvolúmenes"
+    echo -e "${WHITE}Pasos para reorganización segura:${NC}"
+    echo -e "1. ${CYAN}Crear snapshot del sistema actual${NC}"
+    echo -e "2. ${CYAN}Crear nuevos subvolúmenes${NC}"
+    echo -e "3. ${CYAN}Migrar datos con rsync${NC}"
+    echo -e "4. ${CYAN}Actualizar /etc/fstab${NC}"
+    echo -e "5. ${CYAN}Probar montaje: sudo mount -a --fake${NC}"
+    echo -e "6. ${CYAN}Reiniciar y verificar${NC}"
+
+    show_section "⚠️ Mejores Prácticas"
+    echo -e "• ${GREEN}Siempre crear snapshots antes de cambios importantes${NC}"
+    echo -e "• ${GREEN}Usar nombres descriptivos para subvolúmenes${NC}"
+    echo -e "• ${GREEN}No anidar subvolúmenes innecesariamente${NC}"
+    echo -e "• ${GREEN}Mantener estructura simple y lógica${NC}"
+
+    show_section "📝 Configuración Recomendada"
+    echo -e "${WHITE}Para un sistema completo, considera:${NC}"
+    echo -e "• ${CYAN}@${NC} - Sistema base"
+    echo -e "• ${CYAN}@home${NC} - Datos de usuario"
+    echo -e "• ${CYAN}@snapshots${NC} - Snapshots"
+    echo -e "• ${CYAN}@var${NC} - Logs y datos variables (opcional)"
+    echo -e "• ${CYAN}@srv${NC} - Datos de servicios (opcional)"
+
+    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
+    read
+}
+
+# Función para ver estado actual
+show_current_status() {
+    clear
+    show_header "ESTADO ACTUAL DEL SISTEMA BTRFS"
+
+    echo -e "${CYAN}${BOLD}📊 Información del Filesystem:${NC}"
+    sudo btrfs filesystem show 2>/dev/null || echo -e "${RED}Error: No se pudo obtener información del filesystem${NC}"
+
+    echo -e "\n${CYAN}${BOLD}💾 Uso del Espacio:${NC}"
+    sudo btrfs filesystem usage / 2>/dev/null || echo -e "${RED}Error: No se pudo obtener uso del espacio${NC}"
+
+    echo -e "\n${CYAN}${BOLD}📁 Subvolúmenes Montados:${NC}"
+    findmnt -t btrfs 2>/dev/null || echo -e "${RED}Error: No se encontraron montajes BTRFS${NC}"
+
+    echo -e "\n${CYAN}${BOLD}📸 Snapshots Disponibles:${NC}"
+    if command -v snapper >/dev/null 2>&1; then
+        sudo snapper list 2>/dev/null || echo -e "${YELLOW}No hay snapshots o snapper no configurado${NC}"
+    else
+        echo -e "${YELLOW}Snapper no está instalado${NC}"
+    fi
+
+    echo -e "\n${CYAN}${BOLD}🔧 Estado de Servicios:${NC}"
+    echo -e "${WHITE}Mantenimiento BTRFS:${NC} $(systemctl is-active btrfs-maintenance.timer 2>/dev/null || echo -e "${YELLOW}inactivo${NC}")"
+    if command -v snapper >/dev/null 2>&1; then
+        echo -e "${WHITE}Snapshots automáticos:${NC} $(systemctl is-active snapper-timeline.timer 2>/dev/null || echo -e "${YELLOW}inactivo${NC}")"
+        echo -e "${WHITE}Limpieza automática:${NC} $(systemctl is-active snapper-cleanup.timer 2>/dev/null || echo -e "${YELLOW}inactivo${NC}")"
+
+        echo -e "\n${CYAN}${BOLD}📊 Estadísticas de Snapshots:${NC}"
+        if sudo snapper list >/dev/null 2>&1; then
+            TOTAL_SNAPSHOTS=$(sudo snapper list 2>/dev/null | wc -l)
+            TIMELINE_SNAPSHOTS=$(sudo snapper list -t timeline 2>/dev/null | wc -l)
+            echo -e "${WHITE}Total de snapshots: ${CYAN}$((TOTAL_SNAPSHOTS-2))${NC}"  # -2 para quitar header
+            echo -e "${WHITE}Snapshots automáticos: ${CYAN}$((TIMELINE_SNAPSHOTS-2))${NC}"
+        else
+            echo -e "${YELLOW}No se pudieron obtener estadísticas de snapshots${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Snapper no está instalado${NC}"
+    fi
+
+    echo -e "\n${CYAN}${BOLD}⚡ Próximas Tareas Programadas:${NC}"
+    systemctl list-timers "*btrfs*" "*snapper*" --no-pager 2>/dev/null || echo -e "${YELLOW}No hay tareas BTRFS programadas${NC}"
+
+    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
+    read
+}
+
+# Bucle principal del menú
+while true; do
+    show_menu
+    read -r option
+
+    case $option in
+        1) show_snapshots ;;
+        2) show_maintenance ;;
+        3) show_monitoring ;;
+        4) show_troubleshooting ;;
+        5) show_advanced ;;
+        6) show_subvolumes ;;
+        7) show_current_status ;;
+        0) echo -e "${GREEN}¡Gracias por usar la guía BTRFS!${NC}"; exit 0 ;;
+        *) echo -e "${RED}Opción inválida. Presiona ENTER para continuar...${NC}"; read ;;
+    esac
+done
+EOF
+
+    # Hacer el script ejecutable
+    chmod +x /mnt/usr/local/bin/btrfs-guide
+
+    echo -e "${GREEN}✓ Guía interactiva BTRFS creada en /usr/local/bin/btrfs-guide${NC}"
+    echo -e "${CYAN}  Ejecuta 'btrfs-guide' después del reinicio para acceder a la documentación${NC}"
 
     echo -e "${GREEN}✓ Configuración BTRFS completada${NC}"
     sleep 2
@@ -4743,6 +5262,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "kdegraphics-thumbnailers"  # Miniaturas
                 install_pacman_chroot_with_retry "ffmpegthumbs"          # Miniaturas de video
                 install_pacman_chroot_with_retry "kimageformats"         # Formatos de imagen adicionales
+                install_pacman_chroot_with_retry "qt6-imageformats"      # Más formatos de imagen
 
                 # Herramientas del sistema
                 install_pacman_chroot_with_retry "plasma-systemmonitor"  # Monitor de sistema
@@ -5790,7 +6310,10 @@ if [ "${FILESYSTEMS_ENABLED:-false}" = "true" ]; then
     install_pacman_chroot_with_retry "mtools"
     install_pacman_chroot_with_retry "cifs-utils"
     install_pacman_chroot_with_retry "jfsutils"
-    install_pacman_chroot_with_retry "btrfs-progs"
+    # btrfs-progs se instala condicionalmente según el sistema de archivos
+    if [ "$PARTITION_MODE" != "auto_btrfs" ]; then
+        install_pacman_chroot_with_retry "btrfs-progs"
+    fi
     install_pacman_chroot_with_retry "xfsprogs"
     install_pacman_chroot_with_retry "e2fsprogs"
     install_pacman_chroot_with_retry "exfatprogs"
