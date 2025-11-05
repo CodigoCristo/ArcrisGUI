@@ -710,13 +710,12 @@ show_menu() {
     echo -e "${CYAN}1)${NC} 📸 Gestión de Snapshots con Snapper"
     echo -e "${CYAN}2)${NC} 📸 Crear Puntos de Restauración"
     echo -e "${CYAN}3)${NC} 📸 Restaurar Puntos de Restauración"
-    echo -e "${CYAN}4)${NC} 🚨 Recuperación de Emergencia (GRUB)"
-    echo -e "${CYAN}5)${NC} 🔍 Ver Estado Actual del Sistema"
-    echo -e "${CYAN}6)${NC} 🔧 Mantenimiento de BTRFS"
-    echo -e "${CYAN}7)${NC} 📊 Monitoreo y Estado del Sistema"
-    echo -e "${CYAN}8)${NC} 📋 Configuración de Subvolúmenes"
-    echo -e "${CYAN}9)${NC} 🚨 Solución de Problemas"
-    echo -e "${CYAN}10)${NC} ⚙️  Comandos Avanzados de BTRFS"
+    echo -e "${CYAN}4)${NC} 🔍 Ver Estado Actual del Sistema"
+    echo -e "${CYAN}5)${NC} 🔧 Mantenimiento de BTRFS"
+    echo -e "${CYAN}6)${NC} 📊 Monitoreo y Estado del Sistema"
+    echo -e "${CYAN}7)${NC} 📋 Configuración de Subvolúmenes"
+    echo -e "${CYAN}8)${NC} 🚨 Solución de Problemas"
+    echo -e "${CYAN}9)${NC} ⚙️  Comandos Avanzados de BTRFS"
     echo -e "${CYAN}0)${NC} ❌ Salir"
 
     echo -e "\n${YELLOW}Ingresa tu opción: ${NC}"
@@ -731,21 +730,6 @@ show_snapshots() {
     echo -e "${WHITE}${BOLD}✓ ROOT (/):${NC} Snapshots automáticos cada hora, diarios, semanales, mensuales y anuales"
     echo -e "${WHITE}${BOLD}✓ HOME (/home):${NC} Snapshots automáticos con retención extendida para datos de usuario"
     echo -e "${CYAN}  • Almacenados en: /.snapshots y /home/.snapshots${NC}"
-
-    show_section "🚨 BOOT DESDE SNAPSHOTS (GRUB-BTRFS)"
-    echo -e "${WHITE}${BOLD}✓ Configurado para arrancar desde snapshots:${NC}"
-    echo -e "${CYAN}  • En GRUB verás 'Arch Linux snapshots' como opción${NC}"
-    echo -e "${CYAN}  • Permite arrancar desde cualquier snapshot cuando el sistema falla${NC}"
-    echo -e "${CYAN}  • Última opción de recuperación si no puedes acceder al sistema${NC}"
-
-    echo -e "\n${WHITE}${BOLD}Cómo usar boot desde snapshots:${NC}"
-    echo -e "1. ${CYAN}Reiniciar el sistema${NC}"
-    echo -e "2. ${CYAN}En GRUB, seleccionar 'Arch Linux snapshots'${NC}"
-    echo -e "3. ${CYAN}Elegir el snapshot deseado por fecha${NC}"
-    echo -e "4. ${CYAN}Arrancar normalmente${NC}"
-    echo -e "5. ${CYAN}Una vez dentro, hacer rollback permanente si es necesario${NC}"
-
-    show_note "grub-btrfs se actualiza automáticamente cuando se crean nuevos snapshots"
 
     show_section "📋 Comandos Básicos"
     echo -e "${WHITE}Ver snapshots:${NC}"
@@ -1292,17 +1276,6 @@ show_restore_points() {
             show_command "sudo reboot                                  # Reiniciar para aplicar"
             show_note "La restauración de ROOT afecta todo el sistema"
 
-            show_section "🚨 RESTAURACIÓN DE EMERGENCIA (GRUB-BTRFS)"
-            echo -e "${WHITE}${BOLD}Si el sistema NO arranca normalmente:${NC}"
-            echo -e "1. ${CYAN}Reiniciar y acceder a GRUB${NC}"
-            echo -e "2. ${CYAN}Seleccionar 'Arch Linux snapshots'${NC}"
-            echo -e "3. ${CYAN}Elegir un snapshot anterior que funcionaba${NC}"
-            echo -e "4. ${CYAN}Arrancar desde ese snapshot${NC}"
-            echo -e "5. ${CYAN}Una vez dentro, ejecutar:${NC}"
-            show_command "sudo snapper -c root rollback               # Hacer rollback permanente"
-            show_command "sudo reboot                                 # Reiniciar para confirmar"
-            show_note "Esta es tu última línea de defensa cuando todo falla"
-
             show_section "🏠 Restauración de HOME"
             show_command "sudo snapper -c home list                    # Ver snapshots disponibles"
             show_command "sudo snapper -c home rollback 8              # Restaurar snapshot 8"
@@ -1333,92 +1306,6 @@ show_restore_points() {
     esac
 }
 
-# Función para recuperación de emergencia desde GRUB
-show_emergency_recovery() {
-    clear
-    show_header "RECUPERACIÓN DE EMERGENCIA DESDE GRUB"
-
-    show_section "🚨 CUANDO USAR ESTA OPCIÓN"
-    echo -e "• ${RED}El sistema no arranca normalmente${NC}"
-    echo -e "• ${RED}Error crítico que impide el acceso al sistema${NC}"
-    echo -e "• ${RED}No puedes hacer login ni como root ni como usuario${NC}"
-    echo -e "• ${RED}Pantalla negra o kernel panic${NC}"
-    echo -e "• ${RED}Actualizaciones que rompieron el sistema${NC}"
-
-    show_section "📋 PASOS PARA RECUPERACIÓN DE EMERGENCIA"
-    echo -e "${WHITE}${BOLD}1. Reiniciar el Sistema:${NC}"
-    echo -e "   ${CYAN}• Reinicia tu computadora${NC}"
-    echo -e "   ${CYAN}• Al aparecer GRUB, NO selecciones la opción normal${NC}"
-
-    echo -e "\n${WHITE}${BOLD}2. Acceder al Menú de Snapshots:${NC}"
-    echo -e "   ${CYAN}• Busca y selecciona: 'Arch Linux snapshots'${NC}"
-    echo -e "   ${CYAN}• Si no aparece, presiona 'c' para línea de comandos de GRUB${NC}"
-
-    echo -e "\n${WHITE}${BOLD}3. Seleccionar Snapshot:${NC}"
-    echo -e "   ${CYAN}• Verás una lista de snapshots por fecha${NC}"
-    echo -e "   ${CYAN}• Selecciona un snapshot de cuando el sistema funcionaba${NC}"
-    echo -e "   ${CYAN}• Recomendado: el snapshot más reciente antes del problema${NC}"
-
-    echo -e "\n${WHITE}${BOLD}4. Arrancar desde el Snapshot:${NC}"
-    echo -e "   ${CYAN}• Presiona ENTER para arrancar desde ese snapshot${NC}"
-    echo -e "   ${CYAN}• El sistema arrancará en el estado de ese momento${NC}"
-
-    echo -e "\n${WHITE}${BOLD}5. Hacer el Cambio Permanente:${NC}"
-    echo -e "   ${CYAN}• Una vez dentro del sistema, abre terminal${NC}"
-    echo -e "   ${CYAN}• Ejecuta: sudo snapper -c root rollback${NC}"
-    echo -e "   ${CYAN}• Reinicia: sudo reboot${NC}"
-
-    show_section "🛠️ COMANDOS DE EMERGENCIA"
-    echo -e "${WHITE}Para hacer rollback permanente una vez recuperado:${NC}"
-    show_command "sudo snapper -c root list                    # Ver snapshots disponibles"
-    show_command "sudo snapper -c root rollback               # Rollback al snapshot desde el que arrancaste"
-    show_command "sudo reboot                                 # Reiniciar para confirmar cambios"
-
-    echo -e "\n${WHITE}Para ver qué snapshot estás usando actualmente:${NC}"
-    show_command "sudo snapper -c root list | head -5         # El snapshot actual aparece marcado"
-
-    show_section "🔧 SI GRUB-BTRFS NO FUNCIONA"
-    echo -e "${WHITE}Si no ves 'Arch Linux snapshots' en GRUB:${NC}"
-    echo -e "1. ${CYAN}Arranca desde un Live USB de Arch Linux${NC}"
-    echo -e "2. ${CYAN}Monta tu disco: sudo mount /dev/sdX3 /mnt${NC}"
-    echo -e "3. ${CYAN}Monta EFI: sudo mount /dev/sdX1 /mnt/boot${NC}"
-    echo -e "4. ${CYAN}Chroot: arch-chroot /mnt${NC}"
-    echo -e "5. ${CYAN}Instalar grub-btrfs: pacman -S grub-btrfs${NC}"
-    echo -e "6. ${CYAN}Regenerar GRUB: grub-mkconfig -o /boot/grub/grub.cfg${NC}"
-    echo -e "7. ${CYAN}Reiniciar y probar nuevamente${NC}"
-
-    show_section "🚦 IDENTIFICAR SNAPSHOTS ÚTILES"
-    echo -e "${WHITE}En el menú de GRUB verás snapshots como:${NC}"
-    echo -e "   ${CYAN}• 2024-01-15 10:30 - Timeline snapshot${NC}"
-    echo -e "   ${CYAN}• 2024-01-14 Sistema estable${NC}"
-    echo -e "   ${CYAN}• 2024-01-13 Antes actualizar sistema${NC}"
-
-    echo -e "\n${WHITE}Elige snapshots que:${NC}"
-    echo -e "• ${GREEN}Tengan descripciones que reconozcas${NC}"
-    echo -e "• ${GREEN}Sean de fechas cuando el sistema funcionaba${NC}"
-    echo -e "• ${GREEN}Digan 'estable' o 'funcional'${NC}"
-
-    show_section "⚠️ CONSIDERACIONES IMPORTANTES"
-    echo -e "• ${YELLOW}Los snapshots solo incluyen el sistema (/), no /home${NC}"
-    echo -e "• ${YELLOW}Tus archivos personales se mantienen intactos${NC}"
-    echo -e "• ${YELLOW}Solo se revierten cambios del sistema operativo${NC}"
-    echo -e "• ${GREEN}Es seguro probar diferentes snapshots${NC}"
-    echo -e "• ${GREEN}Puedes volver al estado actual si es necesario${NC}"
-
-    show_section "💡 PREVENCIÓN"
-    echo -e "${WHITE}Para evitar emergencias futuras:${NC}"
-    echo -e "• ${CYAN}Crea snapshots antes de actualizaciones importantes${NC}"
-    echo -e "• ${CYAN}Usa descripciones claras en tus snapshots${NC}"
-    echo -e "• ${CYAN}Mantén siempre algunos snapshots estables${NC}"
-    echo -e "• ${CYAN}Verifica que grub-btrfs esté funcionando${NC}"
-
-    echo -e "\n${RED}${BOLD}RECUERDA: Esta es tu última línea de defensa${NC}"
-    echo -e "${GREEN}grub-btrfs te permite recuperar el sistema incluso cuando todo parece perdido${NC}"
-
-    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
-    read
-}
-
 # Bucle principal del menú
 while true; do
     show_menu
@@ -1428,13 +1315,12 @@ while true; do
         1) show_snapshots ;;
         2) show_create_restore_points ;;
         3) show_restore_points ;;
-        4) show_emergency_recovery ;;
-        5) show_current_status ;;
-        6) show_maintenance ;;
-        7) show_monitoring ;;
-        8) show_subvolumes ;;
-        9) show_troubleshooting ;;
-        10) show_advanced ;;
+        4) show_current_status ;;
+        5) show_maintenance ;;
+        6) show_monitoring ;;
+        7) show_subvolumes ;;
+        8) show_troubleshooting ;;
+        9) show_advanced ;;
         0) echo -e "${GREEN}¡Gracias por usar la guía BTRFS!${NC}"; exit 0 ;;
         *) echo -e "${RED}Opción inválida. Presiona ENTER para continuar...${NC}"; read ;;
     esac
@@ -5175,40 +5061,6 @@ if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     # Solo instalar grub-btrfs ya que btrfs-progs ya está instalado
     install_pacman_chroot_with_retry "grub-btrfs" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo instalar grub-btrfs${NC}"
 
-    # Configurar grub-btrfs para boot desde snapshots
-    if chroot /mnt /bin/bash -c "pacman -Qq grub-btrfs" 2>/dev/null; then
-        echo -e "${CYAN}Configurando grub-btrfs para boot desde snapshots...${NC}"
-
-        # Habilitar servicio de actualización automática de grub con snapshots
-        chroot /mnt /bin/bash -c "systemctl enable grub-btrfsd.service" 2>/dev/null || echo -e "${YELLOW}Warning: grub-btrfsd.service no disponible${NC}"
-
-        # Configurar grub-btrfs para detectar snapshots en /.snapshots
-        if [ ! -f /mnt/etc/default/grub-btrfs/config ]; then
-            mkdir -p /mnt/etc/default/grub-btrfs
-            cat > /mnt/etc/default/grub-btrfs/config << 'GRUBCONFIG'
-# Configuración de grub-btrfs
-GRUB_BTRFS_LIMIT="10"
-GRUB_BTRFS_SUBVOLUME_SORT="descending"
-GRUB_BTRFS_SHOW_SNAPSHOTS_FOUND="true"
-GRUB_BTRFS_SHOW_TOTAL_SNAPSHOTS_FOUND="true"
-GRUB_BTRFS_TITLE_FORMAT="date"
-GRUB_BTRFS_LIMIT_FINDER_DEPTH="10"
-GRUB_BTRFS_SNAPSHOT_KERNEL_PARAMETERS=""
-GRUB_BTRFS_IGNORE_SPECIFIC_PATH=""
-GRUB_BTRFS_IGNORE_PREFIX_PATH=""
-GRUB_BTRFS_DISABLE_PROTECTION_SUBMENU="false"
-GRUB_BTRFS_PROTECTION_AUTHORIZED_USERS=""
-GRUB_BTRFS_MKCONFIG_LIB="/tmp/grub-mkconfig_lib"
-GRUB_BTRFS_SCRIPT_CHECK="grub-script-check"
-GRUB_BTRFS_GBTRFS="/etc/grub.d/41_snapshots-btrfs"
-GRUBCONFIG
-        fi
-
-        echo -e "${GREEN}✓ grub-btrfs configurado para detectar snapshots automáticamente${NC}"
-    else
-        echo -e "${YELLOW}Warning: grub-btrfs no instalado, boot desde snapshots no disponible${NC}"
-    fi
-
     # Habilitar servicios de mantenimiento BTRFS
     echo -e "${CYAN}Configurando servicios de mantenimiento BTRFS...${NC}"
     chroot /mnt /bin/bash -c "systemctl enable btrfs-scrub@-.timer" 2>/dev/null || echo -e "${YELLOW}Warning: btrfs-scrub timer no disponible${NC}"
@@ -5369,13 +5221,9 @@ SNAPCONF
         echo -e "${CYAN}  • /.snapshots - Snapshots de raíz (por Snapper)${NC}"
         echo -e "${CYAN}  • /home/.snapshots - Snapshots de home (por Snapper)${NC}"
 
-        echo -e "${GREEN}✓ Configuraciones de Snapper creadas:${NC}"
+        echo -e "\n${GREEN}✓ Configuraciones de Snapper creadas:${NC}"
         echo -e "${CYAN}  • root: Snapshots del sistema con retención completa${NC}"
         echo -e "${CYAN}  • home: Snapshots de datos de usuario con retención extendida${NC}"
-
-        echo -e "\n${GREEN}✓ grub-btrfs configurado:${NC}"
-        echo -e "${CYAN}  • Boot desde snapshots disponible en GRUB${NC}"
-        echo -e "${CYAN}  • Recuperación de emergencia habilitada${NC}"
 
     else
         echo -e "${RED}ERROR: No se pudo instalar Snapper${NC}"
@@ -5397,13 +5245,6 @@ SNAPCONF
         echo -e "${GREEN}✓ Configuración fstab válida${NC}"
     else
         echo -e "${YELLOW}Warning: Posibles issues en fstab, pero continuando...${NC}"
-    fi
-
-    # Regenerar GRUB para incluir snapshots de grub-btrfs
-    if chroot /mnt /bin/bash -c "pacman -Qq grub-btrfs" 2>/dev/null; then
-        echo -e "${CYAN}Regenerando GRUB para incluir snapshots...${NC}"
-        chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo regenerar GRUB con snapshots${NC}"
-        echo -e "${GREEN}✓ GRUB configurado para mostrar snapshots en el menú de arranque${NC}"
     fi
 
     # Crear script de mantenimiento BTRFS
