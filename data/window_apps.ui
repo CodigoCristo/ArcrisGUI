@@ -375,11 +375,13 @@
                             <child>
                               <object class="AdwExpanderRow" id="video_expander">
                                 <property name="title">Video</property>
-                                <property name="subtitle">Editores y reproductores de video</property>
+                                <property name="subtitle">Reproductores, editores, transcodificadores y grabadores de video</property>
                                 <property name="icon-name">applications-multimedia-symbolic</property>
                                 <property name="expanded">false</property>
 
-                                <!-- Video packages -->
+                                <!-- === REPRODUCTORES === -->
+
+                                <!-- Baka MPlayer -->
                                 <child>
                                   <object class="AdwActionRow">
                                     <property name="title">baka-mplayer</property>
@@ -399,6 +401,7 @@
                                   </object>
                                 </child>
 
+                                <!-- Dragon -->
                                 <child>
                                   <object class="AdwActionRow">
                                     <property name="title">dragon</property>
@@ -418,101 +421,47 @@
                                   </object>
                                 </child>
 
+                                <!-- MPV -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">kdenlive</property>
-                                    <property name="subtitle">Un editor de video no lineal para Linux usando el framework de video MLT</property>
+                                    <property name="title">mpv</property>
+                                    <property name="subtitle">Reproductor multimedia libre, de código abierto y multiplataforma</property>
                                     <child type="prefix">
-                                      <object class="GtkCheckButton" id="kdenlive_check">
+                                      <object class="GtkCheckButton" id="mpv_check">
                                         <property name="active">false</property>
                                       </object>
                                     </child>
                                     <child type="suffix">
-                                      <object class="GtkButton" id="kdenlive_info">
+                                      <object class="GtkButton" id="mpv_info">
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
-                                        <property name="tooltip-text">Más información</property>
+                                        <property name="tooltip-text">https://mpv.io/</property>
                                       </object>
                                     </child>
                                   </object>
                                 </child>
 
+                                <!-- Showtime -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">obs-studio</property>
-                                    <property name="subtitle">Software libre y de código abierto para streaming en vivo y grabación</property>
+                                    <property name="title">showtime</property>
+                                    <property name="subtitle">Reproductor de vídeo para el escritorio GNOME</property>
                                     <child type="prefix">
-                                      <object class="GtkCheckButton" id="obs_check">
+                                      <object class="GtkCheckButton" id="showtime_check">
                                         <property name="active">false</property>
                                       </object>
                                     </child>
                                     <child type="suffix">
-                                      <object class="GtkButton" id="obs_info">
+                                      <object class="GtkButton" id="showtime_info">
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
-                                        <property name="tooltip-text">Más información</property>
+                                        <property name="tooltip-text">https://apps.gnome.org/es/Showtime/</property>
                                       </object>
                                     </child>
                                   </object>
                                 </child>
 
-                                <child>
-                                  <object class="AdwActionRow">
-                                    <property name="title">openshot</property>
-                                    <property name="subtitle">Un galardonado editor de video libre y de código abierto</property>
-                                    <child type="prefix">
-                                      <object class="GtkCheckButton" id="openshot_check">
-                                        <property name="active">false</property>
-                                      </object>
-                                    </child>
-                                    <child type="suffix">
-                                      <object class="GtkButton" id="openshot_info">
-                                        <property name="icon-name">dialog-information-symbolic</property>
-                                        <property name="has-frame">false</property>
-                                        <property name="tooltip-text">Más información</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-
-                                <child>
-                                  <object class="AdwActionRow">
-                                    <property name="title">pitivi</property>
-                                    <property name="subtitle">Editor para proyectos de audio/video usando el framework GStreamer</property>
-                                    <child type="prefix">
-                                      <object class="GtkCheckButton" id="pitivi_check">
-                                        <property name="active">false</property>
-                                      </object>
-                                    </child>
-                                    <child type="suffix">
-                                      <object class="GtkButton" id="pitivi_info">
-                                        <property name="icon-name">dialog-information-symbolic</property>
-                                        <property name="has-frame">false</property>
-                                        <property name="tooltip-text">Más información</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-
-                                <child>
-                                  <object class="AdwActionRow">
-                                    <property name="title">shotcut</property>
-                                    <property name="subtitle">Editor de video multiplataforma basado en Qt</property>
-                                    <child type="prefix">
-                                      <object class="GtkCheckButton" id="shotcut_check">
-                                        <property name="active">false</property>
-                                      </object>
-                                    </child>
-                                    <child type="suffix">
-                                      <object class="GtkButton" id="shotcut_info">
-                                        <property name="icon-name">dialog-information-symbolic</property>
-                                        <property name="has-frame">false</property>
-                                        <property name="tooltip-text">Más información</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-
+                                <!-- SMPlayer -->
                                 <child>
                                   <object class="AdwActionRow">
                                     <property name="title">smplayer</property>
@@ -532,6 +481,7 @@
                                   </object>
                                 </child>
 
+                                <!-- VLC -->
                                 <child>
                                   <object class="AdwActionRow">
                                     <property name="title">vlc</property>
@@ -550,6 +500,90 @@
                                     </child>
                                   </object>
                                 </child>
+
+                                <!-- === EDITORES === -->
+
+                                <!-- Kdenlive -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">kdenlive</property>
+                                    <property name="subtitle">Un editor de video no lineal para Linux usando el framework de video MLT</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="kdenlive_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="kdenlive_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- OpenShot -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">openshot</property>
+                                    <property name="subtitle">Un galardonado editor de video libre y de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="openshot_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="openshot_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Pitivi -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">pitivi</property>
+                                    <property name="subtitle">Editor para proyectos de audio/video usando el framework GStreamer</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="pitivi_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="pitivi_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Shotcut -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">shotcut</property>
+                                    <property name="subtitle">Editor de video multiplataforma basado en Qt</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="shotcut_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="shotcut_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">Más información</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- === TRANSCODIFICADORES === -->
 
                                 <!-- HandBrake -->
                                 <child>
@@ -571,61 +605,63 @@
                                   </object>
                                 </child>
 
-                                <!-- Clapper -->
+                                <!-- === GRABADORES === -->
+
+                                <!-- OBS Studio -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">clapper</property>
-                                    <property name="subtitle">Reproductor multimedia moderno y simple para GNOME</property>
+                                    <property name="title">obs-studio</property>
+                                    <property name="subtitle">Software libre y de código abierto para streaming en vivo y grabación</property>
                                     <child type="prefix">
-                                      <object class="GtkCheckButton" id="clapper_check">
+                                      <object class="GtkCheckButton" id="obs_check">
                                         <property name="active">false</property>
                                       </object>
                                     </child>
                                     <child type="suffix">
-                                      <object class="GtkButton" id="clapper_info">
+                                      <object class="GtkButton" id="obs_info">
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
-                                        <property name="tooltip-text">https://rafostar.github.io/clapper/</property>
+                                        <property name="tooltip-text">Más información</property>
                                       </object>
                                     </child>
                                   </object>
                                 </child>
 
-                                <!-- LMMS -->
+                                <!-- Kooha -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">lmms</property>
-                                    <property name="subtitle">Estación de trabajo de audio digital libre y multiplataforma</property>
+                                    <property name="title">kooha</property>
+                                    <property name="subtitle">Grabador de pantalla elegantemente diseñado construido con GTK</property>
                                     <child type="prefix">
-                                      <object class="GtkCheckButton" id="lmms_check">
+                                      <object class="GtkCheckButton" id="kooha_check">
                                         <property name="active">false</property>
                                       </object>
                                     </child>
                                     <child type="suffix">
-                                      <object class="GtkButton" id="lmms_info">
+                                      <object class="GtkButton" id="kooha_info">
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
-                                        <property name="tooltip-text">https://lmms.io/</property>
+                                        <property name="tooltip-text">https://github.com/SeaDve/Kooha</property>
                                       </object>
                                     </child>
                                   </object>
                                 </child>
 
-                                <!-- Simple Screen Recorder -->
+                                <!-- Vokoscreen -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">simplescreenrecorder</property>
-                                    <property name="subtitle">Grabador de pantalla simple y fácil de usar para Linux</property>
+                                    <property name="title">vokoscreen</property>
+                                    <property name="subtitle">Grabador de pantalla fácil de usar para Linux con soporte para múltiples formatos</property>
                                     <child type="prefix">
-                                      <object class="GtkCheckButton" id="simplescreenrecorder_check">
+                                      <object class="GtkCheckButton" id="vokoscreen_check">
                                         <property name="active">false</property>
                                       </object>
                                     </child>
                                     <child type="suffix">
-                                      <object class="GtkButton" id="simplescreenrecorder_info">
+                                      <object class="GtkButton" id="vokoscreen_info">
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
-                                        <property name="tooltip-text">https://www.maartenbaert.be/simplescreenrecorder/</property>
+                                        <property name="tooltip-text">https://linuxecke.volkoh.de/vokoscreen/vokoscreen.html</property>
                                       </object>
                                     </child>
                                   </object>
@@ -736,6 +772,26 @@
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
                                         <property name="tooltip-text">https://ardour.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- LMMS -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">lmms</property>
+                                    <property name="subtitle">Estación de trabajo de audio digital libre y multiplataforma</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="lmms_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="lmms_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://lmms.io/</property>
                                       </object>
                                     </child>
                                   </object>
@@ -1376,7 +1432,7 @@
             <child>
                <object class="AdwExpanderRow" id="gamming_expander">
                 <property name="title">Gamming</property>
-                <property name="subtitle">Herramientas y Plataformas para jugadores</property>
+                <property name="subtitle">Plataformas, emuladores, herramientas y juegos</property>
                 <property name="icon-name">xbox-controller-symbolic</property>
 
                                 <!-- Steam -->
@@ -1499,6 +1555,26 @@
                                   </object>
                                 </child>
 
+                                <!-- SuperTuxKart -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">supertuxkart</property>
+                                    <property name="subtitle">Juego de carreras de karts 3D de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="supertuxkart_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="supertuxkart_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://supertuxkart.net/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
                                 <!-- SuperTux -->
                                 <child>
                                   <object class="AdwActionRow">
@@ -1514,6 +1590,494 @@
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
                                         <property name="tooltip-text">https://www.supertux.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- === HERRAMIENTAS DE COMPATIBILIDAD === -->
+
+                                <!-- Proton-GE Custom -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">proton-ge-custom-bin</property>
+                                    <property name="subtitle">Versión personalizada de Proton con parches adicionales para mejor compatibilidad</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="proton_ge_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="proton_ge_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/GloriousEggroll/proton-ge-custom</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Winetricks -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">winetricks</property>
+                                    <property name="subtitle">Script helper para instalar bibliotecas necesarias en Wine</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="winetricks_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="winetricks_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/Winetricks/winetricks</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- GameMode -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">gamemode</property>
+                                    <property name="subtitle">Optimización temporal del sistema para mejorar el rendimiento en juegos</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="gamemode_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="gamemode_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/FeralInteractive/gamemode</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- MangoHud -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">mangohud</property>
+                                    <property name="subtitle">Overlay de información del sistema para juegos basado en Vulkan y OpenGL</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="mangohud_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="mangohud_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/flightlessmango/MangoHud</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- === JUEGOS === -->
+
+                                <!-- GNOME Games -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">gnome-games</property>
+                                    <property name="subtitle">Colección de juegos simples para el escritorio GNOME</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="gnome_games_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="gnome_games_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://wiki.gnome.org/Apps/Games</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+
+
+                                <!-- === EMULADORES === -->
+
+                                <!-- RetroArch -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">retroarch</property>
+                                    <property name="subtitle">Frontend para emuladores, motores de juego y reproductores multimedia</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="retroarch_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="retroarch_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.retroarch.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- PPSSPP -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">ppsspp</property>
+                                    <property name="subtitle">Emulador de PlayStation Portable multiplataforma</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="ppsspp_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="ppsspp_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.ppsspp.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- DuckStation -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">duckstation</property>
+                                    <property name="subtitle">Emulador de PlayStation 1 con precisión y mejoras gráficas</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="duckstation_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="duckstation_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/stenzek/duckstation</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- PCSX2 -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">pcsx2</property>
+                                    <property name="subtitle">Emulador de PlayStation 2 de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="pcsx2_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="pcsx2_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://pcsx2.net/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- RPCS3 -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">rpcs3</property>
+                                    <property name="subtitle">Emulador experimental de PlayStation 3 de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="rpcs3_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="rpcs3_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://rpcs3.net/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- shadPS4 -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">shadps4</property>
+                                    <property name="subtitle">Emulador experimental de PlayStation 4 en desarrollo</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="shadps4_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="shadps4_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/shadps4-emu/shadPS4</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Snes9x-GTK -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">snes9x-gtk</property>
+                                    <property name="subtitle">Emulador de Super Nintendo con interfaz GTK</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="snes9x_gtk_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="snes9x_gtk_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/snes9xgit/snes9x</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- ZSNES -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">zsnes</property>
+                                    <property name="subtitle">Emulador clásico de Super Nintendo Entertainment System</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="zsnes_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="zsnes_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">http://www.zsnes.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- citron -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">citron</property>
+                                    <property name="subtitle">Emulador de Nintendo Switch basado en yuzu</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="citron_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="citron_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/emuplace/citron</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Ryujinx -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">ryujinx</property>
+                                    <property name="subtitle">Emulador experimental de Nintendo Switch de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="ryujinx_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="ryujinx_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://ryujinx.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Dolphin Emulator -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">dolphin-emu</property>
+                                    <property name="subtitle">Emulador de Nintendo GameCube y Wii</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="dolphin_emu_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="dolphin_emu_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://dolphin-emu.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Mesen2 -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">mesen2-git</property>
+                                    <property name="subtitle">Emulador multi-sistema para NES, SNES, Game Boy y PC Engine</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="mesen2_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="mesen2_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/SourMesen/Mesen2</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- FCEUX -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">fceux</property>
+                                    <property name="subtitle">Emulador de Nintendo Entertainment System (NES)</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="fceux_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="fceux_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">http://fceux.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- bsnes-qt5 -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">bsnes-qt5</property>
+                                    <property name="subtitle">Emulador de Super Nintendo con alta precisión</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="bsnes_qt5_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="bsnes_qt5_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/bsnes-emu/bsnes</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- mGBA-qt -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">mgba-qt</property>
+                                    <property name="subtitle">Emulador de Game Boy Advance con interfaz Qt</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="mgba_qt_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="mgba_qt_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://mgba.io/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- SkyEmu -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">skyemu-git</property>
+                                    <property name="subtitle">Emulador de Game Boy Advance con funciones avanzadas</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="skyemu_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="skyemu_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/skylersaleh/SkyEmu</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Azahar -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">azahar</property>
+                                    <property name="subtitle">Emulador de Nintendo DS desarrollado en Rust</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="azahar_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="azahar_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/Xaviercreator/azahar</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- melonDS -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">melonds</property>
+                                    <property name="subtitle">Emulador de Nintendo DS con alta precisión</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="melonds_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="melonds_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">http://melonds.kuribo64.net/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- MAME -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">mame</property>
+                                    <property name="subtitle">Emulador de máquinas arcade y sistemas de computadora vintage</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="mame_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="mame_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.mamedev.org/</property>
                                       </object>
                                     </child>
                                   </object>
@@ -1683,6 +2247,46 @@
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
                                         <property name="tooltip-text">https://wiki.gnome.org/Apps/Brasero</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- GParted -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">gparted</property>
+                                    <property name="subtitle">Editor de particiones gráfico libre y de código abierto</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="gparted_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="gparted_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://gparted.org/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- GNOME Disk Utility -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">gnome-disk-utility</property>
+                                    <property name="subtitle">Utilidad para gestión y configuración de discos para GNOME</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="gnome_disk_utility_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="gnome_disk_utility_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://wiki.gnome.org/Apps/Disks</property>
                                       </object>
                                     </child>
                                   </object>

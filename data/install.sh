@@ -728,9 +728,28 @@ show_snapshots() {
     show_header "GESTIÓN DE SNAPSHOTS CON SNAPPER"
 
     show_section "📋 Configuración Automática Actual"
-    echo -e "${WHITE}${BOLD}✓ ROOT (/):${NC} Snapshots automáticos cada hora, diarios, semanales, mensuales y anuales"
-    echo -e "${WHITE}${BOLD}✓ HOME (/home):${NC} Snapshots automáticos con retención extendida para datos de usuario"
-    echo -e "${CYAN}  • Almacenados en: /.snapshots y /home/.snapshots${NC}"
+    echo -e "${WHITE}${BOLD}✓ ROOT (/):${NC} Sistema operativo protegido automáticamente"
+    echo -e "${CYAN}  • Cada hora: mantiene 5 snapshots${NC}"
+    echo -e "${CYAN}  • Diarios: mantiene 7 snapshots${NC}"
+    echo -e "${CYAN}  • Semanales: mantiene 4 snapshots${NC}"
+    echo -e "${CYAN}  • Mensuales: mantiene 6 snapshots${NC}"
+    echo -e "${CYAN}  • Anuales: mantiene 2 snapshots${NC}"
+
+    echo -e "\n${WHITE}${BOLD}✓ HOME (/home):${NC} Datos de usuario protegidos automáticamente"
+    echo -e "${CYAN}  • Cada hora: mantiene 3 snapshots${NC}"
+    echo -e "${CYAN}  • Diarios: mantiene 7 snapshots${NC}"
+    echo -e "${CYAN}  • Semanales: mantiene 4 snapshots${NC}"
+    echo -e "${CYAN}  • Mensuales: mantiene 12 snapshots (más para datos importantes)${NC}"
+    echo -e "${CYAN}  • Anuales: mantiene 5 snapshots${NC}"
+
+    echo -e "\n${WHITE}${BOLD}📍 Ubicación:${NC} /.snapshots y /home/.snapshots"
+
+    show_section "⏰ Horarios de Snapshots Automáticos"
+    echo -e "${WHITE}Los snapshots se crean automáticamente:${NC}"
+    echo -e "${CYAN}  • snapper-timeline.timer ejecuta cada hora${NC}"
+    echo -e "${CYAN}  • snapper-cleanup.timer limpia diariamente${NC}"
+    echo -e "${CYAN}  • No requiere intervención del usuario${NC}"
+    echo -e "${YELLOW}  • Verifica: sudo systemctl list-timers snapper-*${NC}"
 
     show_section "🚨 BOOT DESDE SNAPSHOTS (GRUB-BTRFS)"
     echo -e "${WHITE}${BOLD}✓ Configurado para arrancar desde snapshots:${NC}"
@@ -768,10 +787,11 @@ show_snapshots() {
     show_command "sudo systemctl list-timers snapper-*         # Ver próximas ejecuciones"
 
     show_section "💡 Información Importante"
-    echo -e "• ${GREEN}Los snapshots automáticos se crean sin intervención del usuario${NC}"
+    echo -e "• ${GREEN}Los snapshots automáticos funcionan 24/7 sin intervención${NC}"
     echo -e "• ${GREEN}La limpieza automática evita que se llene el disco${NC}"
-    echo -e "• ${GREEN}Para crear/restaurar snapshots manualmente, usa las opciones 2 y 3 del menú${NC}"
-    echo -e "• ${YELLOW}Los snapshots ocupan espacio solo para los cambios (CoW)${NC}"
+    echo -e "• ${GREEN}Los snapshots ocupan espacio solo para los cambios (CoW)${NC}"
+    echo -e "• ${CYAN}Timeline snapshots se identifican por fecha/hora en GRUB${NC}"
+    echo -e "• ${YELLOW}Para snapshots con descripción personal, usa opciones 2 y 3 del menú${NC}"
 
     echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
     read
@@ -1093,7 +1113,8 @@ show_create_restore_points() {
     echo -e "${WHITE}Selecciona qué tipo de snapshot deseas crear:${NC}\n"
     echo -e "${CYAN}1)${NC} 🖥️  Crear snapshot de ROOT (/)"
     echo -e "${CYAN}2)${NC} 🏠 Crear snapshot de HOME (/home)"
-    echo -e "${CYAN}3)${NC} 📋 Ver comandos manuales"
+    echo -e "${CYAN}3)${NC} 📦 Crear snapshot de AMBOS (ROOT + HOME)"
+    echo -e "${CYAN}4)${NC} 📋 Ver comandos manuales"
     echo -e "${CYAN}0)${NC} 🔙 Volver al menú principal"
 
     echo -e "\n${YELLOW}Ingresa tu opción: ${NC}"
@@ -1112,6 +1133,12 @@ show_create_restore_points() {
                 if sudo snapper -c root create --description "$description"; then
                     echo -e "${GREEN}✓ Snapshot de ROOT creado exitosamente${NC}"
                     echo -e "${CYAN}Descripción: $description${NC}"
+                    echo -e "\n${CYAN}Actualizando GRUB para incluir nuevos snapshots...${NC}"
+                    if sudo grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1; then
+                        echo -e "${GREEN}✓ GRUB actualizado - snapshots disponibles en boot${NC}"
+                    else
+                        echo -e "${YELLOW}Warning: No se pudo actualizar GRUB automáticamente${NC}"
+                    fi
                     echo -e "\n${WHITE}Ver todos los snapshots de ROOT:${NC}"
                     sudo snapper -c root list | tail -10
                 else
@@ -1152,6 +1179,67 @@ show_create_restore_points() {
             ;;
         3)
             clear
+            show_header "CREAR SNAPSHOT DE AMBOS (ROOT + HOME)"
+            echo -e "${WHITE}Ingresa una descripción para ambos snapshots:${NC}"
+            echo -e "${YELLOW}Ejemplo: Sistema completo estable - $(date +'%Y-%m-%d')${NC}"
+            read -r description
+
+            if [ -n "$description" ]; then
+                echo -e "\n${CYAN}Creando snapshot de ROOT...${NC}"
+                ROOT_SUCCESS=false
+                if sudo snapper -c root create --description "$description"; then
+                    echo -e "${GREEN}✓ Snapshot de ROOT creado exitosamente${NC}"
+                    ROOT_SUCCESS=true
+                else
+                    echo -e "${RED}✗ Error al crear snapshot de ROOT${NC}"
+                fi
+
+                echo -e "\n${CYAN}Creando snapshot de HOME...${NC}"
+                HOME_SUCCESS=false
+                if sudo snapper -c home create --description "$description"; then
+                    echo -e "${GREEN}✓ Snapshot de HOME creado exitosamente${NC}"
+                    HOME_SUCCESS=true
+                else
+                    echo -e "${RED}✗ Error al crear snapshot de HOME${NC}"
+                fi
+
+                if [ "$ROOT_SUCCESS" = true ]; then
+                    echo -e "\n${CYAN}Actualizando GRUB para incluir nuevos snapshots...${NC}"
+                    if sudo grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1; then
+                        echo -e "${GREEN}✓ GRUB actualizado - snapshots disponibles en boot${NC}"
+                    else
+                        echo -e "${YELLOW}Warning: No se pudo actualizar GRUB automáticamente${NC}"
+                    fi
+                fi
+
+                echo -e "\n${WHITE}${BOLD}RESUMEN:${NC}"
+                echo -e "${CYAN}Descripción: $description${NC}"
+                if [ "$ROOT_SUCCESS" = true ] && [ "$HOME_SUCCESS" = true ]; then
+                    echo -e "${GREEN}✓ Ambos snapshots creados exitosamente${NC}"
+                    echo -e "${GREEN}✓ Sistema completo respaldado${NC}"
+                elif [ "$ROOT_SUCCESS" = true ]; then
+                    echo -e "${YELLOW}⚠ Solo se creó snapshot de ROOT${NC}"
+                elif [ "$HOME_SUCCESS" = true ]; then
+                    echo -e "${YELLOW}⚠ Solo se creó snapshot de HOME${NC}"
+                else
+                    echo -e "${RED}✗ No se pudieron crear los snapshots${NC}"
+                fi
+
+                echo -e "\n${WHITE}Ver snapshots recientes:${NC}"
+                echo -e "${CYAN}ROOT:${NC}"
+                sudo snapper -c root list | tail -5
+                echo -e "\n${CYAN}HOME:${NC}"
+                sudo snapper -c home list | tail -5
+            else
+                echo -e "${RED}✗ Descripción vacía, operación cancelada${NC}"
+            fi
+
+            echo -e "\n${YELLOW}Presiona ENTER para continuar...${NC}"
+            read
+            show_create_restore_points
+            ;;
+        4)
+            clear
             show_header "COMANDOS MANUALES PARA SNAPSHOTS"
 
             show_section "📸 Comandos para ROOT (/)"
@@ -1166,9 +1254,19 @@ show_create_restore_points() {
             show_command "sudo snapper -c home create --description \"Proyectos completados\""
             show_command "sudo snapper -c home list                    # Ver snapshots de home"
 
+            show_section "📦 Comandos para AMBOS (ROOT + HOME)"
+            echo -e "${WHITE}Script para crear snapshots simultáneos:${NC}"
+            show_command "DESC=\"Mi descripción\""
+            show_command "sudo snapper -c root create --description \"\$DESC\""
+            show_command "sudo snapper -c home create --description \"\$DESC\""
+            show_command "sudo grub-mkconfig -o /boot/grub/grub.cfg    # Actualizar GRUB"
+
             show_section "⚠️ Mejores Prácticas"
-            echo -e "• ${GREEN}Usar descripciones claras y con fecha${NC}"
+            echo -e "• ${GREEN}Usar descripciones idénticas para snapshots de AMBOS${NC}"
             echo -e "• ${GREEN}Crear snapshots antes de cambios importantes${NC}"
+            echo -e "• ${GREEN}Snapshots de AMBOS para estados críticos del sistema${NC}"
+            echo -e "• ${GREEN}Actualizar GRUB después de snapshots de ROOT${NC}"
+            echo -e "• ${CYAN}Verificar que ROOT y HOME tengan la misma descripción${NC}"
             echo -e "• ${GREEN}No crear demasiados snapshots manuales${NC}"
 
             echo -e "\n${YELLOW}Presiona ENTER para volver...${NC}"
@@ -1194,7 +1292,8 @@ show_restore_points() {
     echo -e "${WHITE}Selecciona qué deseas restaurar:${NC}\n"
     echo -e "${CYAN}1)${NC} 🖥️  Restaurar snapshot de ROOT (/)"
     echo -e "${CYAN}2)${NC} 🏠 Restaurar snapshot de HOME (/home)"
-    echo -e "${CYAN}3)${NC} 📋 Ver comandos manuales"
+    echo -e "${CYAN}3)${NC} 📦 Restaurar AMBOS (ROOT + HOME) con misma descripción"
+    echo -e "${CYAN}4)${NC} 📋 Ver comandos manuales"
     echo -e "${CYAN}0)${NC} 🔙 Volver al menú principal"
 
     echo -e "\n${YELLOW}Ingresa tu opción: ${NC}"
@@ -1284,6 +1383,122 @@ show_restore_points() {
             ;;
         3)
             clear
+            show_header "RESTAURAR AMBOS (ROOT + HOME)"
+
+            echo -e "${WHITE}Esta opción busca snapshots con la misma descripción en ROOT y HOME${NC}"
+            echo -e "${YELLOW}Ideal para snapshots creados con la opción 'Crear AMBOS'${NC}\n"
+
+            echo -e "${CYAN}Buscando snapshots con descripciones coincidentes...${NC}\n"
+
+            # Crear archivo temporal para almacenar snapshots coincidentes
+            TEMP_FILE=$(mktemp)
+
+            # Obtener snapshots de ROOT
+            sudo snapper -c root list | grep -E "^[0-9]+" | while read -r line; do
+                SNAPSHOT_NUM=$(echo "$line" | awk '{print $1}')
+                DESCRIPTION=$(echo "$line" | awk -F '|' '{print $6}' | sed 's/^ *//' | sed 's/ *$//')
+                if [ -n "$DESCRIPTION" ] && [ "$DESCRIPTION" != "current" ]; then
+                    # Buscar la misma descripción en HOME
+                    HOME_MATCH=$(sudo snapper -c home list | grep -F "$DESCRIPTION" | head -1)
+                    if [ -n "$HOME_MATCH" ]; then
+                        HOME_NUM=$(echo "$HOME_MATCH" | awk '{print $1}')
+                        echo "$SNAPSHOT_NUM|$HOME_NUM|$DESCRIPTION" >> "$TEMP_FILE"
+                    fi
+                fi
+            done
+
+            if [ -s "$TEMP_FILE" ]; then
+                echo -e "${WHITE}Snapshots coincidentes encontrados:${NC}\n"
+                echo -e "${CYAN}No. | ROOT | HOME | Descripción${NC}"
+                echo -e "${CYAN}----|----- |----- |------------${NC}"
+
+                INDEX=1
+                while IFS='|' read -r root_num home_num desc; do
+                    printf "${YELLOW}%2d${NC}  | ${GREEN}%4s${NC}  | ${GREEN}%4s${NC}  | ${CYAN}%s${NC}\n" "$INDEX" "$root_num" "$home_num" "$desc"
+                    INDEX=$((INDEX + 1))
+                done < "$TEMP_FILE"
+
+                echo -e "\n${WHITE}Selecciona el número de la opción a restaurar (0 para cancelar):${NC}"
+                read -r choice
+
+                if [ "$choice" != "0" ] && [ "$choice" -ge 1 ] && [ "$choice" -le "$((INDEX-1))" ]; then
+                    # Obtener la línea seleccionada
+                    SELECTED_LINE=$(sed -n "${choice}p" "$TEMP_FILE")
+                    ROOT_NUM=$(echo "$SELECTED_LINE" | cut -d'|' -f1)
+                    HOME_NUM=$(echo "$SELECTED_LINE" | cut -d'|' -f2)
+                    DESC=$(echo "$SELECTED_LINE" | cut -d'|' -f3)
+
+                    echo -e "\n${RED}${BOLD}⚠️  ADVERTENCIA: Esto restaurará AMBOS sistemas${NC}"
+                    echo -e "${CYAN}ROOT snapshot: $ROOT_NUM${NC}"
+                    echo -e "${CYAN}HOME snapshot: $HOME_NUM${NC}"
+                    echo -e "${CYAN}Descripción: $DESC${NC}"
+                    echo -e "${RED}Se recomienda reiniciar después de la restauración de ROOT${NC}"
+                    echo -e "\n${WHITE}¿Continuar con la restauración de AMBOS? (s/N):${NC}"
+                    read -r confirm
+
+                    if [[ "$confirm" =~ ^[sS]$ ]]; then
+                        echo -e "\n${CYAN}Restaurando ROOT (snapshot $ROOT_NUM)...${NC}"
+                        ROOT_SUCCESS=false
+                        if sudo snapper -c root rollback "$ROOT_NUM"; then
+                            echo -e "${GREEN}✓ Restauración de ROOT completada${NC}"
+                            ROOT_SUCCESS=true
+                        else
+                            echo -e "${RED}✗ Error en la restauración de ROOT${NC}"
+                        fi
+
+                        echo -e "\n${CYAN}Restaurando HOME (snapshot $HOME_NUM)...${NC}"
+                        HOME_SUCCESS=false
+                        if sudo snapper -c home rollback "$HOME_NUM"; then
+                            echo -e "${GREEN}✓ Restauración de HOME completada${NC}"
+                            HOME_SUCCESS=true
+                        else
+                            echo -e "${RED}✗ Error en la restauración de HOME${NC}"
+                        fi
+
+                        echo -e "\n${WHITE}${BOLD}RESUMEN DE RESTAURACIÓN:${NC}"
+                        echo -e "${CYAN}Descripción: $DESC${NC}"
+                        if [ "$ROOT_SUCCESS" = true ] && [ "$HOME_SUCCESS" = true ]; then
+                            echo -e "${GREEN}✓ Ambos sistemas restaurados exitosamente${NC}"
+                            echo -e "${YELLOW}Se recomienda reiniciar el sistema ahora${NC}"
+                            echo -e "\n${WHITE}¿Reiniciar ahora? (s/N):${NC}"
+                            read -r reboot_confirm
+                            if [[ "$reboot_confirm" =~ ^[sS]$ ]]; then
+                                sudo reboot
+                            fi
+                        elif [ "$ROOT_SUCCESS" = true ]; then
+                            echo -e "${YELLOW}⚠ Solo se restauró ROOT exitosamente${NC}"
+                            echo -e "${RED}Revisar el error de HOME manualmente${NC}"
+                        elif [ "$HOME_SUCCESS" = true ]; then
+                            echo -e "${YELLOW}⚠ Solo se restauró HOME exitosamente${NC}"
+                            echo -e "${RED}Revisar el error de ROOT manualmente${NC}"
+                        else
+                            echo -e "${RED}✗ No se pudieron restaurar los snapshots${NC}"
+                        fi
+                    else
+                        echo -e "${YELLOW}Operación cancelada${NC}"
+                    fi
+                elif [ "$choice" = "0" ]; then
+                    echo -e "${YELLOW}Operación cancelada${NC}"
+                else
+                    echo -e "${RED}✗ Opción inválida${NC}"
+                fi
+            else
+                echo -e "${YELLOW}No se encontraron snapshots con descripciones coincidentes${NC}"
+                echo -e "${CYAN}Esto puede suceder si:${NC}"
+                echo -e "${CYAN}  • No has creado snapshots con la opción 'AMBOS'${NC}"
+                echo -e "${CYAN}  • Las descripciones no coinciden exactamente${NC}"
+                echo -e "${CYAN}  • Los snapshots fueron eliminados${NC}"
+            fi
+
+            # Limpiar archivo temporal
+            rm -f "$TEMP_FILE"
+
+            echo -e "\n${YELLOW}Presiona ENTER para continuar...${NC}"
+            read
+            show_restore_points
+            ;;
+        4)
+            clear
             show_header "COMANDOS MANUALES DE RESTAURACIÓN"
 
             show_section "🔄 Restauración de ROOT"
@@ -1308,6 +1523,16 @@ show_restore_points() {
             show_command "sudo snapper -c home rollback 8              # Restaurar snapshot 8"
             show_note "La restauración de HOME solo afecta datos de usuario"
 
+            show_section "📦 Restauración Simultánea de AMBOS"
+            echo -e "${WHITE}Para restaurar ROOT y HOME con misma descripción manualmente:${NC}"
+            show_command "# Buscar snapshots coincidentes"
+            show_command "sudo snapper -c root list | grep 'Mi descripción'"
+            show_command "sudo snapper -c home list | grep 'Mi descripción'"
+            show_command "# Restaurar ambos (usar números encontrados)"
+            show_command "sudo snapper -c root rollback 15             # Número de ROOT"
+            show_command "sudo snapper -c home rollback 12             # Número de HOME"
+            show_command "sudo reboot                                  # Reiniciar para ROOT"
+
             show_section "📂 Restauración Selectiva"
             show_command "sudo snapper -c root undochange 10..15       # Deshacer cambios entre snapshots"
             show_command "sudo snapper -c home status 5..8             # Ver qué cambiaría"
@@ -1315,7 +1540,8 @@ show_restore_points() {
 
             show_section "⚠️ Consideraciones Importantes"
             echo -e "• ${RED}Restauración de ROOT requiere reinicio${NC}"
-            echo -e "• ${YELLOW}Hacer backup antes de restaurar${NC}"
+            echo -e "• ${YELLOW}Restauración de AMBOS requiere más tiempo${NC}"
+            echo -e "• ${GREEN}Los snapshots con misma descripción mantienen consistencia${NC}"
             echo -e "• ${GREEN}Probar en entorno de prueba primero${NC}"
 
             echo -e "\n${YELLOW}Presiona ENTER para volver...${NC}"
@@ -4608,12 +4834,19 @@ fi
 echo -e "${GREEN}✓ Configuración de detección de sistemas operativos completada${NC}"
 echo ""
 
-
+# Crear script helper para actualizar GRUB después de snapshots manuales
+cat > /mnt/usr/local/bin/update-grub << 'UPDATEGRUB'
+#!/bin/bash
+# Script para actualizar GRUB
+echo "Actualizando GRUB con nuevos snapshots..."
+grub-mkconfig -o /boot/grub/grub.cfg
+echo "✓ GRUB actualizado"
+UPDATEGRUB
+chmod +x /mnt/usr/local/bin/update-grub
+echo -e "${GREEN}✓ Script helper creado: /usr/local/bin/update-grub${NC}"
 
 sleep 3
 clear
-
-
 
 # Instalación de drivers de video
 echo -e "${GREEN}| Instalando drivers de video: $DRIVER_VIDEO |${NC}"
@@ -5187,7 +5420,7 @@ if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
             mkdir -p /mnt/etc/default/grub-btrfs
             cat > /mnt/etc/default/grub-btrfs/config << 'GRUBCONFIG'
 # Configuración de grub-btrfs
-GRUB_BTRFS_LIMIT="10"
+GRUB_BTRFS_LIMIT="15"
 GRUB_BTRFS_SUBVOLUME_SORT="descending"
 GRUB_BTRFS_SHOW_SNAPSHOTS_FOUND="true"
 GRUB_BTRFS_SHOW_TOTAL_SNAPSHOTS_FOUND="true"
@@ -5321,6 +5554,15 @@ SNAPCONF
         chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer" || echo -e "${YELLOW}Warning: Falló habilitar snapper-timeline.timer${NC}"
         chroot /mnt /bin/bash -c "systemctl enable snapper-cleanup.timer" || echo -e "${YELLOW}Warning: Falló habilitar snapper-cleanup.timer${NC}"
 
+        echo -e "${GREEN}✓ Servicios automáticos de Snapper habilitados:${NC}"
+        echo -e "${CYAN}  • snapper-timeline.timer: Crea snapshots automáticos${NC}"
+        echo -e "${CYAN}    - Cada hora (mantiene 5)${NC}"
+        echo -e "${CYAN}    - Diarios (mantiene 7)${NC}"
+        echo -e "${CYAN}    - Semanales (mantiene 4)${NC}"
+        echo -e "${CYAN}    - Mensuales (mantiene 6-12)${NC}"
+        echo -e "${CYAN}    - Anuales (mantiene 2-5)${NC}"
+        echo -e "${CYAN}  • snapper-cleanup.timer: Limpia snapshots antiguos automáticamente${NC}"
+
         # Verificar que la configuración de root existe antes de crear snapshot
         if chroot /mnt /bin/bash -c "snapper list-configs" | grep -q "root"; then
             echo -e "${CYAN}Creando snapshot inicial del sistema raíz...${NC}"
@@ -5404,6 +5646,8 @@ SNAPCONF
         echo -e "${CYAN}Regenerando GRUB para incluir snapshots...${NC}"
         chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo regenerar GRUB con snapshots${NC}"
         echo -e "${GREEN}✓ GRUB configurado para mostrar snapshots en el menú de arranque${NC}"
+
+
     fi
 
     # Crear script de mantenimiento BTRFS
