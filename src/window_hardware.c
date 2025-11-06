@@ -290,13 +290,13 @@ char* window_hardware_get_wifi_card_info(void)
     char *result = NULL;
     FILE *fp;
     char buffer[512];
-    fp = popen("lspci | grep -i 'network controller' | sed -E 's/^[0-9a-f:.]+ Network controller: //; s/ \\(rev [^)]+\\)//' | sed 's/^[^ ]* [^ ]* //'", "r");
+    fp = popen("lspci | grep -i 'network controller' | sed -E 's/^[0-9a-f:.]+ Network controller: //; s/ \\(rev [^)]+\\)//' | awk '{print $3, $4, $5, $6}'", "r");
     if (fp) {
         if (fgets(buffer, sizeof(buffer), fp)) {
             // Remover el salto de línea
             char *newline = strchr(buffer, '\n');
             if (newline) *newline = '\0';
-            // El comando sed ya extrae solo el nombre que necesitamos
+            // El comando awk extrae exactamente las 4 palabras que necesitamos
             if (strlen(buffer) > 0) {
                 result = g_strdup(buffer);
             }
