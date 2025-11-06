@@ -290,8 +290,7 @@ char* window_hardware_get_wifi_card_info(void)
     char *result = NULL;
     FILE *fp;
     char buffer[512];
-
-    fp = popen("lspci | grep -i 'network controller' | sed -E 's/^[0-9a-f:.]+ Network controller: //; s/ \\(rev [^)]+\\)//'", "r");
+    fp = popen("lspci | grep -i 'network controller' | sed -E 's/^[0-9a-f:.]+ Network controller: //; s/ \\(rev [^)]+\\)//' | sed 's/^[^ ]* [^ ]* //'", "r");
     if (fp) {
         if (fgets(buffer, sizeof(buffer), fp)) {
             // Remover el salto de línea
@@ -304,12 +303,10 @@ char* window_hardware_get_wifi_card_info(void)
         }
         pclose(fp);
     }
-
     if (!result || strlen(result) == 0) {
         if (result) g_free(result);
         result = g_strdup("No se detectó tarjeta WiFi");
     }
-
     return result;
 }
 
@@ -318,26 +315,23 @@ char* window_hardware_get_bluetooth_card_info(void)
     char *result = NULL;
     FILE *fp;
     char buffer[512];
-
-    fp = popen("lsusb | grep -i bluetooth | sed -E 's/^.*ID [0-9a-f]+:[0-9a-f]+ //'", "r");
+    fp = popen("lsusb | grep -i bluetooth | sed -E 's/^.*ID [0-9a-f]+:[0-9a-f]+ //' | sed 's/^[^ ]* [^ ]* //' | awk '{print $1, $2, $3}'", "r");
     if (fp) {
         if (fgets(buffer, sizeof(buffer), fp)) {
             // Remover el salto de línea
             char *newline = strchr(buffer, '\n');
             if (newline) *newline = '\0';
-            // El comando sed ya extrae solo el nombre que necesitamos
+            // El comando extrae solo las 3 palabras que necesitamos
             if (strlen(buffer) > 0) {
                 result = g_strdup(buffer);
             }
         }
         pclose(fp);
     }
-
     if (!result || strlen(result) == 0) {
         if (result) g_free(result);
         result = g_strdup("No se detectó dispositivo Bluetooth");
     }
-
     return result;
 }
 
