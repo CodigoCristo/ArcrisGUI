@@ -1394,18 +1394,25 @@ show_restore_points() {
             TEMP_FILE=$(mktemp)
 
             # Obtener snapshots de ROOT
-            sudo snapper -c root list | grep -E "^[0-9]+" | while read -r line; do
+            while IFS= read -r line; do
                 SNAPSHOT_NUM=$(echo "$line" | awk '{print $1}')
-                DESCRIPTION=$(echo "$line" | awk -F '|' '{print $6}' | sed 's/^ *//' | sed 's/ *$//')
+                DESCRIPTION=$(echo "$line" | awk '{$1=$2=$3=$4=$5=$6=""; print $0}' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+
                 if [ -n "$DESCRIPTION" ] && [ "$DESCRIPTION" != "current" ]; then
-                    # Buscar la misma descripción en HOME
-                    HOME_MATCH=$(sudo snapper -c home list | grep -F "$DESCRIPTION" | head -1)
-                    if [ -n "$HOME_MATCH" ]; then
-                        HOME_NUM=$(echo "$HOME_MATCH" | awk '{print $1}')
+                    # Buscar en HOME la misma descripción
+                    HOME_NUM=$(sudo snapper -c home list | grep -E "^[0-9]+" | while read -r home_line; do
+                        HOME_DESC=$(echo "$home_line" | awk '{$1=$2=$3=$4=$5=$6=""; print $0}' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+                        if [ "$HOME_DESC" = "$DESCRIPTION" ]; then
+                            echo "$home_line" | awk '{print $1}'
+                            break
+                        fi
+                    done | head -1)
+
+                    if [ -n "$HOME_NUM" ]; then
                         echo "$SNAPSHOT_NUM|$HOME_NUM|$DESCRIPTION" >> "$TEMP_FILE"
                     fi
                 fi
-            done
+            done < <(sudo snapper -c root list | grep -E "^[0-9]+")
 
             if [ -s "$TEMP_FILE" ]; then
                 echo -e "${WHITE}Snapshots coincidentes encontrados:${NC}\n"
@@ -5227,20 +5234,17 @@ case "$DRIVER_WIFI" in
         echo "Sin drivers de WiFi"
         ;;
     "Open Source")
-        install_pacman_chroot_with_retry "networkmanager"
         install_pacman_chroot_with_retry "wpa_supplicant"
         install_pacman_chroot_with_retry "wireless_tools"
         install_pacman_chroot_with_retry "iw"
         ;;
     "broadcom-wl")
-        install_pacman_chroot_with_retry "networkmanager"
         install_pacman_chroot_with_retry "wpa_supplicant"
         install_pacman_chroot_with_retry "wireless_tools"
         install_pacman_chroot_with_retry "iw"
         install_pacman_chroot_with_retry "broadcom-wl"
         ;;
     "Realtek")
-        install_pacman_chroot_with_retry "networkmanager"
         install_pacman_chroot_with_retry "wpa_supplicant"
         install_pacman_chroot_with_retry "wireless_tools"
         install_pacman_chroot_with_retry "iw"
@@ -5288,8 +5292,7 @@ install_pacman_chroot_with_retry "dhclient"
 install_pacman_chroot_with_retry "networkmanager"
 install_pacman_chroot_with_retry "wpa_supplicant"
 # Deshabilitar dhcpcd para evitar conflictos con NetworkManager
-chroot /mnt /bin/bash -c "systemctl enable dhcpcd" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
-chroot /mnt /bin/bash -c "systemctl enable NetworkManager" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+chroot /mnt /bin/bash -c "systemctl enable NetworkManager dhcpcd" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 clear
 
 # Copiado de archivos de configuración
