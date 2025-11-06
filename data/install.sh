@@ -1455,7 +1455,9 @@ show_restore_points() {
 
                         echo -e "\n${CYAN}Restaurando HOME (snapshot $HOME_NUM)...${NC}"
                         HOME_SUCCESS=false
-                        if sudo snapper -c home rollback "$HOME_NUM"; then
+                        # Obtener el snapshot actual de HOME
+                        CURRENT_HOME=$(sudo snapper -c home list | grep "current" | awk '{print $1}')
+                        if sudo snapper -c home undochange "$CURRENT_HOME..$HOME_NUM"; then
                             echo -e "${GREEN}✓ Restauración de HOME completada${NC}"
                             HOME_SUCCESS=true
                         else
@@ -5459,7 +5461,7 @@ GRUBCONFIG
 
         # Crear configuración para el subvolumen raíz (esto crea automáticamente /.snapshots)
         echo -e "${CYAN}Configurando Snapper para el sistema raíz (/)...${NC}"
-        if chroot /mnt /bin/bash -c "snapper --no-dbus create-config /"; then
+        if chroot /mnt /bin/bash -c "snapper -c root create-config /"; then
             echo -e "${GREEN}✓ Configuración de snapper para raíz y subvolumen /.snapshots creados exitosamente${NC}"
         else
             echo -e "${RED}ERROR: No se pudo crear la configuración de snapper para raíz${NC}"
@@ -5470,7 +5472,7 @@ GRUBCONFIG
         # Crear configuración para /home si el subvolumen existe
         if chroot /mnt /bin/bash -c "mountpoint -q /home"; then
             echo -e "${CYAN}Configurando Snapper para /home...${NC}"
-            if chroot /mnt /bin/bash -c "snapper --no-dbus create-config /home"; then
+            if chroot /mnt /bin/bash -c "snapper -c home create-config /home"; then
                 echo -e "${GREEN}✓ Configuración de snapper para /home y subvolumen /home/.snapshots creados exitosamente${NC}"
 
                 # Configuración personalizada para /home con menos frecuencia que root
