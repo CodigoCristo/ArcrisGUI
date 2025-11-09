@@ -1358,10 +1358,9 @@ show_restore_points() {
                     echo -e "${RED}El ámbito se puede especificar manualmente con la opción --ambit.${NC}"
                     echo -e "\n${CYAN}Intentando restauración manual...${NC}"
 
-                    # Método alternativo usando undochange para ROOT
-                    CURRENT_ROOT=$(sudo snapper -c root list | grep "current" | awk '{print $1}' 2>/dev/null || echo "0")
-                    if [ -n "$CURRENT_ROOT" ] && [ "$CURRENT_ROOT" != "0" ]; then
-                        if sudo snapper -c root undochange "$snapshot_num..$CURRENT_ROOT" 2>/dev/null; then
+                    # Método alternativo usando undochange para ROOT - usar snapshot 0 como actual
+                    CURRENT_ROOT="0"
+                    if sudo snapper -c root undochange "$snapshot_num..$CURRENT_ROOT" 2>/dev/null; then
                             echo -e "${GREEN}✓ Restauración de ROOT completada usando método alternativo${NC}"
                             echo -e "${YELLOW}Se recomienda reiniciar el sistema ahora${NC}"
                             echo -e "${WHITE}¿Reiniciar ahora? (s/N):${NC}"
@@ -1412,10 +1411,9 @@ show_restore_points() {
                     echo -e "${YELLOW}El comando 'rollback' no puede usarse en un subvolumen no raíz /home.${NC}"
                     echo -e "${CYAN}Usando método alternativo con undochange...${NC}"
 
-                    # Método alternativo usando undochange para HOME
-                    CURRENT_HOME=$(sudo snapper -c home list | grep "current" | awk '{print $1}' 2>/dev/null || echo "0")
-                    if [ -n "$CURRENT_HOME" ] && [ "$CURRENT_HOME" != "0" ]; then
-                        if sudo snapper -c home undochange "$snapshot_num..$CURRENT_HOME" 2>/dev/null; then
+                    # Método alternativo usando undochange para HOME - usar snapshot 0 como actual
+                    CURRENT_HOME="0"
+                    if sudo snapper -c home undochange "$snapshot_num..$CURRENT_HOME" 2>/dev/null; then
                             echo -e "${GREEN}✓ Restauración de HOME completada${NC}"
                         else
                             echo -e "${RED}✗ Error en la restauración de HOME${NC}"
@@ -1501,10 +1499,9 @@ show_restore_points() {
                     if [[ "$confirm" =~ ^[sS]$ ]]; then
                         echo -e "\n${CYAN}Restaurando ROOT (snapshot $ROOT_NUM)...${NC}"
                         ROOT_SUCCESS=false
-                        # Método alternativo para ROOT
-                        CURRENT_ROOT=$(sudo snapper -c root list | grep "current" | awk '{print $1}' 2>/dev/null || echo "0")
-                        if [ -n "$CURRENT_ROOT" ] && [ "$CURRENT_ROOT" != "0" ]; then
-                            if sudo snapper -c root undochange "$ROOT_NUM..$CURRENT_ROOT" 2>/dev/null; then
+                        # Método alternativo para ROOT - usar snapshot 0 como actual
+                        CURRENT_ROOT="0"
+                        if sudo snapper -c root undochange "$ROOT_NUM..$CURRENT_ROOT" 2>/dev/null; then
                                 echo -e "${GREEN}✓ Restauración de ROOT completada${NC}"
                                 ROOT_SUCCESS=true
                             else
@@ -1517,10 +1514,9 @@ show_restore_points() {
 
                         echo -e "\n${CYAN}Restaurando HOME (snapshot $HOME_NUM)...${NC}"
                         HOME_SUCCESS=false
-                        # Método alternativo para HOME usando undochange
-                        CURRENT_HOME=$(sudo snapper -c home list | grep "current" | awk '{print $1}' 2>/dev/null || echo "0")
-                        if [ -n "$CURRENT_HOME" ] && [ "$CURRENT_HOME" != "0" ]; then
-                            if sudo snapper -c home undochange "$HOME_NUM..$CURRENT_HOME" 2>/dev/null; then
+                        # Método alternativo para HOME usando undochange - usar snapshot 0 como actual
+                        CURRENT_HOME="0"
+                        if sudo snapper -c home undochange "$HOME_NUM..$CURRENT_HOME" 2>/dev/null; then
                                 echo -e "${GREEN}✓ Restauración de HOME completada${NC}"
                                 HOME_SUCCESS=true
                             else
