@@ -5692,42 +5692,42 @@ GRUBCONFIG
     if chroot /mnt /bin/bash -c "pacman -Qq snapper" 2>/dev/null; then
         echo -e "${CYAN}Configurando Snapper para snapshots automáticos...${NC}"
 
+        # Diagnósticos para LiveCD
+        echo -e "${CYAN}Realizando diagnósticos del entorno...${NC}"
+        echo -e "${YELLOW}Estado D-Bus: $(chroot /mnt /bin/bash -c "systemctl is-active dbus 2>/dev/null || echo 'no disponible'")${NC}"
+        echo -e "${YELLOW}Filesystem raíz: $(chroot /mnt /bin/bash -c "df -T / | tail -1 | awk '{print \$2}'" 2>/dev/null)${NC}"
+        echo -e "${YELLOW}Subvolúmenes BTRFS: $(chroot /mnt /bin/bash -c "btrfs subvolume list / 2>/dev/null | wc -l || echo '0'")${NC}"
+
         # Crear configuración para el subvolumen raíz (esto crea automáticamente /.snapshots)
         echo -e "${CYAN}Configurando Snapper para el sistema raíz (/)...${NC}"
-        if chroot /mnt /bin/bash -c "snapper -c root create-config /"; then
-            echo -e "${GREEN}✓ Configuración de snapper para raíz y subvolumen /.snapshots creados exitosamente${NC}"
+
+        # En LiveCD, necesitamos configurar sin D-Bus y con servicios básicos
+        echo -e "${YELLOW}Detectado entorno LiveCD - probando diferentes métodos${NC}"
+
+        # Crear directorio de configuración si no existe
+        chroot /mnt /bin/bash -c "mkdir -p /etc/snapper/configs"
+
+        # Intentar crear configuración con --no-dbus para LiveCD
+        if chroot /mnt /bin/bash -c "snapper --no-dbus -c root create-config /"; then
+            echo -e "${GREEN}✓ Configuración de snapper para raíz creada exitosamente${NC}"
         else
-            echo -e "${RED}ERROR: No se pudo crear la configuración de snapper para raíz${NC}"
-            echo -e "${YELLOW}Saltando configuración automática de snapshots${NC}"
-            return
-        fi
-
-        # Crear configuración para /home si el subvolumen existe
-        if chroot /mnt /bin/bash -c "mountpoint -q /home"; then
-            echo -e "${CYAN}Configurando Snapper para /home...${NC}"
-            if chroot /mnt /bin/bash -c "snapper -c home create-config /home"; then
-                echo -e "${GREEN}✓ Configuración de snapper para /home y subvolumen /home/.snapshots creados exitosamente${NC}"
-
-                # Configuración personalizada para /home con menos frecuencia que root
-                cat > /mnt/etc/snapper/configs/home << 'HOMESNAP'
-# Configuración de Snapper para subvolumen /home
-SUBVOLUME="/home"
+            echo -e "${YELLOW}Creando configuración manual para LiveCD...${NC}"
+            # Crear configuración manualmente si falla
+            cat > /mnt/etc/snapper/configs/root << 'ROOTCONFIG'
+# snapper configuration
+SUBVOLUME="/"
 FSTYPE="btrfs"
-
-# Configuración de snapshots automáticos por tiempo (timeline)
 TIMELINE_CREATE="yes"
 TIMELINE_CLEANUP="yes"
-
-# Límites de retención de snapshots (menos frecuentes que root)
-TIMELINE_LIMIT_HOURLY="3"       # 3 snapshots por hora
-TIMELINE_LIMIT_DAILY="7"        # 7 snapshots diarios
-TIMELINE_LIMIT_WEEKLY="4"       # 4 snapshots semanales
-TIMELINE_LIMIT_MONTHLY="12"     # 12 snapshots mensuales
-TIMELINE_LIMIT_YEARLY="5"       # 5 snapshots anuales
+TIMELINE_LIMIT_HOURLY="5"
+TIMELINE_LIMIT_DAILY="7"
+TIMELINE_LIMIT_WEEKLY="4"
+TIMELINE_LIMIT_MONTHLY="6"
+TIMELINE_LIMIT_YEARLY="2"
 
 # Configuración de limpieza
 EMPTY_PRE_POST_CLEANUP="yes"
-EMPTY_PRE_POST_MIN_AGE="1800"   # 30 minutos
+EMPTY_PRE_POST_MIN_AGE="1800"
 
 # Permitir a usuarios del grupo wheel gestionar snapshots
 ALLOW_USERS=""
@@ -5739,54 +5739,72 @@ SYNC_ACL="no"
 # Configuración de número (automático)
 NUMBER_CLEANUP="yes"
 NUMBER_MIN_AGE="1800"
-NUMBER_LIMIT="40"               # Máximo 40 snapshots numerados
-NUMBER_LIMIT_IMPORTANT="10"     # Máximo 10 snapshots importantes
-HOMESNAP
-                echo -e "${GREEN}✓ Configuración personalizada de Snapper para /home creada${NC}"
+NUMBER_LIMIT="50"
+NUMBER_LIMIT_IMPORTANT="10"
+SPACE_LIMIT="0.5"
+ROOTCONFIG
+
+            # Crear directorio de snapshots manualmente
+            chroot /mnt /bin/bash -c "mkdir -p /.snapshots"
+            chroot /mnt /bin/bash -c "chmod 755 /.snapshots"
+
+            echo -e "${GREEN}✓ Configuración manual de snapper para raíz completada${NC}"
+        fi
+
+        # Crear configuración para /home si el subvolumen existe
+        if chroot /mnt /bin/bash -c "mountpoint -q /home"; then
+            echo -e "${CYAN}Configurando Snapper para /home...${NC}"
+
+            # Intentar crear configuración para /home con --no-dbus para LiveCD
+            if chroot /mnt /bin/bash -c "snapper --no-dbus -c home create-config /home"; then
+                echo -e "${GREEN}✓ Configuración de snapper para /home creada exitosamente${NC}"
+            else
+                echo -e "${YELLOW}Creando configuración manual para /home en LiveCD...${NC}"
+                # Crear configuración manualmente si falla
+                cat > /mnt/etc/snapper/configs/home << 'HOMECONFIG'
+# snapper configuration para /home
+SUBVOLUME="/home"
+FSTYPE="btrfs"
+TIMELINE_CREATE="yes"
+TIMELINE_CLEANUP="yes"
+TIMELINE_LIMIT_HOURLY="3"
+TIMELINE_LIMIT_DAILY="7"
+TIMELINE_LIMIT_WEEKLY="4"
+TIMELINE_LIMIT_MONTHLY="12"
+TIMELINE_LIMIT_YEARLY="5"
+
+# Configuración de limpieza
+EMPTY_PRE_POST_CLEANUP="yes"
+EMPTY_PRE_POST_MIN_AGE="1800"
+
+# Permitir a usuarios del grupo wheel gestionar snapshots
+ALLOW_USERS=""
+ALLOW_GROUPS="wheel"
+
+# Sincronización con ACL
+SYNC_ACL="no"
+
+# Configuración de número (automático)
+NUMBER_CLEANUP="yes"
+NUMBER_MIN_AGE="1800"
+NUMBER_LIMIT="40"
+NUMBER_LIMIT_IMPORTANT="10"
+SPACE_LIMIT="0.3"
+HOMECONFIG
+
+                # Crear directorio de snapshots manualmente
+                chroot /mnt /bin/bash -c "mkdir -p /home/.snapshots"
+                chroot /mnt /bin/bash -c "chmod 755 /home/.snapshots"
+
+                echo -e "${GREEN}✓ Configuración manual de snapper para /home completada${NC}"
+            fi
+
             else
                 echo -e "${YELLOW}Warning: No se pudo crear configuración de snapper para /home${NC}"
             fi
         else
             echo -e "${YELLOW}Warning: /home no está montado como subvolumen, saltando configuración de snapper${NC}"
         fi
-
-        # Configurar frecuencias de snapshots automáticos
-        echo -e "${CYAN}Configurando frecuencias de snapshots...${NC}"
-        cat > /mnt/etc/snapper/configs/root << 'SNAPCONF'
-# Configuración de Snapper para subvolumen raíz
-SUBVOLUME="/"
-FSTYPE="btrfs"
-
-# Configuración de snapshots automáticos por tiempo (timeline)
-TIMELINE_CREATE="yes"
-TIMELINE_CLEANUP="yes"
-
-# Límites de retención de snapshots
-TIMELINE_LIMIT_HOURLY="5"       # 5 snapshots por hora
-TIMELINE_LIMIT_DAILY="7"        # 7 snapshots diarios
-TIMELINE_LIMIT_WEEKLY="4"       # 4 snapshots semanales
-TIMELINE_LIMIT_MONTHLY="6"      # 6 snapshots mensuales
-TIMELINE_LIMIT_YEARLY="2"       # 2 snapshots anuales
-
-# Configuración de limpieza
-EMPTY_PRE_POST_CLEANUP="yes"
-EMPTY_PRE_POST_MIN_AGE="1800"   # 30 minutos
-
-# Permitir a usuarios del grupo wheel gestionar snapshots
-ALLOW_USERS=""
-ALLOW_GROUPS="wheel"
-
-# Sincronización con ACL
-SYNC_ACL="no"
-
-# Configuración de número (automático)
-NUMBER_CLEANUP="yes"
-NUMBER_MIN_AGE="1800"
-NUMBER_LIMIT="50"               # Máximo 50 snapshots numerados
-NUMBER_LIMIT_IMPORTANT="10"     # Máximo 10 snapshots importantes
-SNAPCONF
-
-        echo -e "${GREEN}✓ Configuración personalizada de Snapper creada${NC}"
 
         # Habilitar servicios de Snapper
         chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer" || echo -e "${YELLOW}Warning: Falló habilitar snapper-timeline.timer${NC}"
@@ -5871,8 +5889,198 @@ SNAPCONF
     chroot /mnt /bin/bash -c "sed -i 's/subvol=@var,/subvol=@var,compress=zstd:3,space_cache=v2,/' /etc/fstab" 2>/dev/null || true
     chroot /mnt /bin/bash -c "sed -i 's/subvol=@tmp,/subvol=@tmp,compress=zstd:1,space_cache=v2,/' /etc/fstab" 2>/dev/null || true
 
+    # Función de diagnóstico final para snapper
+    echo -e "\n${CYAN}=== DIAGNÓSTICO FINAL DE SNAPPER ===${NC}"
+
+    echo -e "\n${CYAN}Verificando configuraciones de snapper...${NC}"
+    if chroot /mnt /bin/bash -c "snapper list-configs 2>/dev/null"; then
+        echo -e "${GREEN}✓ Comando snapper funciona correctamente${NC}"
+    else
+        echo -e "${RED}✗ snapper no responde - Diagnóstico detallado:${NC}"
+        echo -e "${YELLOW}  Estado D-Bus: $(chroot /mnt /bin/bash -c "systemctl is-active dbus 2>/dev/null || echo 'inactivo/no disponible'")${NC}"
+        echo -e "${YELLOW}  snapperd disponible: $(chroot /mnt /bin/bash -c "which snapperd 2>/dev/null || echo 'no encontrado'")${NC}"
+        echo -e "${YELLOW}  Archivos config: $(chroot /mnt /bin/bash -c "ls -la /etc/snapper/configs/ 2>/dev/null || echo 'directorio no existe'")${NC}"
+        echo -e "${YELLOW}  Directorio .snapshots: $(chroot /mnt /bin/bash -c "ls -la /.snapshots/ 2>/dev/null | head -3 || echo 'no accesible'")${NC}"
+    fi
+
+    echo -e "\n${CYAN}Verificando directorios de snapshots...${NC}"
+    if chroot /mnt /bin/bash -c "test -d /.snapshots"; then
+        echo -e "${GREEN}✓ Directorio /.snapshots existe${NC}"
+    else
+        echo -e "${YELLOW}⚠ Directorio /.snapshots no existe - creándolo manualmente${NC}"
+        chroot /mnt /bin/bash -c "mkdir -p /.snapshots && chmod 755 /.snapshots"
+    fi
+
+    if chroot /mnt /bin/bash -c "test -d /home/.snapshots"; then
+        echo -e "${GREEN}✓ Directorio /home/.snapshots existe${NC}"
+    else
+        echo -e "${YELLOW}⚠ Directorio /home/.snapshots no existe - creándolo manualmente${NC}"
+        chroot /mnt /bin/bash -c "mkdir -p /home/.snapshots && chmod 755 /home/.snapshots"
+    fi
+
+    echo -e "\n${CYAN}Comandos para verificar después del reinicio:${NC}"
+    echo -e "${WHITE}sudo snapper list-configs${NC}"
+    echo -e "${WHITE}sudo snapper -c root list${NC}"
+    echo -e "${WHITE}sudo snapper -c home list${NC}"
+    echo -e "${WHITE}sudo systemctl status snapper-timeline.timer${NC}"
+
+    echo -e "\n${CYAN}Si snapper no funciona después del reinicio, usar:${NC}"
+    echo -e "${WHITE}sudo snapper --no-dbus -c root create-config /${NC}"
+    echo -e "${WHITE}sudo snapper --no-dbus -c home create-config /home${NC}"
+
+    # Crear script de verificación post-instalación
+    echo -e "\n${CYAN}Creando script de verificación post-instalación...${NC}"
+    cat > /mnt/usr/local/bin/verify-snapper << 'SNAPVERIFY'
+#!/bin/bash
+# Script de verificación de Snapper post-instalación
+# Se ejecuta después del primer reinicio para verificar configuración
+
+# Colores
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+echo -e "${CYAN}=== VERIFICACIÓN DE SNAPPER POST-INSTALACIÓN ===${NC}\n"
+
+# Verificar que snapper está instalado
+if ! command -v snapper >/dev/null 2>&1; then
+    echo -e "${RED}✗ snapper no está instalado${NC}"
+    exit 1
+fi
+
+# Verificar servicios
+echo -e "${CYAN}Verificando servicios...${NC}"
+echo -e "D-Bus: $(systemctl is-active dbus || echo "${RED}inactivo${NC}")"
+echo -e "snapper-timeline.timer: $(systemctl is-active snapper-timeline.timer || echo "${YELLOW}inactivo${NC}")"
+echo -e "snapper-cleanup.timer: $(systemctl is-active snapper-cleanup.timer || echo "${YELLOW}inactivo${NC}")"
+
+# Verificar configuraciones
+echo -e "\n${CYAN}Verificando configuraciones de snapper...${NC}"
+if snapper list-configs >/dev/null 2>&1; then
+    echo -e "${GREEN}✓ snapper responde correctamente${NC}"
+    snapper list-configs
+else
+    echo -e "${RED}✗ snapper no responde - Intentando reparar...${NC}"
+
+    # Intentar crear configuraciones manualmente
+    if [ ! -f "/etc/snapper/configs/root" ]; then
+        echo -e "${YELLOW}Creando configuración root...${NC}"
+        sudo snapper --no-dbus -c root create-config / 2>/dev/null || {
+            echo -e "${RED}Falló creación automática, usando configuración manual${NC}"
+            sudo mkdir -p /etc/snapper/configs
+            sudo tee /etc/snapper/configs/root > /dev/null << 'EOF'
+SUBVOLUME="/"
+FSTYPE="btrfs"
+TIMELINE_CREATE="yes"
+TIMELINE_CLEANUP="yes"
+TIMELINE_LIMIT_HOURLY="5"
+TIMELINE_LIMIT_DAILY="7"
+TIMELINE_LIMIT_WEEKLY="4"
+TIMELINE_LIMIT_MONTHLY="6"
+TIMELINE_LIMIT_YEARLY="2"
+NUMBER_CLEANUP="yes"
+NUMBER_LIMIT="10"
+SPACE_LIMIT="0.5"
+ALLOW_USERS=""
+ALLOW_GROUPS=""
+SYNC_ACL="no"
+EOF
+            sudo mkdir -p /.snapshots
+            sudo chmod 755 /.snapshots
+        }
+    fi
+
+    if [ -d "/home" ] && [ ! -f "/etc/snapper/configs/home" ]; then
+        echo -e "${YELLOW}Creando configuración home...${NC}"
+        sudo snapper --no-dbus -c home create-config /home 2>/dev/null || {
+            echo -e "${RED}Falló creación automática, usando configuración manual${NC}"
+            sudo tee /etc/snapper/configs/home > /dev/null << 'EOF'
+SUBVOLUME="/home"
+FSTYPE="btrfs"
+TIMELINE_CREATE="yes"
+TIMELINE_CLEANUP="yes"
+TIMELINE_LIMIT_HOURLY="3"
+TIMELINE_LIMIT_DAILY="7"
+TIMELINE_LIMIT_WEEKLY="4"
+TIMELINE_LIMIT_MONTHLY="12"
+TIMELINE_LIMIT_YEARLY="5"
+NUMBER_CLEANUP="yes"
+NUMBER_LIMIT="8"
+SPACE_LIMIT="0.3"
+ALLOW_USERS=""
+ALLOW_GROUPS=""
+SYNC_ACL="no"
+EOF
+            sudo mkdir -p /home/.snapshots
+            sudo chmod 755 /home/.snapshots
+        }
+    fi
+fi
+
+# Verificar directorios de snapshots
+echo -e "\n${CYAN}Verificando directorios...${NC}"
+if [ -d "/.snapshots" ]; then
+    echo -e "${GREEN}✓ /.snapshots existe${NC}"
+else
+    echo -e "${RED}✗ /.snapshots no existe - creándolo${NC}"
+    sudo mkdir -p /.snapshots
+    sudo chmod 755 /.snapshots
+fi
+
+if [ -d "/home/.snapshots" ]; then
+    echo -e "${GREEN}✓ /home/.snapshots existe${NC}"
+else
+    echo -e "${YELLOW}⚠ /home/.snapshots no existe - creándolo${NC}"
+    sudo mkdir -p /home/.snapshots
+    sudo chmod 755 /home/.snapshots
+fi
+
+# Habilitar servicios si no están activos
+echo -e "\n${CYAN}Habilitando servicios...${NC}"
+if ! systemctl is-enabled snapper-timeline.timer >/dev/null 2>&1; then
+    sudo systemctl enable snapper-timeline.timer
+    echo -e "${GREEN}✓ snapper-timeline.timer habilitado${NC}"
+fi
+
+if ! systemctl is-enabled snapper-cleanup.timer >/dev/null 2>&1; then
+    sudo systemctl enable snapper-cleanup.timer
+    echo -e "${GREEN}✓ snapper-cleanup.timer habilitado${NC}"
+fi
+
+# Crear snapshots iniciales si no existen
+echo -e "\n${CYAN}Verificando snapshots iniciales...${NC}"
+if snapper -c root list 2>/dev/null | grep -q "0"; then
+    echo -e "${GREEN}✓ Configuración root funcional${NC}"
+else
+    echo -e "${YELLOW}Creando snapshot inicial de root...${NC}"
+    sudo snapper -c root create --description "Sistema verificado - Estado inicial" 2>/dev/null || echo -e "${RED}No se pudo crear snapshot inicial${NC}"
+fi
+
+if [ -f "/etc/snapper/configs/home" ] && snapper -c home list 2>/dev/null | grep -q "0"; then
+    echo -e "${GREEN}✓ Configuración home funcional${NC}"
+else
+    echo -e "${YELLOW}Creando snapshot inicial de home...${NC}"
+    sudo snapper -c home create --description "Home verificado - Estado inicial" 2>/dev/null || echo -e "${RED}No se pudo crear snapshot inicial${NC}"
+fi
+
+# Resumen final
+echo -e "\n${CYAN}=== RESUMEN FINAL ===${NC}"
+echo -e "Configuraciones: $(snapper list-configs 2>/dev/null | wc -l || echo "0") encontradas"
+echo -e "ROOT snapshots: $(snapper -c root list 2>/dev/null | tail -n +3 | wc -l || echo "0")"
+if [ -f "/etc/snapper/configs/home" ]; then
+    echo -e "HOME snapshots: $(snapper -c home list 2>/dev/null | tail -n +3 | wc -l || echo "0")"
+fi
+
+echo -e "\n${GREEN}Verificación completada. Ejecuta 'btrfs-guide' para ver la guía completa.${NC}"
+SNAPVERIFY
+
+    chmod +x /mnt/usr/local/bin/verify-snapper
+    echo -e "${GREEN}✓ Script de verificación creado en /usr/local/bin/verify-snapper${NC}"
+
     # Verificar configuración final de fstab
-    echo -e "${CYAN}Verificando configuración final de fstab...${NC}"
+    echo -e "\n${CYAN}Verificando configuración final de
     if chroot /mnt /bin/bash -c "mount -a --fake" 2>/dev/null; then
         echo -e "${GREEN}✓ Configuración fstab válida${NC}"
     else
