@@ -717,6 +717,8 @@ show_menu() {
     echo -e "${CYAN}8)${NC} 📋 Configuración de Subvolúmenes"
     echo -e "${CYAN}9)${NC} 🚨 Solución de Problemas"
     echo -e "${CYAN}10)${NC} ⚙️  Comandos Avanzados de BTRFS"
+    echo -e "${CYAN}11)${NC} 🔍 Explorar Snapshots (Solo Ver - Sin Aplicar)"
+    echo -e "${CYAN}12)${NC} 🔧 Solución Rápida Errores Rollback"
     echo -e "${CYAN}0)${NC} ❌ Salir"
 
     echo -e "\n${YELLOW}Ingresa tu opción: ${NC}"
@@ -900,7 +902,24 @@ show_troubleshooting() {
 
     show_section "🚨 Problemas Comunes y Soluciones"
 
-    echo -e "${RED}${BOLD}PROBLEMA: \"No space left on device\" con espacio aparente disponible${NC}"
+    echo -e "${RED}${BOLD}PROBLEMA: Error al restaurar snapshots - \"No se puede detectar el ámbito\"${NC}"
+    echo -e "${WHITE}Causa: snapper rollback no puede detectar el subvolumen por defecto${NC}"
+    echo -e "${WHITE}Solución para ROOT:${NC}"
+    show_command "sudo snapper -c root list                  # Ver snapshot actual (0)"
+    show_command "sudo snapper -c root undochange 15..0      # Usar undochange en lugar de rollback"
+    show_command "sudo reboot                                # Reiniciar para aplicar cambios"
+    show_note "undochange funciona mejor que rollback en configuraciones complejas"
+
+    echo -e "\n${RED}${BOLD}PROBLEMA: \"rollback no puede usarse en subvolumen no raíz /home\"${NC}"
+    echo -e "${WHITE}Causa: /home es un subvolumen separado, rollback solo funciona en subvolumen raíz${NC}"
+    echo -e "${WHITE}Solución para HOME:${NC}"
+    show_command "sudo snapper -c home list                  # Ver snapshots de HOME"
+    show_command "sudo snapper -c home undochange 8..0       # SIEMPRE usar undochange para HOME"
+    show_command "# Alternativa manual si falla:"
+    show_command "sudo cp -r /home/.snapshots/8/snapshot/* /home/"
+    show_note "NUNCA uses rollback para /home, solo undochange"
+
+    echo -e "\n${RED}${BOLD}PROBLEMA: \"No space left on device\" con espacio aparente disponible${NC}"
     echo -e "${WHITE}Causa: Chunks fragmentados o metadatos llenos${NC}"
     echo -e "${WHITE}Solución:${NC}"
     show_command "sudo btrfs filesystem usage /              # Verificar uso real"
@@ -936,11 +955,23 @@ show_troubleshooting() {
     show_command "sudo dd if=/dev/source of=/dev/destination bs=64K conv=noerror,sync"
     show_command "sudo btrfs-clone /dev/source /dev/destination    # Si está disponible"
 
+    show_section "🔧 Solución Rápida para Errores de Rollback"
+    echo -e "${WHITE}Si ves estos errores específicos:${NC}"
+    echo -e "• ${YELLOW}\"No se puede detectar el ámbito\"${NC} → Usa undochange en lugar de rollback"
+    echo -e "• ${YELLOW}\"rollback no puede usarse en subvolumen no raíz\"${NC} → Usar undochange para /home"
+    echo -e "• ${YELLOW}\"Se recomienda reiniciar después de la restauración\"${NC} → Reinicia solo para ROOT"
+
+    echo -e "\n${WHITE}Comandos seguros que siempre funcionan:${NC}"
+    show_command "sudo snapper -c root undochange NUMERO..0     # Para ROOT (siempre funciona)"
+    show_command "sudo snapper -c home undochange NUMERO..0     # Para HOME (siempre funciona)"
+    show_command "sudo btrfs subvolume snapshot /.snapshots/NUM/snapshot /new-root  # Método manual ROOT"
+
     show_section "⚠️ Cuándo Buscar Ayuda"
     echo -e "• ${RED}Filesystem corrupto que no se puede montar${NC}"
     echo -e "• ${RED}Errores de I/O persistentes en logs${NC}"
     echo -e "• ${RED}Pérdida de datos importante${NC}"
     echo -e "• ${RED}Comandos de reparación fallan repetidamente${NC}"
+    echo -e "• ${RED}undochange también falla con errores de permisos${NC}"
 
     echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
     read
@@ -1321,17 +1352,30 @@ show_restore_points() {
                 read -r confirm
 
                 if [[ "$confirm" =~ ^[sS]$ ]]; then
-                    echo -e "\n${CYAN}Restaurando snapshot $snapshot_num de ROOT...${NC}"
-                    if sudo snapper -c root rollback "$snapshot_num"; then
-                        echo -e "${GREEN}✓ Restauración de ROOT completada${NC}"
-                        echo -e "${YELLOW}Se recomienda reiniciar el sistema ahora${NC}"
-                        echo -e "${WHITE}¿Reiniciar ahora? (s/N):${NC}"
-                        read -r reboot_confirm
-                        if [[ "$reboot_confirm" =~ ^[sS]$ ]]; then
-                            sudo reboot
+                    echo -e "\n${CYAN}Restaurando ROOT (snapshot $snapshot_num)...${NC}"
+                    echo -e "${YELLOW}No se puede detectar el ámbito porque no se conoce el subvolumen por defecto.${NC}"
+                    echo -e "${YELLOW}Esto puede suceder si el sistema no ha configurado el subvolumen apropiadamente.${NC}"
+                    echo -e "${RED}El ámbito se puede especificar manualmente con la opción --ambit.${NC}"
+                    echo -e "\n${CYAN}Intentando restauración manual...${NC}"
+
+                    # Método alternativo usando undochange para ROOT
+                    CURRENT_ROOT=$(sudo snapper -c root list | grep "current" | awk '{print $1}' 2>/dev/null || echo "0")
+                    if [ -n "$CURRENT_ROOT" ] && [ "$CURRENT_ROOT" != "0" ]; then
+                        if sudo snapper -c root undochange "$snapshot_num..$CURRENT_ROOT" 2>/dev/null; then
+                            echo -e "${GREEN}✓ Restauración de ROOT completada usando método alternativo${NC}"
+                            echo -e "${YELLOW}Se recomienda reiniciar el sistema ahora${NC}"
+                            echo -e "${WHITE}¿Reiniciar ahora? (s/N):${NC}"
+                            read -r reboot_confirm
+                            if [[ "$reboot_confirm" =~ ^[sS]$ ]]; then
+                                sudo reboot
+                            fi
+                        else
+                            echo -e "${RED}✗ Error en la restauración de ROOT${NC}"
+                            echo -e "${YELLOW}Intenta usar: sudo btrfs subvolume snapshot /.snapshots/$snapshot_num/snapshot /new-root${NC}"
                         fi
                     else
-                        echo -e "${RED}✗ Error en la restauración${NC}"
+                        echo -e "${RED}✗ No se pudo determinar el snapshot actual${NC}"
+                        echo -e "${YELLOW}Usa rollback manual desde GRUB o recovery mode${NC}"
                     fi
                 else
                     echo -e "${YELLOW}Operación cancelada${NC}"
@@ -1364,11 +1408,22 @@ show_restore_points() {
                 read -r confirm
 
                 if [[ "$confirm" =~ ^[sS]$ ]]; then
-                    echo -e "\n${CYAN}Restaurando snapshot $snapshot_num de HOME...${NC}"
-                    if sudo snapper -c home rollback "$snapshot_num"; then
-                        echo -e "${GREEN}✓ Restauración de HOME completada${NC}"
+                    echo -e "\n${CYAN}Restaurando HOME (snapshot $snapshot_num)...${NC}"
+                    echo -e "${YELLOW}El comando 'rollback' no puede usarse en un subvolumen no raíz /home.${NC}"
+                    echo -e "${CYAN}Usando método alternativo con undochange...${NC}"
+
+                    # Método alternativo usando undochange para HOME
+                    CURRENT_HOME=$(sudo snapper -c home list | grep "current" | awk '{print $1}' 2>/dev/null || echo "0")
+                    if [ -n "$CURRENT_HOME" ] && [ "$CURRENT_HOME" != "0" ]; then
+                        if sudo snapper -c home undochange "$snapshot_num..$CURRENT_HOME" 2>/dev/null; then
+                            echo -e "${GREEN}✓ Restauración de HOME completada${NC}"
+                        else
+                            echo -e "${RED}✗ Error en la restauración de HOME${NC}"
+                            echo -e "${YELLOW}Intenta restauración manual: sudo cp -r /home/.snapshots/$snapshot_num/snapshot/* /home/${NC}"
+                        fi
                     else
-                        echo -e "${RED}✗ Error en la restauración${NC}"
+                        echo -e "${RED}✗ No se pudo determinar el snapshot actual de HOME${NC}"
+                        echo -e "${YELLOW}Usa restauración manual desde /.snapshots${NC}"
                     fi
                 else
                     echo -e "${YELLOW}Operación cancelada${NC}"
@@ -1446,22 +1501,34 @@ show_restore_points() {
                     if [[ "$confirm" =~ ^[sS]$ ]]; then
                         echo -e "\n${CYAN}Restaurando ROOT (snapshot $ROOT_NUM)...${NC}"
                         ROOT_SUCCESS=false
-                        if sudo snapper -c root rollback "$ROOT_NUM"; then
-                            echo -e "${GREEN}✓ Restauración de ROOT completada${NC}"
-                            ROOT_SUCCESS=true
+                        # Método alternativo para ROOT
+                        CURRENT_ROOT=$(sudo snapper -c root list | grep "current" | awk '{print $1}' 2>/dev/null || echo "0")
+                        if [ -n "$CURRENT_ROOT" ] && [ "$CURRENT_ROOT" != "0" ]; then
+                            if sudo snapper -c root undochange "$ROOT_NUM..$CURRENT_ROOT" 2>/dev/null; then
+                                echo -e "${GREEN}✓ Restauración de ROOT completada${NC}"
+                                ROOT_SUCCESS=true
+                            else
+                                echo -e "${RED}✗ Error en la restauración de ROOT${NC}"
+                                echo -e "${YELLOW}Problema de compatibilidad con rollback en este sistema${NC}"
+                            fi
                         else
-                            echo -e "${RED}✗ Error en la restauración de ROOT${NC}"
+                            echo -e "${RED}✗ No se pudo determinar el snapshot actual de ROOT${NC}"
                         fi
 
                         echo -e "\n${CYAN}Restaurando HOME (snapshot $HOME_NUM)...${NC}"
                         HOME_SUCCESS=false
-                        # Obtener el snapshot actual de HOME
-                        CURRENT_HOME=$(sudo snapper -c home list | grep "current" | awk '{print $1}')
-                        if sudo snapper -c home undochange "$CURRENT_HOME..$HOME_NUM"; then
-                            echo -e "${GREEN}✓ Restauración de HOME completada${NC}"
-                            HOME_SUCCESS=true
+                        # Método alternativo para HOME usando undochange
+                        CURRENT_HOME=$(sudo snapper -c home list | grep "current" | awk '{print $1}' 2>/dev/null || echo "0")
+                        if [ -n "$CURRENT_HOME" ] && [ "$CURRENT_HOME" != "0" ]; then
+                            if sudo snapper -c home undochange "$HOME_NUM..$CURRENT_HOME" 2>/dev/null; then
+                                echo -e "${GREEN}✓ Restauración de HOME completada${NC}"
+                                HOME_SUCCESS=true
+                            else
+                                echo -e "${RED}✗ Error en la restauración de HOME${NC}"
+                                echo -e "${YELLOW}rollback no funciona en subvolúmenes no raíz como /home${NC}"
+                            fi
                         else
-                            echo -e "${RED}✗ Error en la restauración de HOME${NC}"
+                            echo -e "${RED}✗ No se pudo determinar el snapshot actual de HOME${NC}"
                         fi
 
                         echo -e "\n${WHITE}${BOLD}RESUMEN DE RESTAURACIÓN:${NC}"
@@ -1512,9 +1579,10 @@ show_restore_points() {
 
             show_section "🔄 Restauración de ROOT"
             show_command "sudo snapper -c root list                    # Ver snapshots disponibles"
-            show_command "sudo snapper -c root rollback 15             # Restaurar snapshot 15"
+            show_command "sudo snapper -c root undochange 15..0        # Restaurar usando undochange"
+            show_command "sudo snapper -c root rollback 15             # Alternativo (puede fallar)"
             show_command "sudo reboot                                  # Reiniciar para aplicar"
-            show_note "La restauración de ROOT afecta todo el sistema"
+            show_note "La restauración de ROOT afecta todo el sistema. Usa undochange si rollback falla"
 
             show_section "🚨 RESTAURACIÓN DE EMERGENCIA (GRUB-BTRFS)"
             echo -e "${WHITE}${BOLD}Si el sistema NO arranca normalmente:${NC}"
@@ -1529,8 +1597,9 @@ show_restore_points() {
 
             show_section "🏠 Restauración de HOME"
             show_command "sudo snapper -c home list                    # Ver snapshots disponibles"
-            show_command "sudo snapper -c home rollback 8              # Restaurar snapshot 8"
-            show_note "La restauración de HOME solo afecta datos de usuario"
+            show_command "sudo snapper -c home undochange 8..0         # Restaurar usando undochange"
+            show_command "# sudo snapper -c home rollback 8            # NO funciona en subvol /home"
+            show_note "rollback NO funciona en /home - usar siempre undochange"
 
             show_section "📦 Restauración Simultánea de AMBOS"
             echo -e "${WHITE}Para restaurar ROOT y HOME con misma descripción manualmente:${NC}"
@@ -1538,8 +1607,8 @@ show_restore_points() {
             show_command "sudo snapper -c root list | grep 'Mi descripción'"
             show_command "sudo snapper -c home list | grep 'Mi descripción'"
             show_command "# Restaurar ambos (usar números encontrados)"
-            show_command "sudo snapper -c root rollback 15             # Número de ROOT"
-            show_command "sudo snapper -c home rollback 12             # Número de HOME"
+            show_command "sudo snapper -c root undochange 15..0        # Restaurar ROOT"
+            show_command "sudo snapper -c home undochange 12..0        # Restaurar HOME"
             show_command "sudo reboot                                  # Reiniciar para ROOT"
 
             show_section "📂 Restauración Selectiva"
@@ -1607,6 +1676,7 @@ show_emergency_recovery() {
     echo -e "${WHITE}Para hacer rollback permanente una vez recuperado:${NC}"
     show_command "sudo snapper -c root list                    # Ver snapshots disponibles"
     show_command "sudo snapper -c root rollback               # Rollback al snapshot desde el que arrancaste"
+    show_command "# Si rollback falla: sudo snapper -c root undochange SNAP..0"
     show_command "sudo reboot                                 # Reiniciar para confirmar cambios"
 
     echo -e "\n${WHITE}Para ver qué snapshot estás usando actualmente:${NC}"
@@ -1654,6 +1724,167 @@ show_emergency_recovery() {
     read
 }
 
+# Función para explorar snapshots sin aplicar cambios
+show_explore_snapshots() {
+    clear
+    show_header "EXPLORAR SNAPSHOTS (SOLO VER - SIN APLICAR)"
+
+    show_section "🔍 VER QUÉ ARCHIVOS CAMBIARON ENTRE SNAPSHOTS"
+    echo -e "${WHITE}Comparar cambios sin aplicar nada:${NC}"
+    show_command "sudo snapper -c root status 1..5             # Ver qué cambió entre snapshot 1 y 5"
+    show_command "sudo snapper -c home status 2..4             # Ver cambios en HOME entre 2 y 4"
+    show_command "sudo snapper -c root status 1..0             # Ver cambios entre snapshot 1 y actual"
+    show_command "sudo snapper -c home status 3..0             # Ver cambios HOME desde snapshot 3"
+
+    show_section "📄 VER DIFERENCIAS ESPECÍFICAS EN ARCHIVOS"
+    echo -e "${WHITE}Ver contenido exacto de las diferencias:${NC}"
+    show_command "sudo snapper -c root diff 1..5               # Ver todas las diferencias"
+    show_command "sudo snapper -c root diff 1..5 /etc/fstab    # Solo diferencias en fstab"
+    show_command "sudo snapper -c home diff 2..4 /home/usuario/.bashrc  # Diferencias en bashrc"
+    show_command "sudo snapper -c root diff 1..0 /etc/pacman.conf       # Comparar con actual"
+
+    show_section "📂 EXPLORAR CONTENIDO COMPLETO DE SNAPSHOTS"
+    echo -e "${WHITE}Navegar dentro de snapshots como directorios normales:${NC}"
+    show_command "ls /.snapshots/                             # Ver snapshots de ROOT disponibles"
+    show_command "ls /.snapshots/1/snapshot/                  # Explorar contenido snapshot 1"
+    show_command "ls /home/.snapshots/                        # Ver snapshots de HOME disponibles"
+    show_command "ls /home/.snapshots/2/snapshot/             # Explorar contenido HOME snapshot 2"
+
+    echo -e "\n${WHITE}Navegar y explorar archivos específicos:${NC}"
+    show_command "cd /.snapshots/1/snapshot/                  # Entrar al snapshot 1 de ROOT"
+    show_command "cat etc/fstab                               # Ver fstab del snapshot"
+    show_command "ls -la home/                                # Ver usuarios que existían"
+    show_command "cd /home/.snapshots/2/snapshot/usuario/     # Entrar al snapshot de usuario"
+
+    show_section "🔄 COMPARAR ARCHIVOS MANUALMENTE"
+    echo -e "${WHITE}Usar diff para comparaciones detalladas:${NC}"
+    show_command "diff /etc/fstab /.snapshots/1/snapshot/etc/fstab              # Comparar fstab"
+    show_command "diff ~/.bashrc /home/.snapshots/2/snapshot/usuario/.bashrc    # Comparar bashrc"
+    show_command "diff /etc/pacman.conf /.snapshots/3/snapshot/etc/pacman.conf  # Comparar pacman.conf"
+
+    show_section "💾 RECUPERAR ARCHIVOS ESPECÍFICOS"
+    echo -e "${WHITE}Copiar archivos individuales sin restaurar todo:${NC}"
+    show_command "sudo cp /.snapshots/1/snapshot/etc/fstab /etc/fstab.recovered"
+    show_command "cp /home/.snapshots/2/snapshot/usuario/.bashrc ~/bashrc.recovered"
+    show_command "sudo cp /.snapshots/3/snapshot/etc/hosts /etc/hosts.backup"
+
+    show_section "🔧 COMANDOS AVANZADOS DE EXPLORACIÓN"
+    echo -e "${WHITE}Herramientas adicionales para análisis:${NC}"
+    show_command "sudo snapper -c root mount 1                # Montar snapshot temporalmente"
+    show_command "sudo snapper -c root umount 1               # Desmontar cuando termines"
+    show_command "find /.snapshots/1/snapshot/ -name '*.conf' # Buscar archivos .conf"
+    show_command "tree /.snapshots/1/snapshot/etc/            # Ver estructura de /etc"
+
+    show_section "📋 EJEMPLOS PRÁCTICOS"
+    echo -e "${WHITE}${BOLD}Caso 1: Revisar qué cambió después de una actualización${NC}"
+    show_command "sudo snapper -c root status 5..0            # Ver archivos que cambiaron"
+    show_command "sudo snapper -c root diff 5..0 /etc/        # Ver diferencias en /etc"
+
+    echo -e "\n${WHITE}${BOLD}Caso 2: Buscar una configuración que funcionaba${NC}"
+    show_command "ls /.snapshots/                            # Ver snapshots disponibles"
+    show_command "cat /.snapshots/3/snapshot/etc/fstab       # Ver fstab del snapshot 3"
+    show_command "diff /etc/fstab /.snapshots/3/snapshot/etc/fstab  # Comparar diferencias"
+
+    echo -e "\n${WHITE}${BOLD}Caso 3: Recuperar un archivo borrado accidentalmente${NC}"
+    show_command "ls /home/.snapshots/2/snapshot/usuario/Documentos/  # Ver si existe"
+    show_command "cp /home/.snapshots/2/snapshot/usuario/Documentos/archivo.txt ~/  # Recuperar"
+
+    show_section "✅ VENTAJAS DE ESTOS MÉTODOS"
+    echo -e "• ${GREEN}Completamente seguro - solo lectura${NC}"
+    echo -e "• ${GREEN}Sin reinicio necesario${NC}"
+    echo -e "• ${GREEN}Puedes explorar todo el contenido${NC}"
+    echo -e "• ${GREEN}Ver diferencias exactas${NC}"
+    echo -e "• ${GREEN}Recuperar archivos específicos sin restaurar todo${NC}"
+    echo -e "• ${CYAN}Perfecto para investigar problemas${NC}"
+    echo -e "• ${CYAN}Ideal para encontrar configuraciones que funcionaban${NC}"
+
+    show_section "💡 CONSEJOS ÚTILES"
+    echo -e "• ${YELLOW}Los snapshots están en /.snapshots/NUMERO/snapshot/${NC}"
+    echo -e "• ${YELLOW}HOME snapshots están en /home/.snapshots/NUMERO/snapshot/${NC}"
+    echo -e "• ${YELLOW}Usa 'tree' o 'ls -R' para ver estructura completa${NC}"
+    echo -e "• ${YELLOW}Siempre verifica permisos antes de copiar archivos${NC}"
+    echo -e "• ${GREEN}Puedes usar cualquier editor para ver archivos del snapshot${NC}"
+
+    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
+    read
+}
+
+# Función para solución rápida de errores de rollback
+show_rollback_fix() {
+    clear
+    show_header "SOLUCIÓN RÁPIDA - ERRORES DE ROLLBACK"
+
+    show_section "🚨 ERRORES IDENTIFICADOS EN TU SISTEMA"
+    echo -e "${RED}${BOLD}Error 1: \"No se puede detectar el ámbito porque no se conoce el subvolumen por defecto\"${NC}"
+    echo -e "${WHITE}Causa:${NC} snapper rollback no puede identificar el subvolumen raíz apropiadamente"
+    echo -e "${GREEN}Solución:${NC} Usar undochange en lugar de rollback"
+
+    echo -e "\n${RED}${BOLD}Error 2: \"El comando 'rollback' no puede usarse en un subvolumen no raíz /home\"${NC}"
+    echo -e "${WHITE}Causa:${NC} /home es un subvolumen separado, rollback solo funciona en subvolumen raíz"
+    echo -e "${GREEN}Solución:${NC} SIEMPRE usar undochange para /home"
+
+    show_section "✅ COMANDOS CORRECTOS PARA TU SISTEMA"
+    echo -e "${WHITE}${BOLD}Para restaurar ROOT:${NC}"
+    show_command "sudo snapper -c root list                     # Ver snapshots de ROOT"
+    show_command "sudo snapper -c root undochange 1..0          # Restaurar snapshot 1 (cambiar número)"
+    show_command "sudo reboot                                   # Reiniciar después de ROOT"
+
+    echo -e "\n${WHITE}${BOLD}Para restaurar HOME:${NC}"
+    show_command "sudo snapper -c home list                     # Ver snapshots de HOME"
+    show_command "sudo snapper -c home undochange 1..0          # Restaurar snapshot 1 (cambiar número)"
+    show_command "# No es necesario reiniciar para HOME"
+
+    echo -e "\n${WHITE}${BOLD}Para restaurar AMBOS sistemas:${NC}"
+    show_command "# Paso 1: Restaurar ROOT"
+    show_command "sudo snapper -c root undochange NUMERO..0"
+    show_command "# Paso 2: Restaurar HOME"
+    show_command "sudo snapper -c home undochange NUMERO..0"
+    show_command "# Paso 3: Reiniciar solo una vez"
+    show_command "sudo reboot"
+
+    show_section "🔍 VERIFICAR QUE TIENES SNAPSHOTS DISPONIBLES"
+    echo -e "${WHITE}Ejecuta estos comandos para ver tus snapshots:${NC}"
+    show_command "sudo snapper -c root list | head -10"
+    show_command "sudo snapper -c home list | head -10"
+
+    show_section "📋 EJEMPLO PRÁCTICO"
+    echo -e "${WHITE}Si quieres restaurar ROOT snapshot 1 y HOME snapshot 1:${NC}"
+    echo -e "${CYAN}1. sudo snapper -c root undochange 1..0${NC}"
+    echo -e "${CYAN}2. sudo snapper -c home undochange 1..0${NC}"
+    echo -e "${CYAN}3. sudo reboot${NC}"
+
+    echo -e "\n${WHITE}Si quieres restaurar solo HOME snapshot 2:${NC}"
+    echo -e "${CYAN}1. sudo snapper -c home undochange 2..0${NC}"
+    echo -e "${CYAN}2. No reiniciar (HOME no lo requiere)${NC}"
+
+    show_section "⚠️ ALTERNATIVA MANUAL SI UNDOCHANGE FALLA"
+    echo -e "${WHITE}Para ROOT (método manual):${NC}"
+    show_command "sudo btrfs subvolume snapshot /.snapshots/1/snapshot /new-root"
+    show_command "# Luego hacer switch manual del subvolumen"
+
+    echo -e "\n${WHITE}Para HOME (método manual):${NC}"
+    show_command "sudo cp -r /home/.snapshots/1/snapshot/* /home/"
+    show_command "# O crear backup y restaurar manualmente"
+
+    show_section "💡 CONSEJOS IMPORTANTES"
+    echo -e "• ${GREEN}undochange SIEMPRE funciona mejor que rollback${NC}"
+    echo -e "• ${GREEN}El formato es: undochange SNAPSHOT_ORIGEN..SNAPSHOT_DESTINO${NC}"
+    echo -e "• ${GREEN}..0 significa \"hasta el estado actual\"${NC}"
+    echo -e "• ${YELLOW}Solo ROOT requiere reinicio, HOME no${NC}"
+    echo -e "• ${YELLOW}Siempre verifica los números de snapshot antes de ejecutar${NC}"
+    echo -e "• ${RED}NUNCA uses rollback para /home${NC}"
+
+    show_section "🎯 RESUMEN DE LA SOLUCIÓN"
+    echo -e "${WHITE}${BOLD}TUS ERRORES SE SOLUCIONAN ASÍ:${NC}"
+    echo -e "1. ${CYAN}Cambiar todos los 'rollback' por 'undochange NUMERO..0'${NC}"
+    echo -e "2. ${CYAN}Para ROOT: undochange + reinicio${NC}"
+    echo -e "3. ${CYAN}Para HOME: undochange (sin reinicio)${NC}"
+    echo -e "4. ${CYAN}Para AMBOS: undochange ROOT, undochange HOME, reiniciar${NC}"
+
+    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
+    read
+}
+
 # Bucle principal del menú
 while true; do
     show_menu
@@ -1670,6 +1901,8 @@ while true; do
         8) show_subvolumes ;;
         9) show_troubleshooting ;;
         10) show_advanced ;;
+        11) show_explore_snapshots ;;
+        12) show_rollback_fix ;;
         0) echo -e "${GREEN}¡Gracias por usar la guía BTRFS!${NC}"; exit 0 ;;
         *) echo -e "${RED}Opción inválida. Presiona ENTER para continuar...${NC}"; read ;;
     esac
