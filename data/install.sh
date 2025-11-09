@@ -1042,8 +1042,7 @@ show_subvolumes() {
     echo -e "${WHITE}Estructura configurada:${NC}"
     echo -e "• ${CYAN}@${NC} - Raíz del sistema (/)"
     echo -e "• ${CYAN}@home${NC} - Directorios de usuarios (/home)"
-    echo -e "• ${CYAN}@var${NC} - Datos variables del sistema (/var)"
-    echo -e "• ${CYAN}@tmp${NC} - Archivos temporales (/tmp)"
+    echo -e "• ${CYAN}@var_log${NC} - Logs del sistema (/var/log)"
     echo -e "• ${CYAN}/.snapshots${NC} - Snapshots raíz (creado automáticamente por Snapper)"
     echo -e "• ${CYAN}/home/.snapshots${NC} - Snapshots de home (creado automáticamente por Snapper)"
 
@@ -1053,12 +1052,12 @@ show_subvolumes() {
     show_command "cat /etc/fstab | grep btrfs                     # Ver configuración fstab"
 
     show_section "➕ Crear Nuevos Subvolúmenes"
-    echo -e "${WHITE}Para agregar más subvolúmenes (ej: @var, @tmp):${NC}"
-    show_command "sudo btrfs subvolume create /.snapshots/@var    # Crear subvolumen"
-    show_command "sudo mkdir -p /mnt/var-backup                   # Crear punto de montaje temporal"
-    show_command "sudo rsync -avxHAX /var/ /mnt/var-backup/       # Copiar contenido"
+    echo -e "${WHITE}Para agregar más subvolúmenes (ej: @var_cache):${NC}"
+    show_command "sudo btrfs subvolume create /.snapshots/@var_cache    # Crear subvolumen"
+    show_command "sudo mkdir -p /mnt/var-cache-backup                   # Crear punto de montaje temporal"
+    show_command "sudo rsync -avxHAX /var/cache/ /mnt/var-cache-backup/ # Copiar contenido"
     show_command "# Agregar entrada en /etc/fstab"
-    show_command "# UUID=xxx /var btrfs subvol=@var,compress=zstd:3,space_cache=v2,noatime 0 0"
+    show_command "# UUID=xxx /var/cache btrfs subvol=@var_cache,compress=zstd:3,space_cache=v2,noatime 0 0"
 
     show_section "🔄 Reorganizar Subvolúmenes"
     echo -e "${WHITE}Pasos para reorganización segura:${NC}"
@@ -1079,8 +1078,7 @@ show_subvolumes() {
     echo -e "${WHITE}Para un sistema completo, considera:${NC}"
     echo -e "• ${CYAN}@${NC} - Sistema base"
     echo -e "• ${CYAN}@home${NC} - Datos de usuario"
-    echo -e "• ${CYAN}@var${NC} - Datos variables del sistema"
-    echo -e "• ${CYAN}@tmp${NC} - Archivos temporales"
+    echo -e "• ${CYAN}@var_log${NC} - Logs del sistema"
     echo -e "• ${CYAN}/.snapshots${NC} - Snapshots raíz (automático por Snapper)"
     echo -e "• ${CYAN}/home/.snapshots${NC} - Snapshots de home (automático por Snapper)"
     echo -e "• ${CYAN}@srv${NC} - Datos de servicios (opcional)"
@@ -1361,20 +1359,16 @@ show_restore_points() {
                     # Método alternativo usando undochange para ROOT - usar snapshot 0 como actual
                     CURRENT_ROOT="0"
                     if sudo snapper -c root undochange "$snapshot_num..$CURRENT_ROOT" 2>/dev/null; then
-                            echo -e "${GREEN}✓ Restauración de ROOT completada usando método alternativo${NC}"
-                            echo -e "${YELLOW}Se recomienda reiniciar el sistema ahora${NC}"
-                            echo -e "${WHITE}¿Reiniciar ahora? (s/N):${NC}"
-                            read -r reboot_confirm
-                            if [[ "$reboot_confirm" =~ ^[sS]$ ]]; then
-                                sudo reboot
-                            fi
-                        else
-                            echo -e "${RED}✗ Error en la restauración de ROOT${NC}"
-                            echo -e "${YELLOW}Intenta usar: sudo btrfs subvolume snapshot /.snapshots/$snapshot_num/snapshot /new-root${NC}"
+                        echo -e "${GREEN}✓ Restauración de ROOT completada usando método alternativo${NC}"
+                        echo -e "${YELLOW}Se recomienda reiniciar el sistema ahora${NC}"
+                        echo -e "${WHITE}¿Reiniciar ahora? (s/N):${NC}"
+                        read -r reboot_confirm
+                        if [[ "$reboot_confirm" =~ ^[sS]$ ]]; then
+                            sudo reboot
                         fi
                     else
-                        echo -e "${RED}✗ No se pudo determinar el snapshot actual${NC}"
-                        echo -e "${YELLOW}Usa rollback manual desde GRUB o recovery mode${NC}"
+                        echo -e "${RED}✗ Error en la restauración de ROOT${NC}"
+                        echo -e "${YELLOW}Intenta usar: sudo btrfs subvolume snapshot /.snapshots/$snapshot_num/snapshot /new-root${NC}"
                     fi
                 else
                     echo -e "${YELLOW}Operación cancelada${NC}"
@@ -1414,14 +1408,10 @@ show_restore_points() {
                     # Método alternativo usando undochange para HOME - usar snapshot 0 como actual
                     CURRENT_HOME="0"
                     if sudo snapper -c home undochange "$snapshot_num..$CURRENT_HOME" 2>/dev/null; then
-                            echo -e "${GREEN}✓ Restauración de HOME completada${NC}"
-                        else
-                            echo -e "${RED}✗ Error en la restauración de HOME${NC}"
-                            echo -e "${YELLOW}Intenta restauración manual: sudo cp -r /home/.snapshots/$snapshot_num/snapshot/* /home/${NC}"
-                        fi
+                        echo -e "${GREEN}✓ Restauración de HOME completada${NC}"
                     else
-                        echo -e "${RED}✗ No se pudo determinar el snapshot actual de HOME${NC}"
-                        echo -e "${YELLOW}Usa restauración manual desde /.snapshots${NC}"
+                        echo -e "${RED}✗ Error en la restauración de HOME${NC}"
+                        echo -e "${YELLOW}Intenta restauración manual: sudo cp -r /home/.snapshots/$snapshot_num/snapshot/* /home/${NC}"
                     fi
                 else
                     echo -e "${YELLOW}Operación cancelada${NC}"
@@ -1502,14 +1492,11 @@ show_restore_points() {
                         # Método alternativo para ROOT - usar snapshot 0 como actual
                         CURRENT_ROOT="0"
                         if sudo snapper -c root undochange "$ROOT_NUM..$CURRENT_ROOT" 2>/dev/null; then
-                                echo -e "${GREEN}✓ Restauración de ROOT completada${NC}"
-                                ROOT_SUCCESS=true
-                            else
-                                echo -e "${RED}✗ Error en la restauración de ROOT${NC}"
-                                echo -e "${YELLOW}Problema de compatibilidad con rollback en este sistema${NC}"
-                            fi
+                            echo -e "${GREEN}✓ Restauración de ROOT completada${NC}"
+                            ROOT_SUCCESS=true
                         else
-                            echo -e "${RED}✗ No se pudo determinar el snapshot actual de ROOT${NC}"
+                            echo -e "${RED}✗ Error en la restauración de ROOT${NC}"
+                            echo -e "${YELLOW}Problema de compatibilidad con rollback en este sistema${NC}"
                         fi
 
                         echo -e "\n${CYAN}Restaurando HOME (snapshot $HOME_NUM)...${NC}"
@@ -1517,14 +1504,11 @@ show_restore_points() {
                         # Método alternativo para HOME usando undochange - usar snapshot 0 como actual
                         CURRENT_HOME="0"
                         if sudo snapper -c home undochange "$HOME_NUM..$CURRENT_HOME" 2>/dev/null; then
-                                echo -e "${GREEN}✓ Restauración de HOME completada${NC}"
-                                HOME_SUCCESS=true
-                            else
-                                echo -e "${RED}✗ Error en la restauración de HOME${NC}"
-                                echo -e "${YELLOW}rollback no funciona en subvolúmenes no raíz como /home${NC}"
-                            fi
+                            echo -e "${GREEN}✓ Restauración de HOME completada${NC}"
+                            HOME_SUCCESS=true
                         else
-                            echo -e "${RED}✗ No se pudo determinar el snapshot actual de HOME${NC}"
+                            echo -e "${RED}✗ Error en la restauración de HOME${NC}"
+                            echo -e "${YELLOW}rollback no funciona en subvolúmenes no raíz como /home${NC}"
                         fi
 
                         echo -e "\n${WHITE}${BOLD}RESUMEN DE RESTAURACIÓN:${NC}"
@@ -2994,8 +2978,7 @@ partition_auto_btrfs() {
         echo -e "${CYAN}Creando subvolúmenes BTRFS...${NC}"
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
-        btrfs subvolume create /mnt/@var
-        btrfs subvolume create /mnt/@tmp
+        btrfs subvolume create /mnt/@var_log
         umount /mnt
 
         # Montar subvolúmenes
@@ -3022,10 +3005,9 @@ partition_auto_btrfs() {
 
         echo -e "${CYAN}Activando partición swap...${NC}"
         swapon "$PARTITION_2"
-        mkdir -p /mnt/{boot/efi,home,var,tmp}
+        mkdir -p /mnt/{boot/efi,home,var/log}
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var "$PARTITION_3" /mnt/var
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "$PARTITION_3" /mnt/tmp
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var_log "$PARTITION_3" /mnt/var/log
         mount "$PARTITION_1" /mnt/boot
 
         # Instalar herramientas específicas para BTRFS
@@ -3149,8 +3131,7 @@ partition_auto_btrfs() {
         echo -e "${CYAN}Creando subvolúmenes BTRFS...${NC}"
         btrfs subvolume create /mnt/@
         btrfs subvolume create /mnt/@home
-        btrfs subvolume create /mnt/@var
-        btrfs subvolume create /mnt/@tmp
+        btrfs subvolume create /mnt/@var_log
         umount /mnt
 
         # Montar subvolúmenes
@@ -3177,11 +3158,10 @@ partition_auto_btrfs() {
 
         echo -e "${CYAN}Activando partición swap...${NC}"
         swapon "$PARTITION_2"
-        mkdir -p /mnt/{boot,home,var,tmp}
+        mkdir -p /mnt/{boot,home,var/log}
         mount "$PARTITION_1" /mnt/boot
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$PARTITION_3" /mnt/home
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var "$PARTITION_3" /mnt/var
-        mount -o noatime,compress=zstd,space_cache=v2,subvol=@tmp "$PARTITION_3" /mnt/tmp
+        mount -o noatime,compress=zstd,space_cache=v2,subvol=@var_log "$PARTITION_3" /mnt/var/log
 
         # Instalar herramientas específicas para BTRFS
         install_pacstrap_with_retry "btrfs-progs"
@@ -5823,8 +5803,7 @@ HOMECONFIG
         echo -e "\n${GREEN}✓ Estructura final de subvolúmenes BTRFS:${NC}"
         echo -e "${CYAN}  • @ - Raíz del sistema (/)${NC}"
         echo -e "${CYAN}  • @home - Directorios de usuarios (/home)${NC}"
-        echo -e "${CYAN}  • @var - Datos variables del sistema (/var)${NC}"
-        echo -e "${CYAN}  • @tmp - Archivos temporales (/tmp)${NC}"
+        echo -e "${CYAN}  • @var_log - Logs del sistema (/var/log)${NC}"
         echo -e "${CYAN}  • /.snapshots - Snapshots de raíz (por Snapper)${NC}"
         echo -e "${CYAN}  • /home/.snapshots - Snapshots de home (por Snapper)${NC}"
 
@@ -5847,8 +5826,7 @@ HOMECONFIG
     # Agregar opciones de montaje optimizadas para todos los subvolúmenes
     chroot /mnt /bin/bash -c "sed -i 's/subvol=@,/subvol=@,compress=zstd:3,space_cache=v2,autodefrag,/' /etc/fstab" 2>/dev/null || true
     chroot /mnt /bin/bash -c "sed -i 's/subvol=@home,/subvol=@home,compress=zstd:3,space_cache=v2,autodefrag,/' /etc/fstab" 2>/dev/null || true
-    chroot /mnt /bin/bash -c "sed -i 's/subvol=@var,/subvol=@var,compress=zstd:3,space_cache=v2,/' /etc/fstab" 2>/dev/null || true
-    chroot /mnt /bin/bash -c "sed -i 's/subvol=@tmp,/subvol=@tmp,compress=zstd:1,space_cache=v2,/' /etc/fstab" 2>/dev/null || true
+    chroot /mnt /bin/bash -c "sed -i 's/subvol=@var_log,/subvol=@var_log,compress=zstd:3,space_cache=v2,/' /etc/fstab" 2>/dev/null || true
 
     # Verificar configuración final de fstab
     echo -e "${CYAN}Verificando configuración final de fstab...${NC}"
