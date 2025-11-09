@@ -5867,8 +5867,6 @@ HOMECONFIG
         echo -e "${CYAN}Regenerando GRUB para incluir snapshots...${NC}"
         chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo regenerar GRUB con snapshots${NC}"
         echo -e "${GREEN}✓ GRUB configurado para mostrar snapshots en el menú de arranque${NC}"
-
-
     fi
 
     # Crear script de mantenimiento BTRFS
@@ -5933,7 +5931,7 @@ EOF
     nota_btrfs_guide
     echo -e "${GREEN}✓ Configuración BTRFS completada${NC}"
     sleep 2
-fi
+
 
 clear
 # Actualizar base de datos de paquetes
