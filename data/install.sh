@@ -5957,7 +5957,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "gnome-shell"
                 install_pacman_chroot_with_retry "gnome-control-center"
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
-                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
                 install_pacman_chroot_with_retry "nautilus"
                 install_pacman_chroot_with_retry "gvfs"
                 install_pacman_chroot_with_retry "gvfs-goa"
@@ -5971,7 +5970,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "gnome-themes-extra"
                 install_pacman_chroot_with_retry "gnome-tweaks"
                 install_pacman_chroot_with_retry "gnome-backgrounds"
-                install_pacman_chroot_with_retry "gnome-keyring"
                 install_pacman_chroot_with_retry "gnome-user-docs"
                 install_pacman_chroot_with_retry "gnome-software"
                 install_pacman_chroot_with_retry "xdg-desktop-portal-gnome"
@@ -5999,7 +5997,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "gvfs-goa"
                 install_pacman_chroot_with_retry "gnome-console"
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
-                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
                 install_pacman_chroot_with_retry "loupe"
                 install_pacman_chroot_with_retry "showtime"
                 install_pacman_chroot_with_retry "papers"
@@ -6037,7 +6034,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "gnome-console"
                 install_pacman_chroot_with_retry "gnome-screenshot"
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
-                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
                 install_pacman_chroot_with_retry "lightdm"
                 install_pacman_chroot_with_retry "lightdm-slick-greeter"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
@@ -6056,9 +6052,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "cosmic"
                 install_pacman_chroot_with_retry "power-profiles-daemon"
                 install_pacman_chroot_with_retry "cosmic-icon-theme"
-                install_pacman_chroot_with_retry "gnome-keyring"
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
-                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
                 install_pacman_chroot_with_retry "loupe"
                 install_pacman_chroot_with_retry "showtime"
                 install_pacman_chroot_with_retry "papers"
@@ -6069,7 +6063,6 @@ case "$INSTALLATION_TYPE" in
                 echo -e "${CYAN}Instalando CUTEFISH Desktop...${NC}"
                 install_pacman_chroot_with_retry "cutefish"
                 install_pacman_chroot_with_retry "polkit-kde-agent"
-                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
                 install_pacman_chroot_with_retry "loupe"
                 install_pacman_chroot_with_retry "showtime"
                 install_pacman_chroot_with_retry "papers"
@@ -6083,7 +6076,6 @@ case "$INSTALLATION_TYPE" in
                 echo -e "${CYAN}Instalando UKUI Desktop...${NC}"
                 install_pacman_chroot_with_retry "ukui"
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
-                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
                 install_pacman_chroot_with_retry "loupe"
                 install_pacman_chroot_with_retry "showtime"
                 install_pacman_chroot_with_retry "papers"
@@ -6129,7 +6121,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "ephoto"            # Visor de imágenes EFL
                 install_pacman_chroot_with_retry "rage"              # Reproductor de video EFL (opcional)
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
-                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -6314,7 +6305,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "papers"
                 install_pacman_chroot_with_retry "pavucontrol"
                 install_pacman_chroot_with_retry "polkit-gnome"          # Autenticación
-                install_pacman_chroot_with_retry "gnome-keyring"         # Gestor de contraseñas
                 install_pacman_chroot_with_retry "light-locker"
                 install_pacman_chroot_with_retry "xfce4-screensaver"
                 # Soporte Wayland
