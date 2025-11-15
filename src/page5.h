@@ -19,13 +19,14 @@ typedef enum {
     DE_TYPE_XFCE4,
     DE_TYPE_BUDGIE,
     DE_TYPE_CINNAMON,
-    DE_TYPE_MATE,
-    DE_TYPE_CUTEFISH,
     DE_TYPE_LXDE,
     DE_TYPE_LXQT,
-    DE_TYPE_ENLIGHTENMENT,
+    DE_TYPE_COSMIC,
+    DE_TYPE_MATE,
+    DE_TYPE_CUTEFISH,
     DE_TYPE_UKUI,
-    DE_TYPE_PANTHEON
+    DE_TYPE_PANTHEON,
+    DE_TYPE_ENLIGHTENMENT
 } DesktopEnvironmentType;
 
 // Enumeración para gestores de ventanas

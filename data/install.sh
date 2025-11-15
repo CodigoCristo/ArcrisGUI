@@ -6051,6 +6051,20 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "mugshot"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
                 ;;
+            "COSMIC")
+                echo -e "${CYAN}Instalando COSMIC Desktop...${NC}"
+                install_pacman_chroot_with_retry "cosmic"
+                install_pacman_chroot_with_retry "power-profiles-daemon"
+                install_pacman_chroot_with_retry "cosmic-icon-theme"
+                install_pacman_chroot_with_retry "gnome-keyring"
+                install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
+                install_pacman_chroot_with_retry "gnome-keyring"     # Almacén de contraseñas
+                install_pacman_chroot_with_retry "loupe"
+                install_pacman_chroot_with_retry "showtime"
+                install_pacman_chroot_with_retry "papers"
+                install_pacman_chroot_with_retry "cosmic-greeter"
+                chroot /mnt /bin/bash -c "systemctl enable cosmic-greeter.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+                ;;
             "CUTEFISH")
                 echo -e "${CYAN}Instalando CUTEFISH Desktop...${NC}"
                 install_pacman_chroot_with_retry "cutefish"

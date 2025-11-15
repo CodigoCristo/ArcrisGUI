@@ -155,13 +155,14 @@
                       <item>XFCE4</item>
                       <item>BUDGIE</item>
                       <item>CINNAMON</item>
-                      <item>MATE</item>
-                      <item>CUTEFISH</item>
                       <item>LXDE</item>
                       <item>LXQT</item>
-                      <item>ENLIGHTENMENT</item>
+                      <item>COSMIC</item>
+                      <item>MATE</item>
+                      <item>CUTEFISH</item>
                       <item>UKUI</item>
                       <item>PANTHEON</item>
+                      <item>ENLIGHTENMENT</item>
                     </items>
                   </object>
                 </property>

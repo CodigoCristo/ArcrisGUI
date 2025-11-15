@@ -14,13 +14,14 @@ static const char* DE_NAMES[] = {
     "XFCE4",
     "BUDGIE",
     "CINNAMON",
-    "MATE",
-    "CUTEFISH",
     "LXDE",
     "LXQT",
-    "ENLIGHTENMENT",
+    "COSMIC",
+    "MATE",
+    "CUTEFISH",
     "UKUI",
-    "PANTHEON"
+    "PANTHEON",
+    "ENLIGHTENMENT"
 };
 
 // Nombres de los gestores de ventanas
@@ -44,13 +45,14 @@ static const char* DE_IMAGE_RESOURCES[] = {
     "/org/gtk/arcris/XFCE4.png",
     "/org/gtk/arcris/BUDGIE.png",
     "/org/gtk/arcris/CINNAMON.png",
-    "/org/gtk/arcris/MATE.png",
-    "/org/gtk/arcris/CUTEFISH.png",
     "/org/gtk/arcris/LXDE.png",
     "/org/gtk/arcris/LXQT.png",
-    "/org/gtk/arcris/ENLIGHTENMENT.png",
+    "/org/gtk/arcris/COSMIC.png",
+    "/org/gtk/arcris/MATE.png",
+    "/org/gtk/arcris/CUTEFISH.png",
     "/org/gtk/arcris/UKUI.png",
-    "/org/gtk/arcris/PANTHEON.png"
+    "/org/gtk/arcris/PANTHEON.png",
+    "/org/gtk/arcris/ENLIGHTENMENT.png"
 };
 
 // Recursos de imágenes para WM
@@ -481,6 +483,9 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
             break;
         case DE_TYPE_CINNAMON:
             de_name = g_strdup("CINNAMON");
+            break;
+        case DE_TYPE_COSMIC:
+            de_name = g_strdup("COSMIC");
             break;
         case DE_TYPE_CUTEFISH:
             de_name = g_strdup("CUTEFISH");
