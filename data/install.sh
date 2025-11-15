@@ -6522,7 +6522,7 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "mkdir -p /home/$USER/.config/src && chown $USER:$USER /home/$USER/.config/src"
 
                 # Compilar e instalar dwl
-                chroot /mnt /bin/bash -c "cd /home/$USER/.config/src && sudo -u $USER git clone https://github.com/tonybanters/dwl"
+                chroot /mnt /bin/bash -c "cd /home/$USER/.config/src && sudo -u $USER git clone https://github.com/CodigoCristo/dwl"
                 chroot /mnt /bin/bash -c "cd /home/$USER/.config/src/dwl && sudo -u $USER make clean && sudo make install"
 
                 # Compilar e instalar slstatus
