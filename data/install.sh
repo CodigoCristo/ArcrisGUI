@@ -1433,23 +1433,47 @@ show_restore_points() {
 
             echo -e "${CYAN}Buscando snapshots con descripciones coincidentes...${NC}\n"
 
+            # Función para extraer SOLO la descripción real (último campo después de │)
+            extract_description() {
+                local line="$1"
+                # Usar awk para extraer solo el último campo después del último │
+                echo "$line" | awk '{
+                    # Encontrar la última posición de │
+                    n = split($0, arr, "│")
+                    if (n >= 7) {
+                        # La descripción está en el 7mo campo
+                        gsub(/^[ \t]+|[ \t]+$/, "", arr[7])
+                        print arr[7]
+                    }
+                }'
+            }
+
             # Crear archivo temporal para almacenar snapshots coincidentes
             TEMP_FILE=$(mktemp)
 
             # Obtener snapshots de ROOT
             while IFS= read -r line; do
                 SNAPSHOT_NUM=$(echo "$line" | awk '{print $1}')
-                DESCRIPTION=$(echo "$line" | awk '{$1=$2=$3=$4=$5=$6=""; print $0}' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+                # Usar función para extraer descripción
+                DESCRIPTION=$(extract_description "$line")
+
+
 
                 if [ -n "$DESCRIPTION" ] && [ "$DESCRIPTION" != "current" ]; then
                     # Buscar en HOME la misma descripción
-                    HOME_NUM=$(sudo snapper -c home list | grep -E "^[0-9]+" | while read -r home_line; do
-                        HOME_DESC=$(echo "$home_line" | awk '{$1=$2=$3=$4=$5=$6=""; print $0}' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
-                        if [ "$HOME_DESC" = "$DESCRIPTION" ]; then
-                            echo "$home_line" | awk '{print $1}'
+                    HOME_NUM=""
+                    while IFS= read -r home_line; do
+                        HOME_SNAP_NUM=$(echo "$home_line" | awk '{print $1}')
+                        HOME_DESC=$(extract_description "$home_line")
+
+
+
+                        # Comparación exacta de cadenas usando [[ ]] para mejor manejo de caracteres especiales
+                        if [[ "$HOME_DESC" == "$DESCRIPTION" ]]; then
+                            HOME_NUM="$HOME_SNAP_NUM"
                             break
                         fi
-                    done | head -1)
+                    done < <(sudo snapper -c home list | grep -E "^[0-9]+")
 
                     if [ -n "$HOME_NUM" ]; then
                         echo "$SNAPSHOT_NUM|$HOME_NUM|$DESCRIPTION" >> "$TEMP_FILE"
@@ -5056,7 +5080,7 @@ echo ""
 cat > /mnt/usr/local/bin/update-grub << 'UPDATEGRUB'
 #!/bin/bash
 # Script para actualizar GRUB
-echo "Actualizando GRUB con nuevos snapshots..."
+echo "Actualizando GRUB..."
 grub-mkconfig -o /boot/grub/grub.cfg
 echo "✓ GRUB actualizado"
 UPDATEGRUB
@@ -5106,6 +5130,11 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "xf86-video-nouveau"
             install_pacman_chroot_with_retry "vulkan-nouveau"
             install_pacman_chroot_with_retry "lib32-vulkan-nouveau"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "libva-utils"
+            install_pacman_chroot_with_retry "vulkan-tools"
+            install_pacman_chroot_with_retry "clinfo"
+            install_pacman_chroot_with_retry "ocl-icd"
 
         # Configuración para GPUs híbridas Intel + AMD
         elif [[ "$HAS_INTEL" == "yes" && "$HAS_AMD" == "yes" ]]; then
@@ -5124,6 +5153,9 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "vulkan-radeon"
             install_pacman_chroot_with_retry "lib32-vulkan-radeon"
             install_pacman_chroot_with_retry "radeontop"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "libva-utils"
+            install_pacman_chroot_with_retry "vulkan-tools"
             install_pacman_chroot_with_retry "clinfo"
             install_pacman_chroot_with_retry "ocl-icd"
 
@@ -5132,6 +5164,11 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "xf86-video-nouveau"
             install_pacman_chroot_with_retry "vulkan-nouveau"
             install_pacman_chroot_with_retry "lib32-vulkan-nouveau"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "libva-utils"
+            install_pacman_chroot_with_retry "vulkan-tools"
+            install_pacman_chroot_with_retry "clinfo"
+            install_pacman_chroot_with_retry "ocl-icd"
 
         elif echo "$VGA_LINE" | grep -i "amd\|radeon" > /dev/null; then
             echo "Detectado hardware AMD/Radeon - Instalando driver open source amdgpu"
@@ -5140,6 +5177,9 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "vulkan-radeon"
             install_pacman_chroot_with_retry "lib32-vulkan-radeon"
             install_pacman_chroot_with_retry "radeontop"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "libva-utils"
+            install_pacman_chroot_with_retry "vulkan-tools"
             install_pacman_chroot_with_retry "clinfo"
             install_pacman_chroot_with_retry "ocl-icd"
 
@@ -5152,6 +5192,11 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
             install_pacman_chroot_with_retry "intel-gpu-tools"
             install_pacman_chroot_with_retry "vpl-gpu-rt"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "libva-utils"
+            install_pacman_chroot_with_retry "vulkan-tools"
+            install_pacman_chroot_with_retry "clinfo"
+            install_pacman_chroot_with_retry "ocl-icd"
 
         elif echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
 
@@ -5163,6 +5208,11 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "virglrenderer"
             install_pacman_chroot_with_retry "libgl"
             install_pacman_chroot_with_retry "libglvnd"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "libva-utils"
+            install_pacman_chroot_with_retry "vulkan-tools"
+            install_pacman_chroot_with_retry "clinfo"
+            install_pacman_chroot_with_retry "ocl-icd"
             chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
             chroot /mnt /bin/bash -c "systemctl start qemu-guest-agent.service"
 
@@ -5173,6 +5223,11 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "xf86-video-fbdev"
             install_pacman_chroot_with_retry "virtualbox-guest-utils"
             install_pacman_chroot_with_retry "virglrenderer"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "libva-utils"
+            install_pacman_chroot_with_retry "vulkan-tools"
+            install_pacman_chroot_with_retry "clinfo"
+            install_pacman_chroot_with_retry "ocl-icd"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
@@ -5180,6 +5235,11 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "xf86-video-fbdev"
             install_pacman_chroot_with_retry "virtualbox-guest-utils"
             install_pacman_chroot_with_retry "virglrenderer"
+            install_pacman_chroot_with_retry "vdpauinfo"
+            install_pacman_chroot_with_retry "libva-utils"
+            install_pacman_chroot_with_retry "vulkan-tools"
+            install_pacman_chroot_with_retry "clinfo"
+            install_pacman_chroot_with_retry "ocl-icd"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         else
@@ -5199,6 +5259,11 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "nvidia-settings"
         install_pacman_chroot_with_retry "opencl-nvidia"
         install_pacman_chroot_with_retry "lib32-opencl-nvidia"
+        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "libva-utils"
+        install_pacman_chroot_with_retry "vulkan-tools"
+        install_pacman_chroot_with_retry "clinfo"
+        install_pacman_chroot_with_retry "ocl-icd"
         ;;
     "nvidia-lts")
         echo "Instalando driver NVIDIA para kernel LTS"
@@ -5209,6 +5274,11 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "lib32-nvidia-utils"
         install_pacman_chroot_with_retry "opencl-nvidia"
         install_pacman_chroot_with_retry "lib32-opencl-nvidia"
+        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "libva-utils"
+        install_pacman_chroot_with_retry "vulkan-tools"
+        install_pacman_chroot_with_retry "clinfo"
+        install_pacman_chroot_with_retry "ocl-icd"
         ;;
     "nvidia-dkms")
         echo "Instalando driver NVIDIA DKMS"
@@ -5220,6 +5290,11 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "lib32-nvidia-utils"
         install_pacman_chroot_with_retry "opencl-nvidia"
         install_pacman_chroot_with_retry "lib32-opencl-nvidia"
+        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "libva-utils"
+        install_pacman_chroot_with_retry "vulkan-tools"
+        install_pacman_chroot_with_retry "clinfo"
+        install_pacman_chroot_with_retry "ocl-icd"
         ;;
     "nvidia-470xx-dkms")
         echo "Instalando driver NVIDIA serie 470.xx con DKMS"
@@ -5232,6 +5307,11 @@ case "$DRIVER_VIDEO" in
         install_yay_chroot_with_retry "lib32-nvidia-470xx-utils"
         install_yay_chroot_with_retry "lib32-opencl-nvidia-470xx"
         install_yay_chroot_with_retry "mhwd-nvidia-470xx"
+        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "libva-utils"
+        install_pacman_chroot_with_retry "vulkan-tools"
+        install_pacman_chroot_with_retry "clinfo"
+        install_pacman_chroot_with_retry "ocl-icd"
         ;;
     "nvidia-390xx-dkms")
         echo "Instalando driver NVIDIA serie 390.xx con DKMS (hardware antiguo)"
@@ -5244,19 +5324,24 @@ case "$DRIVER_VIDEO" in
         install_yay_chroot_with_retry "lib32-opencl-nvidia-390xx"
         install_yay_chroot_with_retry "nvidia-390xx-settings"
         install_yay_chroot_with_retry "mhwd-nvidia-390xx"
+        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "libva-utils"
+        install_pacman_chroot_with_retry "vulkan-tools"
+        install_pacman_chroot_with_retry "clinfo"
+        install_pacman_chroot_with_retry "ocl-icd"
         ;;
     "AMD Private")
         echo "Instalando drivers privativos de AMDGPUPRO"
         install_pacman_chroot_with_retry "mesa"
         install_pacman_chroot_with_retry "lib32-mesa"
-        install_pacman_chroot_with_retry "vdpauinfo"
-        install_pacman_chroot_with_retry "libva-utils"
-        install_pacman_chroot_with_retry "vulkan-tools"
         install_pacman_chroot_with_retry "vulkan-mesa-layers"
         install_pacman_chroot_with_retry "xf86-video-amdgpu"
         install_pacman_chroot_with_retry "vulkan-radeon"
         install_pacman_chroot_with_retry "lib32-vulkan-radeon"
         install_pacman_chroot_with_retry "radeontop"
+        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "libva-utils"
+        install_pacman_chroot_with_retry "vulkan-tools"
         install_pacman_chroot_with_retry "clinfo"
         install_pacman_chroot_with_retry "ocl-icd"
         install_yay_chroot_with_retry "amf-amdgpu-pro"
