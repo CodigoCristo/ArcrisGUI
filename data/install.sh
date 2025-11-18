@@ -1919,6 +1919,322 @@ EOF
     echo -e "${GREEN}✓ Guía interactiva BTRFS creada en /usr/local/bin/btrfs-guide${NC}"
     echo -e "${CYAN}  Ejecuta 'btrfs-guide' después del reinicio para acceder a la documentación${NC}"
 }
+
+################################################################################################
+# #################### CONFIGURAR BTRFS ##################################################################
+################################################################################################
+#
+configurar_btrfs() {
+    echo -e "${GREEN}| Configuración adicional para BTRFS |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    # Verificar que BTRFS esté montado correctamente
+    echo -e "${CYAN}Verificando sistema de archivos BTRFS...${NC}"
+    if ! chroot /mnt /bin/bash -c "btrfs filesystem show" >/dev/null 2>&1; then
+        echo -e "${RED}ERROR: No se pudo verificar el sistema BTRFS${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✓ Sistema BTRFS verificado${NC}"
+
+    # Configuración básica para BTRFS (sin complicaciones)
+    echo -e "${CYAN}Aplicando configuración básica BTRFS...${NC}"
+
+    # Solo asegurar que el bootloader funcione correctamente
+    echo -e "${GREEN}✓ Configuración BTRFS simplificada completada${NC}"
+
+    # Instalar herramientas adicionales para BTRFS si no están presentes
+    echo -e "${CYAN}Verificando herramientas BTRFS adicionales...${NC}"
+
+    # Solo instalar grub-btrfs ya que btrfs-progs ya está instalado
+    install_pacman_chroot_with_retry "grub-btrfs" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo instalar grub-btrfs${NC}"
+
+    # Configurar grub-btrfs para boot desde snapshots
+    if chroot /mnt /bin/bash -c "pacman -Qq grub-btrfs" 2>/dev/null; then
+        echo -e "${CYAN}Configurando grub-btrfs para boot desde snapshots...${NC}"
+
+        # Habilitar servicio de actualización automática de grub con snapshots
+        chroot /mnt /bin/bash -c "systemctl enable grub-btrfsd.service" 2>/dev/null || echo -e "${YELLOW}Warning: grub-btrfsd.service no disponible${NC}"
+
+        # Configurar grub-btrfs para detectar snapshots en /.snapshots
+        if [ ! -f /mnt/etc/default/grub-btrfs/config ]; then
+            mkdir -p /mnt/etc/default/grub-btrfs
+            cat > /mnt/etc/default/grub-btrfs/config << 'GRUBCONFIG'
+# Configuración de grub-btrfs
+GRUB_BTRFS_LIMIT="15"
+GRUB_BTRFS_SUBVOLUME_SORT="descending"
+GRUB_BTRFS_SHOW_SNAPSHOTS_FOUND="true"
+GRUB_BTRFS_SHOW_TOTAL_SNAPSHOTS_FOUND="true"
+GRUB_BTRFS_TITLE_FORMAT="date"
+GRUB_BTRFS_LIMIT_FINDER_DEPTH="10"
+GRUB_BTRFS_SNAPSHOT_KERNEL_PARAMETERS=""
+GRUB_BTRFS_IGNORE_SPECIFIC_PATH=""
+GRUB_BTRFS_IGNORE_PREFIX_PATH=""
+GRUB_BTRFS_DISABLE_PROTECTION_SUBMENU="false"
+GRUB_BTRFS_PROTECTION_AUTHORIZED_USERS=""
+GRUB_BTRFS_MKCONFIG_LIB="/tmp/grub-mkconfig_lib"
+GRUB_BTRFS_SCRIPT_CHECK="grub-script-check"
+GRUB_BTRFS_GBTRFS="/etc/grub.d/41_snapshots-btrfs"
+GRUBCONFIG
+        fi
+
+        echo -e "${GREEN}✓ grub-btrfs configurado para detectar snapshots automáticamente${NC}"
+    else
+        echo -e "${YELLOW}Warning: grub-btrfs no instalado, boot desde snapshots no disponible${NC}"
+    fi
+
+    # Habilitar servicios de mantenimiento BTRFS
+    echo -e "${CYAN}Configurando servicios de mantenimiento BTRFS...${NC}"
+    chroot /mnt /bin/bash -c "systemctl enable btrfs-scrub@-.timer" 2>/dev/null || echo -e "${YELLOW}Warning: btrfs-scrub timer no disponible${NC}"
+    chroot /mnt /bin/bash -c "systemctl enable fstrim.timer" || echo -e "${RED}ERROR: Falló habilitar fstrim.timer${NC}"
+
+    # Instalar y configurar snapshots automáticos con Snapper
+    echo -e "${CYAN}Instalando Snapper para snapshots automáticos...${NC}"
+    install_pacman_chroot_with_retry "snapper" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo instalar snapper${NC}"
+
+    if chroot /mnt /bin/bash -c "pacman -Qq snapper" 2>/dev/null; then
+        echo -e "${CYAN}Configurando Snapper para snapshots automáticos...${NC}"
+
+        # Crear configuración para el subvolumen raíz (esto crea automáticamente /.snapshots)
+        echo -e "${CYAN}Configurando Snapper para el sistema raíz (/)...${NC}"
+
+        # Crear directorio de configuración si no existe
+        chroot /mnt /bin/bash -c "mkdir -p /etc/snapper/configs"
+
+        # Intentar crear configuración con --no-dbus para LiveCD
+        if chroot /mnt /bin/bash -c "snapper --no-dbus -c root create-config /" 2>/dev/null; then
+            echo -e "${GREEN}✓ Configuración de snapper para raíz creada exitosamente${NC}"
+        else
+            # Crear configuración manualmente si falla
+            cat > /mnt/etc/snapper/configs/root << 'ROOTCONFIG'
+# snapper configuration
+SUBVOLUME="/"
+FSTYPE="btrfs"
+TIMELINE_CREATE="yes"
+TIMELINE_CLEANUP="yes"
+TIMELINE_LIMIT_HOURLY="5"
+TIMELINE_LIMIT_DAILY="7"
+TIMELINE_LIMIT_WEEKLY="4"
+TIMELINE_LIMIT_MONTHLY="6"
+TIMELINE_LIMIT_YEARLY="2"
+
+# Configuración de limpieza
+EMPTY_PRE_POST_CLEANUP="yes"
+EMPTY_PRE_POST_MIN_AGE="1800"
+
+# Permitir a usuarios del grupo wheel gestionar snapshots
+ALLOW_USERS=""
+ALLOW_GROUPS="wheel"
+
+# Sincronización con ACL
+SYNC_ACL="no"
+
+# Configuración de número (automático)
+NUMBER_CLEANUP="yes"
+NUMBER_MIN_AGE="1800"
+NUMBER_LIMIT="50"
+NUMBER_LIMIT_IMPORTANT="10"
+SPACE_LIMIT="0.5"
+ROOTCONFIG
+
+            # Crear directorio de snapshots manualmente
+            chroot /mnt /bin/bash -c "mkdir -p /.snapshots"
+            chroot /mnt /bin/bash -c "chmod 755 /.snapshots"
+
+            echo -e "${GREEN}✓ Configuración manual de snapper para raíz completada${NC}"
+        fi
+
+        # Crear configuración para /home si el subvolumen existe
+        if chroot /mnt /bin/bash -c "mountpoint -q /home"; then
+            echo -e "${CYAN}Configurando Snapper para /home...${NC}"
+
+            # Intentar crear configuración para /home con --no-dbus para LiveCD
+            if chroot /mnt /bin/bash -c "snapper --no-dbus -c home create-config /home" 2>/dev/null; then
+                echo -e "${GREEN}✓ Configuración de snapper para /home creada exitosamente${NC}"
+            else
+                # Crear configuración manualmente si falla
+                cat > /mnt/etc/snapper/configs/home << 'HOMECONFIG'
+# snapper configuration para /home
+SUBVOLUME="/home"
+FSTYPE="btrfs"
+TIMELINE_CREATE="yes"
+TIMELINE_CLEANUP="yes"
+TIMELINE_LIMIT_HOURLY="3"
+TIMELINE_LIMIT_DAILY="7"
+TIMELINE_LIMIT_WEEKLY="4"
+TIMELINE_LIMIT_MONTHLY="12"
+TIMELINE_LIMIT_YEARLY="5"
+
+# Configuración de limpieza
+EMPTY_PRE_POST_CLEANUP="yes"
+EMPTY_PRE_POST_MIN_AGE="1800"
+
+# Permitir a usuarios del grupo wheel gestionar snapshots
+ALLOW_USERS=""
+ALLOW_GROUPS="wheel"
+
+# Sincronización con ACL
+SYNC_ACL="no"
+
+# Configuración de número (automático)
+NUMBER_CLEANUP="yes"
+NUMBER_MIN_AGE="1800"
+NUMBER_LIMIT="40"
+NUMBER_LIMIT_IMPORTANT="10"
+SPACE_LIMIT="0.3"
+HOMECONFIG
+
+                # Crear directorio de snapshots manualmente
+                chroot /mnt /bin/bash -c "mkdir -p /home/.snapshots"
+                chroot /mnt /bin/bash -c "chmod 755 /home/.snapshots"
+
+                echo -e "${GREEN}✓ Configuración manual de snapper para /home completada${NC}"
+            fi
+
+            fi
+        else
+            echo -e "${YELLOW}Warning: /home no está montado como subvolumen, saltando configuración de snapper${NC}"
+        fi
+
+        # Habilitar servicios de Snapper
+        chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer" 2>/dev/null || echo -e "${YELLOW}Warning: Falló habilitar snapper-timeline.timer${NC}"
+        chroot /mnt /bin/bash -c "systemctl enable snapper-cleanup.timer" 2>/dev/null || echo -e "${YELLOW}Warning: Falló habilitar snapper-cleanup.timer${NC}"
+
+        echo -e "${GREEN}✓ Servicios automáticos de Snapper habilitados:${NC}"
+        echo -e "${CYAN}  • snapper-timeline.timer: Crea snapshots automáticos${NC}"
+        echo -e "${CYAN}    - Cada hora (mantiene 5)${NC}"
+        echo -e "${CYAN}    - Diarios (mantiene 7)${NC}"
+        echo -e "${CYAN}    - Semanales (mantiene 4)${NC}"
+        echo -e "${CYAN}    - Mensuales (mantiene 6-12)${NC}"
+        echo -e "${CYAN}    - Anuales (mantiene 2-5)${NC}"
+        echo -e "${CYAN}  • snapper-cleanup.timer: Limpia snapshots antiguos automáticamente${NC}"
+
+        echo -e "${GREEN}✓ Configuración de Snapper completada${NC}"
+
+        echo -e "${GREEN}✓ Snapper configurado con snapshots automáticos para ROOT (/):${NC}"
+        echo -e "${CYAN}  • Cada hora: mantiene 5 snapshots${NC}"
+        echo -e "${CYAN}  • Diariamente: mantiene 7 snapshots${NC}"
+        echo -e "${CYAN}  • Semanalmente: mantiene 4 snapshots${NC}"
+        echo -e "${CYAN}  • Mensualmente: mantiene 6 snapshots${NC}"
+        echo -e "${CYAN}  • Anualmente: mantiene 2 snapshots${NC}"
+        echo -e "${CYAN}  • Límite total: 50 snapshots + 10 importantes${NC}"
+
+        echo -e "${GREEN}✓ Snapper configurado con snapshots automáticos para HOME (/home):${NC}"
+        echo -e "${CYAN}  • Cada hora: mantiene 3 snapshots${NC}"
+        echo -e "${CYAN}  • Diariamente: mantiene 7 snapshots${NC}"
+        echo -e "${CYAN}  • Semanalmente: mantiene 4 snapshots${NC}"
+        echo -e "${CYAN}  • Mensualmente: mantiene 12 snapshots${NC}"
+        echo -e "${CYAN}  • Anualmente: mantiene 5 snapshots${NC}"
+        echo -e "${CYAN}  • Límite total: 40 snapshots + 10 importantes${NC}"
+
+        echo -e "\n${GREEN}✓ Estructura final de subvolúmenes BTRFS:${NC}"
+        echo -e "${CYAN}  • @ - Raíz del sistema (/)${NC}"
+        echo -e "${CYAN}  • @home - Directorios de usuarios (/home)${NC}"
+        echo -e "${CYAN}  • @var_log - Logs del sistema (/var/log)${NC}"
+        echo -e "${CYAN}  • /.snapshots - Snapshots de raíz (por Snapper)${NC}"
+        echo -e "${CYAN}  • /home/.snapshots - Snapshots de home (por Snapper)${NC}"
+
+        echo -e "${GREEN}✓ Configuraciones de Snapper creadas:${NC}"
+        echo -e "${CYAN}  • root: Snapshots del sistema con retención completa${NC}"
+        echo -e "${CYAN}  • home: Snapshots de datos de usuario con retención extendida${NC}"
+
+        echo -e "\n${GREEN}✓ grub-btrfs configurado:${NC}"
+        echo -e "${CYAN}  • Boot desde snapshots disponible en GRUB${NC}"
+        echo -e "${CYAN}  • Recuperación de emergencia habilitada${NC}"
+
+    else
+        echo -e "${RED}ERROR: No se pudo instalar Snapper${NC}"
+    fi
+
+    # Optimizar fstab para BTRFS
+    echo -e "${CYAN}Optimizando fstab para BTRFS...${NC}"
+    chroot /mnt /bin/bash -c "sed -i 's/relatime/noatime/g' /etc/fstab"
+
+    # Agregar opciones de montaje optimizadas para todos los subvolúmenes
+    chroot /mnt /bin/bash -c "sed -i 's/subvol=@,/subvol=@,compress=zstd:3,space_cache=v2,autodefrag,/' /etc/fstab" 2>/dev/null || true
+    chroot /mnt /bin/bash -c "sed -i 's/subvol=@home,/subvol=@home,compress=zstd:3,space_cache=v2,autodefrag,/' /etc/fstab" 2>/dev/null || true
+    chroot /mnt /bin/bash -c "sed -i 's/subvol=@var_log,/subvol=@var_log,compress=zstd:3,space_cache=v2,/' /etc/fstab" 2>/dev/null || true
+
+    # Verificar configuración final de fstab
+    echo -e "${CYAN}Verificando configuración final de fstab...${NC}"
+    if chroot /mnt /bin/bash -c "mount -a --fake" 2>/dev/null; then
+        echo -e "${GREEN}✓ Configuración fstab válida${NC}"
+    else
+        echo -e "${YELLOW}Warning: Posibles issues en fstab, pero continuando...${NC}"
+    fi
+
+    # Regenerar GRUB para incluir snapshots de grub-btrfs
+    if chroot /mnt /bin/bash -c "pacman -Qq grub-btrfs" 2>/dev/null; then
+        echo -e "${CYAN}Regenerando GRUB para incluir snapshots...${NC}"
+        chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo regenerar GRUB con snapshots${NC}"
+        echo -e "${GREEN}✓ GRUB configurado para mostrar snapshots en el menú de arranque${NC}"
+    fi
+
+    # Crear script de mantenimiento BTRFS
+    echo -e "${CYAN}Creando script de mantenimiento BTRFS...${NC}"
+    cat > /mnt/usr/local/bin/btrfs-maintenance << 'EOF'
+#!/bin/bash
+# Script de mantenimiento BTRFS automático
+
+echo "Iniciando mantenimiento BTRFS..."
+
+# Balance mensual (solo si es necesario)
+if [ $(date +%d) -eq 01 ]; then
+    echo "Ejecutando balance BTRFS..."
+    btrfs balance start -dusage=50 -musage=50 / 2>/dev/null || true
+fi
+
+# Scrub semanal
+if [ $(date +%w) -eq 0 ]; then
+    echo "Ejecutando scrub BTRFS..."
+    btrfs scrub start / 2>/dev/null || true
+fi
+
+# Desfragmentación ligera
+echo "Ejecutando desfragmentación básica..."
+find /home -type f -size +100M -exec btrfs filesystem defragment {} \; 2>/dev/null || true
+
+echo "Mantenimiento BTRFS completado."
+EOF
+
+    chmod +x /mnt/usr/local/bin/btrfs-maintenance
+
+    # Crear servicio systemd para el mantenimiento
+    cat > /mnt/etc/systemd/system/btrfs-maintenance.service << 'EOF'
+[Unit]
+Description=BTRFS Maintenance
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/btrfs-maintenance
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    cat > /mnt/etc/systemd/system/btrfs-maintenance.timer << 'EOF'
+[Unit]
+Description=Run BTRFS Maintenance Weekly
+Requires=btrfs-maintenance.service
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    chroot /mnt /bin/bash -c "systemctl daemon-reload" || echo -e "${YELLOW}Warning: No se pudo daemon-reload${NC}"
+    chroot /mnt /bin/bash -c "systemctl enable btrfs-maintenance.timer" || echo -e "${YELLOW}Warning: No se pudo habilitar btrfs-maintenance.timer${NC}"
+
+    nota_btrfs_guide
+    echo -e "${GREEN}✓ Configuración BTRFS completada${NC}"
+    sleep 2
+}
+
 ################################################################################################
 # #################### XMONAD ##################################################################
 ################################################################################################
@@ -3629,6 +3945,15 @@ partition_manual() {
                 ;;
             "mkfs.fat32")
                 mkfs.fat -F32 -v $device
+                # Si es sistema UEFI y punto de montaje /boot, marcar como EFI System
+                if [ "$FIRMWARE_TYPE" = "UEFI" ] && [ "$mountpoint" = "/boot" ]; then
+                    echo -e "${CYAN}Configurando partición $device como EFI System...${NC}"
+                    # Obtener número de partición del device (ej: /dev/sda1 -> 1)
+                    PARTITION_NUM=$(echo "$device" | grep -o '[0-9]*$')
+                    DISK_DEVICE=$(echo "$device" | sed 's/[0-9]*$//')
+                    parted $DISK_DEVICE --script set $PARTITION_NUM esp on
+                    echo -e "${GREEN}✓ Partición $device marcada como EFI System${NC}"
+                fi
                 ;;
             "mkfs.fat16")
                 mkfs.fat -F16 -v $device
@@ -3665,15 +3990,13 @@ partition_manual() {
 
         if [ "$mountpoint" = "/" ]; then
             ROOT_FOUND=true
-        elif [ "$mountpoint" = "/boot/EFI" ]; then
-            EFI_FOUND=true
-            # Verificar que la partición EFI use formato FAT
-            if [ "$format" != "mkfs.fat32" ] && [ "$format" != "mkfs.fat16" ]; then
-                echo -e "${YELLOW}ADVERTENCIA: Partición EFI ($device) debería usar formato FAT32 o FAT16${NC}"
-                echo -e "${YELLOW}Formato actual: $format${NC}"
-            fi
         elif [ "$mountpoint" = "/boot" ]; then
             BOOT_FOUND=true
+            # Si es /boot con fat32 en UEFI, se considera como EFI
+            if [ "$FIRMWARE_TYPE" = "UEFI" ] && [ "$format" = "mkfs.fat32" ]; then
+                EFI_FOUND=true
+                echo -e "${CYAN}Detectado: /boot con FAT32 en UEFI - será usado como partición EFI${NC}"
+            fi
         fi
     done
 
@@ -3684,10 +4007,8 @@ partition_manual() {
         exit 1
     fi
 
-    if [ "$EFI_FOUND" = true ] && [ "$BOOT_FOUND" = true ]; then
-        echo -e "${GREEN}✓ Configuración detectada: /boot separado + /boot/EFI${NC}"
-    elif [ "$EFI_FOUND" = true ]; then
-        echo -e "${GREEN}✓ Configuración detectada: /boot/EFI (sin /boot separado)${NC}"
+    if [ "$EFI_FOUND" = true ]; then
+        echo -e "${GREEN}✓ Configuración UEFI detectada correctamente${NC}"
     fi
 
     echo -e "${GREEN}✓ Validaciones completadas${NC}"
@@ -3716,24 +4037,14 @@ partition_manual() {
         fi
     done
 
-    # 3. Montar /boot/EFI (debe ir después de /boot para evitar conflictos)
-    for partition_config in "${PARTITIONS[@]}"; do
-        IFS=' ' read -r device format mountpoint <<< "$partition_config"
-        if [ "$mountpoint" = "/boot/EFI" ]; then
-            echo -e "${GREEN}| Montando EFI: $device -> /mnt/boot |${NC}"
-            mkdir -p /mnt/boot
-            mount $device /mnt/boot
-            echo -e "${CYAN}Partición EFI montada en /mnt/boot${NC}"
-            break
-        fi
-    done
+    # Nota: Ya no existe /boot/EFI, ahora /boot con fat32 actúa como EFI en UEFI
 
     # 4. Montar todas las demás particiones
     for partition_config in "${PARTITIONS[@]}"; do
         IFS=' ' read -r device format mountpoint <<< "$partition_config"
 
         # Saltar las ya montadas y swap
-        if [ "$mountpoint" = "/" ] || [ "$mountpoint" = "/boot" ] || [ "$mountpoint" = "/boot/EFI" ] || [ "$mountpoint" = "swap" ]; then
+        if [ "$mountpoint" = "/" ] || [ "$mountpoint" = "/boot" ] || [ "$mountpoint" = "swap" ]; then
             continue
         fi
 
@@ -5354,7 +5665,7 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "clinfo"
         install_pacman_chroot_with_retry "ocl-icd"
         ;;
-    "Intel (Gen 2-7)")
+    "Intel (mesa-amber)")
         echo "Instalando drivers Modernos de Intel"
         # DRI/3D (obligatorio)
         install_pacman_chroot_with_retry "mesa-amber"
@@ -5652,315 +5963,8 @@ fi
 
 # Configuración adicional para BTRFS
 if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-    echo -e "${GREEN}| Configuración adicional para BTRFS |${NC}"
-    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-    echo ""
-
-    # Verificar que BTRFS esté montado correctamente
-    echo -e "${CYAN}Verificando sistema de archivos BTRFS...${NC}"
-    if ! chroot /mnt /bin/bash -c "btrfs filesystem show" >/dev/null 2>&1; then
-        echo -e "${RED}ERROR: No se pudo verificar el sistema BTRFS${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ Sistema BTRFS verificado${NC}"
-
-    # Configuración básica para BTRFS (sin complicaciones)
-    echo -e "${CYAN}Aplicando configuración básica BTRFS...${NC}"
-
-    # Solo asegurar que el bootloader funcione correctamente
-    echo -e "${GREEN}✓ Configuración BTRFS simplificada completada${NC}"
-
-    # Instalar herramientas adicionales para BTRFS si no están presentes
-    echo -e "${CYAN}Verificando herramientas BTRFS adicionales...${NC}"
-
-    # Solo instalar grub-btrfs ya que btrfs-progs ya está instalado
-    install_pacman_chroot_with_retry "grub-btrfs" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo instalar grub-btrfs${NC}"
-
-    # Configurar grub-btrfs para boot desde snapshots
-    if chroot /mnt /bin/bash -c "pacman -Qq grub-btrfs" 2>/dev/null; then
-        echo -e "${CYAN}Configurando grub-btrfs para boot desde snapshots...${NC}"
-
-        # Habilitar servicio de actualización automática de grub con snapshots
-        chroot /mnt /bin/bash -c "systemctl enable grub-btrfsd.service" 2>/dev/null || echo -e "${YELLOW}Warning: grub-btrfsd.service no disponible${NC}"
-
-        # Configurar grub-btrfs para detectar snapshots en /.snapshots
-        if [ ! -f /mnt/etc/default/grub-btrfs/config ]; then
-            mkdir -p /mnt/etc/default/grub-btrfs
-            cat > /mnt/etc/default/grub-btrfs/config << 'GRUBCONFIG'
-# Configuración de grub-btrfs
-GRUB_BTRFS_LIMIT="15"
-GRUB_BTRFS_SUBVOLUME_SORT="descending"
-GRUB_BTRFS_SHOW_SNAPSHOTS_FOUND="true"
-GRUB_BTRFS_SHOW_TOTAL_SNAPSHOTS_FOUND="true"
-GRUB_BTRFS_TITLE_FORMAT="date"
-GRUB_BTRFS_LIMIT_FINDER_DEPTH="10"
-GRUB_BTRFS_SNAPSHOT_KERNEL_PARAMETERS=""
-GRUB_BTRFS_IGNORE_SPECIFIC_PATH=""
-GRUB_BTRFS_IGNORE_PREFIX_PATH=""
-GRUB_BTRFS_DISABLE_PROTECTION_SUBMENU="false"
-GRUB_BTRFS_PROTECTION_AUTHORIZED_USERS=""
-GRUB_BTRFS_MKCONFIG_LIB="/tmp/grub-mkconfig_lib"
-GRUB_BTRFS_SCRIPT_CHECK="grub-script-check"
-GRUB_BTRFS_GBTRFS="/etc/grub.d/41_snapshots-btrfs"
-GRUBCONFIG
-        fi
-
-        echo -e "${GREEN}✓ grub-btrfs configurado para detectar snapshots automáticamente${NC}"
-    else
-        echo -e "${YELLOW}Warning: grub-btrfs no instalado, boot desde snapshots no disponible${NC}"
-    fi
-
-    # Habilitar servicios de mantenimiento BTRFS
-    echo -e "${CYAN}Configurando servicios de mantenimiento BTRFS...${NC}"
-    chroot /mnt /bin/bash -c "systemctl enable btrfs-scrub@-.timer" 2>/dev/null || echo -e "${YELLOW}Warning: btrfs-scrub timer no disponible${NC}"
-    chroot /mnt /bin/bash -c "systemctl enable fstrim.timer" || echo -e "${RED}ERROR: Falló habilitar fstrim.timer${NC}"
-
-    # Instalar y configurar snapshots automáticos con Snapper
-    echo -e "${CYAN}Instalando Snapper para snapshots automáticos...${NC}"
-    install_pacman_chroot_with_retry "snapper" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo instalar snapper${NC}"
-
-    if chroot /mnt /bin/bash -c "pacman -Qq snapper" 2>/dev/null; then
-        echo -e "${CYAN}Configurando Snapper para snapshots automáticos...${NC}"
-
-        # Crear configuración para el subvolumen raíz (esto crea automáticamente /.snapshots)
-        echo -e "${CYAN}Configurando Snapper para el sistema raíz (/)...${NC}"
-
-        # Crear directorio de configuración si no existe
-        chroot /mnt /bin/bash -c "mkdir -p /etc/snapper/configs"
-
-        # Intentar crear configuración con --no-dbus para LiveCD
-        if chroot /mnt /bin/bash -c "snapper --no-dbus -c root create-config /" 2>/dev/null; then
-            echo -e "${GREEN}✓ Configuración de snapper para raíz creada exitosamente${NC}"
-        else
-            # Crear configuración manualmente si falla
-            cat > /mnt/etc/snapper/configs/root << 'ROOTCONFIG'
-# snapper configuration
-SUBVOLUME="/"
-FSTYPE="btrfs"
-TIMELINE_CREATE="yes"
-TIMELINE_CLEANUP="yes"
-TIMELINE_LIMIT_HOURLY="5"
-TIMELINE_LIMIT_DAILY="7"
-TIMELINE_LIMIT_WEEKLY="4"
-TIMELINE_LIMIT_MONTHLY="6"
-TIMELINE_LIMIT_YEARLY="2"
-
-# Configuración de limpieza
-EMPTY_PRE_POST_CLEANUP="yes"
-EMPTY_PRE_POST_MIN_AGE="1800"
-
-# Permitir a usuarios del grupo wheel gestionar snapshots
-ALLOW_USERS=""
-ALLOW_GROUPS="wheel"
-
-# Sincronización con ACL
-SYNC_ACL="no"
-
-# Configuración de número (automático)
-NUMBER_CLEANUP="yes"
-NUMBER_MIN_AGE="1800"
-NUMBER_LIMIT="50"
-NUMBER_LIMIT_IMPORTANT="10"
-SPACE_LIMIT="0.5"
-ROOTCONFIG
-
-            # Crear directorio de snapshots manualmente
-            chroot /mnt /bin/bash -c "mkdir -p /.snapshots"
-            chroot /mnt /bin/bash -c "chmod 755 /.snapshots"
-
-            echo -e "${GREEN}✓ Configuración manual de snapper para raíz completada${NC}"
-        fi
-
-        # Crear configuración para /home si el subvolumen existe
-        if chroot /mnt /bin/bash -c "mountpoint -q /home"; then
-            echo -e "${CYAN}Configurando Snapper para /home...${NC}"
-
-            # Intentar crear configuración para /home con --no-dbus para LiveCD
-            if chroot /mnt /bin/bash -c "snapper --no-dbus -c home create-config /home" 2>/dev/null; then
-                echo -e "${GREEN}✓ Configuración de snapper para /home creada exitosamente${NC}"
-            else
-                # Crear configuración manualmente si falla
-                cat > /mnt/etc/snapper/configs/home << 'HOMECONFIG'
-# snapper configuration para /home
-SUBVOLUME="/home"
-FSTYPE="btrfs"
-TIMELINE_CREATE="yes"
-TIMELINE_CLEANUP="yes"
-TIMELINE_LIMIT_HOURLY="3"
-TIMELINE_LIMIT_DAILY="7"
-TIMELINE_LIMIT_WEEKLY="4"
-TIMELINE_LIMIT_MONTHLY="12"
-TIMELINE_LIMIT_YEARLY="5"
-
-# Configuración de limpieza
-EMPTY_PRE_POST_CLEANUP="yes"
-EMPTY_PRE_POST_MIN_AGE="1800"
-
-# Permitir a usuarios del grupo wheel gestionar snapshots
-ALLOW_USERS=""
-ALLOW_GROUPS="wheel"
-
-# Sincronización con ACL
-SYNC_ACL="no"
-
-# Configuración de número (automático)
-NUMBER_CLEANUP="yes"
-NUMBER_MIN_AGE="1800"
-NUMBER_LIMIT="40"
-NUMBER_LIMIT_IMPORTANT="10"
-SPACE_LIMIT="0.3"
-HOMECONFIG
-
-                # Crear directorio de snapshots manualmente
-                chroot /mnt /bin/bash -c "mkdir -p /home/.snapshots"
-                chroot /mnt /bin/bash -c "chmod 755 /home/.snapshots"
-
-                echo -e "${GREEN}✓ Configuración manual de snapper para /home completada${NC}"
-            fi
-
-            fi
-        else
-            echo -e "${YELLOW}Warning: /home no está montado como subvolumen, saltando configuración de snapper${NC}"
-        fi
-
-        # Habilitar servicios de Snapper
-        chroot /mnt /bin/bash -c "systemctl enable snapper-timeline.timer" 2>/dev/null || echo -e "${YELLOW}Warning: Falló habilitar snapper-timeline.timer${NC}"
-        chroot /mnt /bin/bash -c "systemctl enable snapper-cleanup.timer" 2>/dev/null || echo -e "${YELLOW}Warning: Falló habilitar snapper-cleanup.timer${NC}"
-
-        echo -e "${GREEN}✓ Servicios automáticos de Snapper habilitados:${NC}"
-        echo -e "${CYAN}  • snapper-timeline.timer: Crea snapshots automáticos${NC}"
-        echo -e "${CYAN}    - Cada hora (mantiene 5)${NC}"
-        echo -e "${CYAN}    - Diarios (mantiene 7)${NC}"
-        echo -e "${CYAN}    - Semanales (mantiene 4)${NC}"
-        echo -e "${CYAN}    - Mensuales (mantiene 6-12)${NC}"
-        echo -e "${CYAN}    - Anuales (mantiene 2-5)${NC}"
-        echo -e "${CYAN}  • snapper-cleanup.timer: Limpia snapshots antiguos automáticamente${NC}"
-
-        echo -e "${GREEN}✓ Configuración de Snapper completada${NC}"
-
-        echo -e "${GREEN}✓ Snapper configurado con snapshots automáticos para ROOT (/):${NC}"
-        echo -e "${CYAN}  • Cada hora: mantiene 5 snapshots${NC}"
-        echo -e "${CYAN}  • Diariamente: mantiene 7 snapshots${NC}"
-        echo -e "${CYAN}  • Semanalmente: mantiene 4 snapshots${NC}"
-        echo -e "${CYAN}  • Mensualmente: mantiene 6 snapshots${NC}"
-        echo -e "${CYAN}  • Anualmente: mantiene 2 snapshots${NC}"
-        echo -e "${CYAN}  • Límite total: 50 snapshots + 10 importantes${NC}"
-
-        echo -e "${GREEN}✓ Snapper configurado con snapshots automáticos para HOME (/home):${NC}"
-        echo -e "${CYAN}  • Cada hora: mantiene 3 snapshots${NC}"
-        echo -e "${CYAN}  • Diariamente: mantiene 7 snapshots${NC}"
-        echo -e "${CYAN}  • Semanalmente: mantiene 4 snapshots${NC}"
-        echo -e "${CYAN}  • Mensualmente: mantiene 12 snapshots${NC}"
-        echo -e "${CYAN}  • Anualmente: mantiene 5 snapshots${NC}"
-        echo -e "${CYAN}  • Límite total: 40 snapshots + 10 importantes${NC}"
-
-        echo -e "\n${GREEN}✓ Estructura final de subvolúmenes BTRFS:${NC}"
-        echo -e "${CYAN}  • @ - Raíz del sistema (/)${NC}"
-        echo -e "${CYAN}  • @home - Directorios de usuarios (/home)${NC}"
-        echo -e "${CYAN}  • @var_log - Logs del sistema (/var/log)${NC}"
-        echo -e "${CYAN}  • /.snapshots - Snapshots de raíz (por Snapper)${NC}"
-        echo -e "${CYAN}  • /home/.snapshots - Snapshots de home (por Snapper)${NC}"
-
-        echo -e "${GREEN}✓ Configuraciones de Snapper creadas:${NC}"
-        echo -e "${CYAN}  • root: Snapshots del sistema con retención completa${NC}"
-        echo -e "${CYAN}  • home: Snapshots de datos de usuario con retención extendida${NC}"
-
-        echo -e "\n${GREEN}✓ grub-btrfs configurado:${NC}"
-        echo -e "${CYAN}  • Boot desde snapshots disponible en GRUB${NC}"
-        echo -e "${CYAN}  • Recuperación de emergencia habilitada${NC}"
-
-    else
-        echo -e "${RED}ERROR: No se pudo instalar Snapper${NC}"
-    fi
-
-    # Optimizar fstab para BTRFS
-    echo -e "${CYAN}Optimizando fstab para BTRFS...${NC}"
-    chroot /mnt /bin/bash -c "sed -i 's/relatime/noatime/g' /etc/fstab"
-
-    # Agregar opciones de montaje optimizadas para todos los subvolúmenes
-    chroot /mnt /bin/bash -c "sed -i 's/subvol=@,/subvol=@,compress=zstd:3,space_cache=v2,autodefrag,/' /etc/fstab" 2>/dev/null || true
-    chroot /mnt /bin/bash -c "sed -i 's/subvol=@home,/subvol=@home,compress=zstd:3,space_cache=v2,autodefrag,/' /etc/fstab" 2>/dev/null || true
-    chroot /mnt /bin/bash -c "sed -i 's/subvol=@var_log,/subvol=@var_log,compress=zstd:3,space_cache=v2,/' /etc/fstab" 2>/dev/null || true
-
-    # Verificar configuración final de fstab
-    echo -e "${CYAN}Verificando configuración final de fstab...${NC}"
-    if chroot /mnt /bin/bash -c "mount -a --fake" 2>/dev/null; then
-        echo -e "${GREEN}✓ Configuración fstab válida${NC}"
-    else
-        echo -e "${YELLOW}Warning: Posibles issues en fstab, pero continuando...${NC}"
-    fi
-
-    # Regenerar GRUB para incluir snapshots de grub-btrfs
-    if chroot /mnt /bin/bash -c "pacman -Qq grub-btrfs" 2>/dev/null; then
-        echo -e "${CYAN}Regenerando GRUB para incluir snapshots...${NC}"
-        chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo regenerar GRUB con snapshots${NC}"
-        echo -e "${GREEN}✓ GRUB configurado para mostrar snapshots en el menú de arranque${NC}"
-    fi
-
-    # Crear script de mantenimiento BTRFS
-    echo -e "${CYAN}Creando script de mantenimiento BTRFS...${NC}"
-    cat > /mnt/usr/local/bin/btrfs-maintenance << 'EOF'
-#!/bin/bash
-# Script de mantenimiento BTRFS automático
-
-echo "Iniciando mantenimiento BTRFS..."
-
-# Balance mensual (solo si es necesario)
-if [ $(date +%d) -eq 01 ]; then
-    echo "Ejecutando balance BTRFS..."
-    btrfs balance start -dusage=50 -musage=50 / 2>/dev/null || true
+    configurar_btrfs
 fi
-
-# Scrub semanal
-if [ $(date +%w) -eq 0 ]; then
-    echo "Ejecutando scrub BTRFS..."
-    btrfs scrub start / 2>/dev/null || true
-fi
-
-# Desfragmentación ligera
-echo "Ejecutando desfragmentación básica..."
-find /home -type f -size +100M -exec btrfs filesystem defragment {} \; 2>/dev/null || true
-
-echo "Mantenimiento BTRFS completado."
-EOF
-
-    chmod +x /mnt/usr/local/bin/btrfs-maintenance
-
-    # Crear servicio systemd para el mantenimiento
-    cat > /mnt/etc/systemd/system/btrfs-maintenance.service << 'EOF'
-[Unit]
-Description=BTRFS Maintenance
-After=local-fs.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/btrfs-maintenance
-User=root
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    cat > /mnt/etc/systemd/system/btrfs-maintenance.timer << 'EOF'
-[Unit]
-Description=Run BTRFS Maintenance Weekly
-Requires=btrfs-maintenance.service
-
-[Timer]
-OnCalendar=weekly
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-EOF
-
-    chroot /mnt /bin/bash -c "systemctl daemon-reload" || echo -e "${YELLOW}Warning: No se pudo daemon-reload${NC}"
-    chroot /mnt /bin/bash -c "systemctl enable btrfs-maintenance.timer" || echo -e "${YELLOW}Warning: No se pudo habilitar btrfs-maintenance.timer${NC}"
-
-    nota_btrfs_guide
-    echo -e "${GREEN}✓ Configuración BTRFS completada${NC}"
-    sleep 2
-
 
 clear
 # Actualizar base de datos de paquetes

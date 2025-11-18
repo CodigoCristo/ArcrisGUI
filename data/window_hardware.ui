@@ -68,7 +68,7 @@
                               <item>Nvidia-390</item>
                               <item>AMD Private</item>
                               <item>Intel (Gen 8+)</item>
-                              <item>Intel (Gen 2-7)</item>
+                              <item>Intel (mesa-amber)</item>
                               <item>Máquina Virtual</item>
                             </items>
                           </object>
