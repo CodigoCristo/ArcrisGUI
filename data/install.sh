@@ -5107,6 +5107,12 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "opencl-mesa"
         install_pacman_chroot_with_retry "lib32-opencl-mesa"
 
+        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "libva-utils"
+        install_pacman_chroot_with_retry "vulkan-tools"
+        install_pacman_chroot_with_retry "clinfo"
+        install_pacman_chroot_with_retry "ocl-icd"
+
         # Detectar si hay múltiples GPUs para casos híbridos
         ALL_GPUS=$(lspci | grep -i -E "(vga|display)")
         HAS_NVIDIA=$(echo "$ALL_GPUS" | grep -i nvidia > /dev/null && echo "yes" || echo "no")
@@ -5128,11 +5134,7 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "xf86-video-nouveau"
             install_pacman_chroot_with_retry "vulkan-nouveau"
             install_pacman_chroot_with_retry "lib32-vulkan-nouveau"
-            install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "libva-utils"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "clinfo"
-            install_pacman_chroot_with_retry "ocl-icd"
+
 
         # Configuración para GPUs híbridas Intel + AMD
         elif [[ "$HAS_INTEL" == "yes" && "$HAS_AMD" == "yes" ]]; then
@@ -5151,22 +5153,14 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "vulkan-radeon"
             install_pacman_chroot_with_retry "lib32-vulkan-radeon"
             install_pacman_chroot_with_retry "radeontop"
-            install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "libva-utils"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "clinfo"
-            install_pacman_chroot_with_retry "ocl-icd"
+
 
         elif echo "$VGA_LINE" | grep -i nvidia > /dev/null; then
             echo "Detectado hardware NVIDIA - Instalando driver open source nouveau"
             install_pacman_chroot_with_retry "xf86-video-nouveau"
             install_pacman_chroot_with_retry "vulkan-nouveau"
             install_pacman_chroot_with_retry "lib32-vulkan-nouveau"
-            install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "libva-utils"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "clinfo"
-            install_pacman_chroot_with_retry "ocl-icd"
+
 
         elif echo "$VGA_LINE" | grep -i "amd\|radeon" > /dev/null; then
             echo "Detectado hardware AMD/Radeon - Instalando driver open source amdgpu"
@@ -5175,11 +5169,7 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "vulkan-radeon"
             install_pacman_chroot_with_retry "lib32-vulkan-radeon"
             install_pacman_chroot_with_retry "radeontop"
-            install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "libva-utils"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "clinfo"
-            install_pacman_chroot_with_retry "ocl-icd"
+
 
         elif echo "$VGA_LINE" | grep -i intel > /dev/null; then
             echo "Detectado hardware Intel - Instalando driver open source intel"
@@ -5190,11 +5180,6 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
             install_pacman_chroot_with_retry "intel-gpu-tools"
             install_pacman_chroot_with_retry "vpl-gpu-rt"
-            install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "libva-utils"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "clinfo"
-            install_pacman_chroot_with_retry "ocl-icd"
 
         elif echo "$VGA_LINE" | grep -i "virtio\|qemu\|red hat.*virtio" > /dev/null; then
 
@@ -5206,11 +5191,6 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "virglrenderer"
             install_pacman_chroot_with_retry "libgl"
             install_pacman_chroot_with_retry "libglvnd"
-            install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "libva-utils"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "clinfo"
-            install_pacman_chroot_with_retry "ocl-icd"
             chroot /mnt /bin/bash -c "systemctl enable qemu-guest-agent.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
             chroot /mnt /bin/bash -c "systemctl start qemu-guest-agent.service"
 
@@ -5221,11 +5201,6 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "xf86-video-fbdev"
             install_pacman_chroot_with_retry "virtualbox-guest-utils"
             install_pacman_chroot_with_retry "virglrenderer"
-            install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "libva-utils"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "clinfo"
-            install_pacman_chroot_with_retry "ocl-icd"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         elif echo "$VGA_LINE" | grep -i vmware > /dev/null; then
@@ -5233,11 +5208,6 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "xf86-video-fbdev"
             install_pacman_chroot_with_retry "virtualbox-guest-utils"
             install_pacman_chroot_with_retry "virglrenderer"
-            install_pacman_chroot_with_retry "vdpauinfo"
-            install_pacman_chroot_with_retry "libva-utils"
-            install_pacman_chroot_with_retry "vulkan-tools"
-            install_pacman_chroot_with_retry "clinfo"
-            install_pacman_chroot_with_retry "ocl-icd"
             chroot /mnt /bin/bash -c "systemctl enable vboxservice" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         else
@@ -5368,27 +5338,21 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "lib32-mesa"
         install_pacman_chroot_with_retry "mesa-utils"
         install_pacman_chroot_with_retry "lib32-mesa-utils"
-
+        install_pacman_chroot_with_retry "opencl-mesa"
+        install_pacman_chroot_with_retry "lib32-opencl-mesa"
         # Vulkan (recomendado para Gen 8+)
         install_pacman_chroot_with_retry "vulkan-intel"
         install_pacman_chroot_with_retry "lib32-vulkan-intel"
-        install_pacman_chroot_with_retry "vulkan-tools"
-
-        # Aceleración de video (obligatorio)
+        # Aceleración de video
         install_pacman_chroot_with_retry "intel-media-driver"  # Gen 8+ (VA-API moderna)
         install_pacman_chroot_with_retry "libva-intel-driver"  # Fallback para modelos más viejos
-        install_pacman_chroot_with_retry "mesa-vdpau"
-        install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-
-        # OpenCL (opcional)
-        install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
-        install_pacman_chroot_with_retry "opencl-mesa"    # Alternativa moderna
-
-        # Herramientas de diagnóstico (opcional)
-        install_pacman_chroot_with_retry "intel-gpu-tools"
-        install_pacman_chroot_with_retry "libva-utils"
-        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "intel-compute-runtime"  # Opencl para Gen 8+
         install_pacman_chroot_with_retry "vpl-gpu-rt"
+        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "libva-utils"
+        install_pacman_chroot_with_retry "vulkan-tools"
+        install_pacman_chroot_with_retry "clinfo"
+        install_pacman_chroot_with_retry "ocl-icd"
         ;;
     "Intel (Gen 2-7)")
         echo "Instalando drivers Modernos de Intel"
@@ -5396,7 +5360,6 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "mesa-amber"
         install_pacman_chroot_with_retry "lib32-mesa-amber"
         install_pacman_chroot_with_retry "libva-intel-driver"  # Para VA-API
-        install_pacman_chroot_with_retry "intel-gpu-tools"
         install_pacman_chroot_with_retry "vdpauinfo"
         ;;
 
