@@ -2090,8 +2090,6 @@ HOMECONFIG
 
                 echo -e "${GREEN}✓ Configuración manual de snapper para /home completada${NC}"
             fi
-
-            fi
         else
             echo -e "${YELLOW}Warning: /home no está montado como subvolumen, saltando configuración de snapper${NC}"
         fi
