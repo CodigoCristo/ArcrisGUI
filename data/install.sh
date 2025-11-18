@@ -5105,10 +5105,7 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "mesa-utils"
         install_pacman_chroot_with_retry "lib32-mesa-utils"
         install_pacman_chroot_with_retry "opencl-mesa"
-        install_pacman_chroot_with_retry "vdpauinfo"
-        install_pacman_chroot_with_retry "libva-utils"
-        install_pacman_chroot_with_retry "vulkan-tools"
-        install_pacman_chroot_with_retry "vulkan-mesa-layers"
+        install_pacman_chroot_with_retry "lib32-opencl-mesa"
 
         # Detectar si hay múltiples GPUs para casos híbridos
         ALL_GPUS=$(lspci | grep -i -E "(vga|display)")
@@ -5188,7 +5185,7 @@ case "$DRIVER_VIDEO" in
             echo "Detectado hardware Intel - Instalando driver open source intel"
             install_pacman_chroot_with_retry "vulkan-intel"
             install_pacman_chroot_with_retry "lib32-vulkan-intel"
-            install_pacman_chroot_with_retry "intel-media-driver"  # Gen 8+ (VA-API moderna)
+            install_pacman_chroot_with_retry "intel-media-driver"
             install_pacman_chroot_with_retry "libva-intel-driver"  # Fallback para modelos más viejos
             install_pacman_chroot_with_retry "intel-compute-runtime"  # Para Gen 8+
             install_pacman_chroot_with_retry "intel-gpu-tools"
@@ -5398,22 +5395,12 @@ case "$DRIVER_VIDEO" in
         # DRI/3D (obligatorio)
         install_pacman_chroot_with_retry "mesa-amber"
         install_pacman_chroot_with_retry "lib32-mesa-amber"
-
-        # Aceleración de video (obligatorio)
         install_pacman_chroot_with_retry "libva-intel-driver"  # Para VA-API
-        install_pacman_chroot_with_retry "mesa-vdpau"          # Para VDPAU
-        install_pacman_chroot_with_retry "lib32-mesa-vdpau"
-
-        # OpenCL (opcional, solo si lo necesitas)
-        install_pacman_chroot_with_retry "opencl-mesa"  # Usa Clover
-
-        # Herramientas de diagnóstico (opcional)
         install_pacman_chroot_with_retry "intel-gpu-tools"
-        install_pacman_chroot_with_retry "libva-utils"
         install_pacman_chroot_with_retry "vdpauinfo"
         ;;
-    "Máquina Virtual")
 
+    "Máquina Virtual")
     # Detección automática de hardware de video usando VGA controller
     VGA_LINE=$(lspci | grep -i "vga compatible controller")
     echo -e "${CYAN}Tarjeta de video detectada: $VGA_LINE${NC}"
