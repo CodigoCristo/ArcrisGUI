@@ -3934,6 +3934,20 @@ partition_manual() {
                 ;;
             "mkfs.btrfs")
                 mkfs.btrfs -f $device
+                # Crear subvolumen de root si es la partición raíz
+                if [ "$mountpoint" = "/" ]; then
+                    echo -e "${CYAN}Creando subvolumen de root para btrfs...${NC}"
+                    # Montar temporalmente para crear subvolumen
+                    TEMP_MOUNT="/tmp/btrfs_temp_$$"
+                    mkdir -p "$TEMP_MOUNT"
+                    mount $device "$TEMP_MOUNT"
+                    # Crear subvolumen @
+                    btrfs subvolume create "$TEMP_MOUNT/@"
+                    # Desmontar
+                    umount "$TEMP_MOUNT"
+                    rmdir "$TEMP_MOUNT"
+                    echo -e "${GREEN}✓ Subvolumen @ creado en $device${NC}"
+                fi
                 ;;
             "mkfs.xfs")
                 mkfs.xfs -f $device
@@ -4019,7 +4033,13 @@ partition_manual() {
         IFS=' ' read -r device format mountpoint <<< "$partition_config"
         if [ "$mountpoint" = "/" ]; then
             echo -e "${GREEN}| Montando raíz: $device -> /mnt |${NC}"
-            mount $device /mnt
+            # Si es btrfs, montar el subvolumen @
+            if [ "$format" = "mkfs.btrfs" ]; then
+                echo -e "${CYAN}Montando subvolumen @ de btrfs con opciones optimizadas...${NC}"
+                mount -o noatime,compress=zstd,space_cache=v2,subvol=@ $device /mnt
+            else
+                mount $device /mnt
+            fi
             break
         fi
     done
@@ -4228,9 +4248,82 @@ clear
 
 
 # Instalar herramientas específicas según el modo de particionado
-if [ "$PARTITION_MODE" = "auto_btrfs" ]; then
-    echo -e "${CYAN}Verificando herramientas BTRFS ya instaladas...${NC}"
-    # btrfs-progs ya se instaló en partition_auto_btrfs
+if [ "$PARTITION_MODE" = "manual" ]; then
+    echo -e "${CYAN}Verificando herramientas necesarias para sistemas de archivos...${NC}"
+
+    # Inicializar flags para cada sistema de archivos
+    BTRFS_USED=false
+    XFS_USED=false
+    NTFS_USED=false
+    REISERFS_USED=false
+    JFS_USED=false
+    FAT_USED=false
+    F2FS_USED=false
+
+    # Verificar qué sistemas de archivos se están usando
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+        case "$format" in
+            "mkfs.btrfs")
+                BTRFS_USED=true
+                ;;
+            "mkfs.xfs")
+                XFS_USED=true
+                ;;
+            "mkfs.ntfs")
+                NTFS_USED=true
+                ;;
+            "mkfs.reiserfs")
+                REISERFS_USED=true
+                ;;
+            "mkfs.jfs")
+                JFS_USED=true
+                ;;
+            "mkfs.fat32"|"mkfs.fat16")
+                FAT_USED=true
+                ;;
+            "mkfs.f2fs")
+                F2FS_USED=true
+                ;;
+        esac
+    done
+
+    # Instalar herramientas según los sistemas de archivos detectados
+    if [ "$BTRFS_USED" = true ]; then
+        echo -e "${CYAN}Detectado uso de BTRFS, instalando btrfs-progs...${NC}"
+        install_pacstrap_with_retry "btrfs-progs"
+    fi
+
+    if [ "$XFS_USED" = true ]; then
+        echo -e "${CYAN}Detectado uso de XFS, instalando xfsprogs...${NC}"
+        install_pacstrap_with_retry "xfsprogs"
+    fi
+
+    if [ "$NTFS_USED" = true ]; then
+        echo -e "${CYAN}Detectado uso de NTFS, instalando ntfs-3g...${NC}"
+        install_pacstrap_with_retry "ntfs-3g"
+    fi
+
+    if [ "$REISERFS_USED" = true ]; then
+        echo -e "${CYAN}Detectado uso de ReiserFS, instalando reiserfsprogs...${NC}"
+        install_pacstrap_with_retry "reiserfsprogs"
+    fi
+
+    if [ "$JFS_USED" = true ]; then
+        echo -e "${CYAN}Detectado uso de JFS, instalando jfsutils...${NC}"
+        install_pacstrap_with_retry "jfsutils"
+    fi
+
+    if [ "$FAT_USED" = true ]; then
+        echo -e "${CYAN}Detectado uso de FAT32/FAT16, instalando dosfstools...${NC}"
+        install_pacstrap_with_retry "dosfstools"
+    fi
+
+    if [ "$F2FS_USED" = true ]; then
+        echo -e "${CYAN}Detectado uso de F2FS, instalando f2fs-tools...${NC}"
+        install_pacstrap_with_retry "f2fs-tools"
+    fi
+
 elif [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${CYAN}Instalando herramientas de cifrado...${NC}"
     install_pacstrap_with_retry "cryptsetup"
@@ -4314,7 +4407,11 @@ if [ "$PARTITION_MODE" = "manual" ]; then
                     fi
                     ;;
                 "mkfs.btrfs"|"btrfs")
-                    echo "UUID=$PART_UUID $mountpoint btrfs rw,noatime,compress=zstd,space_cache=v2 0 2" >> /mnt/etc/fstab
+                    if [ "$mountpoint" = "/" ]; then
+                        echo "UUID=$PART_UUID $mountpoint btrfs rw,noatime,compress=zstd,space_cache=v2,subvol=@ 0 1" >> /mnt/etc/fstab
+                    else
+                        echo "UUID=$PART_UUID $mountpoint btrfs rw,noatime,compress=zstd,space_cache=v2 0 2" >> /mnt/etc/fstab
+                    fi
                     ;;
                 "mkfs.xfs"|"xfs")
                     echo "UUID=$PART_UUID $mountpoint xfs rw,relatime 0 2" >> /mnt/etc/fstab
@@ -4629,6 +4726,59 @@ elif [ "$PARTITION_MODE" = "auto_btrfs" ]; then
     # Configurar hooks para BTRFS
     sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect keyboard keymap consolefont modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
+elif [ "$PARTITION_MODE" = "manual" ]; then
+    echo "Configurando mkinitcpio para particionado manual..."
+
+    # Detectar módulos necesarios según sistemas de archivos utilizados
+    MODULES_LIST=()
+
+    # Verificar qué sistemas de archivos se están usando
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+        case "$format" in
+            "mkfs.btrfs")
+                # Módulos para BTRFS con compresión
+                MODULES_LIST+=(btrfs crc32c zstd lzo lz4 zlib_deflate)
+                echo -e "${CYAN}  • Detectado BTRFS: agregando módulos btrfs, crc32c, zstd, lzo, lz4, zlib_deflate${NC}"
+                ;;
+            "mkfs.xfs")
+                # Módulos para XFS
+                MODULES_LIST+=(xfs crc32c)
+                echo -e "${CYAN}  • Detectado XFS: agregando módulos xfs, crc32c${NC}"
+                ;;
+            "mkfs.ntfs")
+                # Módulos para NTFS
+                MODULES_LIST+=(ntfs3)
+                echo -e "${CYAN}  • Detectado NTFS: agregando módulo ntfs3${NC}"
+                ;;
+            "mkfs.jfs")
+                # Módulos para JFS
+                MODULES_LIST+=(jfs)
+                echo -e "${CYAN}  • Detectado JFS: agregando módulo jfs${NC}"
+                ;;
+            "mkfs.f2fs")
+                # Módulos para F2FS
+                MODULES_LIST+=(f2fs crc32)
+                echo -e "${CYAN}  • Detectado F2FS: agregando módulos f2fs, crc32${NC}"
+                ;;
+        esac
+    done
+
+    # Eliminar duplicados y crear string de módulos
+    UNIQUE_MODULES=($(printf "%s\n" "${MODULES_LIST[@]}" | sort -u))
+    MODULES_STRING=$(IFS=' '; echo "${UNIQUE_MODULES[*]}")
+
+    if [ ${#UNIQUE_MODULES[@]} -gt 0 ]; then
+        echo -e "${GREEN}Configurando módulos detectados: ${MODULES_STRING}${NC}"
+        sed -i "s/^MODULES=.*/MODULES=(${MODULES_STRING})/" /mnt/etc/mkinitcpio.conf
+    else
+        echo -e "${CYAN}No se detectaron sistemas de archivos especiales, usando configuración estándar${NC}"
+        sed -i 's/^MODULES=.*/MODULES=()/' /mnt/etc/mkinitcpio.conf
+    fi
+
+    # Configurar hooks estándar para modo manual
+    sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect modconf block filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+
 else
     echo "Configurando mkinitcpio para sistema estándar..."
     # Configuración estándar para ext4
@@ -4848,6 +4998,67 @@ if true; then
             sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=3\"/' /mnt/etc/default/grub
             sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"/' /mnt/etc/default/grub
             echo -e "${GREEN}✓ Configuración GRUB UEFI simplificada para BTRFS${NC}"
+        elif [ "$PARTITION_MODE" = "manual" ]; then
+            echo -e "${CYAN}Configurando GRUB para particionado manual...${NC}"
+
+            # Detectar módulos necesarios según sistemas de archivos utilizados
+            GRUB_MODULES_LIST="part_gpt part_msdos"
+            ROOTFLAGS=""
+
+            # Verificar qué sistemas de archivos se están usando
+            for partition_config in "${PARTITIONS[@]}"; do
+                IFS=' ' read -r device format mountpoint <<< "$partition_config"
+                case "$format" in
+                    "mkfs.btrfs")
+                        GRUB_MODULES_LIST="$GRUB_MODULES_LIST btrfs"
+                        if [ "$mountpoint" = "/" ]; then
+                            ROOTFLAGS="rootflags=subvol=@"
+                        fi
+                        echo -e "${CYAN}  • Detectado BTRFS: agregando módulo btrfs${NC}"
+                        ;;
+                    "mkfs.xfs")
+                        GRUB_MODULES_LIST="$GRUB_MODULES_LIST xfs"
+                        echo -e "${CYAN}  • Detectado XFS: agregando módulo xfs${NC}"
+                        ;;
+                    "mkfs.f2fs")
+                        # F2FS no tiene módulo específico en GRUB, usar genérico
+                        echo -e "${CYAN}  • Detectado F2FS: usando módulos estándar${NC}"
+                        ;;
+                    "mkfs.ntfs")
+                        GRUB_MODULES_LIST="$GRUB_MODULES_LIST ntfs"
+                        echo -e "${CYAN}  • Detectado NTFS: agregando módulo ntfs${NC}"
+                        ;;
+                    "mkfs.jfs")
+                        # JFS no tiene módulo específico en GRUB moderno
+                        echo -e "${CYAN}  • Detectado JFS: usando módulos estándar${NC}"
+                        ;;
+                    "mkfs.reiserfs")
+                        GRUB_MODULES_LIST="$GRUB_MODULES_LIST reiserfs"
+                        echo -e "${CYAN}  • Detectado ReiserFS: agregando módulo reiserfs${NC}"
+                        ;;
+                    "mkfs.fat32"|"mkfs.fat16")
+                        GRUB_MODULES_LIST="$GRUB_MODULES_LIST fat"
+                        echo -e "${CYAN}  • Detectado FAT: agregando módulo fat${NC}"
+                        ;;
+                esac
+            done
+
+            # Eliminar duplicados en la lista de módulos
+            GRUB_MODULES_LIST=$(echo "$GRUB_MODULES_LIST" | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/ $//')
+
+            # Configurar GRUB_PRELOAD_MODULES
+            echo "GRUB_PRELOAD_MODULES=\"$GRUB_MODULES_LIST\"" >> /mnt/etc/default/grub
+
+            # Configurar GRUB_CMDLINE_LINUX_DEFAULT con rootflags si es necesario
+            if [ -n "$ROOTFLAGS" ]; then
+                sed -i "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"$ROOTFLAGS loglevel=3\"/" /mnt/etc/default/grub
+                echo -e "${GREEN}✓ Configuración GRUB manual con rootflags: ${ROOTFLAGS}${NC}"
+            else
+                sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
+                echo -e "${GREEN}✓ Configuración GRUB manual estándar${NC}"
+            fi
+
+            echo -e "${CYAN}  • Módulos GRUB configurados: ${GRUB_MODULES_LIST}${NC}"
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos\"" >> /mnt/etc/default/grub
@@ -4947,6 +5158,67 @@ if true; then
             sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=3\"/' /mnt/etc/default/grub
             sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_msdos btrfs\"/' /mnt/etc/default/grub
             echo -e "${GREEN}✓ Configuración GRUB BIOS Legacy simplificada para BTRFS${NC}"
+        elif [ "$PARTITION_MODE" = "manual" ]; then
+            echo -e "${CYAN}Configurando GRUB BIOS para particionado manual...${NC}"
+
+            # Detectar módulos necesarios según sistemas de archivos utilizados
+            GRUB_MODULES_LIST="part_msdos"
+            ROOTFLAGS=""
+
+            # Verificar qué sistemas de archivos se están usando
+            for partition_config in "${PARTITIONS[@]}"; do
+                IFS=' ' read -r device format mountpoint <<< "$partition_config"
+                case "$format" in
+                    "mkfs.btrfs")
+                        GRUB_MODULES_LIST="$GRUB_MODULES_LIST btrfs"
+                        if [ "$mountpoint" = "/" ]; then
+                            ROOTFLAGS="rootflags=subvol=@"
+                        fi
+                        echo -e "${CYAN}  • Detectado BTRFS: agregando módulo btrfs${NC}"
+                        ;;
+                    "mkfs.xfs")
+                        GRUB_MODULES_LIST="$GRUB_MODULES_LIST xfs"
+                        echo -e "${CYAN}  • Detectado XFS: agregando módulo xfs${NC}"
+                        ;;
+                    "mkfs.f2fs")
+                        # F2FS no tiene módulo específico en GRUB, usar genérico
+                        echo -e "${CYAN}  • Detectado F2FS: usando módulos estándar${NC}"
+                        ;;
+                    "mkfs.ntfs")
+                        GRUB_MODULES_LIST="$GRUB_MODULES_LIST ntfs"
+                        echo -e "${CYAN}  • Detectado NTFS: agregando módulo ntfs${NC}"
+                        ;;
+                    "mkfs.jfs")
+                        # JFS no tiene módulo específico en GRUB moderno
+                        echo -e "${CYAN}  • Detectado JFS: usando módulos estándar${NC}"
+                        ;;
+                    "mkfs.reiserfs")
+                        GRUB_MODULES_LIST="$GRUB_MODULES_LIST reiserfs"
+                        echo -e "${CYAN}  • Detectado ReiserFS: agregando módulo reiserfs${NC}"
+                        ;;
+                    "mkfs.fat32"|"mkfs.fat16")
+                        GRUB_MODULES_LIST="$GRUB_MODULES_LIST fat"
+                        echo -e "${CYAN}  • Detectado FAT: agregando módulo fat${NC}"
+                        ;;
+                esac
+            done
+
+            # Eliminar duplicados en la lista de módulos
+            GRUB_MODULES_LIST=$(echo "$GRUB_MODULES_LIST" | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/ $//')
+
+            # Configurar GRUB_PRELOAD_MODULES
+            echo "GRUB_PRELOAD_MODULES=\"$GRUB_MODULES_LIST\"" >> /mnt/etc/default/grub
+
+            # Configurar GRUB_CMDLINE_LINUX_DEFAULT con rootflags si es necesario
+            if [ -n "$ROOTFLAGS" ]; then
+                sed -i "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"$ROOTFLAGS loglevel=3\"/" /mnt/etc/default/grub
+                echo -e "${GREEN}✓ Configuración GRUB BIOS manual con rootflags: ${ROOTFLAGS}${NC}"
+            else
+                sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
+                echo -e "${GREEN}✓ Configuración GRUB BIOS manual estándar${NC}"
+            fi
+
+            echo -e "${CYAN}  • Módulos GRUB BIOS configurados: ${GRUB_MODULES_LIST}${NC}"
         else
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos\"" >> /mnt/etc/default/grub
