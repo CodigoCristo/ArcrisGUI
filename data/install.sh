@@ -3946,16 +3946,13 @@ partition_manual() {
                 mkfs.btrfs -f $device
                 # Crear subvolumen de root si es la partición raíz
                 if [ "$mountpoint" = "/" ]; then
-                    echo -e "${CYAN}Creando subvolumen de root para btrfs...${NC}"
-                    # Montar temporalmente para crear subvolumen
-                    TEMP_MOUNT="/tmp/btrfs_temp_$$"
-                    mkdir -p "$TEMP_MOUNT"
-                    mount $device "$TEMP_MOUNT"
+                    echo -e "${CYAN}Creando subvolumen @ para btrfs...${NC}"
+                    # Montar en /mnt para crear subvolumen
+                    mount $device /mnt
                     # Crear subvolumen @
-                    btrfs subvolume create "$TEMP_MOUNT/@"
-                    # Desmontar
-                    umount "$TEMP_MOUNT"
-                    rmdir "$TEMP_MOUNT"
+                    btrfs subvolume create /mnt/@
+                    # Desmontar para remontaje posterior con subvolumen
+                    umount /mnt
                     echo -e "${GREEN}✓ Subvolumen @ creado en $device${NC}"
                 fi
                 ;;
@@ -4046,7 +4043,7 @@ partition_manual() {
             # Si es btrfs, montar el subvolumen @
             if [ "$format" = "mkfs.btrfs" ]; then
                 echo -e "${CYAN}Montando subvolumen @ de btrfs con opciones optimizadas...${NC}"
-                mount -o noatime,compress=zstd,space_cache=v2,subvol=@ $device /mnt
+                mount -o noatime,subvol=@,compress=zstd:3,space_cache=v2,autodefrag $device /mnt
             else
                 mount $device /mnt
             fi
@@ -4437,7 +4434,7 @@ if [ "$PARTITION_MODE" = "manual" ]; then
         chroot /mnt /bin/bash -c "sed -i 's/relatime/noatime/g' /etc/fstab"
 
         # Agregar opciones de montaje optimizadas para todos los subvolúmenes
-        chroot /mnt /bin/bash -c "sed -i 's/subvol=@,/subvol=@,compress=zstd:3,space_cache=v2,autodefrag,/' /etc/fstab" 2>/dev/null || true
+        chroot /mnt /bin/bash -c "sed -i 's/subvol=@/subvol=@,compress=zstd:3,space_cache=v2,autodefrag,/' /etc/fstab" 2>/dev/null || true
 
         # Verificar configuración final de fstab
         echo -e "${CYAN}Verificando configuración final de fstab...${NC}"
