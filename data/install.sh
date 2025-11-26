@@ -4383,16 +4383,23 @@ if [ "$PARTITION_MODE" = "manual" ]; then
 
         # Obtener UUID de la partición
         PART_UUID=$(blkid -s UUID -o value $device)
+        if [ -z "$PART_UUID" ]; then
+            echo -e "${RED}ERROR: No se pudo obtener UUID para $device${NC}"
+            echo -e "${RED}Esto causará problemas en el boot. Usando device directamente.${NC}"
+            PART_UUID=""
+        fi
+
+        # Escribir entrada al fstab (con UUID si está disponible, sino con device)
         if [ -n "$PART_UUID" ]; then
+            FSTAB_DEVICE="UUID=$PART_UUID"
+        else
+            FSTAB_DEVICE="$device"
+        fi
             # Determinar el tipo de sistema de archivos
             case $format_for_fstab in
                 "mkfs.fat32"|"mkfs.fat16"|"vfat")
                     FS_TYPE="vfat"
-                    if [ "$mountpoint" = "/boot/EFI" ]; then
-                        echo "UUID=$PART_UUID /boot vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
-                    else
-                        echo "UUID=$PART_UUID $mountpoint vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
-                    fi
+                    echo "$FSTAB_DEVICE $mountpoint vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
                     ;;
                 "mkfs.ext4"|"mkfs.ext3"|"mkfs.ext2"|"ext4"|"ext3"|"ext2")
                     if [[ "$format_for_fstab" =~ ^mkfs\. ]]; then
@@ -4401,44 +4408,44 @@ if [ "$PARTITION_MODE" = "manual" ]; then
                         FS_TYPE="$format_for_fstab"
                     fi
                     if [ "$mountpoint" = "/" ]; then
-                        echo "UUID=$PART_UUID / $FS_TYPE rw,relatime 0 1" >> /mnt/etc/fstab
+                        echo "$FSTAB_DEVICE / $FS_TYPE rw,relatime 0 1" >> /mnt/etc/fstab
                     else
-                        echo "UUID=$PART_UUID $mountpoint $FS_TYPE rw,relatime 0 2" >> /mnt/etc/fstab
+                        echo "$FSTAB_DEVICE $mountpoint $FS_TYPE rw,relatime 0 2" >> /mnt/etc/fstab
                     fi
                     ;;
                 "mkfs.btrfs"|"btrfs")
                     if [ "$mountpoint" = "/" ]; then
-                        echo "UUID=$PART_UUID $mountpoint btrfs rw,noatime,subvol=@,compress=zstd:3,space_cache=v2,autodefrag 0 1" >> /mnt/etc/fstab
+                        echo "$FSTAB_DEVICE $mountpoint btrfs rw,noatime,subvol=@,compress=zstd:3,space_cache=v2,autodefrag 0 1" >> /mnt/etc/fstab
+                        echo -e "${GREEN}✓ Entrada fstab para btrfs root con subvolumen @: $FSTAB_DEVICE${NC}"
                     else
-                        echo "UUID=$PART_UUID $mountpoint btrfs rw,noatime,compress=zstd:3,space_cache=v2,autodefrag 0 2" >> /mnt/etc/fstab
+                        echo "$FSTAB_DEVICE $mountpoint btrfs rw,noatime,compress=zstd:3,space_cache=v2,autodefrag 0 2" >> /mnt/etc/fstab
                     fi
                     ;;
                 "mkfs.xfs"|"xfs")
-                    echo "UUID=$PART_UUID $mountpoint xfs rw,relatime 0 2" >> /mnt/etc/fstab
+                    echo "$FSTAB_DEVICE $mountpoint xfs rw,relatime 0 2" >> /mnt/etc/fstab
                     ;;
                 "mkfs.f2fs"|"f2fs")
-                    echo "UUID=$PART_UUID $mountpoint f2fs rw,relatime 0 2" >> /mnt/etc/fstab
+                    echo "$FSTAB_DEVICE $mountpoint f2fs rw,relatime 0 2" >> /mnt/etc/fstab
                     ;;
                 "mkfs.ntfs"|"ntfs")
-                    echo "UUID=$PART_UUID $mountpoint ntfs rw,relatime 0 2" >> /mnt/etc/fstab
+                    echo "$FSTAB_DEVICE $mountpoint ntfs rw,relatime 0 2" >> /mnt/etc/fstab
                     ;;
                 "mkfs.reiserfs"|"reiserfs")
-                    echo "UUID=$PART_UUID $mountpoint reiserfs rw,relatime 0 2" >> /mnt/etc/fstab
+                    echo "$FSTAB_DEVICE $mountpoint reiserfs rw,relatime 0 2" >> /mnt/etc/fstab
                     ;;
                 "mkfs.jfs"|"jfs")
-                    echo "UUID=$PART_UUID $mountpoint jfs rw,relatime 0 2" >> /mnt/etc/fstab
+                    echo "$FSTAB_DEVICE $mountpoint jfs rw,relatime 0 2" >> /mnt/etc/fstab
                     ;;
                 *)
                     echo -e "${YELLOW}ADVERTENCIA: Sistema de archivos no reconocido ($format_for_fstab) para $device${NC}"
                     echo -e "${YELLOW}Usando opciones genéricas en fstab${NC}"
                     if [ "$mountpoint" = "/" ]; then
-                        echo "UUID=$PART_UUID / $format_for_fstab rw,relatime 0 1" >> /mnt/etc/fstab
+                        echo "$FSTAB_DEVICE / $format_for_fstab rw,relatime 0 1" >> /mnt/etc/fstab
                     else
-                        echo "UUID=$PART_UUID $mountpoint $format_for_fstab rw,relatime 0 2" >> /mnt/etc/fstab
+                        echo "$FSTAB_DEVICE $mountpoint $format_for_fstab rw,relatime 0 2" >> /mnt/etc/fstab
                     fi
                     ;;
             esac
-        fi
     done
 
     # Agregar particiones swap
