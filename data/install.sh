@@ -1947,6 +1947,9 @@ configurar_btrfs() {
     echo -e "${CYAN}Verificando herramientas BTRFS adicionales...${NC}"
 
     # Solo instalar grub-btrfs ya que btrfs-progs ya está instalado
+    install_pacman_chroot_with_retry "btrfs-progs"
+    install_pacman_chroot_with_retry "btrfsmaintenance"
+    install_pacman_chroot_with_retry "snapper"
     install_pacman_chroot_with_retry "grub-btrfs" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo instalar grub-btrfs${NC}"
 
     # Configurar grub-btrfs para boot desde snapshots
@@ -3349,7 +3352,9 @@ partition_auto_btrfs() {
         mount "$PARTITION_1" /mnt/boot
 
         # Instalar herramientas específicas para BTRFS
-        install_pacstrap_with_retry "btrfs-progs"
+        install_pacman_chroot_with_retry "btrfs-progs"
+        install_pacman_chroot_with_retry "btrfsmaintenance"
+        install_pacman_chroot_with_retry "snapper"
 
     else
         # Configuración para BIOS Legacy
@@ -3502,7 +3507,9 @@ partition_auto_btrfs() {
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@var_log "$PARTITION_3" /mnt/var/log
 
         # Instalar herramientas específicas para BTRFS
-        install_pacstrap_with_retry "btrfs-progs"
+        install_pacman_chroot_with_retry "btrfs-progs"
+        install_pacman_chroot_with_retry "btrfsmaintenance"
+        install_pacman_chroot_with_retry "snapper"
     fi
 }
 
@@ -4292,6 +4299,9 @@ if [ "$PARTITION_MODE" = "manual" ]; then
     if [ "$BTRFS_USED" = true ]; then
         echo -e "${CYAN}Detectado uso de BTRFS, instalando btrfs-progs...${NC}"
         install_pacstrap_with_retry "btrfs-progs"
+        install_pacstrap_with_retry "btrfs-progs"
+        install_pacstrap_with_retry "btrfsmaintenance"
+        install_pacstrap_with_retry "snapper"
     fi
 
     if [ "$XFS_USED" = true ]; then
@@ -4381,18 +4391,31 @@ if [ "$PARTITION_MODE" = "manual" ]; then
             format_for_fstab="$format"
         fi
 
-        # Obtener UUID de la partición
-        PART_UUID=$(blkid -s UUID -o value $device)
-        if [ -z "$PART_UUID" ]; then
-            echo -e "${RED}ERROR: No se pudo obtener UUID para $device${NC}"
-            echo -e "${RED}Esto causará problemas en el boot. Usando device directamente.${NC}"
-            PART_UUID=""
-        fi
+        # Obtener UUID de la partición con reintentos
+        echo -e "${CYAN}Obteniendo UUID para $device...${NC}"
+        PART_UUID=""
 
-        # Escribir entrada al fstab (con UUID si está disponible, sino con device)
+        # Refrescar cache de blkid
+        blkid -g
+
+        # Intentar obtener UUID con reintentos
+        for attempt in 1 2 3; do
+            PART_UUID=$(blkid -s UUID -o value $device 2>/dev/null)
+            if [ -n "$PART_UUID" ]; then
+                echo -e "${GREEN}✓ UUID encontrado para $device: $PART_UUID${NC}"
+                break
+            else
+                echo -e "${YELLOW}Intento $attempt: No se pudo obtener UUID para $device${NC}"
+                sleep 1
+            fi
+        done
+
+        # Si aún no hay UUID, usar el device directamente
         if [ -n "$PART_UUID" ]; then
             FSTAB_DEVICE="UUID=$PART_UUID"
         else
+            echo -e "${RED}ERROR: No se pudo obtener UUID para $device después de 3 intentos${NC}"
+            echo -e "${YELLOW}Usando device directamente: $device${NC}"
             FSTAB_DEVICE="$device"
         fi
             # Determinar el tipo de sistema de archivos
@@ -7575,6 +7598,8 @@ if [ "${FILESYSTEMS_ENABLED:-false}" = "true" ]; then
     # btrfs-progs se instala condicionalmente según el sistema de archivos
     if [ "$PARTITION_MODE" != "auto_btrfs" ]; then
         install_pacman_chroot_with_retry "btrfs-progs"
+        install_pacman_chroot_with_retry "btrfsmaintenance"
+        install_pacman_chroot_with_retry "snapper"
     fi
     install_pacman_chroot_with_retry "xfsprogs"
     install_pacman_chroot_with_retry "e2fsprogs"
