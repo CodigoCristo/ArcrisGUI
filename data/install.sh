@@ -1948,6 +1948,7 @@ configurar_btrfs() {
 
     # Solo instalar grub-btrfs ya que btrfs-progs ya está instalado
     install_pacman_chroot_with_retry "btrfs-progs"
+    install_pacman_chroot_with_retry "btrfs-assistant"
     install_pacman_chroot_with_retry "btrfsmaintenance"
     install_pacman_chroot_with_retry "snapper"
     install_pacman_chroot_with_retry "grub-btrfs" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo instalar grub-btrfs${NC}"
@@ -3352,9 +3353,10 @@ partition_auto_btrfs() {
         mount "$PARTITION_1" /mnt/boot
 
         # Instalar herramientas específicas para BTRFS
-        install_pacman_chroot_with_retry "btrfs-progs"
-        install_pacman_chroot_with_retry "btrfsmaintenance"
-        install_pacman_chroot_with_retry "snapper"
+        install_pacstrap_with_retry "btrfs-progs"
+        install_pacstrap_with_retry "btrfsmaintenance"
+        install_pacstrap_with_retry "snapper"
+        install_pacstrap_with_retry "btrfs-assistant"
 
     else
         # Configuración para BIOS Legacy
@@ -3507,9 +3509,10 @@ partition_auto_btrfs() {
         mount -o noatime,compress=zstd,space_cache=v2,subvol=@var_log "$PARTITION_3" /mnt/var/log
 
         # Instalar herramientas específicas para BTRFS
-        install_pacman_chroot_with_retry "btrfs-progs"
-        install_pacman_chroot_with_retry "btrfsmaintenance"
-        install_pacman_chroot_with_retry "snapper"
+        install_pacstrap_with_retry "btrfs-progs"
+        install_pacstrap_with_retry "btrfsmaintenance"
+        install_pacstrap_with_retry "snapper"
+        install_pacstrap_with_retry "btrfs-assistant"
     fi
 }
 
@@ -4299,9 +4302,9 @@ if [ "$PARTITION_MODE" = "manual" ]; then
     if [ "$BTRFS_USED" = true ]; then
         echo -e "${CYAN}Detectado uso de BTRFS, instalando btrfs-progs...${NC}"
         install_pacstrap_with_retry "btrfs-progs"
-        install_pacstrap_with_retry "btrfs-progs"
         install_pacstrap_with_retry "btrfsmaintenance"
         install_pacstrap_with_retry "snapper"
+        install_pacstrap_with_retry "btrfs-assistant"
     fi
 
     if [ "$XFS_USED" = true ]; then
@@ -4359,172 +4362,28 @@ sleep 3
 clear
 
 
-# Generar fstab
-if [ "$PARTITION_MODE" = "manual" ]; then
-    echo -e "${GREEN}| Generando fstab para particionado manual |${NC}"
-    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-    echo ""
+# Generar fstab usando genfstab -U
+echo -e "${GREEN}| Generando fstab con genfstab -U |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
 
-    # Crear fstab base
-    echo "# <file system> <mount point> <type> <options> <dump> <pass>" > /mnt/etc/fstab
+genfstab -U /mnt > /mnt/etc/fstab
 
-    # Procesar configuraciones de particiones para fstab
-    for partition_config in "${PARTITIONS[@]}"; do
-        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+# Modificar opciones de btrfs si existe partición raíz con subvolumen @
+if grep -q "subvol=@" /mnt/etc/fstab; then
+    echo -e "${CYAN}Optimizando opciones de btrfs en fstab...${NC}"
+    sed -i 's/subvol=@[^,]*/subvol=@,compress=zstd:3,space_cache=v2,autodefrag/' /mnt/etc/fstab
+    echo -e "${GREEN}✓ Opciones de btrfs optimizadas${NC}"
+fi
 
-        # Omitir particiones swap (se manejan separadamente)
-        if [ "$mountpoint" = "swap" ]; then
-            continue
-        fi
-
-        # Para particiones no formateadas (none), detectar el sistema de archivos existente
-        if [ "$format" = "none" ]; then
-            DETECTED_FS=$(blkid -s TYPE -o value $device)
-            if [ -z "$DETECTED_FS" ]; then
-                echo -e "${YELLOW}ADVERTENCIA: No se pudo detectar sistema de archivos en $device, omitiendo del fstab${NC}"
-                continue
-            fi
-            echo -e "${CYAN}Detectado sistema de archivos existente en $device: $DETECTED_FS${NC}"
-            format_for_fstab="$DETECTED_FS"
-        else
-            # Para particiones formateadas, usar el formato especificado
-            format_for_fstab="$format"
-        fi
-
-        # Obtener UUID de la partición con reintentos
-        echo -e "${CYAN}Obteniendo UUID para $device...${NC}"
-        PART_UUID=""
-
-        # Refrescar cache de blkid
-        blkid -g
-
-        # Intentar obtener UUID con reintentos
-        for attempt in 1 2 3; do
-            PART_UUID=$(blkid -s UUID -o value $device 2>/dev/null)
-            if [ -n "$PART_UUID" ]; then
-                echo -e "${GREEN}✓ UUID encontrado para $device: $PART_UUID${NC}"
-                break
-            else
-                echo -e "${YELLOW}Intento $attempt: No se pudo obtener UUID para $device${NC}"
-                sleep 1
-            fi
-        done
-
-        # Si aún no hay UUID, usar el device directamente
-        if [ -n "$PART_UUID" ]; then
-            FSTAB_DEVICE="UUID=$PART_UUID"
-        else
-            echo -e "${RED}ERROR: No se pudo obtener UUID para $device después de 3 intentos${NC}"
-            echo -e "${YELLOW}Usando device directamente: $device${NC}"
-            FSTAB_DEVICE="$device"
-        fi
-            # Determinar el tipo de sistema de archivos
-            case $format_for_fstab in
-                "mkfs.fat32"|"mkfs.fat16"|"vfat")
-                    FS_TYPE="vfat"
-                    echo "$FSTAB_DEVICE $mountpoint vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
-                    ;;
-                "mkfs.ext4"|"mkfs.ext3"|"mkfs.ext2"|"ext4"|"ext3"|"ext2")
-                    if [[ "$format_for_fstab" =~ ^mkfs\. ]]; then
-                        FS_TYPE="${format_for_fstab#mkfs.}"
-                    else
-                        FS_TYPE="$format_for_fstab"
-                    fi
-                    if [ "$mountpoint" = "/" ]; then
-                        echo "$FSTAB_DEVICE / $FS_TYPE rw,relatime 0 1" >> /mnt/etc/fstab
-                    else
-                        echo "$FSTAB_DEVICE $mountpoint $FS_TYPE rw,relatime 0 2" >> /mnt/etc/fstab
-                    fi
-                    ;;
-                "mkfs.btrfs"|"btrfs")
-                    if [ "$mountpoint" = "/" ]; then
-                        echo "$FSTAB_DEVICE $mountpoint btrfs rw,noatime,subvol=@,compress=zstd:3,space_cache=v2,autodefrag 0 1" >> /mnt/etc/fstab
-                        echo -e "${GREEN}✓ Entrada fstab para btrfs root con subvolumen @: $FSTAB_DEVICE${NC}"
-                    else
-                        echo "$FSTAB_DEVICE $mountpoint btrfs rw,noatime,compress=zstd:3,space_cache=v2,autodefrag 0 2" >> /mnt/etc/fstab
-                    fi
-                    ;;
-                "mkfs.xfs"|"xfs")
-                    echo "$FSTAB_DEVICE $mountpoint xfs rw,relatime 0 2" >> /mnt/etc/fstab
-                    ;;
-                "mkfs.f2fs"|"f2fs")
-                    echo "$FSTAB_DEVICE $mountpoint f2fs rw,relatime 0 2" >> /mnt/etc/fstab
-                    ;;
-                "mkfs.ntfs"|"ntfs")
-                    echo "$FSTAB_DEVICE $mountpoint ntfs rw,relatime 0 2" >> /mnt/etc/fstab
-                    ;;
-                "mkfs.reiserfs"|"reiserfs")
-                    echo "$FSTAB_DEVICE $mountpoint reiserfs rw,relatime 0 2" >> /mnt/etc/fstab
-                    ;;
-                "mkfs.jfs"|"jfs")
-                    echo "$FSTAB_DEVICE $mountpoint jfs rw,relatime 0 2" >> /mnt/etc/fstab
-                    ;;
-                *)
-                    echo -e "${YELLOW}ADVERTENCIA: Sistema de archivos no reconocido ($format_for_fstab) para $device${NC}"
-                    echo -e "${YELLOW}Usando opciones genéricas en fstab${NC}"
-                    if [ "$mountpoint" = "/" ]; then
-                        echo "$FSTAB_DEVICE / $format_for_fstab rw,relatime 0 1" >> /mnt/etc/fstab
-                    else
-                        echo "$FSTAB_DEVICE $mountpoint $format_for_fstab rw,relatime 0 2" >> /mnt/etc/fstab
-                    fi
-                    ;;
-            esac
-    done
-
-    # Agregar particiones swap
-    for partition_config in "${PARTITIONS[@]}"; do
-        IFS=' ' read -r device format mountpoint <<< "$partition_config"
-
-        if [ "$mountpoint" = "swap" ]; then
-            SWAP_UUID=$(blkid -s UUID -o value $device)
-            if [ -n "$SWAP_UUID" ]; then
-                echo "UUID=$SWAP_UUID none swap defaults,pri=10 0 0" >> /mnt/etc/fstab
-            fi
-        fi
-    done
-
-    echo -e "${GREEN}✓ fstab generado para particionado manual${NC}"
-else
-    # Usar genfstab para modos automáticos
-    genfstab -U /mnt > /mnt/etc/fstab
-
-    # Modificar prioridad del swap tradicional de -2 a 10 (menor que zram que tiene 100)
+# Modificar prioridad del swap tradicional de -2 a 10 (menor que zram que tiene 100)
+if grep -q "swap" /mnt/etc/fstab; then
     echo -e "${CYAN}Configurando prioridad del swap tradicional a 10...${NC}"
     sed -i 's/\(.*swap.*defaults\)\(.*0.*0\)/\1,pri=10\2/' /mnt/etc/fstab
     echo -e "${GREEN}✓ Prioridad del swap tradicional configurada a 10${NC}"
-
-    # Verificar UUIDs de swap en fstab después de genfstab
-    echo -e "${CYAN}Verificando UUIDs de swap en fstab...${NC}"
-
-    # Extraer líneas de swap del fstab
-    SWAP_LINES=$(grep -E "^UUID=.*swap" /mnt/etc/fstab 2>/dev/null || true)
-
-    if [ -n "$SWAP_LINES" ]; then
-        echo "$SWAP_LINES" | while IFS= read -r swap_line; do
-            SWAP_UUID=$(echo "$swap_line" | grep -o 'UUID=[a-fA-F0-9-]*' | cut -d'=' -f2)
-
-            if [ -n "$SWAP_UUID" ]; then
-                # Verificar si el UUID existe en el sistema
-                if ! blkid | grep -q "$SWAP_UUID"; then
-                    echo -e "${YELLOW}WARNING: UUID de swap $SWAP_UUID no encontrado en el sistema${NC}"
-                    echo -e "${YELLOW}Esto podría causar problemas durante el boot${NC}"
-
-                    # Intentar encontrar particiones swap activas para corregir
-                    ACTIVE_SWAP=$(swapon --show=NAME --noheadings 2>/dev/null | head -n 1)
-                    if [ -n "$ACTIVE_SWAP" ]; then
-                        REAL_UUID=$(blkid -s UUID -o value "$ACTIVE_SWAP" 2>/dev/null)
-                        if [ -n "$REAL_UUID" ]; then
-                            echo -e "${CYAN}Corrigiendo UUID de swap en fstab: $REAL_UUID${NC}"
-                            sed -i "s/UUID=$SWAP_UUID/UUID=$REAL_UUID/g" /mnt/etc/fstab
-                        fi
-                    fi
-                else
-                    echo -e "${GREEN}✓ UUID de swap válido: $SWAP_UUID${NC}"
-                fi
-            fi
-        done
-    fi
 fi
+
+echo -e "${GREEN}✓ fstab generado correctamente${NC}"
 
 echo ""
 chroot /mnt /bin/bash -c "cat /etc/fstab"
@@ -4557,6 +4416,37 @@ else
     echo -e "${YELLOW}El sistema podría tener problemas durante el boot${NC}"
     echo -e "${CYAN}Presiona Enter para continuar o Ctrl+C para abortar...${NC}"
     read
+fi
+
+
+# Optimizaciones específicas para particionado manual con BTRFS
+if [ "$PARTITION_MODE" = "manual" ]; then
+    # Verificar si hay particiones btrfs configuradas
+    HAS_BTRFS=false
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+        if [ "$format" = "mkfs.btrfs" ] || [ "$format" = "btrfs" ]; then
+            HAS_BTRFS=true
+            break
+        fi
+    done
+
+    if [ "$HAS_BTRFS" = true ]; then
+        # Optimizar fstab para BTRFS
+        echo -e "${CYAN}Optimizando fstab para BTRFS...${NC}"
+        chroot /mnt /bin/bash -c "sed -i 's/relatime/noatime/g' /etc/fstab"
+
+        # Agregar opciones de montaje optimizadas para todos los subvolúmenes
+        chroot /mnt /bin/bash -c "sed -i 's/subvol=@,/subvol=@,compress=zstd:3,space_cache=v2,autodefrag,/' /etc/fstab" 2>/dev/null || true
+
+        # Verificar configuración final de fstab
+        echo -e "${CYAN}Verificando configuración final de fstab...${NC}"
+        if chroot /mnt /bin/bash -c "mount -a --fake" 2>/dev/null; then
+            echo -e "${GREEN}✓ Configuración fstab válida${NC}"
+        else
+            echo -e "${YELLOW}Warning: Posibles issues en fstab, pero continuando...${NC}"
+        fi
+    fi
 fi
 
 sleep 3
