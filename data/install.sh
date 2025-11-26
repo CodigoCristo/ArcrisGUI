@@ -4408,9 +4408,9 @@ if [ "$PARTITION_MODE" = "manual" ]; then
                     ;;
                 "mkfs.btrfs"|"btrfs")
                     if [ "$mountpoint" = "/" ]; then
-                        echo "UUID=$PART_UUID $mountpoint btrfs rw,noatime,compress=zstd,space_cache=v2,subvol=@ 0 1" >> /mnt/etc/fstab
+                        echo "UUID=$PART_UUID $mountpoint btrfs rw,noatime,subvol=@,compress=zstd:3,space_cache=v2,autodefrag 0 1" >> /mnt/etc/fstab
                     else
-                        echo "UUID=$PART_UUID $mountpoint btrfs rw,noatime,compress=zstd,space_cache=v2 0 2" >> /mnt/etc/fstab
+                        echo "UUID=$PART_UUID $mountpoint btrfs rw,noatime,compress=zstd:3,space_cache=v2,autodefrag 0 2" >> /mnt/etc/fstab
                     fi
                     ;;
                 "mkfs.xfs"|"xfs")
@@ -6269,6 +6269,8 @@ case "$INSTALLATION_TYPE" in
         install_pacman_chroot_with_retry "xorg-xwayland"      # Compatibilidad con apps X11
         install_pacman_chroot_with_retry "ffmpegthumbs"
         install_pacman_chroot_with_retry "ffmpegthumbnailer"
+        install_pacman_chroot_with_retry "poppler"
+        install_pacman_chroot_with_retry "mediainfo"
         install_pacman_chroot_with_retry "freetype2"
         install_pacman_chroot_with_retry "libgsf"
         install_pacman_chroot_with_retry "libnotify"
@@ -6289,7 +6291,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "nautilus"
                 install_pacman_chroot_with_retry "gvfs"
                 install_pacman_chroot_with_retry "gvfs-goa"
-                install_pacman_chroot_with_retry "gnome-console"
+                install_pacman_chroot_with_retry "ptyxis"
                 install_pacman_chroot_with_retry "gnome-text-editor"
                 install_pacman_chroot_with_retry "gnome-calculator"
                 install_pacman_chroot_with_retry "gnome-system-monitor"
@@ -6304,10 +6306,10 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "xdg-desktop-portal-gnome"
                 install_pacman_chroot_with_retry "gnome-shell-extensions"
                 install_pacman_chroot_with_retry "gnome-browser-connector"
-                install_pacman_chroot_with_retry "mission-center"
                 install_pacman_chroot_with_retry "loupe"
                 install_pacman_chroot_with_retry "showtime"
                 install_pacman_chroot_with_retry "papers"
+                install_pacman_chroot_with_retry "sushi"
                 echo "Installing extension-manager..."
                 install_pacman_chroot_with_retry "extension-manager"
                 chroot /mnt /bin/bash -c "systemctl enable gdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
@@ -7655,8 +7657,8 @@ install_pacman_chroot_with_retry "noto-fonts"
 install_pacman_chroot_with_retry "gnu-free-fonts"
 install_pacman_chroot_with_retry "ttf-0xproto-nerd"
 # Iconos
-install_pacman_chroot_with_retry "ttf-nerd-fonts-symbols-common"
-install_pacman_chroot_with_retry "ttf-nerd-fonts-symbols-mono"
+install_pacman_chroot_with_retry "ttf-nerd-fonts-symbols"
+install_pacman_chroot_with_retry "ttf-jetbrains-mono-nerd"
 sleep 2
 clear
 configurar_teclado
