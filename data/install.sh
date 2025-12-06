@@ -3944,20 +3944,11 @@ partition_manual() {
                 ;;
             "mkfs.btrfs")
                 mkfs.btrfs -f $device
-                # Crear subvolumen de root si es la partición raíz
-                if [ "$mountpoint" = "/" ]; then
-                    echo -e "${CYAN}Creando subvolumen @ para btrfs...${NC}"
-                    # Montar en /mnt para crear subvolumen
-                    mount $device /mnt
-                    # Crear subvolumen @
-                    btrfs subvolume create /mnt/@
-                    # Desmontar para remontaje posterior con subvolumen
-                    umount /mnt
-                    echo -e "${GREEN}✓ Subvolumen @ creado en $device${NC}"
-                fi
                 ;;
             "mkfs.xfs")
                 mkfs.xfs -f $device
+                # Aplicar optimizaciones XFS
+                xfs_admin -O bigtime=1 $device
                 ;;
             "mkfs.f2fs")
                 mkfs.f2fs -f $device
@@ -4040,10 +4031,29 @@ partition_manual() {
         IFS=' ' read -r device format mountpoint <<< "$partition_config"
         if [ "$mountpoint" = "/" ]; then
             echo -e "${GREEN}| Montando raíz: $device -> /mnt |${NC}"
-            # Si es btrfs, montar el subvolumen @
+            # Si es btrfs, crear subvolúmenes primero
             if [ "$format" = "mkfs.btrfs" ]; then
+                echo -e "${CYAN}Configurando subvolúmenes BTRFS...${NC}"
+
+                # Crear punto de montaje temporal
+                ROOT_MOUNT_POINT="/mnt/btrfs_root_temp"
+                mkdir -p "$ROOT_MOUNT_POINT"
+
+                # Montar filesystem btrfs temporalmente
+                mount -t btrfs -o noatime,compress=zstd:3,space_cache=v2,autodefrag $device "$ROOT_MOUNT_POINT"
+
+                # Crear subvolúmenes BTRFS
+                echo -e "${CYAN}Creando subvolúmenes BTRFS...${NC}"
+                btrfs subvolume create "$ROOT_MOUNT_POINT/@"
+                btrfs subvolume create "$ROOT_MOUNT_POINT/@var_log"
+                btrfs subvolume create "$ROOT_MOUNT_POINT/@var_cache"
+
+                # Desmontar y remontar con subvolumen root
+                umount "$ROOT_MOUNT_POINT"
+                rmdir "$ROOT_MOUNT_POINT"
+
                 echo -e "${CYAN}Montando subvolumen @ de btrfs con opciones optimizadas...${NC}"
-                mount -o noatime,subvol=@,compress=zstd:3,space_cache=v2,autodefrag $device /mnt
+                mount -t btrfs -o noatime,subvol=@,compress=zstd:3,space_cache=v2,autodefrag $device /mnt
             else
                 mount $device /mnt
             fi
@@ -4051,31 +4061,84 @@ partition_manual() {
         fi
     done
 
-    # 2. Montar /boot si existe
+    # 2. Montar EFI/boot partition después de raíz
     for partition_config in "${PARTITIONS[@]}"; do
         IFS=' ' read -r device format mountpoint <<< "$partition_config"
         if [ "$mountpoint" = "/boot" ]; then
             echo -e "${GREEN}| Montando /boot: $device -> /mnt/boot |${NC}"
             mkdir -p /mnt/boot
-            mount $device /mnt/boot
+            # Si es FAT32 (EFI), usar opciones específicas
+            if [ "$format" = "mkfs.fat32" ]; then
+                mount -t vfat -o defaults,umask=0077 $device /mnt/boot
+            else
+                mount $device /mnt/boot
+            fi
             break
         fi
     done
 
-    # Nota: Ya no existe /boot/EFI, ahora /boot con fat32 actúa como EFI en UEFI
+    # 3. Montar HOME partition si existe
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+        if [ "$mountpoint" = "/home" ]; then
+            echo -e "${GREEN}| Montando /home: $device -> /mnt/home |${NC}"
+            mkdir -p /mnt/home
+            # Opciones específicas según filesystem
+            if [ "$format" = "mkfs.xfs" ]; then
+                mount -t xfs -o defaults,noatime $device /mnt/home
+            elif [ "$format" = "mkfs.btrfs" ]; then
+                mount -t btrfs -o noatime,compress=zstd:3,space_cache=v2,autodefrag $device /mnt/home
+            else
+                mount $device /mnt/home
+            fi
+            break
+        fi
+    done
 
-    # 4. Montar todas las demás particiones
+    # 4. Montar subvolúmenes adicionales de BTRFS si la raíz es BTRFS
+    ROOT_IS_BTRFS=false
+    ROOT_DEVICE=""
+    for partition_config in "${PARTITIONS[@]}"; do
+        IFS=' ' read -r device format mountpoint <<< "$partition_config"
+        if [ "$mountpoint" = "/" ] && [ "$format" = "mkfs.btrfs" ]; then
+            ROOT_IS_BTRFS=true
+            ROOT_DEVICE="$device"
+            break
+        fi
+    done
+
+    if [ "$ROOT_IS_BTRFS" = true ]; then
+        echo -e "${CYAN}Montando subvolúmenes adicionales de BTRFS...${NC}"
+
+        # Montar @var_log
+        mkdir -p /mnt/var/log
+        mount -t btrfs -o noatime,subvol=@var_log,compress=zstd:3,space_cache=v2,autodefrag "$ROOT_DEVICE" /mnt/var/log
+
+        # Montar @var_cache
+        mkdir -p /mnt/var/cache
+        mount -t btrfs -o noatime,subvol=@var_cache,compress=zstd:3,space_cache=v2,autodefrag "$ROOT_DEVICE" /mnt/var/cache
+    fi
+
+    # 5. Montar todas las demás particiones (/var, /tmp, /usr, /opt, etc.)
     for partition_config in "${PARTITIONS[@]}"; do
         IFS=' ' read -r device format mountpoint <<< "$partition_config"
 
         # Saltar las ya montadas y swap
-        if [ "$mountpoint" = "/" ] || [ "$mountpoint" = "/boot" ] || [ "$mountpoint" = "swap" ]; then
+        if [ "$mountpoint" = "/" ] || [ "$mountpoint" = "/boot" ] || [ "$mountpoint" = "/home" ] || [ "$mountpoint" = "swap" ]; then
             continue
         fi
 
         echo -e "${GREEN}| Montando: $device -> /mnt$mountpoint |${NC}"
         mkdir -p /mnt$mountpoint
-        mount $device /mnt$mountpoint
+
+        # Opciones específicas según filesystem y punto de montaje
+        if [ "$format" = "mkfs.xfs" ]; then
+            mount -t xfs -o defaults,noatime $device /mnt$mountpoint
+        elif [ "$format" = "mkfs.btrfs" ]; then
+            mount -t btrfs -o noatime,compress=zstd:3,space_cache=v2,autodefrag $device /mnt$mountpoint
+        else
+            mount $device /mnt$mountpoint
+        fi
     done
 
     lsblk -o NAME,FSTYPE,SIZE,MOUNTPOINT
