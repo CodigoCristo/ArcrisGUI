@@ -6268,6 +6268,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "gnome-shell"
                 install_pacman_chroot_with_retry "gnome-control-center"
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
+                install_pacman_chroot_with_retry "gnome-keyring"
                 install_pacman_chroot_with_retry "nautilus"
                 install_pacman_chroot_with_retry "gvfs"
                 install_pacman_chroot_with_retry "gvfs-goa"
@@ -6308,6 +6309,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "gvfs-goa"
                 install_pacman_chroot_with_retry "gnome-console"
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
+                install_pacman_chroot_with_retry "gnome-keyring"
                 install_pacman_chroot_with_retry "loupe"
                 install_pacman_chroot_with_retry "showtime"
                 install_pacman_chroot_with_retry "papers"
@@ -6345,6 +6347,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "gnome-console"
                 install_pacman_chroot_with_retry "gnome-screenshot"
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
+                install_pacman_chroot_with_retry "gnome-keyring"
                 install_pacman_chroot_with_retry "lightdm"
                 install_pacman_chroot_with_retry "lightdm-slick-greeter"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
@@ -6364,6 +6367,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "power-profiles-daemon"
                 install_pacman_chroot_with_retry "cosmic-icon-theme"
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
+                install_pacman_chroot_with_retry "gnome-keyring"
                 install_pacman_chroot_with_retry "loupe"
                 install_pacman_chroot_with_retry "showtime"
                 install_pacman_chroot_with_retry "papers"
@@ -6387,6 +6391,7 @@ case "$INSTALLATION_TYPE" in
                 echo -e "${CYAN}Instalando UKUI Desktop...${NC}"
                 install_pacman_chroot_with_retry "ukui"
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
+                install_pacman_chroot_with_retry "gnome-keyring"
                 install_pacman_chroot_with_retry "loupe"
                 install_pacman_chroot_with_retry "showtime"
                 install_pacman_chroot_with_retry "papers"
@@ -6411,6 +6416,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "showtime"
                 install_pacman_chroot_with_retry "papers"
                 install_pacman_chroot_with_retry "gnome-console"
+                install_pacman_chroot_with_retry "gnome-keyring"
                 install_pacman_chroot_with_retry "lightdm"
                 install_pacman_chroot_with_retry "lightdm-pantheon-greeter"
                 chroot /mnt /bin/bash -c "systemctl enable lightdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
@@ -6432,6 +6438,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "ephoto"            # Visor de imágenes EFL
                 install_pacman_chroot_with_retry "rage"              # Reproductor de video EFL (opcional)
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
+                install_pacman_chroot_with_retry "gnome-keyring"
                 sed -i 's/^#greeter-session=example-gtk-gnome$/greeter-session=lightdm-slick-greeter/' /mnt/etc/lightdm/lightdm.conf
                 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpge
                 chroot /mnt /bin/bash -c "sudo -u $USER touch /etc/lightdm/slick-greeter.conf"
@@ -6616,6 +6623,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "papers"
                 install_pacman_chroot_with_retry "pavucontrol"
                 install_pacman_chroot_with_retry "polkit-gnome"          # Autenticación
+                install_pacman_chroot_with_retry "gnome-keyring"
                 install_pacman_chroot_with_retry "light-locker"
                 install_pacman_chroot_with_retry "xfce4-screensaver"
                 # Soporte Wayland
@@ -6657,6 +6665,7 @@ case "$INSTALLATION_TYPE" in
         install_pacman_chroot_with_retry "libgsf"
         install_pacman_chroot_with_retry "gdk-pixbuf2"
         install_pacman_chroot_with_retry "fontconfig"
+        install_pacman_chroot_with_retry "gnome-keyring"
         # Instalar Ly display manager
         echo -e "${CYAN}Instalando Ly display manager...${NC}"
         install_yay_chroot_with_retry "ly"
@@ -6833,6 +6842,7 @@ case "$INSTALLATION_TYPE" in
                 chroot /mnt /bin/bash -c "mkdir -p /home/$USER/.config/src && chown $USER:$USER /home/$USER/.config/src"
 
                 # Compilar e instalar dwl
+                # https://github.com/yukiisen/waydots
                 chroot /mnt /bin/bash -c "cd /home/$USER/.config/src && sudo -u $USER git clone https://github.com/CodigoCristo/dwl"
                 chroot /mnt /bin/bash -c "cd /home/$USER/.config/src/dwl && sudo -u $USER make clean && sudo make install"
 
