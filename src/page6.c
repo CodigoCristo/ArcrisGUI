@@ -421,7 +421,7 @@ void page6_display_current_kernel(void)
 {
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "data/variables.sh";
+    const gchar *config_path = "data/bash/variables.sh";
     gchar *current_kernel = g_strdup("linux"); // Por defecto como copia
     gboolean found = FALSE;
 
@@ -693,7 +693,7 @@ void load_page6_switches_from_file(void)
 
     LOG_INFO("=== load_page6_switches_from_file INICIADO ===");
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
 
     // Variables por defecto
     gboolean essential_apps_enabled = TRUE;  // Aplicaciones esenciales activadas por defecto
@@ -767,7 +767,7 @@ void save_page6_switches_to_file(void)
 
     LOG_INFO("=== save_page6_switches_to_file INICIADO ===");
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
 
     // Leer el archivo existente para preservar todas las variables
     gchar *selected_disk_value = NULL;
@@ -1291,7 +1291,7 @@ void save_page6_switches_to_file(void)
     g_free(encryption_password_value);
     g_free(partitions_array_value);
 
-    LOG_INFO("Variables de página 6 guardadas exitosamente en data/variables.sh");
+    LOG_INFO("Variables de página 6 guardadas exitosamente en data/bash/variables.sh");
     LOG_INFO("=== save_page6_switches_to_file FINALIZADO ===");
 }
 

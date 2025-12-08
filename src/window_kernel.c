@@ -315,7 +315,7 @@ gboolean window_kernel_load_from_variables(WindowKernelData *data)
     
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "data/variables.sh";
+    const gchar *config_path = "data/bash/variables.sh";
     
     // Leer el archivo variables.sh
     if (!g_file_get_contents(config_path, &config_content, NULL, &error)) {
@@ -364,7 +364,7 @@ gboolean window_kernel_save_kernel_variable(KernelType kernel)
 {
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "data/variables.sh";
+    const gchar *config_path = "data/bash/variables.sh";
     const char *kernel_name = window_kernel_get_kernel_name(kernel);
     
     // Leer el archivo actual

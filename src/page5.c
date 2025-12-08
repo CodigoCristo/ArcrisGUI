@@ -463,7 +463,7 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
 {
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "data/variables.sh";
+    const gchar *config_path = "data/bash/variables.sh";
 
     // Leer el archivo actual
     if (!g_file_get_contents(config_path, &config_content, NULL, &error)) {
@@ -577,7 +577,7 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
 {
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "data/variables.sh";
+    const gchar *config_path = "data/bash/variables.sh";
 
     // Leer el archivo actual
     if (!g_file_get_contents(config_path, &config_content, NULL, &error)) {
@@ -682,7 +682,7 @@ static gboolean page5_save_installation_type_variable(InstallationType type)
 {
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "data/variables.sh";
+    const gchar *config_path = "data/bash/variables.sh";
 
 
 
@@ -770,7 +770,7 @@ static gboolean page5_remove_variable_from_config(const char* variable_name)
 {
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "data/variables.sh";
+    const gchar *config_path = "data/bash/variables.sh";
 
     LOG_INFO("=== Iniciando eliminación de variable: %s ===", variable_name);
 

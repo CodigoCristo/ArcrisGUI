@@ -242,7 +242,7 @@ partition_manager_save_to_variables(PartitionManager *manager)
 {
     if (!manager) return FALSE;
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
 
     // Leer el archivo existente para preservar otras variables
     GString *existing_content = g_string_new("");
@@ -337,7 +337,7 @@ partition_manager_load_from_variables(PartitionManager *manager)
 {
     if (!manager) return FALSE;
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
     FILE *file = fopen(bash_file_path, "r");
 
     if (!file) {

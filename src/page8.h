@@ -19,7 +19,7 @@ typedef struct _Page8Data {
     
     // Widgets del carousel de imágenes
     AdwCarousel *image_carousel;
-    AdwCarouselIndicatorDots *carousel_indicators;
+    AdwCarouselIndicatorLines *carousel_indicators;
     
     // Imágenes del carousel
     GtkPicture *carousel_image1;

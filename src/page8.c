@@ -80,7 +80,7 @@ void page8_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
 
     // Obtener widgets del carousel
     g_page8_data->image_carousel = ADW_CAROUSEL(gtk_builder_get_object(page_builder, "image_carousel"));
-    g_page8_data->carousel_indicators = ADW_CAROUSEL_INDICATOR_DOTS(gtk_builder_get_object(page_builder, "carousel_indicators"));
+    g_page8_data->carousel_indicators = ADW_CAROUSEL_INDICATOR_LINES(gtk_builder_get_object(page_builder, "carousel_indicators"));
     LOG_INFO("DEBUG: main_stack = %p, terminal_button = %p, image_carousel = %p",
              g_page8_data->main_stack, g_page8_data->terminal_button, g_page8_data->image_carousel);
 
@@ -539,7 +539,7 @@ void page8_execute_install_script(Page8Data *data)
     LOG_INFO("Ejecutando script de instalación en terminal VTE");
 
     // Ruta al script de instalación
-    gchar *script_path = g_build_filename(g_get_current_dir(), "data", "install.sh", NULL);
+    gchar *script_path = g_build_filename(g_get_current_dir(), "data", "bash", "install.sh", NULL);
 
     LOG_INFO("Ruta del script: %s", script_path);
 

@@ -8,7 +8,7 @@
 static WindowProgramExtraData *global_program_extra_data = NULL;
 
 // Constantes
-#define VARIABLES_FILE_PATH "./data/variables.sh"
+#define VARIABLES_FILE_PATH "./data/bash/variables.sh"
 
 WindowProgramExtraData* window_program_extra_new(void)
 {

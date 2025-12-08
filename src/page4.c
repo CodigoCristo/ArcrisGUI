@@ -642,7 +642,7 @@ gboolean page4_save_user_data(Page4Data *data)
     gsize file_size = 0;
     GError *error = NULL;
 
-    if (!g_file_get_contents("data/variables.sh", &file_content, &file_size, &error)) {
+    if (!g_file_get_contents("data/bash/variables.sh", &file_content, &file_size, &error)) {
         LOG_WARNING("No se pudo leer variables.sh existente: %s", error ? error->message : "Error desconocido");
         g_clear_error(&error);
         file_content = g_strdup("#!/bin/bash\n# Variables de configuración generadas por Arcris\n# Archivo generado automáticamente - No editar manualmente\n\n");
@@ -747,7 +747,7 @@ gboolean page4_save_user_data(Page4Data *data)
     }
 
     // Escribir el archivo actualizado
-    if (!g_file_set_contents("data/variables.sh", new_content->str, -1, &error)) {
+    if (!g_file_set_contents("data/bash/variables.sh", new_content->str, -1, &error)) {
         LOG_ERROR("Error al escribir variables.sh: %s", error ? error->message : "Error desconocido");
         g_clear_error(&error);
         g_strfreev(lines);
@@ -763,7 +763,7 @@ gboolean page4_save_user_data(Page4Data *data)
     g_free(driver_wifi_value);
     g_free(driver_bluetooth_value);
 
-    LOG_INFO("Datos del usuario guardados correctamente en data/variables.sh");
+    LOG_INFO("Datos del usuario guardados correctamente en data/bash/variables.sh");
     LOG_INFO("Usuario: %s", username);
     LOG_INFO("Hostname: %s", hostname ? hostname : "arcris");
 

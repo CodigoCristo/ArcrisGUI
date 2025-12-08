@@ -409,7 +409,7 @@ void save_combo_selections_to_file(void)
 
     LOG_INFO("=== save_combo_selections_to_file INICIADO ===");
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
 
     // Leer el archivo existente para preservar SELECTED_DISK, PARTITION_MODE, INSTALLATION_TYPE, DESKTOP_ENVIRONMENT, WINDOW_MANAGER y variables de usuario
     gchar *selected_disk_value = NULL;

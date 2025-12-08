@@ -405,7 +405,7 @@ disk_manager_save_to_variables(DiskManager *manager)
 {
     if (!manager) return FALSE;
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
 
     // Leer el archivo existente para preservar otras variables
     GString *existing_content = g_string_new("");
@@ -497,7 +497,7 @@ disk_manager_load_from_variables(DiskManager *manager)
 {
     if (!manager) return FALSE;
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
     FILE *file = fopen(bash_file_path, "r");
 
     if (!file) {

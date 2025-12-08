@@ -579,7 +579,7 @@ gboolean window_hardware_load_from_variables(WindowHardwareData *data)
     if (!data) return FALSE;
 
     // Cargar configuración desde variables.sh
-    const char *variables_path = "data/variables.sh";
+    const char *variables_path = "data/bash/variables.sh";
     gchar *config_content = NULL;
     GError *error = NULL;
 
@@ -738,7 +738,7 @@ gboolean window_hardware_save_driver_variables(WindowHardwareData *data)
 {
     if (!data) return FALSE;
 
-    const char *variables_path = "data/variables.sh";
+    const char *variables_path = "data/bash/variables.sh";
     gchar *config_content = NULL;
     GError *error = NULL;
 
@@ -889,7 +889,7 @@ WindowHardwareData* window_hardware_get_instance(void)
 // Función para inicializar las variables de drivers por defecto al inicio de la aplicación
 gboolean window_hardware_init_default_variables(void)
 {
-    const char *variables_path = "data/variables.sh";
+    const char *variables_path = "data/bash/variables.sh";
     gchar *config_content = NULL;
     GError *error = NULL;
 
@@ -968,7 +968,7 @@ gboolean window_hardware_init_default_variables(void)
 // Función para inicialización automática al inicio de la aplicación
 gboolean window_hardware_init_auto_variables(void)
 {
-    const char *variables_path = "data/variables.sh";
+    const char *variables_path = "data/bash/variables.sh";
     gchar *config_content = NULL;
     GError *error = NULL;
 

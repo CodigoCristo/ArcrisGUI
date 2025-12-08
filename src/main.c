@@ -37,6 +37,65 @@ static void cleanup_application(void)
     LOG_INFO("Recursos limpiados correctamente");
 }
 
+// Función para configurar CSS global personalizado
+static void setup_global_css(void)
+{
+    LOG_INFO("Configurando CSS global personalizado");
+    
+    // CSS para mejorar la compatibilidad y evitar errores de color
+    const gchar *global_css = 
+        "/* CSS global para mejorar compatibilidad */"
+        "window { "
+        "  background-color: @window_bg_color; "
+        "} "
+        "/* Asegurar que los colores sean válidos */"
+        ".error { "
+        "  color: @error_color; "
+        "  border-color: @error_color; "
+        "} "
+        ".success { "
+        "  color: @success_color; "
+        "  border-color: @success_color; "
+        "} "
+        ".pill { "
+        "  border-radius: 9999px; "
+        "} "
+        ".suggested-action { "
+        "  background: @accent_bg_color; "
+        "  color: @accent_fg_color; "
+        "} "
+        ".flat { "
+        "  border: none; "
+        "  background: transparent; "
+        "} "
+        ".circular { "
+        "  border-radius: 50%; "
+        "}";
+    
+    GtkCssProvider *provider = gtk_css_provider_new();
+    GError *error = NULL;
+    
+    gtk_css_provider_load_from_string(provider, global_css);
+    if (error) {
+        LOG_WARNING("Error al cargar CSS global personalizado: %s", error->message);
+        g_error_free(error);
+        g_object_unref(provider);
+        return;
+    }
+    
+    GdkDisplay *display = gdk_display_get_default();
+    if (display) {
+        gtk_style_context_add_provider_for_display(display,
+                                                    GTK_STYLE_PROVIDER(provider),
+                                                    GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+        LOG_INFO("CSS global aplicado correctamente");
+    } else {
+        LOG_WARNING("No se pudo obtener el display para CSS global");
+    }
+    
+    g_object_unref(provider);
+}
+
 // Función para cerrar la aplicación con Ctrl+Q
 static void quit_action(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
@@ -71,14 +130,20 @@ static void activate_cb(GtkApplication *app)
         LOG_WARNING("No se pudo obtener el tema de iconos");
     }
 
-    // Configurar tema dark adwaita por defecto
+    // Configurar tema dark adwaita por defecto y minimizar warnings
     AdwStyleManager *style_manager = adw_style_manager_get_default();
     if (style_manager) {
+        // Configurar tema oscuro
         adw_style_manager_set_color_scheme(style_manager, ADW_COLOR_SCHEME_FORCE_DARK);
         LOG_INFO("Tema dark adwaita configurado por defecto");
+        
+        // El tema de iconos se configura automáticamente con el tema del sistema
     } else {
         LOG_WARNING("No se pudo obtener el style manager para configurar el tema");
     }
+
+    // Configurar CSS global personalizado
+    setup_global_css();
 
     // Cargar la interfaz principal desde el archivo UI
     GtkBuilder *builder = gtk_builder_new_from_resource(RESOURCE_PATH_WINDOW);

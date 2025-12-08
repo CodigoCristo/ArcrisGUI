@@ -8,7 +8,7 @@
 static WindowAppsData *global_apps_data = NULL;
 
 // Constantes
-#define VARIABLES_FILE_PATH "./data/variables.sh"
+#define VARIABLES_FILE_PATH "./data/bash/variables.sh"
 
 WindowAppsData* window_apps_new(void)
 {

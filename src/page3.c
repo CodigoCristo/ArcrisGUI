@@ -1628,7 +1628,7 @@ void page3_save_partition_mode(const gchar *partition_mode)
 
     LOG_INFO("Guardando PARTITION_MODE: %s", partition_mode);
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
 
     // Leer el archivo existente para preservar otras variables
     GString *existing_content = g_string_new("");
@@ -1829,7 +1829,7 @@ void page3_load_partition_mode(Page3Data *data)
     gchar *variables_content = NULL;
     GError *error = NULL;
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
     LOG_INFO("Intentando cargar archivo: %s", bash_file_path);
 
     if (g_file_get_contents(bash_file_path, &variables_content, NULL, &error)) {
@@ -2174,7 +2174,7 @@ void page3_update_encryption_variables(Page3Data *data)
     LOG_INFO("Actualizando contraseña de cifrado en variables.sh");
 
     // Actualizar archivo variables.sh con la contraseña
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
 
     // Leer archivo existente
     GString *existing_content = g_string_new("");
@@ -2233,7 +2233,7 @@ void page3_save_encryption_config(Page3Data *data)
 
     LOG_INFO("Guardando configuración de cifrado");
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
 
     // Leer el archivo existente para preservar otras variables
     GString *existing_content = g_string_new("");
@@ -2396,7 +2396,7 @@ void page3_create_encryption_variables(void)
 {
     LOG_INFO("Creando variables de cifrado iniciales");
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
 
     // Leer el archivo existente
     GString *existing_content = g_string_new("");

@@ -388,7 +388,7 @@ void load_system_variables_from_file(void)
 
     LOG_INFO("=== load_system_variables_from_file INICIADO ===");
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
     
     // Variables por defecto
     SystemShell shell = SHELL_BASH;
@@ -488,7 +488,7 @@ void save_system_variables_to_file(void)
 
     LOG_INFO("=== save_system_variables_to_file INICIADO ===");
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
 
     // Leer el archivo existente para preservar todas las variables existentes
     gchar *selected_disk_value = NULL;
