@@ -6559,6 +6559,10 @@ EOF
                 install_pacman_chroot_with_retry "dunst"              # Notificaciones
                 install_pacman_chroot_with_retry "maim"               # Capturas de pantalla
                 install_pacman_chroot_with_retry "xclip"              # Portapapeles
+                install_pacman_chroot_with_retry "picom"
+                install_pacman_chroot_with_retry "numlockx"
+                install_pacman_chroot_with_retry "flameshot"
+
 
                 # Apariencia y configuración
                 install_pacman_chroot_with_retry "lxappearance"       # Temas GTK
