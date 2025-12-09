@@ -6166,7 +6166,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "xterm" #Terminal para el entorno gráfico Xorg.
                 install_pacman_chroot_with_retry "network-manager-applet" #Para gestionar conexiones de red desde la bandeja del sistema.
                 install_pacman_chroot_with_retry "rofi" #Lanzadores de aplicaciones. Rofi es más moderno y configurable.
-                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
                 install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
                 install_pacman_chroot_with_retry "pavucontrol" #Control de volumen gráfico para PulseAudio/PipeWire.
                 install_pacman_chroot_with_retry "dunst" #Notificaciones en pantalla.
@@ -6199,7 +6198,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "xterm" #Terminal para el entorno gráfico Xorg.
                 install_pacman_chroot_with_retry "network-manager-applet" #Para gestionar conexiones de red desde la bandeja del sistema.
                 install_pacman_chroot_with_retry "rofi" #Lanzadores de aplicaciones. Rofi es más moderno y configurable.
-                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
                 install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
                 install_pacman_chroot_with_retry "pavucontrol" #Control de volumen gráfico para PulseAudio/PipeWire.
                 install_pacman_chroot_with_retry "dunst" #Notificaciones en pantalla.
@@ -6230,7 +6228,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "xterm" #Terminal para el entorno gráfico Xorg.
                 install_pacman_chroot_with_retry "network-manager-applet" #Para gestionar conexiones de red desde la bandeja del sistema.
                 install_pacman_chroot_with_retry "rofi" #Lanzadores de aplicaciones. Rofi es más moderno y configurable.
-                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
                 install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
                 install_pacman_chroot_with_retry "pavucontrol" #Control de volumen gráfico para PulseAudio/PipeWire.
                 install_pacman_chroot_with_retry "dunst" #Notificaciones en pantalla.
@@ -6268,7 +6265,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "xterm" #Terminal para el entorno gráfico Xorg.
                 install_pacman_chroot_with_retry "network-manager-applet" #Para gestionar conexiones de red desde la bandeja del sistema.
                 install_pacman_chroot_with_retry "rofi" #Lanzadores de aplicaciones. Rofi es más moderno y configurable.
-                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
                 install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
                 install_pacman_chroot_with_retry "pavucontrol" #Control de volumen gráfico para PulseAudio/PipeWire.
                 install_pacman_chroot_with_retry "dunst" #Notificaciones en pantalla.
@@ -6421,7 +6417,6 @@ EOF
                 install_pacman_chroot_with_retry "dmenu"
                 install_pacman_chroot_with_retry "xfce4-power-manager"
                 install_pacman_chroot_with_retry "volumeicon"
-                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
                 install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
                 install_pacman_chroot_with_retry "pavucontrol" #Control de volumen gráfico para PulseAudio/PipeWire.
                 install_pacman_chroot_with_retry "dunst" #Notificaciones en pantalla.
@@ -6457,7 +6452,6 @@ EOF
                 install_pacman_chroot_with_retry "python-psutil"      # Widgets de sistema (CPU, RAM)
                 install_pacman_chroot_with_retry "python-dbus-next"   # Notificaciones
                 install_pacman_chroot_with_retry "python-iwlib"       # Widget WiFi (opcional)
-                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
                 install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
 
                 # Lanzadores y utilidades
@@ -6557,7 +6551,6 @@ EOF
                 install_pacman_chroot_with_retry "cabal-install"      # Gestor de paquetes Haskell
 
                 # Compositor y fondos
-                install_pacman_chroot_with_retry "nitrogen"           # Gestor de fondos de pantalla
                 install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
 
                 # Lanzadores y utilidades
