@@ -2256,15 +2256,15 @@ guardar_configuraciones_xmonad() {
 
     # Crear configuración de XMonad
     echo "Creando configuración de XMonad..."
-    cp "xmonad/xmonad.hs" "$XMONAD_DIR/xmonad.hs"
+    cp /usr/share/arcrisgui/data/bash/xmonad/xmonad.hs "$XMONAD_DIR/xmonad.hs"
 
     # Crear configuración de XMobar
     echo "Creando configuración de XMobar..."
-    cp "xmonad/xmobarrc" "$XMOBAR_DIR/xmobarrc"
+    cp /usr/share/arcrisgui/data/bash/xmonad/xmobarrc "$XMOBAR_DIR/xmobarrc"
 
     # Crear .xinitrc
     echo "Creando archivo .xinitrc..."
-    cp "xmonad/xinitrc" "$USER_HOME/.xinitrc"
+    cp /usr/share/arcrisgui/data/bash/xmonad/xinitrc "$USER_HOME/.xinitrc"
 
     # Hacer .xinitrc ejecutable
     chmod +x "$USER_HOME/.xinitrc"
