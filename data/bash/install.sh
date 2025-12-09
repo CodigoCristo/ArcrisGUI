@@ -2268,7 +2268,7 @@ guardar_configuraciones_xmonad() {
 
     # Hacer .xinitrc ejecutable
     chmod +x "$USER_HOME/.xinitrc"
-
+    chroot /mnt /bin/bash -c "xmonad --recompile"
 
     # Ajustar permisos
     echo "Ajustando permisos..."
