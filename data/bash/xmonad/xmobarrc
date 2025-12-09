@@ -1,17 +1,17 @@
 Config {
 
     -- appearance
-        font =         "xft:Bitstream Vera Sans Mono:size=9:bold:antialias=true"
-    , bgColor =      "black"
+	font =		"JetBrainsMono Nerd Font Reguar 12"
+    , bgColor =      "#151b23"
     , fgColor =      "#ABABAB"
     , position =     Top
-    , border =       BottomB
+    , border =       NoBorder
     , borderColor =  "#646464"
 
     -- layout
     , sepChar =  "%"   -- delineator between plugin names and straight text
     , alignSep = "}{"  -- separator between left-right alignment
-    , template = "<fc=#ABABAB>%StdinReader%</fc>  }{ | %multicpu% | %memory% | <fn=1>💾</fn> %disku% | <fn=1>🔊</fn> %alsa:default:Master% | <fn=1>📦</fn> %pacman% | %date% || %kbd% "
+    , template = "<fc=#ABABAB>%StdinReader%</fc>  }{ | %multicpu% | %memory% | <fn=1></fn>  %disku% | <fn=1> </fn> %alsa:default:Master% | <fn=1></fn>  %pacman% | %date% | %kbd% "
 
     -- general behavior
     , lowerOnStart =     True    -- send to bottom of window stack on start
@@ -122,7 +122,7 @@ Config {
 
         -- time and date indicator
         --   (%F = y-m-d date, %a = day of week, %T = h:m:s time)
-        , Run Date          "<fc=#ABABAB>%a %d/%m/%Y 🕐 %H:%M:%S</fc>" "date" 10
+        , Run Date          "<fc=#ABABAB>%d/%m/%Y     %H:%M:%S</fc>" "date" 10
 
         -- keyboard layout indicator
         , Run Kbd            [ ("us(dvorak)" , "<fc=#00008B>DV</fc>")

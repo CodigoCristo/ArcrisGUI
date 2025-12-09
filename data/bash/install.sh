@@ -7172,8 +7172,11 @@ fi
 sleep 3
 clear
 cp /usr/share/arcrisgui/data/config/pacman-chroot.conf /mnt/etc/pacman.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpg
 # Actualizar sistema con reintentos
 update_system_chroot
+chroot /mnt /bin/bash -c "sudo -u $user yay -Scc --noconfirm"
+clear
 update_system_chroot
 sleep 3
 clear
