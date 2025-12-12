@@ -334,7 +334,7 @@ install_pacman_livecd_with_retry() {
         wait_for_internet
 
         # Ejecutar instalación con pacman localmente en LiveCD
-        if pacman -Sy "$package" --noconfirm; then
+        if pacman -Sy "$package" --noconfirm --disable-download-timeout; then
             echo -e "${GREEN}✅ $package instalado correctamente en LiveCD${NC}"
             return 0
         else
@@ -2431,7 +2431,7 @@ echo ""
 update_repositories
 clear
 # Instala sin verificar firmas temporalmente
-sudo pacman -Sy --noconfirm archlinux-keyring --disable-download-timeout
+install_pacman_livecd_with_retry "archlinux-keyring"
 # Luego reinicia las claves
 sudo pacman-key --init
 sudo pacman-key --populate archlinux
@@ -4166,7 +4166,8 @@ echo -e "${GREEN}✓ Instalanado extras${NC}"
 sleep 3
 install_aur_with_retry "yay"
 sleep 2
-install_aur_with_retry "alsi"
+install_aur_with_retry "fastfetch"
+
 sleep 2
 clear
 
@@ -7183,6 +7184,8 @@ sleep 3
 clear
 cp /usr/share/arcrisgui/data/config/pacman-chroot.conf /mnt/etc/pacman.conf
 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpg
+cp /mnt/usr/share/fastfetch/presets/screenfetch.jsonc /home/$USER/.config/fastfetch/config.jsonc
+chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.config/fastfetch/config.jsonc"
 # Actualizar sistema con reintentos
 update_system_chroot
 chroot /mnt /bin/bash -c "sudo -u $user yay -Scc --noconfirm"
