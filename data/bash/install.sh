@@ -7184,8 +7184,10 @@ sleep 3
 clear
 cp /usr/share/arcrisgui/data/config/pacman-chroot.conf /mnt/etc/pacman.conf
 cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpg
-cp /mnt/usr/share/fastfetch/presets/screenfetch.jsonc /home/$USER/.config/fastfetch/config.jsonc
-chroot /mnt /bin/bash -c "chown $USER:$USER /home/$USER/.config/fastfetch/config.jsonc"
+chroot /mnt /bin/bash -c "mkdir -p /home/$USER/.config/fastfetch"
+chroot /mnt /bin/bash -c "cp /usr/share/fastfetch/presets/screenfetch.jsonc /home/$USER/.config/fastfetch/config.jsonc" || echo -e "${RED}ERROR: No se copio el archivo config.jsonc${NC}"
+chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config/fastfetch" || echo -e "${RED}ERROR: chown del usuario${NC}"
+
 # Actualizar sistema con reintentos
 update_system_chroot
 chroot /mnt /bin/bash -c "sudo -u $user yay -Scc --noconfirm"
