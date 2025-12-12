@@ -6022,7 +6022,7 @@ case "$INSTALLATION_TYPE" in
                 install_yay_chroot_with_retry "lightdm-slick-greeter"
                 # Extras útiles
                 install_pacman_chroot_with_retry "udisks2"               # Montaje automático de discos
-                install_pacman_chroot_with_retry "leafpad"               # Editor de texto simple
+                # install_pacman_chroot_with_retry "leafpad"               # Editor de texto simple
                 # Sistema
                 install_pacman_chroot_with_retry "network-manager-applet"  # Applet de red
                 install_pacman_chroot_with_retry "pavucontrol"           # Control de volumen
