@@ -2268,17 +2268,18 @@ guardar_configuraciones_xmonad() {
 
     # Hacer .xinitrc ejecutable
     chmod +x "$USER_HOME/.xinitrc"
-    chroot /mnt /bin/bash -c "xmonad --recompile"
 
     # Ajustar permisos
     echo "Ajustando permisos..."
     if [ -n "$USER" ] && getent passwd "$USER" > /dev/null 2>&1; then
         USER_ID=$(id -u "$USER" 2>/dev/null || echo "1000")
         GROUP_ID=$(id -g "$USER" 2>/dev/null || echo "1000")
-        chown -R "$USER_ID:$GROUP_ID" "$USER_HOME/.config" 2>/dev/null || echo "Usuario $USER no encontrado, ajustar permisos manualmente"
-        chown "$USER_ID:$GROUP_ID" "$USER_HOME/.xinitrc" 2>/dev/null || echo "Usuario $USER no encontrado, ajustar permisos manualmente"
+
+        # Solo ajustar si los archivos existen
+        [ -f "$USER_HOME/.config" ] && chown -R "$USER_ID:$GROUP_ID" "$USER_HOME/.config" 2>/dev/null
+        [ -f "$USER_HOME/.xinitrc" ] && chown "$USER_ID:$GROUP_ID" "$USER_HOME/.xinitrc" 2>/dev/null
     else
-        echo "Advertencia: Usuario $USER no encontrado. Ajustar permisos manualmente después del chroot."
+        echo "Advertencia: Usuario $USER no encontrado. Omitiendo ajuste de permisos."
     fi
 
     echo "=== Configuración de XMonad completada ==="
@@ -2430,7 +2431,6 @@ echo ""
 update_repositories
 clear
 # Instala sin verificar firmas temporalmente
-sudo rm -rf /etc/pacman.d/gnupg
 sudo pacman -Sy --noconfirm archlinux-keyring --disable-download-timeout
 # Luego reinicia las claves
 sudo pacman-key --init
@@ -6160,7 +6160,7 @@ case "$INSTALLATION_TYPE" in
         # Instalar Ly display manager
         echo -e "${CYAN}Instalando Ly display manager...${NC}"
         install_yay_chroot_with_retry "ly"
-        chroot /mnt /bin/bash -c "systemctl enable ly" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+        chroot /mnt /bin/bash -c "systemctl enable ly@tty1.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         case "$WINDOW_MANAGER" in
             "I3WM"|"I3")
