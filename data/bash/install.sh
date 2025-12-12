@@ -2428,7 +2428,12 @@ echo -e "${GREEN}| Actualizando lista de Keys en LiveCD |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 update_repositories
-install_pacman_livecd_with_retry "archlinux-keyring"
+clear
+# Instala sin verificar firmas temporalmente
+sudo pacman -Sy --noconfirm archlinux-keyring --disable-download-timeout
+# Luego reinicia las claves
+sudo pacman-key --init
+sudo pacman-key --populate archlinux
 sleep 2
 clear
 
@@ -6577,8 +6582,8 @@ EOF
                 install_pacman_chroot_with_retry "unclutter"          # Ocultar cursor inactivo
 
                 # Bandeja del sistema
-                install_pacman_chroot_with_retry "trayer"             # Bandeja del sistema (si no usas xmobar con tray)
-                #install_pacman_chroot_with_retry "stalonetray"        # Alternativa a trayer
+                #install_pacman_chroot_with_retry "trayer"             # Bandeja del sistema (si no usas xmobar con tray)
+                install_pacman_chroot_with_retry "stalonetray"        # Alternativa a trayer
 
                 # Aplicaciones básicas
                 install_pacman_chroot_with_retry "xterm"              # Terminal básica
