@@ -2430,6 +2430,7 @@ echo ""
 update_repositories
 clear
 # Instala sin verificar firmas temporalmente
+sudo rm -rf /etc/pacman.d/gnupg
 sudo pacman -Sy --noconfirm archlinux-keyring --disable-download-timeout
 # Luego reinicia las claves
 sudo pacman-key --init
