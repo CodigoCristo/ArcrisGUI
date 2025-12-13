@@ -5736,6 +5736,7 @@ case "$INSTALLATION_TYPE" in
         install_pacman_chroot_with_retry "xorg-xrandr"
         install_pacman_chroot_with_retry "xorg-setxkbmap"
         install_pacman_chroot_with_retry "xorg-xrdb"
+        install_pacman_chroot_with_retry "xorg-apps"
         install_pacman_chroot_with_retry "xterm"
         install_pacman_chroot_with_retry "wayland"            # Protocolo Wayland
         install_pacman_chroot_with_retry "xorg-xwayland"      # Compatibilidad con apps X11
@@ -6147,6 +6148,8 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar X.org y dependencias base para gestores de ventanas
         echo -e "${CYAN}Instalando servidor X.org y dependencias base...${NC}"
+        install_pacman_chroot_with_retry "xorg-server"
+        install_pacman_chroot_with_retry "xorg-apps"
         install_pacman_chroot_with_retry "pcmanfm"
         install_pacman_chroot_with_retry "gvfs"
         install_pacman_chroot_with_retry "lm_sensors"
