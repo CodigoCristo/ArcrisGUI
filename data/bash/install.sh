@@ -1948,9 +1948,9 @@ configurar_btrfs() {
 
     # Solo instalar grub-btrfs ya que btrfs-progs ya está instalado
     install_pacman_chroot_with_retry "btrfs-progs"
-    install_pacman_chroot_with_retry "btrfs-assistant"
     install_pacman_chroot_with_retry "btrfsmaintenance"
     install_pacman_chroot_with_retry "snapper"
+    install_pacman_chroot_with_retry "btrfs-assistant"
     install_pacman_chroot_with_retry "grub-btrfs" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo instalar grub-btrfs${NC}"
 
     # Configurar grub-btrfs para boot desde snapshots
@@ -3855,7 +3855,7 @@ if [ "$PARTITION_MODE" = "manual" ]; then
         install_pacstrap_with_retry "btrfs-progs"
         install_pacstrap_with_retry "btrfsmaintenance"
         install_pacstrap_with_retry "snapper"
-        install_pacstrap_with_retry "btrfs-assistant"
+        install_pacstrap_with_retry "timeshift"
     fi
 
     if [ "$XFS_USED" = true ]; then
