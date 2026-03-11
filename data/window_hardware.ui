@@ -61,12 +61,13 @@
                           <object class="GtkStringList">
                             <items>
                               <item>Open Source</item>
-                              <item>Nvidia for linux</item>
-                              <item>Nvidia-lts for linux-lts</item>
-                              <item>Nvidia-dkms (any kernel)</item>
-                              <item>Nvidia-470</item>
-                              <item>Nvidia-390</item>
-                              <item>AMD Private</item>
+                              <item>nvidia-open</item>
+                              <item>nvidia-open-lts</item>
+                              <item>nvidia-open-dkms</item>
+                              <item>nvidia-580xx-dkms</item>
+                              <item>nvidia-470xx-dkms</item>
+                              <item>nvidia-390xx-dkms</item>
+                              <item>nvidia-340xx-dkms</item>
                               <item>Intel (Gen 8+)</item>
                               <item>Intel (mesa-amber)</item>
                               <item>Máquina Virtual</item>

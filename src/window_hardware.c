@@ -527,16 +527,17 @@ void on_bluetooth_driver_combo_changed(AdwComboRow *combo, GParamSpec *pspec, gp
 const char* window_hardware_get_video_driver_name(VideoDriverType driver)
 {
     switch (driver) {
-        case VIDEO_DRIVER_OPEN_SOURCE: return "Open Source";
-        case VIDEO_DRIVER_NVIDIA_LINUX: return "nvidia";
-        case VIDEO_DRIVER_NVIDIA_LTS: return "nvidia-lts";
-        case VIDEO_DRIVER_NVIDIA_DKMS: return "nvidia-dkms";
-        case VIDEO_DRIVER_NVIDIA_470: return "nvidia-470xx-dkms";
-        case VIDEO_DRIVER_NVIDIA_390: return "nvidia-390xx-dkms";
-        case VIDEO_DRIVER_AMD_PRIVATE: return "AMD Private";
-        case VIDEO_DRIVER_INTEL_NEW: return "Intel (Gen 8+)";
-        case VIDEO_DRIVER_INTEL_OLD: return "Intel (mesa-amber)";
-        case VIDEO_DRIVER_VIRTUAL_MACHINE: return "Máquina Virtual";
+        case VIDEO_DRIVER_OPEN_SOURCE:      return "Open Source";
+        case VIDEO_DRIVER_NVIDIA_OPEN:      return "nvidia-open";
+        case VIDEO_DRIVER_NVIDIA_OPEN_LTS:  return "nvidia-open-lts";
+        case VIDEO_DRIVER_NVIDIA_OPEN_DKMS: return "nvidia-open-dkms";
+        case VIDEO_DRIVER_NVIDIA_580XX:     return "nvidia-580xx-dkms";
+        case VIDEO_DRIVER_NVIDIA_470XX:     return "nvidia-470xx-dkms";
+        case VIDEO_DRIVER_NVIDIA_390XX:     return "nvidia-390xx-dkms";
+        case VIDEO_DRIVER_NVIDIA_340XX:     return "nvidia-340xx-dkms";
+        case VIDEO_DRIVER_INTEL_NEW:        return "Intel (Gen 8+)";
+        case VIDEO_DRIVER_INTEL_OLD:        return "Intel (mesa-amber)";
+        case VIDEO_DRIVER_VIRTUAL_MACHINE:  return "Máquina Virtual";
         default: return "Desconocido";
     }
 }
@@ -623,18 +624,20 @@ gboolean window_hardware_load_from_variables(WindowHardwareData *data)
             // Convertir string a enum
             if (g_strcmp0(value, "Open Source") == 0) {
                 data->current_video_driver = VIDEO_DRIVER_OPEN_SOURCE;
-            } else if (g_strcmp0(value, "nvidia") == 0) {
-                data->current_video_driver = VIDEO_DRIVER_NVIDIA_LINUX;
-            } else if (g_strcmp0(value, "nvidia-lts") == 0) {
-                data->current_video_driver = VIDEO_DRIVER_NVIDIA_LTS;
-            } else if (g_strcmp0(value, "nvidia-dkms") == 0) {
-                data->current_video_driver = VIDEO_DRIVER_NVIDIA_DKMS;
+            } else if (g_strcmp0(value, "nvidia-open") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_OPEN;
+            } else if (g_strcmp0(value, "nvidia-open-lts") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_OPEN_LTS;
+            } else if (g_strcmp0(value, "nvidia-open-dkms") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_OPEN_DKMS;
+            } else if (g_strcmp0(value, "nvidia-580xx-dkms") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_580XX;
             } else if (g_strcmp0(value, "nvidia-470xx-dkms") == 0) {
-                data->current_video_driver = VIDEO_DRIVER_NVIDIA_470;
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_470XX;
             } else if (g_strcmp0(value, "nvidia-390xx-dkms") == 0) {
-                data->current_video_driver = VIDEO_DRIVER_NVIDIA_390;
-            } else if (g_strcmp0(value, "AMD Private") == 0) {
-                data->current_video_driver = VIDEO_DRIVER_AMD_PRIVATE;
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_390XX;
+            } else if (g_strcmp0(value, "nvidia-340xx-dkms") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_NVIDIA_340XX;
             } else if (g_strcmp0(value, "Intel (Gen 8+)") == 0) {
                 data->current_video_driver = VIDEO_DRIVER_INTEL_NEW;
             } else if (g_strcmp0(value, "Intel (mesa-amber)") == 0) {

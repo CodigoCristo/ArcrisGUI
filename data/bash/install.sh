@@ -5206,6 +5206,12 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "vulkan-radeon"
             install_pacman_chroot_with_retry "lib32-vulkan-radeon"
             install_pacman_chroot_with_retry "radeontop"
+            install_pacman_chroot_with_retry "libva"
+            install_pacman_chroot_with_retry "libva-utils"
+            install_pacman_chroot_with_retry "linux-firmware-radeon"
+            install_pacman_chroot_with_retry "linux-firmware-amdgpu"
+
+
 
 
         elif echo "$VGA_LINE" | grep -i nvidia > /dev/null; then
@@ -5222,6 +5228,11 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "vulkan-radeon"
             install_pacman_chroot_with_retry "lib32-vulkan-radeon"
             install_pacman_chroot_with_retry "radeontop"
+            install_pacman_chroot_with_retry "libva"
+            install_pacman_chroot_with_retry "libva-utils"
+            install_pacman_chroot_with_retry "linux-firmware-radeon"
+            install_pacman_chroot_with_retry "linux-firmware-amdgpu"
+            chroot /mnt /bin/bash -c "usermod -aG render,video $USER"
 
 
         elif echo "$VGA_LINE" | grep -i intel > /dev/null; then
@@ -5270,13 +5281,13 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "xf86-video-vesa"
         fi
         ;;
-    "nvidia")
-        echo "Instalando driver NVIDIA para kernel linux"
+    "nvidia-open")
+        echo "Instalando driver NVIDIA open (kernel linux)"
         install_pacman_chroot_with_retry "mesa"
         install_pacman_chroot_with_retry "lib32-mesa"
         install_pacman_chroot_with_retry "mesa-utils"
         install_pacman_chroot_with_retry "lib32-mesa-utils"
-        install_pacman_chroot_with_retry "nvidia"
+        install_pacman_chroot_with_retry "nvidia-open"
         install_pacman_chroot_with_retry "nvidia-utils"
         install_pacman_chroot_with_retry "lib32-nvidia-utils"
         install_pacman_chroot_with_retry "nvidia-settings"
@@ -5288,15 +5299,16 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "clinfo"
         install_pacman_chroot_with_retry "ocl-icd"
         ;;
-    "nvidia-lts")
-        echo "Instalando driver NVIDIA para kernel LTS"
+    "nvidia-open-lts")
+        echo "Instalando driver NVIDIA open (kernel linux-lts)"
         install_pacman_chroot_with_retry "mesa"
         install_pacman_chroot_with_retry "lib32-mesa"
         install_pacman_chroot_with_retry "mesa-utils"
         install_pacman_chroot_with_retry "lib32-mesa-utils"
-        install_pacman_chroot_with_retry "nvidia-lts"
-        install_pacman_chroot_with_retry "nvidia-settings"
+        install_pacman_chroot_with_retry "nvidia-open-lts"
+        install_pacman_chroot_with_retry "nvidia-utils"
         install_pacman_chroot_with_retry "lib32-nvidia-utils"
+        install_pacman_chroot_with_retry "nvidia-settings"
         install_pacman_chroot_with_retry "opencl-nvidia"
         install_pacman_chroot_with_retry "lib32-opencl-nvidia"
         install_pacman_chroot_with_retry "vdpauinfo"
@@ -5305,18 +5317,36 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "clinfo"
         install_pacman_chroot_with_retry "ocl-icd"
         ;;
-    "nvidia-dkms")
-        echo "Instalando driver NVIDIA DKMS"
+    "nvidia-open-dkms")
+        echo "Instalando driver NVIDIA open DKMS"
         install_pacman_chroot_with_retry "mesa"
         install_pacman_chroot_with_retry "lib32-mesa"
         install_pacman_chroot_with_retry "mesa-utils"
         install_pacman_chroot_with_retry "lib32-mesa-utils"
-        install_pacman_chroot_with_retry "nvidia-dkms"
+        install_pacman_chroot_with_retry "nvidia-open-dkms"
         install_pacman_chroot_with_retry "nvidia-utils"
-        install_pacman_chroot_with_retry "nvidia-settings"
         install_pacman_chroot_with_retry "lib32-nvidia-utils"
+        install_pacman_chroot_with_retry "nvidia-settings"
         install_pacman_chroot_with_retry "opencl-nvidia"
         install_pacman_chroot_with_retry "lib32-opencl-nvidia"
+        install_pacman_chroot_with_retry "vdpauinfo"
+        install_pacman_chroot_with_retry "libva-utils"
+        install_pacman_chroot_with_retry "vulkan-tools"
+        install_pacman_chroot_with_retry "clinfo"
+        install_pacman_chroot_with_retry "ocl-icd"
+        ;;
+    "nvidia-580xx-dkms")
+        echo "Instalando driver NVIDIA serie 580.xx con DKMS (AUR)"
+        install_pacman_chroot_with_retry "mesa"
+        install_pacman_chroot_with_retry "lib32-mesa"
+        install_pacman_chroot_with_retry "mesa-utils"
+        install_pacman_chroot_with_retry "lib32-mesa-utils"
+        install_yay_chroot_with_retry "nvidia-580xx-dkms"
+        install_yay_chroot_with_retry "nvidia-580xx-utils"
+        install_yay_chroot_with_retry "lib32-nvidia-580xx-utils"
+        install_yay_chroot_with_retry "nvidia-580xx-settings"
+        install_yay_chroot_with_retry "opencl-nvidia-580xx"
+        install_yay_chroot_with_retry "lib32-opencl-nvidia-580xx"
         install_pacman_chroot_with_retry "vdpauinfo"
         install_pacman_chroot_with_retry "libva-utils"
         install_pacman_chroot_with_retry "vulkan-tools"
@@ -5324,18 +5354,17 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "ocl-icd"
         ;;
     "nvidia-470xx-dkms")
-        echo "Instalando driver NVIDIA serie 470.xx con DKMS"
+        echo "Instalando driver NVIDIA serie 470.xx con DKMS (AUR)"
         install_pacman_chroot_with_retry "mesa"
         install_pacman_chroot_with_retry "lib32-mesa"
         install_pacman_chroot_with_retry "mesa-utils"
         install_pacman_chroot_with_retry "lib32-mesa-utils"
         install_yay_chroot_with_retry "nvidia-470xx-dkms"
         install_yay_chroot_with_retry "nvidia-470xx-utils"
-        install_yay_chroot_with_retry "opencl-nvidia-470xx"
-        install_yay_chroot_with_retry "nvidia-470xx-settings"
         install_yay_chroot_with_retry "lib32-nvidia-470xx-utils"
+        install_yay_chroot_with_retry "nvidia-470xx-settings"
+        install_yay_chroot_with_retry "opencl-nvidia-470xx"
         install_yay_chroot_with_retry "lib32-opencl-nvidia-470xx"
-        install_yay_chroot_with_retry "mhwd-nvidia-470xx"
         install_pacman_chroot_with_retry "vdpauinfo"
         install_pacman_chroot_with_retry "libva-utils"
         install_pacman_chroot_with_retry "vulkan-tools"
@@ -5343,47 +5372,42 @@ case "$DRIVER_VIDEO" in
         install_pacman_chroot_with_retry "ocl-icd"
         ;;
     "nvidia-390xx-dkms")
-        echo "Instalando driver NVIDIA serie 390.xx con DKMS (hardware antiguo)"
+        echo "Instalando driver NVIDIA serie 390.xx con DKMS (AUR, hardware antiguo)"
         install_pacman_chroot_with_retry "mesa"
         install_pacman_chroot_with_retry "lib32-mesa"
         install_pacman_chroot_with_retry "mesa-utils"
         install_pacman_chroot_with_retry "lib32-mesa-utils"
         install_yay_chroot_with_retry "nvidia-390xx-dkms"
         install_yay_chroot_with_retry "nvidia-390xx-utils"
-        install_yay_chroot_with_retry "opencl-nvidia-390xx"
         install_yay_chroot_with_retry "lib32-nvidia-390xx-utils"
-        install_yay_chroot_with_retry "lib32-opencl-nvidia-390xx"
         install_yay_chroot_with_retry "nvidia-390xx-settings"
-        install_yay_chroot_with_retry "mhwd-nvidia-390xx"
+        install_yay_chroot_with_retry "opencl-nvidia-390xx"
+        install_yay_chroot_with_retry "lib32-opencl-nvidia-390xx"
         install_pacman_chroot_with_retry "vdpauinfo"
         install_pacman_chroot_with_retry "libva-utils"
         install_pacman_chroot_with_retry "vulkan-tools"
         install_pacman_chroot_with_retry "clinfo"
         install_pacman_chroot_with_retry "ocl-icd"
         ;;
-    "AMD Private")
-        echo "Instalando drivers privativos de AMDGPUPRO"
+    "nvidia-340xx-dkms")
+        echo "Instalando driver NVIDIA serie 340.xx con DKMS (AUR, hardware muy antiguo)"
         install_pacman_chroot_with_retry "mesa"
         install_pacman_chroot_with_retry "lib32-mesa"
         install_pacman_chroot_with_retry "mesa-utils"
         install_pacman_chroot_with_retry "lib32-mesa-utils"
-        install_pacman_chroot_with_retry "vulkan-mesa-layers"
-        install_pacman_chroot_with_retry "xf86-video-amdgpu"
-        install_pacman_chroot_with_retry "vulkan-radeon"
-        install_pacman_chroot_with_retry "lib32-vulkan-radeon"
-        install_pacman_chroot_with_retry "radeontop"
+        install_yay_chroot_with_retry "nvidia-340xx-dkms"
+        install_yay_chroot_with_retry "nvidia-340xx-utils"
+        install_yay_chroot_with_retry "lib32-nvidia-340xx-utils"
+        install_yay_chroot_with_retry "nvidia-340xx-settings"
+        install_yay_chroot_with_retry "opencl-nvidia-340xx"
+        install_yay_chroot_with_retry "lib32-opencl-nvidia-340xx"
         install_pacman_chroot_with_retry "vdpauinfo"
         install_pacman_chroot_with_retry "libva-utils"
         install_pacman_chroot_with_retry "vulkan-tools"
         install_pacman_chroot_with_retry "clinfo"
         install_pacman_chroot_with_retry "ocl-icd"
-        install_yay_chroot_with_retry "amf-amdgpu-pro"
-        install_yay_chroot_with_retry "amdgpu-pro-oglp"
-        install_yay_chroot_with_retry "lib32-amdgpu-pro-oglp"
-        install_yay_chroot_with_retry "vulkan-amdgpu-pro"
-        install_yay_chroot_with_retry "lib32-vulkan-amdgpu-pro"
-        install_yay_chroot_with_retry "opencl-amd"
         ;;
+
     "Intel (Gen 8+)")
         echo "Detectado hardware Intel - Instalando driver open source intel"
         # DRI/3D (obligatorio)
