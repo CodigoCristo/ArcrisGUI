@@ -1,0 +1,22 @@
+#!/bin/bash
+# Script de mantenimiento BTRFS automático
+
+echo "Iniciando mantenimiento BTRFS..."
+
+# Balance mensual (solo si es necesario)
+if [ $(date +%d) -eq 01 ]; then
+    echo "Ejecutando balance BTRFS..."
+    btrfs balance start -dusage=50 -musage=50 / 2>/dev/null || true
+fi
+
+# Scrub semanal
+if [ $(date +%w) -eq 0 ]; then
+    echo "Ejecutando scrub BTRFS..."
+    btrfs scrub start / 2>/dev/null || true
+fi
+
+# Desfragmentación ligera
+echo "Ejecutando desfragmentación básica..."
+find /home -type f -size +100M -exec btrfs filesystem defragment {} \; 2>/dev/null || true
+
+echo "Mantenimiento BTRFS completado."

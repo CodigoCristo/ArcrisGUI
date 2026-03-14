@@ -1,0 +1,10 @@
+[Unit]
+Description=Run BTRFS Maintenance Weekly
+Requires=btrfs-maintenance.service
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
