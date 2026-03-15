@@ -4428,7 +4428,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "nautilus"
                 install_pacman_chroot_with_retry "gvfs"
                 install_pacman_chroot_with_retry "gvfs-goa"
-                install_pacman_chroot_with_retry "ptyxis"
+                install_pacman_chroot_with_retry "gnome-console"
                 install_pacman_chroot_with_retry "gnome-text-editor"
                 install_pacman_chroot_with_retry "gnome-calculator"
                 install_pacman_chroot_with_retry "gnome-system-monitor"
