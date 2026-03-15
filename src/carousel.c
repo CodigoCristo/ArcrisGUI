@@ -229,6 +229,13 @@ void carousel_update_navigation_controls(CarouselManager *manager)
     // Actualizar sensibilidad de los botones
     gtk_widget_set_sensitive(GTK_WIDGET(manager->back_button), can_go_back);
     gtk_widget_set_sensitive(GTK_WIDGET(manager->next_button), can_go_next);
+
+    // Activar next_button con Enter cuando esté visible y habilitado
+    GtkRoot *root = gtk_widget_get_root(GTK_WIDGET(manager->next_button));
+    if (root && GTK_IS_WINDOW(root)) {
+        gtk_window_set_default_widget(GTK_WINDOW(root),
+            (show_controls && can_go_next) ? GTK_WIDGET(manager->next_button) : NULL);
+    }
     
     DEBUG_PRINT("Controles de navegación actualizados - Página: %u/%u (%s), Visible: %s", 
                 manager->current_page + 1, manager->total_pages, 

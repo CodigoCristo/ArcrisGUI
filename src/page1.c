@@ -56,6 +56,12 @@ static void update_internet_ui(gboolean has_internet)
         if (g_page1_data->start_button) {
             gtk_widget_set_visible(g_page1_data->start_button, TRUE);
             gtk_widget_set_sensitive(g_page1_data->start_button, TRUE);
+
+            // Activar con Enter: establecer como widget por defecto de la ventana
+            GtkRoot *root = gtk_widget_get_root(g_page1_data->start_button);
+            if (root && GTK_IS_WINDOW(root)) {
+                gtk_window_set_default_widget(GTK_WINDOW(root), g_page1_data->start_button);
+            }
         }
     } else {
         g_print("⚠️ Sin internet - Mostrando spinner y mensaje\n");
@@ -172,7 +178,13 @@ static void page1_start_button_clicked(GtkButton *button, gpointer user_data)
     if (!g_page1_data) return;
     
     g_print("▶️ Botón Iniciar presionado\n");
-    
+
+    // Quitar el default widget para que no interfiera en páginas siguientes
+    GtkRoot *root = gtk_widget_get_root(GTK_WIDGET(button));
+    if (root && GTK_IS_WINDOW(root)) {
+        gtk_window_set_default_widget(GTK_WINDOW(root), NULL);
+    }
+
     // Detener monitoreo de internet ya que vamos a la siguiente página
     page1_stop_internet_monitoring();
     
