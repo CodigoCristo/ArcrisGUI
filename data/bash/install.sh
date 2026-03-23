@@ -2627,22 +2627,22 @@ echo ""
 
 case "$SELECTED_KERNEL" in
     "linux")
-        install_pacman_chroot_with_retry "linux linux-firmware"
+        install_pacman_chroot_with_retry "linux linux-firmware linux-headers"
         ;;
     "linux-hardened")
-        install_pacman_chroot_with_retry "linux-hardened linux-firmware"
+        install_pacman_chroot_with_retry "linux-hardened linux-firmware linux-hardened-headers"
         ;;
     "linux-lts")
-        install_pacman_chroot_with_retry "linux-lts linux-firmware"
+        install_pacman_chroot_with_retry "linux-lts linux-firmware linux-lts-headers"
         ;;
     "linux-rt-lts")
-        install_pacman_chroot_with_retry "linux-rt-lts linux-firmware"
+        install_pacman_chroot_with_retry "linux-rt-lts linux-firmware linux-rt-lts-headers"
         ;;
     "linux-zen")
-        install_pacman_chroot_with_retry "linux-zen linux-firmware"
+        install_pacman_chroot_with_retry "linux-zen linux-firmware linux-zen-headers"
         ;;
     *)
-        install_pacman_chroot_with_retry "linux linux-firmware"
+        install_pacman_chroot_with_retry "linux linux-firmware linux-headers"
         ;;
 esac
 
