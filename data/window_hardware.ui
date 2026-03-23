@@ -68,8 +68,7 @@
                               <item>nvidia-470xx-dkms</item>
                               <item>nvidia-390xx-dkms</item>
                               <item>nvidia-340xx-dkms</item>
-                              <item>Intel (Gen 8+)</item>
-                              <item>Intel (mesa-amber)</item>
+                              <item>Mesa-Amber</item>
                               <item>Máquina Virtual</item>
                             </items>
                           </object>

@@ -535,8 +535,7 @@ const char* window_hardware_get_video_driver_name(VideoDriverType driver)
         case VIDEO_DRIVER_NVIDIA_470XX:     return "nvidia-470xx-dkms";
         case VIDEO_DRIVER_NVIDIA_390XX:     return "nvidia-390xx-dkms";
         case VIDEO_DRIVER_NVIDIA_340XX:     return "nvidia-340xx-dkms";
-        case VIDEO_DRIVER_INTEL_NEW:        return "Intel (Gen 8+)";
-        case VIDEO_DRIVER_INTEL_OLD:        return "Intel (mesa-amber)";
+        case VIDEO_DRIVER_MESA_AMBER:       return "mesa-amber";
         case VIDEO_DRIVER_VIRTUAL_MACHINE:  return "Máquina Virtual";
         default: return "Desconocido";
     }
@@ -638,10 +637,8 @@ gboolean window_hardware_load_from_variables(WindowHardwareData *data)
                 data->current_video_driver = VIDEO_DRIVER_NVIDIA_390XX;
             } else if (g_strcmp0(value, "nvidia-340xx-dkms") == 0) {
                 data->current_video_driver = VIDEO_DRIVER_NVIDIA_340XX;
-            } else if (g_strcmp0(value, "Intel (Gen 8+)") == 0) {
-                data->current_video_driver = VIDEO_DRIVER_INTEL_NEW;
-            } else if (g_strcmp0(value, "Intel (mesa-amber)") == 0) {
-                data->current_video_driver = VIDEO_DRIVER_INTEL_OLD;
+            } else if (g_strcmp0(value, "Mesa-Amber") == 0) {
+                data->current_video_driver = VIDEO_DRIVER_MESA_AMBER;
             } else if (g_strcmp0(value, "Máquina Virtual") == 0) {
                 data->current_video_driver = VIDEO_DRIVER_VIRTUAL_MACHINE;
             }
