@@ -266,7 +266,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"discord_info", "https://discord.com/"},
         {"thunderbird_info", "https://www.thunderbird.net/"},
         {"signal_info", "https://signal.org/"},
-        {"whatsapp_info", "https://github.com/eneshecan/whatsapp-for-linux"},
+        {"whatsapp_info", "https://rtosta.com/zapzap/"},
         {"evolution_info", "https://wiki.gnome.org/Apps/Evolution"},
         {"fractal_info", "https://wiki.gnome.org/Apps/Fractal"},
 
@@ -438,7 +438,7 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"discord_check", "discord", "comunicación discord gamers", "mail_expander"},
         {"thunderbird_check", "thunderbird", "correo thunderbird mozilla", "mail_expander"},
         {"signal_check", "signal-desktop", "mensajería signal privada", "mail_expander"},
-        {"whatsapp_check", "whatsapp-for-linux-git", "whatsapp linux", "mail_expander"},
+        {"whatsapp_check", "zapzap", "zapzap whatsapp linux", "mail_expander"},
         {"evolution_check", "evolution", "correo evolution gnome", "mail_expander"},
         {"fractal_check", "fractal", "matrix fractal gnome", "mail_expander"},
 
@@ -892,7 +892,7 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"discord_check", "discord"},
         {"thunderbird_check", "thunderbird"},
         {"signal_check", "signal-desktop"},
-        {"whatsapp_check", "whatsapp-for-linux-git"},
+        {"whatsapp_check", "zapzap"},
         {"evolution_check", "evolution"},
         {"fractal_check", "fractal"},
 
@@ -1059,7 +1059,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"discord_check", "discord"},
         {"thunderbird_check", "thunderbird"},
         {"signal_check", "signal-desktop"},
-        {"whatsapp_check", "whatsapp-for-linux-git"},
+        {"whatsapp_check", "zapzap"},
         {"evolution_check", "evolution"},
         {"fractal_check", "fractal"},
 

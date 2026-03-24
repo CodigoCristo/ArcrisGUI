@@ -970,8 +970,8 @@
                                 <!-- WhatsApp -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">whatsapp-for-linux</property>
-                                    <property name="subtitle">Cliente no oficial de WhatsApp para Linux</property>
+                                    <property name="title">ZapZap</property>
+                                    <property name="subtitle">WhatsApp nativo para Linux</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="whatsapp_check">
                                         <property name="active">false</property>
@@ -981,7 +981,7 @@
                                       <object class="GtkButton" id="whatsapp_info">
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
-                                        <property name="tooltip-text">https://github.com/eneshecan/whatsapp-for-linux</property>
+                                        <property name="tooltip-text">https://rtosta.com/zapzap/</property>
                                       </object>
                                     </child>
                                   </object>
