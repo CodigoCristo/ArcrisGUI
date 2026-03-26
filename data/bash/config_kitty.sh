@@ -1,3 +1,4 @@
+if [[ "$INSTALLATION_TYPE" == "WINDOW_MANAGER" ]]; then
         # Configurar terminales con configuraciones básicas
         echo -e "${CYAN}Configurando terminales...${NC}"
 
@@ -235,3 +236,4 @@ EOF
 
         # Establecer permisos correctos para las configuraciones
         chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config/kitty"
+fi

@@ -890,3 +890,5 @@ EOF
                 echo -e "${CYAN}Instalando i3 como alternativa...${NC}"
                 ;;
         esac
+    ;;
+esac

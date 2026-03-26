@@ -1,3 +1,4 @@
+if [[ "$INSTALLATION_TYPE" == "WINDOW_MANAGER" ]]; then
 # Configurar Ly para reconocer los window managers
 echo -e "${CYAN}Configurando Ly display manager...${NC}"
 mkdir -p /mnt/usr/share/xsessions
@@ -114,11 +115,6 @@ Keywords=tiling;wm;windowmanager;window;manager;
 EOF
         ;;
 esac
-;;
-*)
-echo -e "${YELLOW}Tipo de instalación no reconocido: $INSTALLATION_TYPE${NC}"
-echo -e "${CYAN}Continuando sin instalación de entorno gráfico...${NC}"
-;;
-esac
+fi
 sleep 3
 clear
