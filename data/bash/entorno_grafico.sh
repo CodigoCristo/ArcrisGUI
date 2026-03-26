@@ -1,4 +1,3 @@
-
 # Instalación de entorno de escritorio/gestor de ventanas
 echo -e "${GREEN}| Configurando entorno gráfico: $INSTALLATION_TYPE |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
@@ -435,6 +434,8 @@ case "$INSTALLATION_TYPE" in
         echo -e "${CYAN}Instalando servidor X.org y dependencias base...${NC}"
         install_pacman_chroot_with_retry "xorg-server"
         install_pacman_chroot_with_retry "xorg-apps"
+        install_pacman_chroot_with_retry "xorg-xinit"
+        install_pacman_chroot_with_retry "xorg-xauth"
         install_pacman_chroot_with_retry "pcmanfm"
         install_pacman_chroot_with_retry "gvfs"
         install_pacman_chroot_with_retry "lm_sensors"
@@ -889,4 +890,3 @@ EOF
                 echo -e "${CYAN}Instalando i3 como alternativa...${NC}"
                 ;;
         esac
-

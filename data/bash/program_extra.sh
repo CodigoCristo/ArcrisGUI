@@ -161,5 +161,3 @@ if [ "${VIDEO_CODECS_ENABLED:-false}" = "true" ]; then
 
     echo -e "${GREEN}✓ Codecs de video instalados${NC}"
 fi
-sleep 2
-clear

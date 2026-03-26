@@ -27,5 +27,3 @@ case "$DRIVER_WIFI" in
         install_yay_chroot_with_retry "rtw88-dkms-git"
         ;;
 esac
-
-clear

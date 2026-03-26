@@ -408,5 +408,3 @@ case "$DRIVER_VIDEO" in
         fi
         ;;
 esac
-
-clear
