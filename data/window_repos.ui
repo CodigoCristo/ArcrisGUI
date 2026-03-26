@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwApplicationWindow" id="repositoriosWindow">
+    <property name="title">Repositorios</property>
+    <property name="default-width">580</property>
+    <property name="default-height">372</property>
+    <property name="modal">true</property>
+    <property name="resizable">false</property>
+    <property name="deletable">false</property>
+    <property name="hide-on-close">true</property>
+
+    <child>
+      <object class="AdwToolbarView">
+
+        <!-- Header Bar -->
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="AdwWindowTitle">
+                <property name="title">Repositorios</property>
+              </object>
+            </property>
+            <child type="start">
+              <object class="GtkButton" id="close_button">
+                <property name="label">Cerrar</property>
+                <property name="valign">center</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="save_button">
+                <property name="label">Guardar</property>
+                <property name="valign">center</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <!-- Contenido principal -->
+        <property name="content">
+          <object class="GtkScrolledWindow">
+            <property name="vexpand">true</property>
+            <property name="hscrollbar-policy">never</property>
+            <child>
+              <object class="AdwClamp">
+                <property name="maximum-size">520</property>
+                <property name="tightening-threshold">560</property>
+                <property name="margin-top">24</property>
+                <property name="margin-bottom">24</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">24</property>
+
+                    <!-- Grupo: Repositorios extra -->
+                    <child>
+                      <object class="AdwPreferencesGroup" id="repos_group">
+
+                        <!-- Chaotic-AUR -->
+                        <child>
+                          <object class="AdwSwitchRow" id="chaotic_aur_switch">
+                            <property name="title">Chaotic-AUR</property>
+                            <property name="subtitle">AUR precompilado, uso general</property>
+                            <property name="active">true</property>
+                          </object>
+                        </child>
+
+                        <!-- archlinuxcn -->
+                        <child>
+                          <object class="AdwSwitchRow" id="archlinuxcn_switch">
+                            <property name="title">archlinuxcn</property>
+                            <property name="subtitle">Paquetes populares precompilados</property>
+                            <property name="active">true</property>
+                          </object>
+                        </child>
+
+                        <!-- CachyOS repos -->
+                        <child>
+                          <object class="AdwSwitchRow" id="cachyos_switch">
+                            <property name="title">CachyOS repos</property>
+                            <property name="subtitle">Repositorios separados optimizados para diferentes CPU.</property>
+                            <property name="active">true</property>
+                          </object>
+                        </child>
+
+                      </object>
+                    </child>
+
+                    <!-- Grupo: Mirrorlist con ExpanderRow -->
+                    <child>
+                      <object class="AdwPreferencesGroup" id="mirrorlist_group">
+
+                        <!--
+                          AdwExpanderRow con GtkTextView adentro.
+                          El hijo se agrega como un GtkListBoxRow personalizado
+                          usando un GtkBox con padding como contenedor.
+                        -->
+                        <child>
+                            <object class="AdwExpanderRow" id="mirrorlist_expander">
+                              <property name="title">Mirrorlist Oficiales</property>
+                              <property name="subtitle">Lista de espejos oficiales de Arch Linux</property>
+                              <property name="expanded">false</property>
+
+                              <!-- Toggle buttons siguen en suffix (al costado del título) -->
+                              <child type="suffix">
+                                <object class="GtkBox">
+                                  <property name="orientation">horizontal</property>
+                                  <property name="spacing">0</property>
+                                  <property name="valign">center</property>
+                                  <style>
+                                    <class name="linked"/>
+                                  </style>
+                                  <child>
+                                    <object class="GtkToggleButton" id="auto_button">
+                                      <property name="label">Automático</property>
+                                      <property name="active">true</property>
+                                    </object>
+                                  </child>
+                                  <child>
+                                    <object class="GtkToggleButton" id="manual_button">
+                                      <property name="label">Manual</property>
+                                      <property name="active">false</property>
+                                      <property name="group">auto_button</property>
+                                    </object>
+                                  </child>
+                                </object>
+                              </child>
+
+                              <!-- Link Button como fila hija, aparece DEBAJO del título -->
+                              <child>
+                                <object class="GtkListBoxRow">
+                                  <property name="activatable">false</property>
+                                  <property name="selectable">false</property>
+                                  <child>
+                                    <object class="GtkBox">
+                                      <property name="orientation">horizontal</property>
+                                      <property name="margin-top">4</property>
+                                      <property name="margin-bottom">4</property>
+                                      <property name="margin-start">12</property>
+                                      <property name="margin-end">12</property>
+                                      <child>
+                                        <object class="GtkLinkButton" id="mirrorlist_link">
+                                          <property name="uri">https://archlinux.org/mirrorlist/</property>
+                                          <property name="label">Generar mirrorlist en archlinux.org/mirrorlist/</property>
+                                          <property name="halign">start</property>
+                                          <property name="valign">center</property>
+                                          <style>
+                                            <class name="flat"/>
+                                          </style>
+                                        </object>
+                                      </child>
+                                    </object>
+                                  </child>
+                                </object>
+                              </child>
+
+                              <!-- GtkTextView debajo del link -->
+                              <child>
+                                <object class="GtkListBoxRow">
+                                  <property name="activatable">false</property>
+                                  <property name="selectable">false</property>
+                                  <child>
+                                    <object class="GtkBox">
+                                      <property name="orientation">vertical</property>
+                                      <property name="margin-top">4</property>
+                                      <property name="margin-bottom">8</property>
+                                      <property name="margin-start">12</property>
+                                      <property name="margin-end">12</property>
+                                      <child>
+                                        <object class="GtkScrolledWindow" id="mirror_scroll">
+                                          <property name="height-request">180</property>
+                                          <property name="hexpand">true</property>
+                                          <property name="vexpand">true</property>
+                                          <property name="hscrollbar-policy">automatic</property>
+                                          <property name="vscrollbar-policy">automatic</property>
+                                          <style>
+                                            <class name="card"/>
+                                          </style>
+                                          <child>
+                                            <object class="GtkTextView" id="mirrorlist_textview">
+                                              <property name="monospace">true</property>
+                                              <property name="top-margin">8</property>
+                                              <property name="bottom-margin">8</property>
+                                              <property name="left-margin">10</property>
+                                              <property name="right-margin">10</property>
+                                              <property name="wrap-mode">word</property>
+                                            </object>
+                                          </child>
+                                        </object>
+                                      </child>
+                                    </object>
+                                  </child>
+                                </object>
+                              </child>
+
+                            </object>
+
+                        </child>
+
+                      </object>
+                    </child>
+
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+
+      </object>
+    </child>
+  </object>
+</interface>
