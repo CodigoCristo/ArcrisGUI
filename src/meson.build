@@ -33,12 +33,14 @@ executable('arcris',
     'window_system.c',
     'window_program_extra.c',
     'window_apps.c',
+    'window_repos.c',
     'partitionmanual.c',
 
 
     'config.c',
     'disk_manager.c',
-    'partition_manager.c'
+    'partition_manager.c',
+    'variables_utils.c'
   ],
   dependencies : [gtkdep, glib_dep, gio_dep, adwaita, libsoup, udisks2, vte_dep, arcris_resources_dep],
   install : true,

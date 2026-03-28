@@ -1,9 +1,11 @@
 #include "page6.h"
+#include "variables_utils.h"
 #include "window_kernel.h"
 #include "window_hardware.h"
 #include "window_system.h"
 #include "window_program_extra.h"
 #include "window_apps.h"
+#include "window_repos.h"
 #include "config.h"
 #include <stdio.h>
 
@@ -59,6 +61,9 @@ void page6_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     // Guardar el kernel por defecto (linux) al iniciar la aplicación
     window_kernel_save_kernel_variable(KERNEL_LINUX);
 
+    // Inicializar variables de repositorios si no existen
+    window_repos_init_defaults();
+
     // Mostrar el kernel actualmente seleccionado
     page6_display_current_kernel();
 
@@ -106,6 +111,10 @@ void page6_get_ui_widgets(Page6Data *data, GtkBuilder *builder)
 
     // Obtener el botón de programas extra
     data->program_extra_button = ADW_BUTTON_ROW(gtk_builder_get_object(builder, "program_extra_button"));
+
+    // Obtener el botón de repositorios
+    data->repository_button = GTK_BUTTON(gtk_builder_get_object(builder, "repository_button"));
+    if (!data->repository_button) LOG_WARNING("No se pudo obtener repository_button");
 
     // Verificar que se obtuvieron correctamente
     if (!data->essential_apps_switch) LOG_WARNING("No se pudo obtener essential_apps_switch");
@@ -193,6 +202,12 @@ void page6_connect_signals(Page6Data *data)
     if (data->program_extra_button) {
         g_signal_connect(data->program_extra_button, "activated", G_CALLBACK(on_program_extra_button_clicked), data);
         LOG_INFO("Señal del botón de programas extra conectada");
+    }
+
+    // Conectar señal del botón de repositorios
+    if (data->repository_button) {
+        g_signal_connect(data->repository_button, "clicked", G_CALLBACK(on_repository_button_clicked), data);
+        LOG_INFO("Señal del botón de repositorios conectada");
     }
 
     // Conectar señales de los switches
@@ -758,541 +773,32 @@ void load_page6_switches_from_file(void)
     LOG_INFO("=== load_page6_switches_from_file FINALIZADO ===");
 }
 
+static void apply_page6_vars(GString *content, gpointer user_data)
+{
+    Page6Data *data = (Page6Data *)user_data;
+
+    if (data->essential_apps_switch) {
+        gboolean active = adw_switch_row_get_active(data->essential_apps_switch);
+        vars_upsert(content, "ESSENTIAL_APPS_ENABLED", active ? "true" : "false");
+    }
+
+    if (data->utilities_switch) {
+        gboolean active = adw_switch_row_get_active(data->utilities_switch);
+        vars_upsert(content, "UTILITIES_ENABLED", active ? "true" : "false");
+    }
+}
+
 void save_page6_switches_to_file(void)
 {
     if (!g_page6_data) {
         LOG_ERROR("g_page6_data es NULL en save_page6_switches_to_file");
         return;
     }
-
     LOG_INFO("=== save_page6_switches_to_file INICIADO ===");
-
-    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
-
-    // Leer el archivo existente para preservar todas las variables
-    gchar *selected_disk_value = NULL;
-    gchar *partition_mode_value = NULL;
-    gchar *installation_type_value = NULL;
-    gchar *selected_kernel_value = NULL;
-    gchar *desktop_environment_value = NULL;
-    gchar *window_manager_value = NULL;
-    gchar *user_value = NULL;
-    gchar *password_user_value = NULL;
-    gchar *hostname_value = NULL;
-    gchar *password_root_value = NULL;
-    gchar *driver_video_value = NULL;
-    gchar *driver_audio_value = NULL;
-    gchar *driver_wifi_value = NULL;
-    gchar *driver_bluetooth_value = NULL;
-    gchar *keyboard_layout_value = NULL;
-    gchar *keymap_tty_value = NULL;
-    gchar *timezone_value = NULL;
-    gchar *locale_value = NULL;
-    gchar *system_shell_value = NULL;
-    gchar *filesystems_enabled_value = NULL;
-    gchar *compression_enabled_value = NULL;
-    gchar *video_codecs_enabled_value = NULL;
-    gchar *extra_programs_value = NULL;
-    gchar *utilities_apps_value = NULL;
-    gchar *program_extra_value = NULL;
-    gchar *encryption_enabled_value = NULL;
-    gchar *encryption_password_value = NULL;
-    gchar *partitions_array_value = NULL;
-
-    FILE *read_file = fopen(bash_file_path, "r");
-    if (read_file) {
-        char line[1024];
-        while (fgets(line, sizeof(line), read_file)) {
-            // Preservar variables existentes
-            if (g_str_has_prefix(line, "SELECTED_DISK=")) {
-                char *value = line + 14;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 14;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                selected_disk_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "PARTITION_MODE=")) {
-                char *value = line + 15;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 15;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                partition_mode_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "INSTALLATION_TYPE=")) {
-                char *value = line + 18;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 18;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                installation_type_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "SELECTED_KERNEL=")) {
-                char *value = line + 16;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 16;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                selected_kernel_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "DESKTOP_ENVIRONMENT=")) {
-                char *value = line + 20;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 20;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                desktop_environment_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "WINDOW_MANAGER=")) {
-                char *value = line + 15;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 15;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                window_manager_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "DRIVER_VIDEO=")) {
-                char *value = line + 13;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 13;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                driver_video_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "DRIVER_AUDIO=")) {
-                char *value = line + 13;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 13;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                driver_audio_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "DRIVER_WIFI=")) {
-                char *value = line + 12;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 12;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                driver_wifi_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "DRIVER_BLUETOOTH=")) {
-                char *value = line + 17;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 17;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                driver_bluetooth_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "KEYBOARD_LAYOUT=")) {
-                char *value = line + 16;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 16;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                keyboard_layout_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "KEYMAP_TTY=")) {
-                char *value = line + 11;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 11;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                keymap_tty_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "TIMEZONE=")) {
-                char *value = line + 9;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 9;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                timezone_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "LOCALE=")) {
-                char *value = line + 7;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 7;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                locale_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "SYSTEM_SHELL=")) {
-                char *value = line + 13;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 13;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                system_shell_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "FILESYSTEMS_ENABLED=")) {
-                char *value = line + 20;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 20;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                filesystems_enabled_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "COMPRESSION_ENABLED=")) {
-                char *value = line + 20;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 20;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                compression_enabled_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "VIDEO_CODECS_ENABLED=")) {
-                char *value = line + 21;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 21;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                video_codecs_enabled_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "export USER=") || g_str_has_prefix(line, "USER=")) {
-                char *value = strstr(line, "USER=") + 5;
-                line[strcspn(line, "\n")] = 0;
-                value = strstr(line, "USER=") + 5;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                user_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "export PASSWORD_USER=") || g_str_has_prefix(line, "PASSWORD_USER=")) {
-                char *value = strstr(line, "PASSWORD_USER=") + 14;
-                line[strcspn(line, "\n")] = 0;
-                value = strstr(line, "PASSWORD_USER=") + 14;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                password_user_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "export HOSTNAME=") || g_str_has_prefix(line, "HOSTNAME=")) {
-                char *value = strstr(line, "HOSTNAME=") + 9;
-                line[strcspn(line, "\n")] = 0;
-                value = strstr(line, "HOSTNAME=") + 9;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                hostname_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "export PASSWORD_ROOT=") || g_str_has_prefix(line, "PASSWORD_ROOT=")) {
-                char *value = strstr(line, "PASSWORD_ROOT=") + 14;
-                line[strcspn(line, "\n")] = 0;
-                value = strstr(line, "PASSWORD_ROOT=") + 14;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                password_root_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "EXTRA_PROGRAMS=")) {
-                line[strcspn(line, "\n")] = 0;
-                extra_programs_value = g_strdup(line + 15); // Guardar todo después de "EXTRA_PROGRAMS="
-            }
-            else if (g_str_has_prefix(line, "UTILITIES_APPS=")) {
-                line[strcspn(line, "\n")] = 0;
-                utilities_apps_value = g_strdup(line + 15); // Guardar todo después de "UTILITIES_APPS="
-            }
-            else if (g_str_has_prefix(line, "PROGRAM_EXTRA=")) {
-                line[strcspn(line, "\n")] = 0;
-                program_extra_value = g_strdup(line + 14); // Guardar todo después de "PROGRAM_EXTRA="
-            }
-            else if (g_str_has_prefix(line, "ENCRYPTION_ENABLED=")) {
-                char *value = line + 19;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 19;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                encryption_enabled_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "ENCRYPTION_PASSWORD=")) {
-                char *value = line + 20;
-                line[strcspn(line, "\n")] = 0;
-                value = line + 20;
-                if (value[0] == '"' && strlen(value) > 1 && value[strlen(value)-1] == '"') {
-                    value[strlen(value)-1] = 0;
-                    value++;
-                }
-                encryption_password_value = g_strdup(value);
-            }
-            else if (g_str_has_prefix(line, "PARTITIONS=(")) {
-                // Leer array PARTITIONS completo (múltiples líneas)
-                GString *partitions_content = g_string_new("");
-                g_string_append(partitions_content, line);
-                
-                // Si no termina con ), leer las siguientes líneas
-                if (!strstr(line, ")")) {
-                    char array_line[1024];
-                    while (fgets(array_line, sizeof(array_line), read_file)) {
-                        g_string_append(partitions_content, array_line);
-                        if (strstr(array_line, ")")) {
-                            break;
-                        }
-                    }
-                }
-                
-                // Remover salto de línea final si existe
-                if (partitions_content->str[partitions_content->len - 1] == '\n') {
-                    g_string_truncate(partitions_content, partitions_content->len - 1);
-                }
-                
-                partitions_array_value = g_strdup(partitions_content->str);
-                g_string_free(partitions_content, TRUE);
-            }
-        }
-        fclose(read_file);
-    }
-
-    // Escribir el archivo completo con todas las variables
-    FILE *file = fopen(bash_file_path, "w");
-    if (!file) {
-        LOG_ERROR("No se pudo abrir el archivo %s para escritura", bash_file_path);
-        g_free(bash_file_path);
-        return;
-    }
-
-    fprintf(file, "#!/bin/bash\n");
-    fprintf(file, "# Archivo de variables de configuración de Arcris\n");
-    fprintf(file, "# Generado automáticamente - No editar manualmente\n\n");
-
-    // Escribir variables de configuración regional (page2)
-    if (keyboard_layout_value) {
-        fprintf(file, "# Configuración regional\n");
-        fprintf(file, "KEYBOARD_LAYOUT=\"%s\"\n", keyboard_layout_value);
-    }
-    if (keymap_tty_value) {
-        fprintf(file, "KEYMAP_TTY=\"%s\"\n", keymap_tty_value);
-    }
-    if (timezone_value) {
-        fprintf(file, "TIMEZONE=\"%s\"\n", timezone_value);
-    }
-    if (locale_value) {
-        fprintf(file, "LOCALE=\"%s\"\n", locale_value);
-    }
-
-    // Escribir variables del sistema (window_system)
-    if (system_shell_value || filesystems_enabled_value || compression_enabled_value || video_codecs_enabled_value) {
-        fprintf(file, "\n# Configuración del sistema\n");
-        if (system_shell_value) {
-            fprintf(file, "SYSTEM_SHELL=\"%s\"\n", system_shell_value);
-        }
-        if (filesystems_enabled_value) {
-            fprintf(file, "FILESYSTEMS_ENABLED=\"%s\"\n", filesystems_enabled_value);
-        }
-        if (compression_enabled_value) {
-            fprintf(file, "COMPRESSION_ENABLED=\"%s\"\n", compression_enabled_value);
-        }
-        if (video_codecs_enabled_value) {
-            fprintf(file, "VIDEO_CODECS_ENABLED=\"%s\"\n", video_codecs_enabled_value);
-        }
-    }
-
-    // Escribir variables de página 6 (switches)
-    fprintf(file, "\n# Configuración de aplicaciones - Página 6\n");
-
-    // Essential Apps Switch - siempre escribir
-    if (g_page6_data->essential_apps_switch) {
-        gboolean active = adw_switch_row_get_active(g_page6_data->essential_apps_switch);
-        fprintf(file, "ESSENTIAL_APPS_ENABLED=\"%s\"\n", active ? "true" : "false");
-        LOG_INFO("ESSENTIAL_APPS_ENABLED guardado: %s", active ? "true" : "false");
-    } else {
-        // Inicializar por defecto si no existe
-        fprintf(file, "ESSENTIAL_APPS_ENABLED=\"true\"\n");
-        LOG_INFO("ESSENTIAL_APPS_ENABLED inicializado por defecto: true");
-    }
-
-    // Utilities Switch - siempre escribir
-    if (g_page6_data->utilities_switch) {
-        gboolean active = adw_switch_row_get_active(g_page6_data->utilities_switch);
-        fprintf(file, "UTILITIES_ENABLED=\"%s\"\n", active ? "true" : "false");
-        LOG_INFO("UTILITIES_ENABLED guardado: %s", active ? "true" : "false");
-    } else {
-        // Inicializar por defecto si no existe
-        fprintf(file, "UTILITIES_ENABLED=\"false\"\n");
-        LOG_INFO("UTILITIES_ENABLED inicializado por defecto: false");
-    }
-
-    // Program Extra Status - siempre escribir
-    if (program_extra_value) {
-        fprintf(file, "PROGRAM_EXTRA=%s\n", program_extra_value);
-        LOG_INFO("PROGRAM_EXTRA preservado: %s", program_extra_value);
-    } else {
-        // Inicializar por defecto si no existe
-        fprintf(file, "PROGRAM_EXTRA=\"false\"\n");
-        LOG_INFO("PROGRAM_EXTRA inicializado por defecto: false");
-    }
-
-    // Preservar variables de disco y partición
-    // Preservar variables de disco
-    if (selected_disk_value) {
-        fprintf(file, "\n# Configuración de disco\n");
-        fprintf(file, "SELECTED_DISK=\"%s\"\n", selected_disk_value);
-    }
-    if (partition_mode_value) {
-        fprintf(file, "PARTITION_MODE=\"%s\"\n", partition_mode_value);
-    }
-    
-    // Preservar array PARTITIONS
-    if (partitions_array_value) {
-        fprintf(file, "%s\n", partitions_array_value);
-        LOG_INFO("PARTITIONS array preservado desde page6");
-    }
-
-    // Preservar variables de usuario
-    if (user_value || password_user_value || hostname_value || password_root_value) {
-        fprintf(file, "\n# Variables de configuración del usuario\n");
-        if (user_value) {
-            fprintf(file, "export USER=\"%s\"\n", user_value);
-        }
-        if (password_user_value) {
-            fprintf(file, "export PASSWORD_USER=\"%s\"\n", password_user_value);
-        }
-        if (hostname_value) {
-            fprintf(file, "export HOSTNAME=\"%s\"\n", hostname_value);
-        }
-        if (password_root_value) {
-            fprintf(file, "export PASSWORD_ROOT=\"%s\"\n", password_root_value);
-        }
-    }
-
-    // Preservar variables de instalación
-    if (installation_type_value) {
-        fprintf(file, "\n# Tipo de instalación\n");
-        fprintf(file, "INSTALLATION_TYPE=\"%s\"\n", installation_type_value);
-    }
-    if (selected_kernel_value) {
-        fprintf(file, "\n# Kernel seleccionado\n");
-        fprintf(file, "SELECTED_KERNEL=\"%s\"\n", selected_kernel_value);
-    }
-
-    // Preservar variables de entorno de escritorio
-    if (desktop_environment_value) {
-        fprintf(file, "\n# Entorno de escritorio\n");
-        fprintf(file, "DESKTOP_ENVIRONMENT=\"%s\"\n", desktop_environment_value);
-    }
-    if (window_manager_value) {
-        fprintf(file, "WINDOW_MANAGER=\"%s\"\n", window_manager_value);
-    }
-
-    // Preservar variables de drivers de hardware
-    if (driver_video_value || driver_audio_value || driver_wifi_value || driver_bluetooth_value) {
-        fprintf(file, "\n# Drivers de hardware\n");
-        if (driver_video_value) {
-            fprintf(file, "DRIVER_VIDEO=\"%s\"\n", driver_video_value);
-        }
-        if (driver_audio_value) {
-            fprintf(file, "DRIVER_AUDIO=\"%s\"\n", driver_audio_value);
-        }
-        if (driver_wifi_value) {
-            fprintf(file, "DRIVER_WIFI=\"%s\"\n", driver_wifi_value);
-        }
-        if (driver_bluetooth_value) {
-            fprintf(file, "DRIVER_BLUETOOTH=\"%s\"\n", driver_bluetooth_value);
-        }
-    }
-
-    // Preservar programas extra
-    if (extra_programs_value) {
-        fprintf(file, "\n# Programas extra agregados por el usuario\n");
-        fprintf(file, "EXTRA_PROGRAMS=%s\n", extra_programs_value);
-        LOG_INFO("EXTRA_PROGRAMS preservado: %s", extra_programs_value);
-    }
-
-    // Preservar variables de cifrado
-    if (encryption_enabled_value || encryption_password_value) {
-        if (encryption_enabled_value) {
-            fprintf(file, "ENCRYPTION_ENABLED=\"%s\"\n", encryption_enabled_value);
-            LOG_INFO("ENCRYPTION_ENABLED preservado: %s", encryption_enabled_value);
-        }
-        if (encryption_password_value) {
-            fprintf(file, "ENCRYPTION_PASSWORD=\"%s\"\n", encryption_password_value);
-            LOG_INFO("ENCRYPTION_PASSWORD preservado: %s", encryption_password_value);
-        }
-    }
-
-    // Preservar utilidades seleccionadas
-    if (utilities_apps_value) {
-        fprintf(file, "\n# Utilidades seleccionadas\n");
-        fprintf(file, "UTILITIES_APPS=%s\n", utilities_apps_value);
-        LOG_INFO("UTILITIES_APPS preservado: %s", utilities_apps_value);
-    }
-
-    fclose(file);
-
-    // Liberar memoria
-    g_free(bash_file_path);
-    g_free(selected_disk_value);
-    g_free(partition_mode_value);
-    g_free(installation_type_value);
-    g_free(selected_kernel_value);
-    g_free(desktop_environment_value);
-    g_free(window_manager_value);
-    g_free(user_value);
-    g_free(password_user_value);
-    g_free(hostname_value);
-    g_free(password_root_value);
-    g_free(driver_video_value);
-    g_free(driver_audio_value);
-    g_free(driver_wifi_value);
-    g_free(driver_bluetooth_value);
-    g_free(keyboard_layout_value);
-    g_free(keymap_tty_value);
-    g_free(timezone_value);
-    g_free(locale_value);
-    g_free(system_shell_value);
-    g_free(filesystems_enabled_value);
-    g_free(compression_enabled_value);
-    g_free(video_codecs_enabled_value);
-    g_free(extra_programs_value);
-    g_free(utilities_apps_value);
-    g_free(program_extra_value);
-    g_free(encryption_enabled_value);
-    g_free(encryption_password_value);
-    g_free(partitions_array_value);
-
-    LOG_INFO("Variables de página 6 guardadas exitosamente en data/bash/variables.sh");
-    LOG_INFO("=== save_page6_switches_to_file FINALIZADO ===");
+    if (!vars_update(apply_page6_vars, g_page6_data))
+        LOG_WARNING("No se pudo guardar switches de página 6");
+    else
+        LOG_INFO("=== save_page6_switches_to_file FINALIZADO ===");
 }
 
 // Implementaciones para el botón de programas extra
@@ -1391,4 +897,34 @@ void page6_open_utilities_window(Page6Data *data)
     window_apps_show(apps_data, parent_window);
 
     LOG_INFO("Ventana de utilities apps mostrada exitosamente");
+}
+
+void on_repository_button_clicked(GtkButton *button, gpointer user_data)
+{
+    (void)button;
+    Page6Data *data = (Page6Data *)user_data;
+    if (!data) return;
+
+    page6_open_repos_window(data);
+}
+
+void page6_open_repos_window(Page6Data *data)
+{
+    if (!data) return;
+
+    WindowReposData *repos_data = window_repos_get_instance();
+    if (!repos_data) {
+        repos_data = window_repos_new();
+    }
+
+    GtkWindow *parent_window = NULL;
+    if (data->main_content) {
+        GtkWidget *toplevel = GTK_WIDGET(gtk_widget_get_root(data->main_content));
+        if (GTK_IS_WINDOW(toplevel)) {
+            parent_window = GTK_WINDOW(toplevel);
+        }
+    }
+
+    window_repos_show(repos_data, parent_window);
+    LOG_INFO("Ventana de repositorios abierta");
 }

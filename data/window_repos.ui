@@ -65,7 +65,7 @@
                           <object class="AdwSwitchRow" id="chaotic_aur_switch">
                             <property name="title">Chaotic-AUR</property>
                             <property name="subtitle">AUR precompilado, uso general</property>
-                            <property name="active">true</property>
+                            <property name="active">false</property>
                           </object>
                         </child>
 
@@ -74,7 +74,7 @@
                           <object class="AdwSwitchRow" id="archlinuxcn_switch">
                             <property name="title">archlinuxcn</property>
                             <property name="subtitle">Paquetes populares precompilados</property>
-                            <property name="active">true</property>
+                            <property name="active">false</property>
                           </object>
                         </child>
 
@@ -83,7 +83,7 @@
                           <object class="AdwSwitchRow" id="cachyos_switch">
                             <property name="title">CachyOS repos</property>
                             <property name="subtitle">Repositorios separados optimizados para diferentes CPU.</property>
-                            <property name="active">true</property>
+                            <property name="active">false</property>
                           </object>
                         </child>
 
@@ -132,7 +132,7 @@
 
                               <!-- Link Button como fila hija, aparece DEBAJO del título -->
                               <child>
-                                <object class="GtkListBoxRow">
+                                <object class="GtkListBoxRow" id="repos_manual">
                                   <property name="activatable">false</property>
                                   <property name="selectable">false</property>
                                   <child>
@@ -160,7 +160,7 @@
 
                               <!-- GtkTextView debajo del link -->
                               <child>
-                                <object class="GtkListBoxRow">
+                                <object class="GtkListBoxRow" id="repos_textview_row">
                                   <property name="activatable">false</property>
                                   <property name="selectable">false</property>
                                   <child>

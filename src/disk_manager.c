@@ -1,4 +1,5 @@
 #include "disk_manager.h"
+#include "variables_utils.h"
 #include "partitionmanual.h"
 #include "page3.h"
 #include "config.h"
@@ -400,98 +401,26 @@ on_disk_manager_refresh_clicked(GtkButton *button, gpointer user_data)
 }
 
 // Función para guardar la variable del disco seleccionado al archivo variables.sh
+// Función para guardar la variable del disco seleccionado al archivo variables.sh
+static void apply_selected_disk(GString *content, gpointer user_data)
+{
+    DiskManager *manager = (DiskManager *)user_data;
+    vars_upsert(content, "SELECTED_DISK",
+                manager->selected_disk_path ? manager->selected_disk_path : "");
+}
+
 gboolean
 disk_manager_save_to_variables(DiskManager *manager)
 {
     if (!manager) return FALSE;
-
-    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
-
-    // Leer el archivo existente para preservar otras variables
-    GString *existing_content = g_string_new("");
-    gchar *current_partition_mode = NULL;
-    FILE *read_file = fopen(bash_file_path, "r");
-
-
-    if (read_file) {
-        char line[1024];
-        while (fgets(line, sizeof(line), read_file)) {
-            // Skip la línea de SELECTED_DISK si existe
-            if (g_str_has_prefix(line, "SELECTED_DISK=")) {
-                continue;
-            }
-            // Preservar PARTITION_MODE para reescribirlo después
-            if (g_str_has_prefix(line, "PARTITION_MODE=")) {
-                // Extraer el valor de PARTITION_MODE
-                gchar *mode_value = strchr(line, '=');
-                if (mode_value) {
-                    mode_value++; // Saltar el '='
-                    mode_value = g_strstrip(mode_value);
-                    // Remover comillas si existen
-                    if (mode_value[0] == '"' && mode_value[strlen(mode_value)-1] == '"') {
-                        mode_value[strlen(mode_value)-1] = '\0';
-                        mode_value++;
-                    }
-                    current_partition_mode = g_strdup(mode_value);
-                    LOG_INFO("PARTITION_MODE preservado desde variables.sh: %s", current_partition_mode);
-                }
-                continue;
-            }
-            // Skip líneas de fin de archivo
-            if (g_str_has_prefix(line, "# Fin del archivo")) {
-                continue;
-            }
-            g_string_append(existing_content, line);
-        }
-        fclose(read_file);
-    }
-
-    // Escribir el archivo actualizado
-    FILE *file = fopen(bash_file_path, "w");
-    if (!file) {
-        LOG_ERROR("No se pudo crear el archivo %s", bash_file_path);
-        g_free(bash_file_path);
-        g_string_free(existing_content, TRUE);
+    if (!vars_update(apply_selected_disk, manager)) {
+        LOG_WARNING("No se pudo guardar SELECTED_DISK en variables.sh");
         return FALSE;
     }
-
-    // Si no había contenido previo, agregar header
-    if (existing_content->len == 0) {
-        fprintf(file, "#!/bin/bash\n");
-        fprintf(file, "# Variables de configuración generadas por Arcris\n");
-        fprintf(file, "# Archivo generado automáticamente - No editar manualmente\n\n");
-    } else {
-        // Escribir contenido existente
-        fprintf(file, "%s", existing_content->str);
-    }
-
-    // Agregar la variable del disco seleccionado
-    if (manager->selected_disk_path) {
-        fprintf(file, "SELECTED_DISK=\"%s\"\n", manager->selected_disk_path);
-    } else {
-        fprintf(file, "SELECTED_DISK=\"\"\n");
-    }
-
-    // Reescribir PARTITION_MODE si existía
-    if (current_partition_mode) {
-        fprintf(file, "PARTITION_MODE=\"%s\"\n", current_partition_mode);
-        LOG_INFO("PARTITION_MODE reescrito en variables.sh: %s", current_partition_mode);
-        g_free(current_partition_mode);
-    } else {
-        LOG_INFO("No se encontró PARTITION_MODE para preservar");
-    }
-
-    // No agregar línea final duplicada
-
-    fclose(file);
-    g_string_free(existing_content, TRUE);
-
-    LOG_INFO("Variable SELECTED_DISK guardada en: %s", bash_file_path);
-    g_free(bash_file_path);
+    LOG_INFO("Variable SELECTED_DISK guardada exitosamente");
     return TRUE;
 }
 
-// Función para cargar la variable del disco desde el archivo variables.sh
 gboolean
 disk_manager_load_from_variables(DiskManager *manager)
 {

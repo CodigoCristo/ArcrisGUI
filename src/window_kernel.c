@@ -1,5 +1,6 @@
 #include "window_kernel.h"
 #include "config.h"
+#include "variables_utils.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -374,45 +375,46 @@ gboolean window_kernel_save_kernel_variable(KernelType kernel)
         return FALSE;
     }
     
-    // Buscar si ya existe la variable SELECTED_KERNEL
+    /* Reescribir asegurando que "# Kernel seleccionado" siempre precede
+     * a SELECTED_KERNEL=, tanto si ya existía como si no. */
     gchar **lines = g_strsplit(config_content, "\n", -1);
-    GString *new_content = g_string_new("");
+    g_free(config_content);
+    GString *result = g_string_new("");
     gboolean found = FALSE;
-    
+    gboolean prev_is_comment = FALSE;
+
     for (int i = 0; lines[i] != NULL; i++) {
-        if (g_str_has_prefix(lines[i], "SELECTED_KERNEL=")) {
-            // Reemplazar la línea existente
-            g_string_append_printf(new_content, "SELECTED_KERNEL=\"%s\"\n", kernel_name);
+        gchar *stripped = g_strstrip(g_strdup(lines[i]));
+
+        if (g_str_has_prefix(stripped, "SELECTED_KERNEL=")) {
+            if (!prev_is_comment)
+                g_string_append(result, "# Kernel seleccionado\n");
+            g_string_append_printf(result, "SELECTED_KERNEL=\"%s\"\n", kernel_name);
             found = TRUE;
-        } else if (g_str_has_prefix(lines[i], "# Kernel seleccionado")) {
-            // Saltar el comentario anterior (se añadirá nuevo)
-            continue;
         } else {
-            g_string_append_printf(new_content, "%s\n", lines[i]);
+            g_string_append_printf(result, "%s\n", lines[i]);
         }
+
+        prev_is_comment = (strcmp(stripped, "# Kernel seleccionado") == 0);
+        g_free(stripped);
     }
-    
-    // Si no se encontró, añadir al final
+
     if (!found) {
-        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
-            g_string_append_c(new_content, '\n');
-        }
-        g_string_append_printf(new_content, "\n# Kernel seleccionado\nSELECTED_KERNEL=\"%s\"\n", kernel_name);
+        g_string_append(result, "\n# Kernel seleccionado\n");
+        g_string_append_printf(result, "SELECTED_KERNEL=\"%s\"\n", kernel_name);
     }
-    
-    // Escribir el archivo actualizado
-    gboolean success = g_file_set_contents(config_path, new_content->str, -1, &error);
+
+    g_strfreev(lines);
+    vars_trim_trailing_newlines(result);
+    gboolean success = g_file_set_contents(config_path, result->str, -1, &error);
     if (!success) {
         LOG_ERROR("Error al escribir archivo de configuración: %s", error ? error->message : "Unknown error");
         if (error) g_error_free(error);
     } else {
         LOG_INFO("SELECTED_KERNEL guardado en variables.sh: %s", kernel_name);
     }
-    
-    g_strfreev(lines);
-    g_free(config_content);
-    g_string_free(new_content, TRUE);
-    
+
+    g_string_free(result, TRUE);
     return success;
 }
 

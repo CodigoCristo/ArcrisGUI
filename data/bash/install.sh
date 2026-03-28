@@ -3323,10 +3323,87 @@ source "$(dirname "$0")/config_kitty.sh"
 # -------------------------------------------------
 source "$(dirname "$0")/config_ly.sh"
 # -------------------------------------------------
-source "$(dirname "$0")/program_extra.sh"
+source "$(dirname "$0")/program_essential.sh"
 # -------------------------------------------------
 
+# Configuración de repositorios de Arch Linux
+echo ""
+echo -e "${GREEN}| Configurando repositorios de Arch Linux |${NC}"
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+echo ""
 
+# Configurar mirrorlist según modo
+if [ "$REPOS_MIRROR_MODE" = "manual" ]; then
+    echo -e "${CYAN}Aplicando mirrorlist personalizado...${NC}"
+    printf "%b" "$REPOS_MIRROR_CUSTOM" > /mnt/etc/pacman.d/mirrorlist
+    echo -e "${GREEN}✓ Mirrorlist personalizado aplicado${NC}"
+elif [ "$REPOS_MIRROR_MODE" = "auto" ]; then
+    echo -e "${CYAN}✨ Reflector ya hizo su magia — espejos de alta velocidad seleccionados,"
+    echo -e "   rutas optimizadas, latencia al mínimo. Tu sistema descarga a toda máquina. ✓${NC}"
+fi
+
+# Chaotic-AUR
+if [ "$REPOS_CHAOTIC_AUR" = "true" ]; then
+    echo -e "${CYAN}Configurando Chaotic-AUR...${NC}"
+    chroot /mnt /bin/bash -c "pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com"
+    chroot /mnt /bin/bash -c "pacman-key --lsign-key 3056513887B78AEB"
+    chroot /mnt /bin/bash -c "pacman -U --noconfirm \
+        'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' \
+        'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'"
+    cat >> /mnt/etc/pacman.conf << 'EOF'
+
+[chaotic-aur]
+Include = /etc/pacman.d/chaotic-mirrorlist
+EOF
+    echo -e "${GREEN}✓ Chaotic-AUR configurado${NC}"
+fi
+
+# ArchLinuxCN
+if [ "$REPOS_ARCHLINUXCN" = "true" ]; then
+    echo -e "${CYAN}Configurando ArchLinuxCN...${NC}"
+    cat >> /mnt/etc/pacman.conf << 'EOF'
+
+[archlinuxcn]
+Server = https://repo.archlinuxcn.org/$arch
+EOF
+    chroot /mnt /bin/bash -c "pacman -Sy --noconfirm archlinuxcn-keyring"
+    echo -e "${GREEN}✓ ArchLinuxCN configurado${NC}"
+fi
+
+# CachyOS
+if [ "$REPOS_CACHYOS" = "true" ]; then
+    echo -e "${CYAN}Configurando repositorios CachyOS...${NC}"
+    # Detectar arquitectura del CPU
+    CACHYOS_ARCH="x86-64 (genérico)"
+    CPU_MARCH=$(gcc -march=native -Q --help=target 2>&1 | grep -Po "^\s+-march=\s+\K(\w+)$" || true)
+    if [ "$CPU_MARCH" = "znver4" ] || [ "$CPU_MARCH" = "znver5" ]; then
+        CACHYOS_ARCH="znver4 (AMD Zen 4/5)"
+    elif /lib/ld-linux-x86-64.so.2 --help 2>/dev/null | grep -q "x86-64-v4 (supported, searched)"; then
+        CACHYOS_ARCH="x86-64-v4"
+    elif /lib/ld-linux-x86-64.so.2 --help 2>/dev/null | grep -q "x86-64-v3 (supported, searched)"; then
+        CACHYOS_ARCH="x86-64-v3"
+    fi
+    echo -e "${CYAN}  Arquitectura detectada: ${YELLOW}${CACHYOS_ARCH}${NC}"
+    # Descargar script oficial desde el LiveCD (detecta automáticamente v3/v4/znver4)
+    curl -fsSL https://mirror.cachyos.org/cachyos-repo.tar.xz -o /tmp/cachyos-repo.tar.xz
+    tar xf /tmp/cachyos-repo.tar.xz -C /tmp
+    cp -r /tmp/cachyos-repo /mnt/tmp/cachyos-repo
+    chroot /mnt /bin/bash -c "cd /tmp/cachyos-repo && yes | bash ./cachyos-repo.sh" \
+        || echo -e "${RED}ERROR: No se pudo configurar CachyOS${NC}"
+    rm -rf /tmp/cachyos-repo /tmp/cachyos-repo.tar.xz /mnt/tmp/cachyos-repo 2>/dev/null || true
+    echo -e "${GREEN}✓ CachyOS configurado (arquitectura detectada automáticamente)${NC}"
+fi
+
+# Sincronizar base de datos con los nuevos repositorios
+if [ "$REPOS_CHAOTIC_AUR" = "true" ] || [ "$REPOS_ARCHLINUXCN" = "true" ] || [ "$REPOS_CACHYOS" = "true" ]; then
+    echo -e "${CYAN}Sincronizando base de datos con los nuevos repositorios...${NC}"
+    chroot /mnt /bin/bash -c "pacman -Syy --noconfirm"
+    echo -e "${GREEN}✓ Repositorios adicionales listos${NC}"
+fi
+
+sleep 2
+clear
+# -------------------------------------------------
 
 echo -e "${GREEN}✓ Tipografías instaladas${NC}"
 # Fuentes base

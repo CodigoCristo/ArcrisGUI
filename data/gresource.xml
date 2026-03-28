@@ -17,6 +17,7 @@
     <file alias="window_system.ui" compressed="true">window_system.ui</file>
     <file alias="window_program_extra.ui" compressed="true">window_program_extra.ui</file>
     <file alias="window_apps.ui" compressed="true">window_apps.ui</file>
+    <file alias="window_repos.ui" compressed="true">window_repos.ui</file>
 
 
     <file alias="locale.gen">locale.gen</file>

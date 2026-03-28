@@ -1,5 +1,6 @@
 #include "window_apps.h"
 #include "config.h"
+#include "variables_utils.h"
 #include <glib/gstdio.h>
 #include <string.h>
 #include <gio/gio.h>
@@ -752,12 +753,29 @@ gboolean window_apps_save_selected_apps_to_file(WindowAppsData *data)
         }
     }
 
-    // Si no se encontró, agregar al final
+    // Si no se encontró, insertar justo después de UTILITIES_ENABLED=
     if (!found) {
-        g_string_append_printf(new_content, "\n# Utilities apps seleccionadas por el usuario\n%s\n", array_content->str);
+        gchar **lines2 = g_strsplit(new_content->str, "\n", -1);
+        GString *fixed = g_string_new("");
+        gboolean inserted = FALSE;
+        for (int i = 0; lines2[i] != NULL; i++) {
+            g_string_append_printf(fixed, "%s\n", lines2[i]);
+            if (!inserted && g_str_has_prefix(g_strstrip(lines2[i]), "UTILITIES_ENABLED=")) {
+                g_string_append_printf(fixed, "\n# Utilities apps seleccionadas por el usuario\n%s\n",
+                                       array_content->str);
+                inserted = TRUE;
+            }
+        }
+        if (!inserted)
+            g_string_append_printf(fixed, "\n# Utilities apps seleccionadas por el usuario\n%s\n",
+                                   array_content->str);
+        g_string_assign(new_content, fixed->str);
+        g_string_free(fixed, TRUE);
+        g_strfreev(lines2);
     }
 
     // Guardar archivo actualizado
+    vars_trim_trailing_newlines(new_content);
     gboolean success = g_file_set_contents(VARIABLES_FILE_PATH, new_content->str, -1, &error);
 
     if (success) {

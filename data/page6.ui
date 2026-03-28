@@ -73,12 +73,29 @@
             </child>
 
 
+            <child>
+              <object class="AdwActionRow">
+                <property name="title">Repositorios</property>
+                <property name="subtitle">Official y Unofficial Repositorios de usuarios</property>
+                <property name="activatable">false</property>
+                <child type="suffix">
+                  <object class="GtkButton" id="repository_button">
+                    <property name="icon-name">tab-new</property>
+                    <property name="valign">center</property>
+                    <property name="margin-end">30</property>
+                    <style>
+                      <class name="flat"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
 
 
             <child>
               <object class="AdwSwitchRow" id="essential_apps_switch">
                 <property name="title">Aplicaciones base</property>
-                <property name="subtitle">Sistemas de archivos,shell, códecs, etc </property>
+                <property name="subtitle">Sistemas de archivos, shell, códecs, etc </property>
                 <property name="active">false</property>
                 <property name="activatable">false</property>
                 <child type="suffix">

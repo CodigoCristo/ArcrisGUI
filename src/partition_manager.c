@@ -1,5 +1,6 @@
 #include "partition_manager.h"
 #include "config.h"
+#include "variables_utils.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -242,93 +243,91 @@ partition_manager_save_to_variables(PartitionManager *manager)
 {
     if (!manager) return FALSE;
 
-    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
-
-    // Leer el archivo existente para preservar otras variables
-    GString *existing_content = g_string_new("");
-    FILE *read_file = fopen(bash_file_path, "r");
-    gboolean in_partitions_array = FALSE;
-
-    if (read_file) {
-        char line[1024];
-        while (fgets(line, sizeof(line), read_file)) {
-            // Detectar inicio del array PARTITIONS
-            if (g_str_has_prefix(line, "PARTITIONS=(")) {
-                in_partitions_array = TRUE;
-                continue; // No incluir esta línea
+    // Construir el bloque PARTITIONS
+    GString *partitions_block = g_string_new("");
+    if (manager->partition_configs) {
+        g_string_append(partitions_block, "PARTITIONS=(\n");
+        for (GList *l = manager->partition_configs; l != NULL; l = l->next) {
+            PartitionConfig *config = (PartitionConfig*)l->data;
+            if (config) {
+                if (config->is_swap)
+                    g_string_append_printf(partitions_block, "    \"%s %s swap\"\n",
+                                           config->device_path, config->filesystem);
+                else
+                    g_string_append_printf(partitions_block, "    \"%s %s %s\"\n",
+                                           config->device_path, config->filesystem, config->mount_point);
             }
-
-            // Detectar fin del array PARTITIONS
-            if (in_partitions_array && g_str_has_suffix(line, ")\n")) {
-                in_partitions_array = FALSE;
-                continue; // No incluir esta línea
-            }
-
-            // Si estamos dentro del array, saltar las líneas
-            if (in_partitions_array) {
-                continue;
-            }
-
-            // Skip líneas de fin de archivo
-            if (g_str_has_prefix(line, "# Fin del archivo")) {
-                continue;
-            }
-
-            g_string_append(existing_content, line);
         }
-        fclose(read_file);
+        g_string_append(partitions_block, ")");
+    } else {
+        g_string_append(partitions_block, "PARTITIONS=()");
     }
 
-    // Escribir el archivo actualizado
-    FILE *file = fopen(bash_file_path, "w");
-    if (!file) {
-        LOG_ERROR("No se pudo crear el archivo %s", bash_file_path);
+    // Leer archivo existente
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
+    GError *error = NULL;
+    gchar *file_content = NULL;
+
+    if (!g_file_get_contents(bash_file_path, &file_content, NULL, &error)) {
+        LOG_ERROR("No se pudo leer variables.sh: %s", error ? error->message : "Unknown error");
+        if (error) g_error_free(error);
+        g_string_free(partitions_block, TRUE);
         g_free(bash_file_path);
-        g_string_free(existing_content, TRUE);
         return FALSE;
     }
 
-    // Si no había contenido previo, agregar header
-    if (existing_content->len == 0) {
-        fprintf(file, "#!/bin/bash\n");
-        fprintf(file, "# Variables de configuración generadas por Arcris\n");
-        fprintf(file, "# Archivo generado automáticamente - No editar manualmente\n\n");
-    } else {
-        // Escribir contenido existente
-        fprintf(file, "%s", existing_content->str);
-    }
+    // Procesar líneas: eliminar bloque PARTITIONS existente e insertar tras PARTITION_MODE
+    gchar **lines = g_strsplit(file_content, "\n", -1);
+    g_free(file_content);
+    GString *result = g_string_new("");
+    gboolean in_partitions = FALSE;
+    gboolean inserted = FALSE;
 
-    // Agregar el array de particiones
-    if (manager->partition_configs) {
-        //fprintf(file, "# Crear array de \"estructuras\" separadas por espacio\n");
-        fprintf(file, "PARTITIONS=(\n");
+    for (int i = 0; lines[i] != NULL; i++) {
+        gchar *stripped = g_strstrip(g_strdup(lines[i]));
 
-        GList *l;
-        for (l = manager->partition_configs; l != NULL; l = l->next) {
-            PartitionConfig *config = (PartitionConfig*)l->data;
-            if (config) {
-                if (config->is_swap) {
-                    fprintf(file, "    \"%s %s swap\"\n",
-                           config->device_path, config->filesystem);
-                } else {
-                    fprintf(file, "    \"%s %s %s\"\n",
-                           config->device_path, config->filesystem, config->mount_point);
-                }
-            }
+        // Saltar bloque PARTITIONS existente
+        if (g_str_has_prefix(stripped, "PARTITIONS=(")) {
+            in_partitions = !strstr(stripped, ")");  // multilinea si no cierra en la misma línea
+            g_free(stripped);
+            continue;
+        }
+        if (in_partitions) {
+            if (strstr(stripped, ")"))
+                in_partitions = FALSE;
+            g_free(stripped);
+            continue;
         }
 
-        fprintf(file, ")\n");
-    } else {
-        //fprintf(file, "# Crear array de \"estructuras\" separadas por espacio\n");
-        fprintf(file, "PARTITIONS=()\n");
+        g_string_append_printf(result, "%s\n", lines[i]);
+
+        // Insertar PARTITIONS justo después de PARTITION_MODE=
+        if (!inserted && g_str_has_prefix(stripped, "PARTITION_MODE=")) {
+            g_string_append_printf(result, "%s\n", partitions_block->str);
+            inserted = TRUE;
+        }
+
+        g_free(stripped);
     }
 
-    fclose(file);
-    g_string_free(existing_content, TRUE);
+    // Si PARTITION_MODE no existe todavía, agregar al final
+    if (!inserted)
+        g_string_append_printf(result, "%s\n", partitions_block->str);
 
-    LOG_INFO("Configuraciones de partición guardadas en: %s", bash_file_path);
+    vars_trim_trailing_newlines(result);
+    gboolean ok = g_file_set_contents(bash_file_path, result->str, -1, &error);
+    if (!ok) {
+        LOG_ERROR("Error guardando variables.sh: %s", error ? error->message : "Unknown error");
+        if (error) g_error_free(error);
+    } else {
+        LOG_INFO("Configuraciones de partición guardadas en: %s", bash_file_path);
+    }
+
+    g_strfreev(lines);
+    g_string_free(result, TRUE);
+    g_string_free(partitions_block, TRUE);
     g_free(bash_file_path);
-    return TRUE;
+    return ok;
 }
 
 // Cargar configuraciones desde variables.sh
