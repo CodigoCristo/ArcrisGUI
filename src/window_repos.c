@@ -58,6 +58,8 @@ static gchar* escape_for_bash_var(const gchar *text)
             g_string_append(result, "\\\"");
         else if (*p == '\\')
             g_string_append(result, "\\\\");
+        else if (*p == '$')
+            g_string_append(result, "\\$");
         else
             g_string_append_c(result, *p);
     }

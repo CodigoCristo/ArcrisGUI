@@ -116,6 +116,7 @@ configurar_btrfs() {
     install_pacman_chroot_with_retry "snapper"
     install_pacman_chroot_with_retry "btrfs-assistant"
     install_pacman_chroot_with_retry "grub-btrfs" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo instalar grub-btrfs${NC}"
+    install_pacman_chroot_with_retry "inotify-tools" "--needed" 2>/dev/null || echo -e "${YELLOW}Warning: No se pudo instalar inotify-tools${NC}"
 
     # Configurar grub-btrfs para boot desde snapshots
     if chroot /mnt /bin/bash -c "pacman -Qq grub-btrfs" 2>/dev/null; then
@@ -155,6 +156,7 @@ configurar_btrfs() {
 
         # Intentar crear configuración con --no-dbus para LiveCD
         if chroot /mnt /bin/bash -c "snapper --no-dbus -c root create-config /" 2>/dev/null; then
+            chroot /mnt /bin/bash -c "snapper --no-dbus -c root set-config TIMELINE_LIMIT_HOURLY=0 TIMELINE_LIMIT_DAILY=7 TIMELINE_LIMIT_WEEKLY=0 TIMELINE_LIMIT_MONTHLY=0 TIMELINE_LIMIT_YEARLY=0" 2>/dev/null
             echo -e "${GREEN}✓ Configuración de snapper para raíz creada exitosamente${NC}"
         else
             # Crear configuración manualmente si falla
@@ -173,6 +175,7 @@ configurar_btrfs() {
 
             # Intentar crear configuración para /home con --no-dbus para LiveCD
             if chroot /mnt /bin/bash -c "snapper --no-dbus -c home create-config /home" 2>/dev/null; then
+                chroot /mnt /bin/bash -c "snapper --no-dbus -c home set-config TIMELINE_LIMIT_HOURLY=0 TIMELINE_LIMIT_DAILY=7 TIMELINE_LIMIT_WEEKLY=0 TIMELINE_LIMIT_MONTHLY=0 TIMELINE_LIMIT_YEARLY=0" 2>/dev/null
                 echo -e "${GREEN}✓ Configuración de snapper para /home creada exitosamente${NC}"
             else
                 # Crear configuración manualmente si falla
