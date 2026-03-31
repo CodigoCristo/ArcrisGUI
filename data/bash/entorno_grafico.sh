@@ -158,8 +158,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "loupe"
                 install_pacman_chroot_with_retry "showtime"
                 install_pacman_chroot_with_retry "papers"
-                install_pacman_chroot_with_retry "lightdm"
-                install_pacman_chroot_with_retry "gnome-console"
                 install_pacman_chroot_with_retry "sddm"
                 install_pacman_chroot_with_retry "sddm-kcm"
                 chroot /mnt /bin/bash -c "systemctl enable sddm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
@@ -435,7 +433,6 @@ case "$INSTALLATION_TYPE" in
         install_pacman_chroot_with_retry "xorg-server"
         install_pacman_chroot_with_retry "xorg-apps"
         install_pacman_chroot_with_retry "xorg-xinit"
-        install_pacman_chroot_with_retry "xorg-xauth"
         install_pacman_chroot_with_retry "pcmanfm"
         install_pacman_chroot_with_retry "gvfs"
         install_pacman_chroot_with_retry "lm_sensors"
@@ -450,6 +447,8 @@ case "$INSTALLATION_TYPE" in
         # Instalar Ly display manager
         echo -e "${CYAN}Instalando Ly display manager...${NC}"
         install_yay_chroot_with_retry "ly"
+        install_pacman_chroot_with_retry "xorg-xauth"
+        install_pacman_chroot_with_retry "brightnessctl"
         chroot /mnt /bin/bash -c "systemctl enable ly@tty1.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
 
         case "$WINDOW_MANAGER" in
@@ -483,6 +482,8 @@ case "$INSTALLATION_TYPE" in
                 # Crear configuración básica de i3
                 mkdir -p /mnt/home/$USER/.config/i3
                 chroot /mnt /bin/bash -c "install -Dm644 /etc/i3/config /home/$USER/.config/i3/config"
+                mkdir -p /mnt/home/$USER/.config/i3status
+                chroot /mnt /bin/bash -c "install -Dm644 /etc/i3status.conf /home/$USER/.config/i3status/config"
                 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
             "AWESOME")

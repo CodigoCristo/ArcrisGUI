@@ -3421,7 +3421,7 @@ echo -e "${GREEN}✓ Tipografías instaladas${NC}"
 # Fuentes base
 install_pacman_chroot_with_retry "noto-fonts"
 install_pacman_chroot_with_retry "gnu-free-fonts"
-install_pacman_chroot_with_retry "ttf-0xproto-nerd"
+install_yay_chroot_with_retry "ttf-material-design-icons-extended"
 # Iconos
 install_pacman_chroot_with_retry "ttf-nerd-fonts-symbols"
 install_pacman_chroot_with_retry "ttf-jetbrains-mono-nerd"
@@ -3554,7 +3554,6 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
 fi
 echo -e "${CYAN}• Puedes iniciar sesión con:${NC}"
 echo -e "  Usuario: ${GREEN}$USER${NC}"
-echo -e "  Contraseña: ${GREEN}$PASSWORD_USER${NC}"
 echo ""
 sleep 5
 # Barra de progreso final
