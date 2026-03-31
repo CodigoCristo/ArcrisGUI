@@ -65,7 +65,7 @@ sudo pacman -S --needed git wget curl rsync
 - **Disco/Sistema**: `udisks2`, `networkmanager`
 - **Requerida**: `tecla`
 
-## 🚀 Instalación y Uso
+## 🚀 Instalación y Uso dentro de un LiveCD basado en Arch Linux
 
 ### 1. Clonar el Repositorio
 
@@ -92,19 +92,6 @@ ninja -C builddir
 
 # O usar el script de desarrollo
 ./dev.sh run
-```
-
-### 4. Instalación en el Sistema (Opcional)
-
-```bash
-# Instalar en el sistema
-sudo ninja -C builddir install
-
-# Actualizar cache de iconos
-sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor/
-
-# Actualizar base de datos de aplicaciones
-sudo update-desktop-database /usr/share/applications/
 ```
 
 ## 🎯 Guía de Uso
