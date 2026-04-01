@@ -1,0 +1,94 @@
+configuration {
+    show-icons:             true;
+    icon-theme:             "breeze-dark";
+    modi:                   "drun,run,window";
+    drun-display-format:    "{name}";
+    drun-show-actions:      false;
+    grouping:               true;
+}
+
+window {
+    width:              700px;
+    border-radius:      14px;
+    border:             1px;
+    padding:            14px;
+    background-color:   rgba(13, 17, 23, 0.97);
+    border-color:       #1793d1;
+    text-color:         #dce3ea;
+    font:               "MesloLGS Nerd Font 11";
+}
+
+inputbar {
+    padding:            10px 14px;
+    border-radius:      10px;
+    border:             1px;
+    border-color:       #1e3a4f;
+    background-color:   rgba(21, 27, 34, 0.95);
+    children:           [ prompt, entry ];
+}
+
+prompt {
+    text-color:         #1793d1;
+    padding:            0 8px 0 0;
+}
+
+entry {
+    text-color:         #dce3ea;
+    placeholder-color:  #4a5568;
+}
+
+listview {
+    background-color:   transparent;
+    margin:             8px 0 0 0;
+    spacing:            4px;
+    columns:            2;
+    lines:              8;
+}
+
+element {
+    padding:            10px 12px;
+    border-radius:      10px;
+    border:             1px;
+    border-color:       rgba(30, 58, 79, 0.5);
+}
+
+element normal normal {
+    background-color:   rgba(21, 32, 43, 0.95);
+    text-color:         #cfd6dc;
+}
+
+element alternate normal {
+    background-color:   rgba(21, 32, 43, 0.95);
+    text-color:         #cfd6dc;
+}
+
+element normal active {
+    background-color:   rgba(21, 32, 43, 0.95);
+    text-color:         #1793d1;
+}
+
+element alternate active {
+    background-color:   rgba(21, 32, 43, 0.95);
+    text-color:         #1793d1;
+}
+
+element selected normal {
+    background-color:   rgba(23, 147, 209, 0.35);
+    text-color:         #ffffff;
+    border-color:       #1793d1;
+}
+
+element selected active {
+    background-color:   rgba(23, 147, 209, 0.45);
+    text-color:         #ffffff;
+    border-color:       #1793d1;
+}
+
+element-icon {
+    size:               24px;
+}
+
+element-text {
+    text-color:         inherit;
+    highlight:          bold #1793d1;
+}

@@ -444,6 +444,8 @@ case "$INSTALLATION_TYPE" in
         install_pacman_chroot_with_retry "gdk-pixbuf2"
         install_pacman_chroot_with_retry "fontconfig"
         install_pacman_chroot_with_retry "gnome-keyring"
+        install_pacman_chroot_with_retry "gnome-themes-extra"
+        install_pacman_chroot_with_retry "adwaita-icon-theme"
         # Instalar Ly display manager
         echo -e "${CYAN}Instalando Ly display manager...${NC}"
         install_yay_chroot_with_retry "ly"
@@ -463,7 +465,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "rofi" #Lanzadores de aplicaciones. Rofi es más moderno y configurable.
                 install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
                 install_pacman_chroot_with_retry "pavucontrol" #Control de volumen gráfico para PulseAudio/PipeWire.
-                install_pacman_chroot_with_retry "dunst" #Notificaciones en pantalla.
+                install_pacman_chroot_with_retry "libnotify" #Notificaciones en pantalla.
                 install_pacman_chroot_with_retry "lxappearance" #Para configurar temas GTK.
                 install_pacman_chroot_with_retry "xss-lock"           # Activador de bloqueo automático
                 install_pacman_chroot_with_retry "slock"              # Bloqueador de pantalla.
@@ -476,13 +478,25 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "alacritty" #Emulador de terminal acelerado por GPU
                 echo -e "${CYAN}Instalando i3 Window Manager...${NC}"
                 install_pacman_chroot_with_retry "i3-wm"
-                install_pacman_chroot_with_retry "i3status"
-                install_pacman_chroot_with_retry "i3lock"
-                install_pacman_chroot_with_retry "i3blocks"
+                install_pacman_chroot_with_retry "i3status-rust"
+                install_yay_chroot_with_retry "betterlockscreen"
+                install_pacman_chroot_with_retry "picom"
+                install_pacman_chroot_with_retry "bc"
+                install_pacman_chroot_with_retry "xdotool"
+                install_pacman_chroot_with_retry "alsa-utils"
+                install_pacman_chroot_with_retry "powerline-fonts"
+                install_pacman_chroot_with_retry "otf-font-awesome"
+                install_yay_chroot_with_retry "ttf-noto-emoji-monochrome"
                 # Crear configuración básica de i3
                 mkdir -p /mnt/home/$USER/.config/i3
-                chroot /mnt /bin/bash -c "install -Dm644 /etc/i3/config /home/$USER/.config/i3/config"
-                mkdir -p /mnt/home/$USER/.config/i3status
+                # Crear configuración de I3wm
+                echo "Copiando configuracion de I3wm..."
+                cp /usr/share/arcrisgui/data/bash/i3/atajos.txt "/mnt/home/$USER/atajos.txt"
+                cp /usr/share/arcrisgui/data/bash/i3/i3-config.zip /mnt/home/$USER/.config/
+                unzip /mnt/home/$USER/.config/i3-config.zip -d /mnt/home/$USER/.config/
+                rm /mnt/home/$USER/.config/i3-config.zip
+                chroot /mnt /bin/bash -c "chmod +x /home/$USER/.config/i3/powermenu.sh"
+                chroot /mnt /bin/bash -c "chmod +x /home/$USER/.config/i3status-rust/mem.sh"
                 chroot /mnt /bin/bash -c "install -Dm644 /etc/i3status.conf /home/$USER/.config/i3status/config"
                 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;

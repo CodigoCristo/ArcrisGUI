@@ -2225,7 +2225,7 @@ echo -e "${GREEN}✓ Instalanado extras${NC}"
 sleep 3
 install_aur_with_retry "yay"
 sleep 2
-install_aur_with_retry "fastfetch"
+install_pacman_chroot_with_retry "fastfetch"
 
 sleep 2
 clear
@@ -3421,7 +3421,8 @@ echo -e "${GREEN}✓ Tipografías instaladas${NC}"
 # Fuentes base
 install_pacman_chroot_with_retry "noto-fonts"
 install_pacman_chroot_with_retry "gnu-free-fonts"
-install_yay_chroot_with_retry "ttf-material-design-icons-extended"
+install_pacman_chroot_with_retry "ttf-meslo-nerd"
+install_yay_chroot_with_retry "ttf-noto-emoji-monochrome"
 # Iconos
 install_pacman_chroot_with_retry "ttf-nerd-fonts-symbols"
 install_pacman_chroot_with_retry "ttf-jetbrains-mono-nerd"

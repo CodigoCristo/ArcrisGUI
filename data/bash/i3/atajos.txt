@@ -1,0 +1,112 @@
+
+╔══════════════════════════════════════════════════════════════════╗
+║              ATAJOS DE TECLADO — i3wm                            ║
+║              MOD = Tecla Windows                                 ║
+╚══════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────┐
+│  APLICACIONES                                                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Mod + Enter         →  Terminal (alacritty)                    │
+│  Mod + D             →  Rofi (lanzador de apps)                 │
+│  Mod + W             →  Firefox                                 │
+│  Mod + E             →  PCManFM (archivos)                      │
+│  Mod + X             →  XKill (matar ventana con cursor)        │
+│  Mod + Shift + P     →  Menú apagar / reiniciar / bloquear      │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  CONTROL DE VENTANAS                                            │
+├─────────────────────────────────────────────────────────────────┤
+│  Mod + Q             →  Cerrar ventana                          │
+│  Mod + R             →  Reiniciar i3                            │
+│  Mod + Ctrl + Q      →  Salir de i3                             │
+│  Mod + F             →  Fullscreen toggle                       │
+│  Mod + T             →  Quitar flotante (volver a tiling)       │
+│  Mod + Shift + F     →  Toggle flotante y centrar               │
+│  Mod + B             →  Mostrar / ocultar barra                 │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  NAVEGACIÓN                                                     │
+├─────────────────────────────────────────────────────────────────┤
+│  Mod + J             →  Foco abajo                              │
+│  Mod + K             →  Foco arriba                             │
+│  Mod + M             →  Foco ventana padre                      │
+│  Mod + Tab           →  Siguiente ventana                       │
+│  Mod + ← ↑ → ↓       →  Foco en dirección                       │
+│  Mod + Shift + Space →  Alternar foco tiling / flotante         │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  MOVER VENTANAS                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  Mod + Shift + J     →  Mover ventana abajo                     │
+│  Mod + Shift + K     →  Mover ventana arriba                    │
+│  Mod + Shift + Enter →  Mover ventana a posición master         │
+│  Mod + Shift + ← ↑ → ↓ → Mover en dirección                     │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  REDIMENSIONAR                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  Mod + H             →  Encoger ancho                           │
+│  Mod + L             →  Expandir ancho                          │
+│  Mod + ,             →  Encoger altura                          │
+│  Mod + .             →  Expandir altura                         │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYOUTS Y SPLITS                                               │
+├─────────────────────────────────────────────────────────────────┤
+│  Mod + Space         →  Ciclar layout (split/tabbed/stacking)   │
+│  Mod + Shift + E     →  Reset layout (vuelve a split)           │
+│  Mod + V             →  Split vertical                          │
+│  Mod + Shift + V     →  Split horizontal                        │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  SCRATCHPAD                                                     │
+├─────────────────────────────────────────────────────────────────┤
+│  Mod + Shift + -     →  Enviar ventana al scratchpad            │
+│  Mod + -             →  Mostrar / ocultar scratchpad            │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  WORKSPACES                                                     │
+├─────────────────────────────────────────────────────────────────┤
+│  Mod + 1-9           →  Cambiar a workspace 1-9                 │
+│  Mod + Shift + 1-9   →  Mover ventana a workspace 1-9           │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  CAPTURAS DE PANTALLA                                           │
+├─────────────────────────────────────────────────────────────────┤
+│  Print               →  Captura completa                        │
+│  Mod + Shift + S     →  Captura con selección de área           │
+│  Mod + Print         →  Captura ventana activa                  │
+│  (se guardan en ~/ con nombre captura_YYYYMMDD_HHMMSS.png)      │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  MULTIMEDIA                                                     │
+├─────────────────────────────────────────────────────────────────┤
+│  Vol+  / Vol-        →  Subir / bajar volumen 5%                │
+│  Mute                →  Silenciar audio                         │
+│  Mic Mute            →  Silenciar micrófono                     │
+│  Brillo+ / Brillo-   →  Subir / bajar brillo 10%                │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  MOUSE  (Mod = tecla Windows)                                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Mod + Clic izq      →  Mover ventana flotante                  │
+│  Mod + Clic rueda    →  Convertir a flotante y centrar          │
+│  Mod + Clic der      →  Redimensionar ventana flotante          │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  FLOTANTES AUTOMÁTICAS                                          │
+├─────────────────────────────────────────────────────────────────┤
+│  Rofi · MPlayer · Gimp · Steam · Pavucontrol · Arandr           │
+└─────────────────────────────────────────────────────────────────┘
