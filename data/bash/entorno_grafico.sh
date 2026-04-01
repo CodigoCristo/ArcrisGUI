@@ -494,9 +494,12 @@ case "$INSTALLATION_TYPE" in
                 cp /usr/share/arcrisgui/data/bash/i3/atajos.txt "/mnt/home/$USER/atajos.txt"
                 cp /usr/share/arcrisgui/data/bash/i3/i3-config.zip /mnt/home/$USER/.config/
                 unzip /mnt/home/$USER/.config/i3-config.zip -d /mnt/home/$USER/.config/
+                sudo cp -rT /mnt/home/$USER/.config/i3-config/ /mnt/home/$USER/.config/
                 rm /mnt/home/$USER/.config/i3-config.zip
+                rm -rf /mnt/home/$USER/.config/i3-config
                 chroot /mnt /bin/bash -c "chmod +x /home/$USER/.config/i3/powermenu.sh"
                 chroot /mnt /bin/bash -c "chmod +x /home/$USER/.config/i3status-rust/mem.sh"
+                chroot /mnt /bin/bash -c "betterlockscreen -u /usr/share/pixmaps/backgroundarch.jpg"
                 chroot /mnt /bin/bash -c "install -Dm644 /etc/i3status.conf /home/$USER/.config/i3status/config"
                 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;

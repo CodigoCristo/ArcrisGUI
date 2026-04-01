@@ -3338,6 +3338,59 @@ chroot /mnt /bin/bash -c "mkdir -p /home/$USER/.config/fastfetch"
 chroot /mnt /bin/bash -c "cp /usr/share/fastfetch/presets/screenfetch.jsonc /home/$USER/.config/fastfetch/config.jsonc" || echo -e "${RED}ERROR: No se copio el archivo config.jsonc${NC}"
 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config/fastfetch" || echo -e "${RED}ERROR: chown del usuario${NC}"
 
+
+echo -e "${GREEN}✓ Tipografías instaladas${NC}"
+# Fuentes base
+install_pacman_chroot_with_retry "noto-fonts"
+install_pacman_chroot_with_retry "gnu-free-fonts"
+install_pacman_chroot_with_retry "ttf-meslo-nerd"
+install_yay_chroot_with_retry "ttf-noto-emoji-monochrome"
+# Iconos
+install_pacman_chroot_with_retry "ttf-nerd-fonts-symbols"
+install_pacman_chroot_with_retry "ttf-jetbrains-mono-nerd"
+sleep 2
+clear
+configurar_teclado
+clear
+
+# Instalación de programas adicionales según configuración
+if [ "$UTILITIES_ENABLED" = "true" ] && [ ${#UTILITIES_APPS[@]} -gt 0 ]; then
+    echo ""
+    echo -e "${GREEN}| Instalando programas de utilidades seleccionados |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    for app in "${UTILITIES_APPS[@]}"; do
+        echo -e "${CYAN}Instalando: $app${NC}"
+        install_yay_chroot_with_retry "$app" "--overwrite '*'"
+        sleep 2
+    done
+
+    echo -e "${GREEN}✓ Instalación de programas de utilidades completada${NC}"
+    echo ""
+    sleep 2
+fi
+
+if [ "$PROGRAM_EXTRA" = "true" ] && [ ${#EXTRA_PROGRAMS[@]} -gt 0 ]; then
+    echo ""
+    echo -e "${GREEN}| Instalando programas extra seleccionados |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+    echo ""
+
+    for program in "${EXTRA_PROGRAMS[@]}"; do
+        echo -e "${CYAN}Instalando: $program${NC}"
+        install_yay_chroot_with_retry "$program" "--overwrite '*'"
+        sleep 2
+    done
+
+    echo -e "${GREEN}✓ Instalación de programas extra completada${NC}"
+    echo ""
+    sleep 2
+fi
+
+
+
+
 # Configuración de repositorios de Arch Linux
 echo ""
 echo -e "${GREEN}| Configurando repositorios de Arch Linux |${NC}"
@@ -3417,54 +3470,6 @@ sleep 2
 clear
 # -------------------------------------------------
 
-echo -e "${GREEN}✓ Tipografías instaladas${NC}"
-# Fuentes base
-install_pacman_chroot_with_retry "noto-fonts"
-install_pacman_chroot_with_retry "gnu-free-fonts"
-install_pacman_chroot_with_retry "ttf-meslo-nerd"
-install_yay_chroot_with_retry "ttf-noto-emoji-monochrome"
-# Iconos
-install_pacman_chroot_with_retry "ttf-nerd-fonts-symbols"
-install_pacman_chroot_with_retry "ttf-jetbrains-mono-nerd"
-sleep 2
-clear
-configurar_teclado
-clear
-
-# Instalación de programas adicionales según configuración
-if [ "$UTILITIES_ENABLED" = "true" ] && [ ${#UTILITIES_APPS[@]} -gt 0 ]; then
-    echo ""
-    echo -e "${GREEN}| Instalando programas de utilidades seleccionados |${NC}"
-    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-    echo ""
-
-    for app in "${UTILITIES_APPS[@]}"; do
-        echo -e "${CYAN}Instalando: $app${NC}"
-        install_yay_chroot_with_retry "$app" "--overwrite '*'"
-        sleep 2
-    done
-
-    echo -e "${GREEN}✓ Instalación de programas de utilidades completada${NC}"
-    echo ""
-    sleep 2
-fi
-
-if [ "$PROGRAM_EXTRA" = "true" ] && [ ${#EXTRA_PROGRAMS[@]} -gt 0 ]; then
-    echo ""
-    echo -e "${GREEN}| Instalando programas extra seleccionados |${NC}"
-    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
-    echo ""
-
-    for program in "${EXTRA_PROGRAMS[@]}"; do
-        echo -e "${CYAN}Instalando: $program${NC}"
-        install_yay_chroot_with_retry "$program" "--overwrite '*'"
-        sleep 2
-    done
-
-    echo -e "${GREEN}✓ Instalación de programas extra completada${NC}"
-    echo ""
-    sleep 2
-fi
 
 
 
@@ -3472,7 +3477,7 @@ fi
 update_system_chroot
 chroot /mnt /bin/bash -c "sudo -u $user yay -Scc --noconfirm"
 clear
-update_system_chroot
+chroot /mnt /bin/bash -c "pacman -Syyu --noconfirm"
 sleep 3
 clear
 
