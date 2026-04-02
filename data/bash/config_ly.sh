@@ -57,6 +57,15 @@ DesktopNames=dwm
 Keywords=tiling;wm;windowmanager;window;manager;
 EOF
         ;;
+    "NIRI")
+        cat > /mnt/usr/share/wayland-sessions/niri.desktop << EOF
+[Desktop Entry]
+Name=Niri
+Comment=A scrollable tiling Wayland compositor
+Exec=niri-session
+Type=Application
+EOF
+        ;;
     "HYPRLAND")
         cat > /mnt/usr/share/wayland-sessions/hyprland.desktop << EOF
 [Desktop Entry]

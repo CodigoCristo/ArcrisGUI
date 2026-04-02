@@ -28,6 +28,7 @@ static const char* DE_NAMES[] = {
 // Nombres de los gestores de ventanas
 static const char* WM_NAMES[] = {
     "HYPRLAND",
+    "NIRI",
     "SWAY",
     "DWL",
     "DWM",
@@ -59,6 +60,7 @@ static const char* DE_IMAGE_RESOURCES[] = {
 // Recursos de imágenes para WM
 static const char* WM_IMAGE_RESOURCES[] = {
     "/org/gtk/arcris/HYPRLAND.png",
+    "/org/gtk/arcris/NIRI.png",
     "/org/gtk/arcris/SWAY.png",
     "/org/gtk/arcris/DWL.png",
     "/org/gtk/arcris/DWM.png",
@@ -512,7 +514,7 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
 
     /* Orden exacto del enum WindowManagerType en page5.h */
     static const char *wm_names[] = {
-        "HYPRLAND", "SWAY", "DWL", "DWM", "I3WM",
+        "HYPRLAND", "NIRI", "SWAY", "DWL", "DWM", "I3WM",
         "BSPWM", "QTITLE", "AWESOME", "XMONAD", "OPENBOX"
     };
     gchar *wm_name = g_strdup(wm < (int)(sizeof(wm_names)/sizeof(wm_names[0])) ? wm_names[wm] : "HYPRLAND");

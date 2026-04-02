@@ -712,6 +712,34 @@ EOF
                 chroot /mnt /bin/bash -c "sudo -u $USER hyprctl keyword input:kb_layout $KEYBOARD_LAYOUT"
                 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
+            "NIRI")
+                echo -e "${CYAN}Instalando Niri Window Manager...${NC}"
+                install_pacman_chroot_with_retry "wayland"                      # Protocolo de servidor de display moderno (reemplazo de X11)
+                install_pacman_chroot_with_retry "niri"                         # Compositor Wayland de escritorio horizontal deslizante
+                install_pacman_chroot_with_retry "fuzzel"                       # Launcher de aplicaciones por defecto en Niri
+                install_pacman_chroot_with_retry "mako"                         # Demonio de notificaciones para Wayland
+                install_pacman_chroot_with_retry "waybar"                       # Barra de estado personalizable para Wayland
+                install_pacman_chroot_with_retry "xdg-desktop-portal-gtk"       # Portal XDG con backend GTK (diálogos de archivos, etc.)
+                install_pacman_chroot_with_retry "xdg-desktop-portal-gnome"     # Portal XDG para compartir pantalla
+                install_pacman_chroot_with_retry "alacritty"                    # Terminal por defecto en Niri
+                install_pacman_chroot_with_retry "swaybg"                       # Gestor de wallpapers para Wayland
+                install_pacman_chroot_with_retry "swayidle"                     # Gestor de inactividad para Wayland
+                install_pacman_chroot_with_retry "swaylock"                     # Bloqueador de pantalla para Wayland
+                install_pacman_chroot_with_retry "xwayland-satellite"           # Soporte de apps X11 sin XWayland nativo
+                install_pacman_chroot_with_retry "udiskie"                      # Montaje automático de dispositivos USB
+                install_pacman_chroot_with_retry "wl-clipboard"                 # Utilidades de portapapeles para Wayland
+                install_pacman_chroot_with_retry "grim"                         # Captura de pantalla para Wayland
+                install_pacman_chroot_with_retry "slurp"                        # Selector de región de pantalla (usado con grim)
+                install_pacman_chroot_with_retry "qt5-wayland"                  # Soporte de Wayland para aplicaciones Qt5
+                install_pacman_chroot_with_retry "qt6-wayland"                  # Soporte de Wayland para aplicaciones Qt6
+                install_pacman_chroot_with_retry "xdg-utils"                    # Herramientas para integración de escritorio
+                install_pacman_chroot_with_retry "brightnessctl"                # Control de brillo de pantalla desde terminal
+                install_pacman_chroot_with_retry "nwg-look"                     # Configurador de temas GTK para Wayland
+                # Crear configuración básica de niri
+                mkdir -p /mnt/home/$USER/.config/niri
+                chroot /mnt /bin/bash -c "niri validate --config /dev/null || true"
+                chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                ;;
             "OPENBOX")
                 echo -e "${CYAN}Instalando Openbox Window Manager...${NC}"
                 install_pacman_chroot_with_retry "xorg-server" #necesarios para correr el entorno gráfico Xorg.

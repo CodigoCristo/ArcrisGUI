@@ -32,6 +32,7 @@ typedef enum {
 // Enumeración para gestores de ventanas
 typedef enum {
     WM_TYPE_HYPRLAND,
+    WM_TYPE_NIRI,
     WM_TYPE_SWAY,
     WM_TYPE_DWL,
     WM_TYPE_DWM,
