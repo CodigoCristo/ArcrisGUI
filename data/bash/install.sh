@@ -3389,7 +3389,7 @@ fi
 
 
 
-
+# --------------------------------------------------------------------------------------
 # Configuración de repositorios de Arch Linux
 echo ""
 echo -e "${GREEN}| Configurando repositorios de Arch Linux |${NC}"
@@ -3409,35 +3409,62 @@ fi
 # Chaotic-AUR
 if [ "$REPOS_CHAOTIC_AUR" = "true" ]; then
     echo -e "${CYAN}Configurando Chaotic-AUR...${NC}"
-    chroot /mnt /bin/bash -c "pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com"
-    chroot /mnt /bin/bash -c "pacman-key --lsign-key 3056513887B78AEB"
-    chroot /mnt /bin/bash -c "pacman -U --noconfirm \
-        'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' \
-        'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'"
-    cat >> /mnt/etc/pacman.conf << 'EOF'
+    _attempt=1
+    while true; do
+        wait_for_internet || break
+        echo -e "${CYAN}🔄 Intento #$_attempt para configurar Chaotic-AUR${NC}"
+        if chroot /mnt /bin/bash -c "
+            pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com && \
+            pacman-key --lsign-key 3056513887B78AEB && \
+            pacman -U --noconfirm \
+                'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' \
+                'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+        " && [ -f /mnt/etc/pacman.d/chaotic-mirrorlist ]; then
+            if ! grep -q '\[chaotic-aur\]' /mnt/etc/pacman.conf; then
+                cat >> /mnt/etc/pacman.conf << 'EOF'
 
 [chaotic-aur]
 Include = /etc/pacman.d/chaotic-mirrorlist
 EOF
-    echo -e "${GREEN}✓ Chaotic-AUR configurado${NC}"
+            fi
+            echo -e "${GREEN}✓ Chaotic-AUR configurado${NC}"
+            break
+        else
+            echo -e "${YELLOW}⚠️  Falló Chaotic-AUR (intento #$_attempt), reintentando en 5 segundos...${NC}"
+            sleep 5
+            ((_attempt++))
+        fi
+    done
 fi
 
 # ArchLinuxCN
 if [ "$REPOS_ARCHLINUXCN" = "true" ]; then
     echo -e "${CYAN}Configurando ArchLinuxCN...${NC}"
-    cat >> /mnt/etc/pacman.conf << 'EOF'
+    if ! grep -q '\[archlinuxcn\]' /mnt/etc/pacman.conf; then
+        cat >> /mnt/etc/pacman.conf << 'EOF'
 
 [archlinuxcn]
 Server = https://repo.archlinuxcn.org/$arch
 EOF
-    chroot /mnt /bin/bash -c "pacman -Sy --noconfirm archlinuxcn-keyring"
-    echo -e "${GREEN}✓ ArchLinuxCN configurado${NC}"
+    fi
+    _attempt=1
+    while true; do
+        wait_for_internet || break
+        echo -e "${CYAN}🔄 Intento #$_attempt para instalar archlinuxcn-keyring${NC}"
+        if chroot /mnt /bin/bash -c "pacman -Sy --noconfirm archlinuxcn-keyring"; then
+            echo -e "${GREEN}✓ ArchLinuxCN configurado${NC}"
+            break
+        else
+            echo -e "${YELLOW}⚠️  Falló archlinuxcn-keyring (intento #$_attempt), reintentando en 5 segundos...${NC}"
+            sleep 5
+            ((_attempt++))
+        fi
+    done
 fi
 
 # CachyOS
 if [ "$REPOS_CACHYOS" = "true" ]; then
     echo -e "${CYAN}Configurando repositorios CachyOS...${NC}"
-    # Detectar arquitectura del CPU
     CACHYOS_ARCH="x86-64 (genérico)"
     CPU_MARCH=$(gcc -march=native -Q --help=target 2>&1 | grep -Po "^\s+-march=\s+\K(\w+)$" || true)
     if [ "$CPU_MARCH" = "znver4" ] || [ "$CPU_MARCH" = "znver5" ]; then
@@ -3448,14 +3475,25 @@ if [ "$REPOS_CACHYOS" = "true" ]; then
         CACHYOS_ARCH="x86-64-v3"
     fi
     echo -e "${CYAN}  Arquitectura detectada: ${YELLOW}${CACHYOS_ARCH}${NC}"
-    # Descargar script oficial desde el LiveCD (detecta automáticamente v3/v4/znver4)
-    curl -fsSL https://mirror.cachyos.org/cachyos-repo.tar.xz -o /tmp/cachyos-repo.tar.xz
-    tar xf /tmp/cachyos-repo.tar.xz -C /tmp
-    cp -r /tmp/cachyos-repo /mnt/tmp/cachyos-repo
-    chroot /mnt /bin/bash -c "cd /tmp/cachyos-repo && yes | bash ./cachyos-repo.sh" \
-        || echo -e "${RED}ERROR: No se pudo configurar CachyOS${NC}"
-    rm -rf /tmp/cachyos-repo /tmp/cachyos-repo.tar.xz /mnt/tmp/cachyos-repo 2>/dev/null || true
-    echo -e "${GREEN}✓ CachyOS configurado (arquitectura detectada automáticamente)${NC}"
+    _attempt=1
+    while true; do
+        wait_for_internet || break
+        echo -e "${CYAN}🔄 Intento #$_attempt para configurar CachyOS${NC}"
+        rm -rf /tmp/cachyos-repo /tmp/cachyos-repo.tar.xz /mnt/tmp/cachyos-repo 2>/dev/null || true
+        if curl -fsSL https://mirror.cachyos.org/cachyos-repo.tar.xz -o /tmp/cachyos-repo.tar.xz && \
+           tar xf /tmp/cachyos-repo.tar.xz -C /tmp && \
+           cp -r /tmp/cachyos-repo /mnt/tmp/cachyos-repo && \
+           chroot /mnt /bin/bash -c "cd /tmp/cachyos-repo && yes | bash ./cachyos-repo.sh"; then
+            rm -rf /tmp/cachyos-repo /tmp/cachyos-repo.tar.xz /mnt/tmp/cachyos-repo 2>/dev/null || true
+            echo -e "${GREEN}✓ CachyOS configurado (arquitectura detectada automáticamente)${NC}"
+            break
+        else
+            rm -rf /tmp/cachyos-repo /tmp/cachyos-repo.tar.xz /mnt/tmp/cachyos-repo 2>/dev/null || true
+            echo -e "${YELLOW}⚠️  Falló CachyOS (intento #$_attempt), reintentando en 5 segundos...${NC}"
+            sleep 5
+            ((_attempt++))
+        fi
+    done
 fi
 
 # Sincronizar base de datos con los nuevos repositorios
