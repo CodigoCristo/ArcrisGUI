@@ -441,6 +441,26 @@
                                   </object>
                                 </child>
 
+                                <!-- Celluloid -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">celluloid</property>
+                                    <property name="subtitle">Interfaz GTK simple para el reproductor multimedia mpv</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="celluloid_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="celluloid_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://celluloid-player.github.io/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
                                 <!-- Showtime -->
                                 <child>
                                   <object class="AdwActionRow">
@@ -867,6 +887,26 @@
                                 <property name="subtitle">Clientes de correo electrónico y Chat</property>
                                 <property name="icon-name">mail-unread-symbolic</property>
 
+                                <!-- WhatsApp -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">zapzap</property>
+                                    <property name="subtitle">WhatsApp nativo para Linux</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="whatsapp_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="whatsapp_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://rtosta.com/zapzap/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
                                 <!-- Telegram -->
                                 <child>
                                   <object class="AdwActionRow">
@@ -962,26 +1002,6 @@
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
                                         <property name="tooltip-text">https://signal.org/</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-
-                                <!-- WhatsApp -->
-                                <child>
-                                  <object class="AdwActionRow">
-                                    <property name="title">ZapZap</property>
-                                    <property name="subtitle">WhatsApp nativo para Linux</property>
-                                    <child type="prefix">
-                                      <object class="GtkCheckButton" id="whatsapp_check">
-                                        <property name="active">false</property>
-                                      </object>
-                                    </child>
-                                    <child type="suffix">
-                                      <object class="GtkButton" id="whatsapp_info">
-                                        <property name="icon-name">dialog-information-symbolic</property>
-                                        <property name="has-frame">false</property>
-                                        <property name="tooltip-text">https://rtosta.com/zapzap/</property>
                                       </object>
                                     </child>
                                   </object>
@@ -1365,21 +1385,21 @@
                                                   </object>
                                                 </child>
 
-                                                <!-- Evince -->
+                                                <!-- Papers -->
                                                 <child>
                                                   <object class="AdwActionRow">
-                                                    <property name="title">evince</property>
-                                                    <property name="subtitle">Visor de documentos para GNOME que soporta PDF, PostScript y más</property>
+                                                    <property name="title">papers</property>
+                                                    <property name="subtitle">Visor de documentos moderno para GNOME que soporta PDF y más</property>
                                                     <child type="prefix">
-                                                      <object class="GtkCheckButton" id="evince_check">
+                                                      <object class="GtkCheckButton" id="papers_check">
                                                         <property name="active">true</property>
                                                       </object>
                                                     </child>
                                                     <child type="suffix">
-                                                      <object class="GtkButton" id="evince_info">
+                                                      <object class="GtkButton" id="papers_info">
                                                         <property name="icon-name">dialog-information-symbolic</property>
                                                         <property name="has-frame">false</property>
-                                                        <property name="tooltip-text">https://wiki.gnome.org/Apps/Evince</property>
+                                                        <property name="tooltip-text">https://apps.gnome.org/Papers/</property>
                                                       </object>
                                                     </child>
                                                   </object>
@@ -2392,6 +2412,26 @@
                                   </object>
                                 </child>
 
+                                <!-- Resources -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">resources</property>
+                                    <property name="subtitle">Monitor del sistema simple y limpio para GNOME</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="resources_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="resources_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://apps.gnome.org/Resources/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
                                 <!-- htop -->
                                 <child>
                                   <object class="AdwActionRow">
@@ -2407,6 +2447,66 @@
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
                                         <property name="tooltip-text">https://htop.dev/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- bottom -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">bottom</property>
+                                    <property name="subtitle">Monitor de sistema y procesos multiplataforma escrito en Rust</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="bottom_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="bottom_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://clementtsang.github.io/bottom/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- btop -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">btop</property>
+                                    <property name="subtitle">Monitor de recursos con interfaz TUI avanzada</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="btop_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="btop_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/aristocratos/btop</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Vim -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">vim</property>
+                                    <property name="subtitle">Editor de texto altamente configurable para edición eficiente</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="vim_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="vim_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://www.vim.org/</property>
                                       </object>
                                     </child>
                                   </object>

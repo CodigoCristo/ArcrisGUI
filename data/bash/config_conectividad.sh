@@ -180,12 +180,12 @@ install_pacman_chroot_with_retry() {
         wait_for_internet
 
         # Ejecutar instalación con pacman en chroot
-        if chroot /mnt /bin/bash -c "pacman -S $package $extra_args --noconfirm --needed"; then
+        if chroot /mnt /bin/bash -c "pacman -S $package $extra_args --noconfirm"; then
             echo -e "${GREEN}✅ $package instalado correctamente con pacman en chroot${NC}"
             return 0
         else
             echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
-            echo -e "${RED}🔍 Comando ejecutado: chroot /mnt /bin/bash -c \"pacman -S $package $extra_args --noconfirm --needed\"${NC}"
+            echo -e "${RED}🔍 Comando ejecutado: chroot /mnt /bin/bash -c \"pacman -S $package $extra_args --noconfirm\"${NC}"
             echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
             sleep 5
             ((attempt++))
