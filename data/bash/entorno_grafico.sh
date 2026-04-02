@@ -430,9 +430,11 @@ case "$INSTALLATION_TYPE" in
 
         # Instalar X.org y dependencias base para gestores de ventanas
         echo -e "${CYAN}Instalando servidor X.org y dependencias base...${NC}"
-        install_pacman_chroot_with_retry "xorg-server"
-        install_pacman_chroot_with_retry "xorg-apps"
-        install_pacman_chroot_with_retry "xorg-xinit"
+        install_pacman_chroot_with_retry "xorg-server" #necesarios para correr el entorno gráfico Xorg.
+        install_pacman_chroot_with_retry "xorg-xinit" #necesarios para correr el entorno gráfico Xorg.
+        install_pacman_chroot_with_retry "xorg-xauth" #necesarios para correr el entorno gráfico Xorg.
+        install_pacman_chroot_with_retry "xorg-xrandr" #Configurar pantallas en tiempo real en el entorno gráfico Xorg.
+        install_pacman_chroot_with_retry "xterm" #Terminal para el entorno gráfico Xorg.
         install_pacman_chroot_with_retry "pcmanfm"
         install_pacman_chroot_with_retry "gvfs"
         install_pacman_chroot_with_retry "lm_sensors"
@@ -456,19 +458,14 @@ case "$INSTALLATION_TYPE" in
         case "$WINDOW_MANAGER" in
             "I3WM"|"I3")
                 echo -e "${CYAN}Instalando Extras de i3 Window Manager...${NC}"
-                install_pacman_chroot_with_retry "xorg-server" #necesarios para correr el entorno gráfico Xorg.
-                install_pacman_chroot_with_retry "xorg-xinit" #necesarios para correr el entorno gráfico Xorg.
-                install_pacman_chroot_with_retry "xorg-xauth" #necesarios para correr el entorno gráfico Xorg.
-                install_pacman_chroot_with_retry "xorg-xrandr" #Configurar pantallas en tiempo real en el entorno gráfico Xorg.
-                install_pacman_chroot_with_retry "xterm" #Terminal para el entorno gráfico Xorg.
                 install_pacman_chroot_with_retry "network-manager-applet" #Para gestionar conexiones de red desde la bandeja del sistema.
                 install_pacman_chroot_with_retry "rofi" #Lanzadores de aplicaciones. Rofi es más moderno y configurable.
-                install_pacman_chroot_with_retry "feh"                # Alternativa a nitrogen
-                install_pacman_chroot_with_retry "pavucontrol" #Control de volumen gráfico para PulseAudio/PipeWire.
-                install_pacman_chroot_with_retry "libnotify" #Notificaciones en pantalla.
+                install_pacman_chroot_with_retry "feh"          # Alternativa a nitrogen
+                install_pacman_chroot_with_retry "pavucontrol"  #Control de volumen gráfico para PulseAudio/PipeWire.
+                install_pacman_chroot_with_retry "dunst"        #Notificaciones en pantalla.
+                install_pacman_chroot_with_retry "libnotify"    #Notificaciones en pantalla.
                 install_pacman_chroot_with_retry "lxappearance" #Para configurar temas GTK.
                 install_pacman_chroot_with_retry "xss-lock"           # Activador de bloqueo automático
-                install_pacman_chroot_with_retry "slock"              # Bloqueador de pantalla.
                 install_pacman_chroot_with_retry "maim" #Captura de pantalla.
                 install_pacman_chroot_with_retry "xclip" #Copiar y pegar texto entre aplicaciones.
                 install_pacman_chroot_with_retry "arandr" #Configuración de monitores.
@@ -484,8 +481,6 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "bc"
                 install_pacman_chroot_with_retry "xdotool"
                 install_pacman_chroot_with_retry "alsa-utils"
-                install_pacman_chroot_with_retry "powerline-fonts"
-                install_pacman_chroot_with_retry "otf-font-awesome"
                 install_yay_chroot_with_retry "ttf-noto-emoji-monochrome"
                 # Crear configuración básica de i3
                 mkdir -p /mnt/home/$USER/.config/i3

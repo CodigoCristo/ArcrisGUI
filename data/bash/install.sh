@@ -3318,6 +3318,14 @@ clear
 # Actualizar base de datos de paquetes
 update_system_chroot
 
+sleep 3
+clear
+cp /usr/share/arcrisgui/data/config/pacman-chroot.conf /mnt/etc/pacman.conf
+cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpg
+chroot /mnt /bin/bash -c "mkdir -p /home/$USER/.config/fastfetch"
+chroot /mnt /bin/bash -c "cp /usr/share/fastfetch/presets/screenfetch.jsonc /home/$USER/.config/fastfetch/config.jsonc" || echo -e "${RED}ERROR: No se copio el archivo config.jsonc${NC}"
+chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config/fastfetch" || echo -e "${RED}ERROR: chown del usuario${NC}"
+
 clear
 # -------------------------------------------------
 source "$(dirname "$0")/entorno_grafico.sh"
@@ -3329,15 +3337,6 @@ source "$(dirname "$0")/config_ly.sh"
 source "$(dirname "$0")/program_essential.sh"
 # -------------------------------------------------
 #
-
-sleep 3
-clear
-cp /usr/share/arcrisgui/data/config/pacman-chroot.conf /mnt/etc/pacman.conf
-cp /home/arcris/.config/xfce4/backgroundarch.jpg /mnt/usr/share/pixmaps/backgroundarch.jpg
-chroot /mnt /bin/bash -c "mkdir -p /home/$USER/.config/fastfetch"
-chroot /mnt /bin/bash -c "cp /usr/share/fastfetch/presets/screenfetch.jsonc /home/$USER/.config/fastfetch/config.jsonc" || echo -e "${RED}ERROR: No se copio el archivo config.jsonc${NC}"
-chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config/fastfetch" || echo -e "${RED}ERROR: chown del usuario${NC}"
-
 
 echo -e "${GREEN}✓ Tipografías instaladas${NC}"
 # Fuentes base
