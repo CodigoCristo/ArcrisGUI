@@ -40,6 +40,9 @@ static void update_internet_ui(gboolean has_internet)
         g_print("❌ Error: datos de página nulos\n");
         return;
     }
+
+    // En modo actualización no tocamos la UI de internet
+    if (g_page1_data->is_update_mode) return;
     
     if (has_internet) {
         g_print("✅ Internet conectado - Mostrando botón Iniciar\n");
@@ -134,7 +137,16 @@ gboolean page1_start_internet_monitoring_callback(gpointer user_data)
         g_print("❌ Error: no se puede iniciar monitoreo sin datos de página\n");
         return FALSE;
     }
-    
+
+    // Limpiar el ID: este callback ya disparó, no se puede cancelar más
+    g_page1_data->internet_monitor_initial_id = 0;
+
+    // Si ya estamos en modo actualización, no iniciar monitoreo
+    if (g_page1_data->is_update_mode) {
+        g_print("⏭ Timer inicial de internet ignorado (modo actualización activo)\n");
+        return FALSE;
+    }
+
     g_print("🚀 Iniciando monitoreo de internet...\n");
     
     // Realizar verificación inicial
@@ -171,7 +183,14 @@ void page1_start_internet_monitoring(void)
 // Función para detener el monitoreo de internet
 void page1_stop_internet_monitoring(void)
 {
-    if (g_page1_data && g_page1_data->internet_monitor_id > 0) {
+    if (!g_page1_data) return;
+
+    if (g_page1_data->internet_monitor_initial_id > 0) {
+        g_print("🛑 Cancelando timer inicial de internet\n");
+        g_source_remove(g_page1_data->internet_monitor_initial_id);
+        g_page1_data->internet_monitor_initial_id = 0;
+    }
+    if (g_page1_data->internet_monitor_id > 0) {
         g_print("🛑 Deteniendo monitoreo de internet\n");
         g_source_remove(g_page1_data->internet_monitor_id);
         g_page1_data->internet_monitor_id = 0;
@@ -261,8 +280,9 @@ void page1_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     // Liberar el builder de la página
     g_object_unref(page_builder);
     
-    // Iniciar monitoreo de internet después de 1 segundo (dar tiempo a la UI)
-    g_timeout_add_seconds(1, page1_start_internet_monitoring_callback, NULL);
+    // Iniciar monitoreo de internet después de 1 segundo (guardar ID para poder cancelarlo)
+    g_page1_data->internet_monitor_initial_id =
+        g_timeout_add_seconds(1, page1_start_internet_monitoring_callback, NULL);
     
     g_print("✅ Página 1 inicializada correctamente\n");
 }
@@ -458,6 +478,9 @@ static void on_update_check_done(GObject *source, GAsyncResult *result,
 void page1_start_update_check(void)
 {
     if (!g_page1_data) return;
+
+    // Activar modo actualización: bloquea update_internet_ui
+    g_page1_data->is_update_mode = TRUE;
 
     // Preparar UI para modo búsqueda
     if (g_page1_data->internet_label)

@@ -14,8 +14,10 @@ typedef struct _Page1Data {
     GtkWidget *update_check_label;
     GtkWidget *start_button;
     guint internet_monitor_id;
+    guint internet_monitor_initial_id;  // timer inicial de 1 seg (debe cancelarse en update mode)
     gboolean has_internet;
     gboolean auto_configured;
+    gboolean is_update_mode;            // TRUE mientras se busca/instala actualización
 } Page1Data;
 
 // Funciones principales de la página 1
