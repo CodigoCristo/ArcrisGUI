@@ -74,6 +74,7 @@ package() {
   install -m644 data/bash/rofi/config.rasi "${pkgdir}/usr/share/${pkgname}/data/bash/rofi/"
   
   # Install other data files
+  install -m644 data/PKGBUILD "${pkgdir}/usr/share/${pkgname}/data/"
   install -m644 data/reserved_usernames "${pkgdir}/usr/share/${pkgname}/data/"
   install -m644 data/locale.gen "${pkgdir}/usr/share/${pkgname}/data/"
 
