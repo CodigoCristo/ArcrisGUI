@@ -45,31 +45,29 @@ static void update_internet_ui(gboolean has_internet)
     if (g_page1_data->is_update_mode) return;
     
     if (has_internet) {
-        g_print("✅ Internet conectado - Mostrando botón Iniciar\n");
-
-        // Ocultar elementos de "sin internet"
-        if (g_page1_data->internet_label) {
+        // Ocultar elementos de estado
+        if (g_page1_data->internet_label)
             gtk_widget_set_visible(g_page1_data->internet_label, FALSE);
-        }
-        if (g_page1_data->spinner) {
-            gtk_widget_set_visible(g_page1_data->spinner, FALSE);
-        }
-        if (g_page1_data->no_internet_label) {
+        if (g_page1_data->no_internet_label)
             gtk_widget_set_visible(g_page1_data->no_internet_label, FALSE);
-        }
-        if (g_page1_data->update_check_label) {
-            gtk_widget_set_visible(g_page1_data->update_check_label, FALSE);
-        }
-        
-        // Mostrar y habilitar botón
-        if (g_page1_data->start_button) {
-            gtk_widget_set_visible(g_page1_data->start_button, TRUE);
-            gtk_widget_set_sensitive(g_page1_data->start_button, TRUE);
 
-            // Activar con Enter: establecer como widget por defecto de la ventana
-            GtkRoot *root = gtk_widget_get_root(g_page1_data->start_button);
-            if (root && GTK_IS_WINDOW(root)) {
-                gtk_window_set_default_widget(GTK_WINDOW(root), g_page1_data->start_button);
+        if (!g_page1_data->update_check_done) {
+            // Primera vez con internet: verificar actualizaciones antes de mostrar Iniciar
+            g_print("✅ Internet conectado - Verificando actualizaciones...\n");
+            page1_start_update_check();
+        } else {
+            // Check ya realizado: mostrar botón Iniciar directamente
+            g_print("✅ Internet conectado - Mostrando botón Iniciar\n");
+            if (g_page1_data->spinner)
+                gtk_widget_set_visible(g_page1_data->spinner, FALSE);
+            if (g_page1_data->update_check_label)
+                gtk_widget_set_visible(g_page1_data->update_check_label, FALSE);
+            if (g_page1_data->start_button) {
+                gtk_widget_set_visible(g_page1_data->start_button, TRUE);
+                gtk_widget_set_sensitive(g_page1_data->start_button, TRUE);
+                GtkRoot *root = gtk_widget_get_root(g_page1_data->start_button);
+                if (root && GTK_IS_WINDOW(root))
+                    gtk_window_set_default_widget(GTK_WINDOW(root), g_page1_data->start_button);
             }
         }
     } else {
@@ -376,6 +374,20 @@ static void on_update_run_response(AdwAlertDialog *dialog, const char *response,
 {
     if (g_strcmp0(response, "update") == 0) {
         page1_start_update_install();
+    } else {
+        // Usuario canceló: volver al modo normal y mostrar Iniciar
+        if (!g_page1_data) return;
+        g_page1_data->is_update_mode = FALSE;
+        if (g_page1_data->update_check_label)
+            gtk_widget_set_visible(g_page1_data->update_check_label, FALSE);
+        if (g_page1_data->start_button && g_page1_data->has_internet) {
+            gtk_widget_set_visible(g_page1_data->start_button, TRUE);
+            gtk_widget_set_sensitive(g_page1_data->start_button, TRUE);
+            GtkRoot *root = gtk_widget_get_root(g_page1_data->start_button);
+            if (root && GTK_IS_WINDOW(root))
+                gtk_window_set_default_widget(GTK_WINDOW(root), g_page1_data->start_button);
+        }
+        page1_start_internet_monitoring();
     }
 }
 
@@ -409,6 +421,7 @@ static void on_update_check_done(GObject *source, GAsyncResult *result,
             gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
         }
         // Volver al modo normal para que el monitoreo de internet funcione
+        g_page1_data->update_check_done = TRUE;
         g_page1_data->is_update_mode = FALSE;
         page1_start_internet_monitoring();
         if (error) g_error_free(error);
@@ -438,6 +451,7 @@ static void on_update_check_done(GObject *source, GAsyncResult *result,
     GtkRoot *root = gtk_widget_get_root(g_page1_data->spinner);
 
     if (has_updates) {
+        g_page1_data->update_check_done = TRUE;
         if (g_page1_data->update_check_label) {
             gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
                                "¡Hay una actualización disponible!");
@@ -470,6 +484,7 @@ static void on_update_check_done(GObject *source, GAsyncResult *result,
             gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
         }
         // Volver al modo normal para que el monitoreo de internet funcione
+        g_page1_data->update_check_done = TRUE;
         g_page1_data->is_update_mode = FALSE;
         page1_start_internet_monitoring();
     }

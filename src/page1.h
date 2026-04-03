@@ -18,6 +18,7 @@ typedef struct _Page1Data {
     gboolean has_internet;
     gboolean auto_configured;
     gboolean is_update_mode;            // TRUE mientras se busca/instala actualización
+    gboolean update_check_done;         // TRUE cuando el check ya se realizó al menos una vez
 } Page1Data;
 
 // Funciones principales de la página 1
