@@ -95,6 +95,9 @@ Page10Data* page10_get_data(void)
 void page10_on_page_shown(void)
 {
     LOG_INFO("Página 10 (error) mostrada");
+    if (g_page10_data && g_page10_data->revealer) {
+        gtk_revealer_set_reveal_child(g_page10_data->revealer, FALSE);
+    }
 }
 
 void page10_on_page_hidden(void)
