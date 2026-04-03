@@ -269,22 +269,90 @@ void page1_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
 
 // ── Actualización ──────────────────────────────────────────────────────────
 
+static void on_update_install_done(GObject *source, GAsyncResult *result,
+                                   gpointer user_data)
+{
+    GSubprocess *proc = G_SUBPROCESS(source);
+    GError *error = NULL;
+
+    g_subprocess_wait_finish(proc, result, &error);
+
+    if (!g_page1_data) {
+        if (error) g_error_free(error);
+        g_object_unref(proc);
+        return;
+    }
+
+    gboolean success = (error == NULL) &&
+                       g_subprocess_get_if_exited(proc) &&
+                       (g_subprocess_get_exit_status(proc) == 0);
+
+    if (success) {
+        // El script ya lanzó la nueva instancia con nohup setsid arcris
+        // Solo cerramos esta instancia
+        g_application_quit(g_application_get_default());
+    } else {
+        if (g_page1_data->spinner)
+            gtk_widget_set_visible(g_page1_data->spinner, FALSE);
+        if (g_page1_data->update_check_label) {
+            gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
+                               "Error durante la actualización. Revisa la conexión.");
+            gtk_widget_remove_css_class(g_page1_data->update_check_label, "dim-label");
+            gtk_widget_add_css_class(g_page1_data->update_check_label, "error");
+            gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
+        }
+    }
+
+    if (error) g_error_free(error);
+    g_object_unref(proc);
+}
+
+static void page1_start_update_install(void)
+{
+    if (!g_page1_data) return;
+
+    // UI: spinner girando + mensaje de progreso
+    if (g_page1_data->update_check_label) {
+        gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
+                           "Arcris se está actualizando...");
+        gtk_widget_remove_css_class(g_page1_data->update_check_label, "warning");
+        gtk_widget_remove_css_class(g_page1_data->update_check_label, "error");
+        gtk_widget_remove_css_class(g_page1_data->update_check_label, "success");
+        gtk_widget_add_css_class(g_page1_data->update_check_label, "dim-label");
+        gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
+    }
+    if (g_page1_data->spinner)
+        gtk_widget_set_visible(g_page1_data->spinner, TRUE);
+
+    GError *error = NULL;
+    GSubprocess *proc = g_subprocess_new(
+        G_SUBPROCESS_FLAGS_STDOUT_SILENCE | G_SUBPROCESS_FLAGS_STDERR_SILENCE,
+        &error,
+        "update-arcris", NULL);
+
+    if (!proc) {
+        g_warning("No se pudo lanzar update-arcris: %s",
+                  error ? error->message : "desconocido");
+        if (error) g_error_free(error);
+        if (g_page1_data->spinner)
+            gtk_widget_set_visible(g_page1_data->spinner, FALSE);
+        if (g_page1_data->update_check_label) {
+            gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
+                               "Error: update-arcris no encontrado en el sistema");
+            gtk_widget_remove_css_class(g_page1_data->update_check_label, "dim-label");
+            gtk_widget_add_css_class(g_page1_data->update_check_label, "error");
+        }
+        return;
+    }
+
+    g_subprocess_wait_async(proc, NULL, on_update_install_done, NULL);
+}
+
 static void on_update_run_response(AdwAlertDialog *dialog, const char *response,
                                    gpointer user_data)
 {
     if (g_strcmp0(response, "update") == 0) {
-        GError *error = NULL;
-        const char *argv[] = { "xterm", "-e", "update-arcris", NULL };
-        g_spawn_async(NULL, (char **)argv, NULL,
-                      G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD,
-                      NULL, NULL, NULL, &error);
-        if (error) {
-            g_warning("No se pudo lanzar update-arcris: %s", error->message);
-            g_error_free(error);
-        } else {
-            // update-arcris relanza arcris solo, podemos cerrar esta instancia
-            g_application_quit(g_application_get_default());
-        }
+        page1_start_update_install();
     }
 }
 
