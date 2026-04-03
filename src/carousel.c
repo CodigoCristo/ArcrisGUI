@@ -223,7 +223,7 @@ void carousel_update_navigation_controls(CarouselManager *manager)
     gboolean can_go_next = carousel_can_navigate_next(manager);
     
     // Mostrar controles en todas las páginas excepto la primera, página 7, página 8 (instalación) y página 9 (finalización)
-    if (!arcris_is_first_page(manager->current_page) && manager->current_page != 6 && manager->current_page != 7 && manager->current_page != 8) {
+    if (!arcris_is_first_page(manager->current_page) && manager->current_page != 6 && manager->current_page != 7 && manager->current_page != 8 && manager->current_page != 9) {
         show_controls = TRUE;
     }
     
