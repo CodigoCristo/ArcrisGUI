@@ -4,6 +4,17 @@
 source "$(dirname "$0")/variables.sh"
 
 
+# Verificar tamaño mínimo del disco (20GB)
+disk_size_bytes=$(lsblk -b -d -o SIZE "$SELECTED_DISK" 2>/dev/null | tail -1 | tr -d ' ')
+min_size_bytes=$((20 * 1024 * 1024 * 1024))
+
+if [ -z "$disk_size_bytes" ] || [ "$disk_size_bytes" -lt "$min_size_bytes" ]; then
+    disk_size_human=$(lsblk -d -o SIZE "$SELECTED_DISK" 2>/dev/null | tail -1 | tr -d ' ')
+    echo -e "\033[1;31mERROR: El disco $SELECTED_DISK es demasiado pequeño para instalar Arch Linux.\033[0m"
+    echo -e "\033[0;31mTamaño actual: ${disk_size_human:-desconocido}\033[0m"
+    echo -e "\033[0;31mSe requieren al menos 20GB de espacio en disco.\033[0m"
+    exit 1
+fi
 
 # Verificar privilegios de root y ejecutar con sudo su si es necesario
 if [ "$EUID" -ne 0 ]; then

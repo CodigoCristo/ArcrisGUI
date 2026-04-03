@@ -120,6 +120,49 @@ partition_manager_setup_widgets(PartitionManager *manager)
     return TRUE;
 }
 
+// Reconstruir la lista de puntos de montaje filtrando los ya usados por otras particiones
+static void
+partition_manager_rebuild_mount_point_list(PartitionManager *manager, const gchar *current_device)
+{
+    if (!manager || !manager->mount_point_list) return;
+
+    static const gchar *all_mount_points[] = {
+        "/boot", "/", "/home", "/var", "/tmp", "/usr", "/opt", NULL
+    };
+
+    // Recopilar puntos de montaje ya usados por otras particiones
+    GList *used = NULL;
+    for (GList *l = manager->partition_configs; l != NULL; l = l->next) {
+        PartitionConfig *config = (PartitionConfig*)l->data;
+        if (config && !config->is_swap &&
+            g_strcmp0(config->device_path, current_device) != 0) {
+            used = g_list_append(used, config->mount_point);
+        }
+    }
+
+    // Vaciar la lista actual
+    guint n = g_list_model_get_n_items(G_LIST_MODEL(manager->mount_point_list));
+    for (guint i = n; i > 0; i--) {
+        gtk_string_list_remove(manager->mount_point_list, i - 1);
+    }
+
+    // Repoblar solo con los puntos de montaje no usados
+    for (int i = 0; all_mount_points[i] != NULL; i++) {
+        gboolean is_used = FALSE;
+        for (GList *l = used; l != NULL; l = l->next) {
+            if (g_strcmp0((gchar*)l->data, all_mount_points[i]) == 0) {
+                is_used = TRUE;
+                break;
+            }
+        }
+        if (!is_used) {
+            gtk_string_list_append(manager->mount_point_list, all_mount_points[i]);
+        }
+    }
+
+    g_list_free(used);
+}
+
 // Mostrar el diálogo de configuración
 void
 partition_manager_show_dialog(PartitionManager *manager,
@@ -151,6 +194,9 @@ partition_manager_show_dialog(PartitionManager *manager,
     if (manager->swap_switch) {
         gtk_switch_set_active(manager->swap_switch, manager->current_config->is_swap);
     }
+
+    // Reconstruir lista de puntos de montaje excluyendo los ya asignados a otras particiones
+    partition_manager_rebuild_mount_point_list(manager, device_path);
 
     // Configurar punto de montaje
     if (manager->mount_point_combo && manager->current_config->mount_point) {

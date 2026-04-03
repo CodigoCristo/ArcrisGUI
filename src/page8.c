@@ -138,6 +138,10 @@ void page8_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page8_data->terminal_title = GTK_LABEL(gtk_builder_get_object(page_builder, "terminal_title"));
     g_page8_data->terminal_info = GTK_LABEL(gtk_builder_get_object(page_builder, "terminal_info"));
 
+    // Obtener widgets de la página de error
+    g_page8_data->error_label = GTK_LABEL(gtk_builder_get_object(page_builder, "error_label"));
+    g_page8_data->view_log_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "view_log_button"));
+
     // Verificar que se obtuvieron los widgets principales
     LOG_INFO("DEBUG: Verificando widgets obtenidos...");
     if (!g_page8_data->main_stack || !g_page8_data->terminal_button ||
@@ -170,6 +174,10 @@ void page8_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     LOG_INFO("DEBUG: Conectando señales...");
     g_signal_connect(g_page8_data->terminal_button, "toggled",
                      G_CALLBACK(on_terminal_button_toggled), g_page8_data);
+    if (g_page8_data->view_log_button) {
+        g_signal_connect(g_page8_data->view_log_button, "clicked",
+                         G_CALLBACK(on_view_log_button_clicked), g_page8_data);
+    }
 
     LOG_INFO("=== DEBUG: page8_init completado exitosamente ===");
 
@@ -477,7 +485,11 @@ static void on_install_script_finished(VteTerminal *terminal, gint status, gpoin
         LOG_INFO("DEBUG: Timeout programado con ID: %u", timeout_id);
     } else {
         LOG_ERROR("Script de instalación falló con código: %d", status);
-        page8_terminal_output(data, "\nERROR: La instalación falló. Revise los mensajes anteriores.\n");
+        page8_stop_carousel_timer(data);
+        page8_stop_progress_bar_pulse(data);
+        if (data->main_stack) {
+            gtk_stack_set_visible_child_name(data->main_stack, "error_page");
+        }
     }
 
     // Desconectar la señal para evitar múltiples llamadas
@@ -629,6 +641,15 @@ void on_terminal_button_toggled(GtkToggleButton *button, gpointer user_data)
     } else {
         page8_show_carousel(data);
     }
+}
+
+void on_view_log_button_clicked(GtkButton *button, gpointer user_data)
+{
+    (void)button;
+    Page8Data *data = (Page8Data*)user_data;
+    if (!data || !data->main_stack) return;
+
+    gtk_stack_set_visible_child_name(data->main_stack, "terminal_page");
 }
 
 void page8_on_page_shown(void)

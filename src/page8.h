@@ -35,6 +35,10 @@ typedef struct _Page8Data {
     VteTerminal *vte_terminal;
     GtkLabel *terminal_title;
     GtkLabel *terminal_info;
+
+    // Widgets de la página de error
+    GtkLabel *error_label;
+    GtkButton *view_log_button;
     
     // Timer para cambio automático de imágenes
     guint carousel_timeout_id;
@@ -83,6 +87,7 @@ void page8_terminal_output(Page8Data *data, const gchar *text);
 
 // Callbacks
 void on_terminal_button_toggled(GtkToggleButton *button, gpointer user_data);
+void on_view_log_button_clicked(GtkButton *button, gpointer user_data);
 
 // Funciones de estado
 void page8_on_page_shown(void);
