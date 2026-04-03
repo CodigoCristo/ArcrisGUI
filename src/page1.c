@@ -408,6 +408,9 @@ static void on_update_check_done(GObject *source, GAsyncResult *result,
             gtk_widget_add_css_class(g_page1_data->update_check_label, "error");
             gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
         }
+        // Volver al modo normal para que el monitoreo de internet funcione
+        g_page1_data->is_update_mode = FALSE;
+        page1_start_internet_monitoring();
         if (error) g_error_free(error);
         g_free(stdout_buf);
         g_object_unref(proc);
