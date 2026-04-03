@@ -33,7 +33,7 @@
             <property name="spacing">5</property>
 
 
-<child>
+            <child>
               <object class="GtkLabel" id="internet">
                 <property name="label">Probando Conexión a Internet...</property>
                 <property name="visible">true</property>
@@ -42,6 +42,7 @@
                 </style>
               </object>
             </child>
+
           <child>
             <object class="AdwSpinner" id="spinner">
             <property name="visible">true</property>

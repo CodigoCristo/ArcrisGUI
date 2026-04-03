@@ -98,7 +98,7 @@
   <menu id="menu_app">
     <section>
       <item>
-        <attribute name="label" translatable="true">Actualizaciones</attribute>
+        <attribute name="label" translatable="true">Buscar Actualizaciones</attribute>
         <attribute name="action">app.check_updates</attribute>
       </item>
     </section>
