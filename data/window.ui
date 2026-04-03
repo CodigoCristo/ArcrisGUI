@@ -98,6 +98,12 @@
   <menu id="menu_app">
     <section>
       <item>
+        <attribute name="label" translatable="true">Buscar Actualizaciones</attribute>
+        <attribute name="action">app.check_updates</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
         <attribute name="label" translatable="true">About Arcris</attribute>
         <attribute name="action">app.about</attribute>
       </item>

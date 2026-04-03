@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define ARCRIS_REMOTE_URL  "https://github.com/CodigoCristo/ArcrisGUI.git"
+#define ARCRIS_COMMIT_FILE "/usr/share/arcrisgui/commit"
+
 // Variable global para datos de la página 1
 static Page1Data *g_page1_data = NULL;
 
@@ -40,7 +43,7 @@ static void update_internet_ui(gboolean has_internet)
     
     if (has_internet) {
         g_print("✅ Internet conectado - Mostrando botón Iniciar\n");
-        
+
         // Ocultar elementos de "sin internet"
         if (g_page1_data->internet_label) {
             gtk_widget_set_visible(g_page1_data->internet_label, FALSE);
@@ -50,6 +53,9 @@ static void update_internet_ui(gboolean has_internet)
         }
         if (g_page1_data->no_internet_label) {
             gtk_widget_set_visible(g_page1_data->no_internet_label, FALSE);
+        }
+        if (g_page1_data->update_check_label) {
+            gtk_widget_set_visible(g_page1_data->update_check_label, FALSE);
         }
         
         // Mostrar y habilitar botón
@@ -227,11 +233,13 @@ void page1_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page1_data->internet_label = GTK_WIDGET(gtk_builder_get_object(page_builder, "internet"));
     g_page1_data->spinner = GTK_WIDGET(gtk_builder_get_object(page_builder, "spinner"));
     g_page1_data->no_internet_label = GTK_WIDGET(gtk_builder_get_object(page_builder, "no_internet"));
+    g_page1_data->update_check_label = GTK_WIDGET(gtk_builder_get_object(page_builder, "update_check_label"));
     g_page1_data->start_button = GTK_WIDGET(gtk_builder_get_object(page_builder, "start_button"));
-    
+
     // Verificar que se cargaron todos los widgets correctamente
-    if (!g_page1_data->internet_label || !g_page1_data->spinner || 
-        !g_page1_data->no_internet_label || !g_page1_data->start_button) {
+    if (!g_page1_data->internet_label || !g_page1_data->spinner ||
+        !g_page1_data->no_internet_label || !g_page1_data->update_check_label ||
+        !g_page1_data->start_button) {
         g_print("❌ Error: No se pudieron cargar todos los widgets de page1.ui\n");
         return;
     }
@@ -258,6 +266,177 @@ void page1_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     
     g_print("✅ Página 1 inicializada correctamente\n");
 }
+
+// ── Actualización ──────────────────────────────────────────────────────────
+
+static void on_update_run_response(AdwAlertDialog *dialog, const char *response,
+                                   gpointer user_data)
+{
+    if (g_strcmp0(response, "update") == 0) {
+        GError *error = NULL;
+        const char *argv[] = { "xterm", "-e", "update-arcris", NULL };
+        g_spawn_async(NULL, (char **)argv, NULL,
+                      G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD,
+                      NULL, NULL, NULL, &error);
+        if (error) {
+            g_warning("No se pudo lanzar update-arcris: %s", error->message);
+            g_error_free(error);
+        } else {
+            // update-arcris relanza arcris solo, podemos cerrar esta instancia
+            g_application_quit(g_application_get_default());
+        }
+    }
+}
+
+static void on_update_check_done(GObject *source, GAsyncResult *result,
+                                 gpointer user_data)
+{
+    GSubprocess *proc = G_SUBPROCESS(source);
+    gchar *stdout_buf = NULL;
+    GError *error = NULL;
+
+    g_subprocess_communicate_utf8_finish(proc, result, &stdout_buf, NULL, &error);
+
+    if (!g_page1_data) {
+        g_free(stdout_buf);
+        if (error) g_error_free(error);
+        g_object_unref(proc);
+        return;
+    }
+
+    // Ocultar spinner al terminar
+    if (g_page1_data->spinner)
+        gtk_widget_set_visible(g_page1_data->spinner, FALSE);
+
+    if (error || !stdout_buf || strlen(stdout_buf) < 40) {
+        // No se pudo conectar o git no disponible
+        if (g_page1_data->update_check_label) {
+            gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
+                               "Error al verificar actualizaciones. ¿Hay internet?");
+            gtk_widget_remove_css_class(g_page1_data->update_check_label, "dim-label");
+            gtk_widget_add_css_class(g_page1_data->update_check_label, "error");
+            gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
+        }
+        if (error) g_error_free(error);
+        g_free(stdout_buf);
+        g_object_unref(proc);
+        return;
+    }
+
+    // El output de git ls-remote es: "<sha>\tHEAD\n"
+    gchar *remote_sha = g_strndup(stdout_buf, 40);
+
+    // Leer SHA local guardado por el PKGBUILD
+    gchar *local_sha = NULL;
+    GError *file_error = NULL;
+    gboolean has_updates = FALSE;
+
+    if (g_file_get_contents(ARCRIS_COMMIT_FILE, &local_sha, NULL, &file_error)) {
+        g_strstrip(local_sha);
+        has_updates = (g_strcmp0(remote_sha, local_sha) != 0);
+        g_free(local_sha);
+    } else {
+        // No existe el archivo → asumir que hay actualización
+        has_updates = TRUE;
+        if (file_error) g_error_free(file_error);
+    }
+
+    GtkRoot *root = gtk_widget_get_root(g_page1_data->spinner);
+
+    if (has_updates) {
+        if (g_page1_data->update_check_label) {
+            gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
+                               "¡Hay una actualización disponible!");
+            gtk_widget_remove_css_class(g_page1_data->update_check_label, "dim-label");
+            gtk_widget_add_css_class(g_page1_data->update_check_label, "warning");
+            gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
+        }
+
+        if (root && GTK_IS_WINDOW(root)) {
+            AdwAlertDialog *dlg = ADW_ALERT_DIALOG(
+                adw_alert_dialog_new("Actualización Disponible",
+                                     "Se encontraron nuevas actualizaciones de Arcris.\n"
+                                     "¿Desea actualizar ahora?"));
+            adw_alert_dialog_add_responses(dlg,
+                "cancel", "Cancelar",
+                "update", "Actualizar",
+                NULL);
+            adw_alert_dialog_set_response_appearance(dlg, "update",
+                                                     ADW_RESPONSE_SUGGESTED);
+            g_signal_connect(dlg, "response",
+                             G_CALLBACK(on_update_run_response), NULL);
+            adw_dialog_present(ADW_DIALOG(dlg), GTK_WIDGET(root));
+        }
+    } else {
+        if (g_page1_data->update_check_label) {
+            gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
+                               "Arcris está al día ✓");
+            gtk_widget_remove_css_class(g_page1_data->update_check_label, "dim-label");
+            gtk_widget_add_css_class(g_page1_data->update_check_label, "success");
+            gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
+        }
+        // Restaurar botón Iniciar si hay internet
+        if (g_page1_data->start_button && g_page1_data->has_internet) {
+            gtk_widget_set_visible(g_page1_data->start_button, TRUE);
+            gtk_widget_set_sensitive(g_page1_data->start_button, TRUE);
+        }
+    }
+
+    g_free(remote_sha);
+    g_free(stdout_buf);
+    g_object_unref(proc);
+}
+
+void page1_start_update_check(void)
+{
+    if (!g_page1_data) return;
+
+    // Preparar UI para modo búsqueda
+    if (g_page1_data->internet_label)
+        gtk_widget_set_visible(g_page1_data->internet_label, FALSE);
+    if (g_page1_data->no_internet_label)
+        gtk_widget_set_visible(g_page1_data->no_internet_label, FALSE);
+    if (g_page1_data->start_button)
+        gtk_widget_set_visible(g_page1_data->start_button, FALSE);
+    if (g_page1_data->update_check_label) {
+        gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
+                           "Buscando actualizaciones desde repositorio del proyecto...");
+        gtk_widget_remove_css_class(g_page1_data->update_check_label, "error");
+        gtk_widget_remove_css_class(g_page1_data->update_check_label, "warning");
+        gtk_widget_remove_css_class(g_page1_data->update_check_label, "success");
+        gtk_widget_add_css_class(g_page1_data->update_check_label, "dim-label");
+        gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
+    }
+    if (g_page1_data->spinner)
+        gtk_widget_set_visible(g_page1_data->spinner, TRUE);
+
+    // Lanzar git ls-remote de forma asíncrona
+    GError *error = NULL;
+    GSubprocess *proc = g_subprocess_new(
+        G_SUBPROCESS_FLAGS_STDOUT_PIPE | G_SUBPROCESS_FLAGS_STDERR_SILENCE,
+        &error,
+        "git", "ls-remote", ARCRIS_REMOTE_URL, "HEAD",
+        NULL);
+
+    if (!proc) {
+        g_warning("No se pudo lanzar git ls-remote: %s",
+                  error ? error->message : "desconocido");
+        if (error) g_error_free(error);
+        if (g_page1_data->spinner)
+            gtk_widget_set_visible(g_page1_data->spinner, FALSE);
+        if (g_page1_data->update_check_label) {
+            gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
+                               "Error: git no encontrado en el sistema");
+            gtk_widget_remove_css_class(g_page1_data->update_check_label, "dim-label");
+            gtk_widget_add_css_class(g_page1_data->update_check_label, "error");
+        }
+        return;
+    }
+
+    g_subprocess_communicate_utf8_async(proc, NULL, NULL, on_update_check_done, NULL);
+}
+
+// ── Fin Actualización ───────────────────────────────────────────────────────
 
 // Función de limpieza de recursos
 void page1_cleanup(Page1Data *data)

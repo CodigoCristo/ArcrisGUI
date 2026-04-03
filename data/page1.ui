@@ -64,6 +64,16 @@
             </child>
 
             <child>
+              <object class="GtkLabel" id="update_check_label">
+                <property name="label">Buscando actualizaciones desde repositorio del proyecto...</property>
+                <property name="visible">false</property>
+                <style>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+
+            <child>
               <object class="GtkButton" id="start_button">
               <property name="label">Iniciar</property>
               <property name="visible">false</property>
