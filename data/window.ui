@@ -104,7 +104,7 @@
     </section>
     <section>
       <item>
-        <attribute name="label" translatable="true">About Arcris</attribute>
+        <attribute name="label" translatable="true">Arcris About</attribute>
         <attribute name="action">app.about</attribute>
       </item>
     </section>
