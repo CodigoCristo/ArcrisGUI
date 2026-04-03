@@ -11,6 +11,7 @@
     <file alias="page7.ui" compressed="true">page7.ui</file>
     <file alias="page8.ui" compressed="true">page8.ui</file>
     <file alias="page9.ui" compressed="true">page9.ui</file>
+    <file alias="page10.ui" compressed="true">page10.ui</file>
     <file alias="window_kernel.ui" compressed="true">window_kernel.ui</file>
     <file alias="window_partition.ui" compressed="true">window_partition.ui</file>
     <file alias="window_hardware.ui" compressed="true">window_hardware.ui</file>

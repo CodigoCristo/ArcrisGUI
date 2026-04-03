@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adwaita" version="1.2"/>
+
+  <object class="AdwBin" id="main_bin">
+    <property name="hexpand">true</property>
+    <property name="vexpand">true</property>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="halign">fill</property>
+        <property name="valign">fill</property>
+        <property name="hexpand">true</property>
+        <property name="vexpand">true</property>
+        <property name="spacing">0</property>
+
+        <!-- Sección superior: ícono, título, mensaje, botón -->
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <property name="spacing">16</property>
+            <property name="margin-top">48</property>
+            <property name="margin-bottom">24</property>
+            <property name="margin-start">48</property>
+            <property name="margin-end">48</property>
+
+            <!-- Ícono de error -->
+            <child>
+              <object class="GtkImage">
+                <property name="icon-name">dialog-error-symbolic</property>
+                <property name="pixel-size">64</property>
+                <property name="halign">center</property>
+                <style>
+                  <class name="error"/>
+                </style>
+              </object>
+            </child>
+
+            <!-- Título -->
+            <child>
+              <object class="GtkLabel" id="error_title">
+                <property name="label">Error en la instalación</property>
+                <property name="halign">center</property>
+                <style>
+                  <class name="title-1"/>
+                </style>
+              </object>
+            </child>
+
+            <!-- Mensaje descriptivo -->
+            <child>
+              <object class="GtkLabel" id="error_message">
+                <property name="label">La instalación no pudo completarse. Revisa el registro para más información.</property>
+                <property name="halign">center</property>
+                <property name="wrap">true</property>
+                <property name="wrap-mode">word-char</property>
+                <property name="justify">center</property>
+                <style>
+                  <class name="body"/>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+
+            <!-- Botón para mostrar/ocultar el log -->
+            <child>
+              <object class="GtkToggleButton" id="view_log_button">
+                <property name="label">Ver registro log</property>
+                <property name="halign">center</property>
+                <property name="margin-top">8</property>
+                <style>
+                  <class name="pill"/>
+                </style>
+              </object>
+            </child>
+
+          </object>
+        </child>
+
+        <!-- Sección del log (revealer) -->
+        <child>
+          <object class="GtkRevealer" id="log_revealer">
+            <property name="reveal-child">false</property>
+            <property name="transition-type">slide-down</property>
+            <property name="transition-duration">300</property>
+            <property name="hexpand">true</property>
+            <property name="vexpand">true</property>
+            <child>
+              <object class="GtkScrolledWindow">
+                <property name="hexpand">true</property>
+                <property name="vexpand">true</property>
+                <property name="margin-start">24</property>
+                <property name="margin-end">24</property>
+                <property name="margin-bottom">24</property>
+                <property name="min-content-height">250</property>
+                <property name="hscrollbar-policy">automatic</property>
+                <property name="vscrollbar-policy">automatic</property>
+                <child>
+                  <object class="GtkTextView" id="log_text_view">
+                    <property name="editable">false</property>
+                    <property name="cursor-visible">false</property>
+                    <property name="wrap-mode">word-char</property>
+                    <property name="monospace">true</property>
+                    <property name="hexpand">true</property>
+                    <property name="vexpand">true</property>
+                    <property name="top-margin">8</property>
+                    <property name="bottom-margin">8</property>
+                    <property name="left-margin">8</property>
+                    <property name="right-margin">8</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+
+      </object>
+    </child>
+  </object>
+</interface>

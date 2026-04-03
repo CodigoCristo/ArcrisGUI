@@ -9,6 +9,7 @@
 #include "page7.h"
 #include "page8.h"
 #include "page9.h"
+#include "page10.h"
 
 
 #include "config.h"
@@ -128,6 +129,9 @@ void carousel_init_all_pages(CarouselManager *manager, GtkBuilder *builder)
     
     // Inicializar página 9 (Finalización)
     page9_init(builder, manager->carousel, manager->revealer);
+
+    // Inicializar página 10 (Error de instalación)
+    page10_init(builder, manager->carousel, manager->revealer);
 
     
     LOG_INFO("Todas las páginas han sido inicializadas");
@@ -454,6 +458,10 @@ static void on_carousel_page_changed_internal(AdwCarousel *carousel, guint page,
         // Página 9 (índice 8) - página de finalización
         page9_on_page_shown();
         LOG_INFO("Página 9 (finalización) - revealer permanece oculto");
+    } else if (page == 9) {
+        // Página 10 (índice 9) - página de error
+        page10_on_page_shown();
+        LOG_INFO("Página 10 (error) - revealer permanece oculto");
     } else {
         // Mostrar revealer en todas las páginas que NO son página 7, página 8 ni página 9
         if (manager->revealer) {

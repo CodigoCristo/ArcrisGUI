@@ -1,5 +1,6 @@
 #include "page8.h"
 #include "page9.h"
+#include "page10.h"
 #include "config.h"
 #include <glib/gstdio.h>
 #include <vte/vte.h>
@@ -138,10 +139,6 @@ void page8_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page8_data->terminal_title = GTK_LABEL(gtk_builder_get_object(page_builder, "terminal_title"));
     g_page8_data->terminal_info = GTK_LABEL(gtk_builder_get_object(page_builder, "terminal_info"));
 
-    // Obtener widgets de la página de error
-    g_page8_data->error_label = GTK_LABEL(gtk_builder_get_object(page_builder, "error_label"));
-    g_page8_data->view_log_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "view_log_button"));
-
     // Verificar que se obtuvieron los widgets principales
     LOG_INFO("DEBUG: Verificando widgets obtenidos...");
     if (!g_page8_data->main_stack || !g_page8_data->terminal_button ||
@@ -174,10 +171,6 @@ void page8_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     LOG_INFO("DEBUG: Conectando señales...");
     g_signal_connect(g_page8_data->terminal_button, "toggled",
                      G_CALLBACK(on_terminal_button_toggled), g_page8_data);
-    if (g_page8_data->view_log_button) {
-        g_signal_connect(g_page8_data->view_log_button, "clicked",
-                         G_CALLBACK(on_view_log_button_clicked), g_page8_data);
-    }
 
     LOG_INFO("=== DEBUG: page8_init completado exitosamente ===");
 
@@ -487,8 +480,9 @@ static void on_install_script_finished(VteTerminal *terminal, gint status, gpoin
         LOG_ERROR("Script de instalación falló con código: %d", status);
         page8_stop_carousel_timer(data);
         page8_stop_progress_bar_pulse(data);
-        if (data->main_stack) {
-            gtk_stack_set_visible_child_name(data->main_stack, "error_page");
+        GtkWidget *page10_widget = page10_get_widget();
+        if (page10_widget && data->carousel) {
+            adw_carousel_scroll_to(data->carousel, page10_widget, TRUE);
         }
     }
 
@@ -516,8 +510,8 @@ static gboolean page8_navigate_to_completion(Page8Data *data)
         return FALSE;
     }
 
-    guint page9_index = total_pages - 1;
-    LOG_INFO("DEBUG: Calculado page9_index = %u (última página)", page9_index);
+    guint page9_index = total_pages - 2; // page9 es la penúltima (page10/error es la última)
+    LOG_INFO("DEBUG: Calculado page9_index = %u (penúltima página, page10/error es la última)", page9_index);
 
     // Listar todas las páginas para debugging
     for (guint i = 0; i < total_pages; i++) {
@@ -571,8 +565,10 @@ void page8_execute_install_script(Page8Data *data)
     g_free(chmod_command);
 
     // Preparar argumentos para ejecutar el script
+    // --return: propagar el exit code del comando interno
     gchar *argv[] = {
         "/usr/bin/script",
+        "--return",
         "-q",
         "-c",
         g_strdup_printf("bash %s", script_path),
@@ -641,15 +637,6 @@ void on_terminal_button_toggled(GtkToggleButton *button, gpointer user_data)
     } else {
         page8_show_carousel(data);
     }
-}
-
-void on_view_log_button_clicked(GtkButton *button, gpointer user_data)
-{
-    (void)button;
-    Page8Data *data = (Page8Data*)user_data;
-    if (!data || !data->main_stack) return;
-
-    gtk_stack_set_visible_child_name(data->main_stack, "terminal_page");
 }
 
 void page8_on_page_shown(void)
