@@ -466,11 +466,9 @@ static void on_update_check_done(GObject *source, GAsyncResult *result,
             gtk_widget_add_css_class(g_page1_data->update_check_label, "success");
             gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
         }
-        // Restaurar botón Iniciar si hay internet
-        if (g_page1_data->start_button && g_page1_data->has_internet) {
-            gtk_widget_set_visible(g_page1_data->start_button, TRUE);
-            gtk_widget_set_sensitive(g_page1_data->start_button, TRUE);
-        }
+        // Volver al modo normal para que el monitoreo de internet funcione
+        g_page1_data->is_update_mode = FALSE;
+        page1_start_internet_monitoring();
     }
 
     g_free(remote_sha);
