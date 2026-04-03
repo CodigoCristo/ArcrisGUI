@@ -308,8 +308,11 @@ static void on_update_install_done(GObject *source, GAsyncResult *result,
                        (g_subprocess_get_exit_status(proc) == 0);
 
     if (success) {
-        // El script ya lanzó la nueva instancia con nohup setsid arcris
-        // Solo cerramos esta instancia
+        // Relanzar arcris desvinculado, luego cerrar esta instancia
+        const char *relaunch[] = { "arcris", NULL };
+        g_spawn_async(NULL, (char **)relaunch, NULL,
+                      G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD,
+                      NULL, NULL, NULL, NULL);
         g_application_quit(g_application_get_default());
     } else {
         if (g_page1_data->spinner)
@@ -331,7 +334,7 @@ static void page1_start_update_install(void)
 {
     if (!g_page1_data) return;
 
-    // UI: spinner girando + mensaje de progreso
+    // UI: spinner + mensaje de progreso
     if (g_page1_data->update_check_label) {
         gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
                            "Arcris se está actualizando...");
