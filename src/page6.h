@@ -24,6 +24,7 @@ typedef struct _Page6Data {
     // office_button eliminado - no existe en el UI
     GtkButton *utilities_button;
     AdwButtonRow *program_extra_button;
+    GtkButton *repository_button;
     
     // Estados de configuración
     gboolean essential_apps_enabled;
@@ -97,6 +98,10 @@ void page6_open_utilities_window(Page6Data *data);
 // Funciones para manejo de programas extra
 void on_program_extra_button_clicked(AdwButtonRow *button, gpointer user_data);
 void page6_open_program_extra_window(Page6Data *data);
+
+// Funciones para manejo de repositorios
+void on_repository_button_clicked(GtkButton *button, gpointer user_data);
+void page6_open_repos_window(Page6Data *data);
 
 // Callbacks para switches
 void on_essential_apps_switch_toggled(GObject *object, GParamSpec *pspec, gpointer user_data);

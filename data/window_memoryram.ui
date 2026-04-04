@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwApplicationWindow" id="VirtualMemoryWindow">
+    <property name="title">Memoria Virtual</property>
+    <property name="default-width">600</property>
+    <property name="default-height">540</property>
+    <property name="modal">true</property>
+    <property name="resizable">false</property>
+    <property name="deletable">false</property>
+    <property name="hide-on-close">true</property>
+
+    <child>
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="AdwWindowTitle">
+                <property name="title">Memoria Virtual</property>
+              </object>
+            </property>
+            <child type="start">
+              <object class="GtkButton" id="cancel_button">
+                <property name="label">Cancelar</property>
+                <property name="valign">center</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="save_button">
+                <property name="label">Guardar</property>
+                <property name="valign">center</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <property name="content">
+          <object class="AdwClamp">
+            <property name="maximum-size">520</property>
+            <property name="tightening-threshold">500</property>
+            <property name="margin-top">24</property>
+            <property name="margin-bottom">24</property>
+            <property name="margin-start">12</property>
+            <property name="margin-end">12</property>
+            <child>
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">20</property>
+
+                <!-- Descripción General -->
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">12</property>
+
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label">Configura la memoria virtual de tu sistema</property>
+                        <property name="halign">start</property>
+                        <property name="wrap">true</property>
+                        <property name="xalign">0</property>
+                        <style>
+                          <class name="title-3"/>
+                        </style>
+                      </object>
+                    </child>
+
+                    <!-- Swap Info -->
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">4</property>
+
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Swap</property>
+                            <property name="halign">start</property>
+                            <property name="xalign">0</property>
+                            <style>
+                              <class name="title-4"/>
+                            </style>
+                          </object>
+                        </child>
+
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Usa una partición en disco para extender la RAM.
+Permite hibernar el sistema. Más lento pero no consume RAM.</property>
+                            <property name="halign">start</property>
+                            <property name="wrap">true</property>
+                            <property name="xalign">0</property>
+                            <style>
+                              <class name="dim-label"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <!-- Zram Info -->
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">4</property>
+
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Zram</property>
+                            <property name="halign">start</property>
+                            <property name="xalign">0</property>
+                            <style>
+                              <class name="title-4"/>
+                            </style>
+                          </object>
+                        </child>
+
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Comprime datos en la RAM para ahorrar memoria.
+Más rápido que Swap. No permite hibernar y consume RAM.</property>
+                            <property name="halign">start</property>
+                            <property name="wrap">true</property>
+                            <property name="xalign">0</property>
+                            <style>
+                              <class name="dim-label"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <!-- Swap + Zram Info -->
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">4</property>
+
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Swap + Zram</property>
+                            <property name="halign">start</property>
+                            <property name="xalign">0</property>
+                            <style>
+                              <class name="title-4"/>
+                            </style>
+                          </object>
+                        </child>
+
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Combina ambas tecnologías para máximo rendimiento.
+Zram para velocidad y Swap para hibernación y respaldo en disco.</property>
+                            <property name="halign">start</property>
+                            <property name="wrap">true</property>
+                            <property name="xalign">0</property>
+                            <style>
+                              <class name="dim-label"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                  </object>
+                </child>
+
+                <!-- Grupo de Opciones -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <!-- Selección -->
+                    <child>
+                      <object class="AdwComboRow" id="virtual_memory_selection_combo">
+                        <property name="title">Selección:</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item>Sin Swap</item>
+                              <item>Swap</item>
+                              <item>Zram</item>
+                              <item>Swap + Zram</item>
+                            </items>
+                          </object>
+                        </property>
+                        <property name="selected">0</property>
+                      </object>
+                    </child>
+
+                    <!-- Tamaño de Swap -->
+                    <child>
+                      <object class="AdwActionRow" id="swap_size_row">
+                        <property name="title">Tamaño de Swap:</property>
+                        <child type="suffix">
+                          <object class="GtkBox">
+                            <property name="spacing">6</property>
+                            <child>
+                              <object class="GtkSpinButton" id="swap_size_spin">
+                                <property name="adjustment">
+                                  <object class="GtkAdjustment">
+                                    <property name="lower">0</property>
+                                    <property name="upper">999</property>
+                                    <property name="value">0</property>
+                                    <property name="step-increment">1</property>
+                                    <property name="page-increment">10</property>
+                                  </object>
+                                </property>
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">GB</property>
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <!-- Tamaño de Zram -->
+                    <child>
+                      <object class="AdwActionRow" id="zram_size_row">
+                        <property name="title">Tamaño de Zram:</property>
+                        <child type="suffix">
+                          <object class="GtkBox">
+                            <property name="spacing">6</property>
+                            <child>
+                              <object class="GtkSpinButton" id="zram_size_spin">
+                                <property name="adjustment">
+                                  <object class="GtkAdjustment">
+                                    <property name="lower">0</property>
+                                    <property name="upper">999</property>
+                                    <property name="value">0</property>
+                                    <property name="step-increment">1</property>
+                                    <property name="page-increment">10</property>
+                                  </object>
+                                </property>
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">GB</property>
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </child>
+  </object>
+</interface>

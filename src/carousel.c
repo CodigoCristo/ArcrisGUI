@@ -9,6 +9,7 @@
 #include "page7.h"
 #include "page8.h"
 #include "page9.h"
+#include "page10.h"
 
 
 #include "config.h"
@@ -129,6 +130,9 @@ void carousel_init_all_pages(CarouselManager *manager, GtkBuilder *builder)
     // Inicializar página 9 (Finalización)
     page9_init(builder, manager->carousel, manager->revealer);
 
+    // Inicializar página 10 (Error de instalación)
+    page10_init(builder, manager->carousel, manager->revealer);
+
     
     LOG_INFO("Todas las páginas han sido inicializadas");
 }
@@ -219,7 +223,7 @@ void carousel_update_navigation_controls(CarouselManager *manager)
     gboolean can_go_next = carousel_can_navigate_next(manager);
     
     // Mostrar controles en todas las páginas excepto la primera, página 7, página 8 (instalación) y página 9 (finalización)
-    if (!arcris_is_first_page(manager->current_page) && manager->current_page != 6 && manager->current_page != 7 && manager->current_page != 8) {
+    if (!arcris_is_first_page(manager->current_page) && manager->current_page != 6 && manager->current_page != 7 && manager->current_page != 8 && manager->current_page != 9) {
         show_controls = TRUE;
     }
     
@@ -229,6 +233,13 @@ void carousel_update_navigation_controls(CarouselManager *manager)
     // Actualizar sensibilidad de los botones
     gtk_widget_set_sensitive(GTK_WIDGET(manager->back_button), can_go_back);
     gtk_widget_set_sensitive(GTK_WIDGET(manager->next_button), can_go_next);
+
+    // Activar next_button con Enter cuando esté visible y habilitado
+    GtkRoot *root = gtk_widget_get_root(GTK_WIDGET(manager->next_button));
+    if (root && GTK_IS_WINDOW(root)) {
+        gtk_window_set_default_widget(GTK_WINDOW(root),
+            (show_controls && can_go_next) ? GTK_WIDGET(manager->next_button) : NULL);
+    }
     
     DEBUG_PRINT("Controles de navegación actualizados - Página: %u/%u (%s), Visible: %s", 
                 manager->current_page + 1, manager->total_pages, 
@@ -447,6 +458,10 @@ static void on_carousel_page_changed_internal(AdwCarousel *carousel, guint page,
         // Página 9 (índice 8) - página de finalización
         page9_on_page_shown();
         LOG_INFO("Página 9 (finalización) - revealer permanece oculto");
+    } else if (page == 9) {
+        // Página 10 (índice 9) - página de error
+        page10_on_page_shown();
+        LOG_INFO("Página 10 (error) - revealer permanece oculto");
     } else {
         // Mostrar revealer en todas las páginas que NO son página 7, página 8 ni página 9
         if (manager->revealer) {

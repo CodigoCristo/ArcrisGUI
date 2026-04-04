@@ -37,6 +37,22 @@ static void cleanup_application(void)
     LOG_INFO("Recursos limpiados correctamente");
 }
 
+// Función para buscar actualizaciones desde el menú
+static void check_updates_action(GSimpleAction *action, GVariant *parameter, gpointer user_data)
+{
+    if (!g_app_carousel_manager) return;
+
+    // Detener monitoreo de internet si estaba activo
+    page1_stop_internet_monitoring();
+
+    // Ir a la página 1 (índice 0) y ocultar navegación
+    carousel_navigate_to_page(g_app_carousel_manager, 0);
+    gtk_revealer_set_reveal_child(g_app_carousel_manager->revealer, FALSE);
+
+    // Iniciar búsqueda de actualizaciones en page1
+    page1_start_update_check();
+}
+
 // Función para cerrar la aplicación con Ctrl+Q
 static void quit_action(GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
@@ -71,11 +87,14 @@ static void activate_cb(GtkApplication *app)
         LOG_WARNING("No se pudo obtener el tema de iconos");
     }
 
-    // Configurar tema dark adwaita por defecto
+    // Configurar tema dark adwaita por defecto y minimizar warnings
     AdwStyleManager *style_manager = adw_style_manager_get_default();
     if (style_manager) {
+        // Configurar tema oscuro
         adw_style_manager_set_color_scheme(style_manager, ADW_COLOR_SCHEME_FORCE_DARK);
         LOG_INFO("Tema dark adwaita configurado por defecto");
+
+        // El tema de iconos se configura automáticamente con el tema del sistema
     } else {
         LOG_WARNING("No se pudo obtener el style manager para configurar el tema");
     }
@@ -138,6 +157,9 @@ static void activate_cb(GtkApplication *app)
 // Función main
 int main(int argc, char *argv[])
 {
+    // Seleccionar el renderer GL correcto antes de cualquier inicialización de GTK
+    g_setenv("GSK_RENDERER", "gl", TRUE);
+
     // Inicializar configuración
     if (!arcris_config_init()) {
         g_critical("Error en la inicialización de configuración");
@@ -148,6 +170,7 @@ int main(int argc, char *argv[])
 
     // Definir las acciones de la aplicación
     const GActionEntry app_entries[] = {
+        { "check_updates", check_updates_action, NULL, NULL, NULL },
         { "about", about_action, NULL, NULL, NULL },
         { "quit", quit_action, NULL, NULL, NULL },
     };

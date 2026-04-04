@@ -736,7 +736,7 @@ gchar* page7_read_variable_from_file(const gchar* variable_name)
 {
     if (!variable_name) return NULL;
     
-    gchar *file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
     FILE *file = fopen(file_path, "r");
     
     if (!file) {

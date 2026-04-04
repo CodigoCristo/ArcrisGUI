@@ -20,7 +20,7 @@
         </child>
         <child>
           <object class="AdwStatusPage">
-            <property name="title" translatable="true">Arcris</property>
+            <property name="title" translatable="true">Arcris Test</property>
             <property name="description" translatable="true">Instalación fácil de ArchLinux</property>
           </object>
         </child>
@@ -33,7 +33,7 @@
             <property name="spacing">5</property>
 
 
-<child>
+            <child>
               <object class="GtkLabel" id="internet">
                 <property name="label">Probando Conexión a Internet...</property>
                 <property name="visible">true</property>
@@ -42,6 +42,7 @@
                 </style>
               </object>
             </child>
+
           <child>
             <object class="AdwSpinner" id="spinner">
             <property name="visible">true</property>
@@ -59,6 +60,16 @@
                 <property name="visible">false</property>
                 <style>
                   <class name="error"/>
+                </style>
+              </object>
+            </child>
+
+            <child>
+              <object class="GtkLabel" id="update_check_label">
+                <property name="label">Buscando actualizaciones desde repositorio del proyecto...</property>
+                <property name="visible">false</property>
+                <style>
+                  <class name="dim-label"/>
                 </style>
               </object>
             </child>

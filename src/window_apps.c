@@ -1,5 +1,6 @@
 #include "window_apps.h"
 #include "config.h"
+#include "variables_utils.h"
 #include <glib/gstdio.h>
 #include <string.h>
 #include <gio/gio.h>
@@ -8,7 +9,7 @@
 static WindowAppsData *global_apps_data = NULL;
 
 // Constantes
-#define VARIABLES_FILE_PATH "./data/variables.sh"
+#define VARIABLES_FILE_PATH "./data/bash/variables.sh"
 
 WindowAppsData* window_apps_new(void)
 {
@@ -245,6 +246,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"vlc_info", "https://www.videolan.org/vlc/"},
         {"handbrake_info", "https://handbrake.fr/"},
         {"mpv_info", "https://mpv.io/"},
+        {"celluloid_info", "https://celluloid-player.github.io/"},
         {"showtime_info", "https://apps.gnome.org/es/Showtime/"},
         {"kooha_info", "https://github.com/SeaDve/Kooha"},
         {"vokoscreen_info", "https://linuxecke.volkoh.de/vokoscreen/vokoscreen.html"},
@@ -266,7 +268,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"discord_info", "https://discord.com/"},
         {"thunderbird_info", "https://www.thunderbird.net/"},
         {"signal_info", "https://signal.org/"},
-        {"whatsapp_info", "https://github.com/eneshecan/whatsapp-for-linux"},
+        {"whatsapp_info", "https://rtosta.com/zapzap/"},
         {"evolution_info", "https://wiki.gnome.org/Apps/Evolution"},
         {"fractal_info", "https://wiki.gnome.org/Apps/Fractal"},
 
@@ -289,7 +291,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"wps_info", "https://www.wps.com/"},
         {"abiword_info", "https://www.abisource.com/"},
         {"calibre_info", "https://calibre-ebook.com/"},
-        {"evince_info", "https://wiki.gnome.org/Apps/Evince"},
+        {"papers_info", "https://apps.gnome.org/Papers/"},
         {"okular_info", "https://okular.kde.org/"},
         {"paperwork_info", "https://openpaper.work/"},
 
@@ -344,7 +346,11 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"putty_info", "https://www.putty.org/"},
         {"stremio_info", "https://www.stremio.com/"},
         {"mission_center_info", "https://missioncenter.io/"},
+        {"resources_info", "https://apps.gnome.org/Resources/"},
         {"htop_info", "https://htop.dev/"},
+        {"bottom_info", "https://clementtsang.github.io/bottom/"},
+        {"btop_info", "https://github.com/aristocratos/btop"},
+        {"vim_info", "https://www.vim.org/"},
         {"neovim_info", "https://neovim.io/"},
         {"timeshift_info", "https://github.com/teejee2008/timeshift"},
         {"keepassxc_info", "https://keepassxc.org/"},
@@ -417,6 +423,7 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"vlc_check", "vlc", "reproductor multimedia vlc", "video_expander"},
         {"handbrake_check", "handbrake", "transcodificador video handbrake", "video_expander"},
         {"mpv_check", "mpv", "reproductor multimedia mpv código abierto", "video_expander"},
+        {"celluloid_check", "celluloid", "reproductor multimedia celluloid interfaz mpv gtk", "video_expander"},
         {"showtime_check", "showtime", "reproductor multimedia showtime gnome", "video_expander"},
         {"kooha_check", "kooha", "grabador pantalla kooha gtk elegante", "video_expander"},
         {"vokoscreen_check", "vokoscreen", "grabador pantalla vokoscreen múltiples formatos", "video_expander"},
@@ -433,12 +440,12 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"spotify_check", "spotify", "spotify música streaming", "audio_expander"},
 
         // Communications
+        {"whatsapp_check", "zapzap", "zapzap whatsapp linux", "mail_expander"},
         {"telegram_check", "telegram-desktop", "mensajería telegram", "mail_expander"},
         {"element_check", "element-desktop", "mensajería matrix element", "mail_expander"},
         {"discord_check", "discord", "comunicación discord gamers", "mail_expander"},
         {"thunderbird_check", "thunderbird", "correo thunderbird mozilla", "mail_expander"},
         {"signal_check", "signal-desktop", "mensajería signal privada", "mail_expander"},
-        {"whatsapp_check", "whatsapp-for-linux-git", "whatsapp linux", "mail_expander"},
         {"evolution_check", "evolution", "correo evolution gnome", "mail_expander"},
         {"fractal_check", "fractal", "matrix fractal gnome", "mail_expander"},
 
@@ -461,7 +468,7 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"wps_check", "wps-office", "suite ofimática wps", "office_expander"},
         {"abiword_check", "abiword", "procesador textos abiword", "office_expander"},
         {"calibre_check", "calibre", "libros electrónicos calibre", "office_expander"},
-        {"evince_check", "evince", "visor documentos evince pdf", "office_expander"},
+        {"papers_check", "papers", "visor documentos papers pdf gnome", "office_expander"},
         {"okular_check", "okular", "visor documentos okular kde", "office_expander"},
         {"paperwork_check", "paperwork", "gestor documentos paperwork ocr", "office_expander"},
 
@@ -513,7 +520,11 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"putty_check", "putty", "ssh putty cliente", "other_expander"},
         {"stremio_check", "stremio", "multimedia streaming stremio", "other_expander"},
         {"mission_center_check", "mission-center", "monitor sistema mission center", "other_expander"},
+        {"resources_check", "resources", "monitor sistema resources gnome simple", "other_expander"},
         {"htop_check", "htop", "monitor procesos htop", "other_expander"},
+        {"bottom_check", "bottom", "monitor sistema procesos bottom rust", "other_expander"},
+        {"btop_check", "btop", "monitor recursos btop tui avanzado", "other_expander"},
+        {"vim_check", "vim", "editor vim texto configurable", "other_expander"},
         {"neovim_check", "neovim", "editor neovim vim", "other_expander"},
         {"timeshift_check", "timeshift", "backup timeshift sistema", "other_expander"},
         {"keepassxc_check", "keepassxc", "gestor contraseñas keepassxc", "other_expander"},
@@ -752,12 +763,29 @@ gboolean window_apps_save_selected_apps_to_file(WindowAppsData *data)
         }
     }
 
-    // Si no se encontró, agregar al final
+    // Si no se encontró, insertar justo después de UTILITIES_ENABLED=
     if (!found) {
-        g_string_append_printf(new_content, "\n# Utilities apps seleccionadas por el usuario\n%s\n", array_content->str);
+        gchar **lines2 = g_strsplit(new_content->str, "\n", -1);
+        GString *fixed = g_string_new("");
+        gboolean inserted = FALSE;
+        for (int i = 0; lines2[i] != NULL; i++) {
+            g_string_append_printf(fixed, "%s\n", lines2[i]);
+            if (!inserted && g_str_has_prefix(g_strstrip(lines2[i]), "UTILITIES_ENABLED=")) {
+                g_string_append_printf(fixed, "\n# Utilities apps seleccionadas por el usuario\n%s\n",
+                                       array_content->str);
+                inserted = TRUE;
+            }
+        }
+        if (!inserted)
+            g_string_append_printf(fixed, "\n# Utilities apps seleccionadas por el usuario\n%s\n",
+                                   array_content->str);
+        g_string_assign(new_content, fixed->str);
+        g_string_free(fixed, TRUE);
+        g_strfreev(lines2);
     }
 
     // Guardar archivo actualizado
+    vars_trim_trailing_newlines(new_content);
     gboolean success = g_file_set_contents(VARIABLES_FILE_PATH, new_content->str, -1, &error);
 
     if (success) {
@@ -871,6 +899,7 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"vlc_check", "vlc"},
         {"handbrake_check", "handbrake"},
         {"mpv_check", "mpv"},
+        {"celluloid_check", "celluloid"},
         {"showtime_check", "showtime"},
         {"kooha_check", "kooha"},
         {"vokoscreen_check", "vokoscreen"},
@@ -887,12 +916,12 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"spotify_check", "spotify"},
 
         // Communications
+        {"whatsapp_check", "zapzap"},
         {"telegram_check", "telegram-desktop"},
         {"element_check", "element-desktop"},
         {"discord_check", "discord"},
         {"thunderbird_check", "thunderbird"},
         {"signal_check", "signal-desktop"},
-        {"whatsapp_check", "whatsapp-for-linux-git"},
         {"evolution_check", "evolution"},
         {"fractal_check", "fractal"},
 
@@ -915,7 +944,7 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"wps_check", "wps-office"},
         {"abiword_check", "abiword"},
         {"calibre_check", "calibre"},
-        {"evince_check", "evince"},
+        {"papers_check", "papers"},
         {"okular_check", "okular"},
         {"paperwork_check", "paperwork"},
 
@@ -969,7 +998,11 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"putty_check", "putty"},
         {"stremio_check", "stremio"},
         {"mission_center_check", "mission-center"},
+        {"resources_check", "resources"},
         {"htop_check", "htop"},
+        {"bottom_check", "bottom"},
+        {"btop_check", "btop"},
+        {"vim_check", "vim"},
         {"neovim_check", "neovim"},
         {"timeshift_check", "timeshift"},
         {"keepassxc_check", "keepassxc"},
@@ -1038,6 +1071,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"vlc_check", "vlc"},
         {"handbrake_check", "handbrake"},
         {"mpv_check", "mpv"},
+        {"celluloid_check", "celluloid"},
         {"showtime_check", "showtime"},
         {"kooha_check", "kooha"},
         {"vokoscreen_check", "vokoscreen"},
@@ -1054,12 +1088,12 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"spotify_check", "spotify"},
 
         // Communications
+        {"whatsapp_check", "zapzap"},
         {"telegram_check", "telegram-desktop"},
         {"element_check", "element-desktop"},
         {"discord_check", "discord"},
         {"thunderbird_check", "thunderbird"},
         {"signal_check", "signal-desktop"},
-        {"whatsapp_check", "whatsapp-for-linux-git"},
         {"evolution_check", "evolution"},
         {"fractal_check", "fractal"},
 
@@ -1082,7 +1116,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"wps_check", "wps-office"},
         {"abiword_check", "abiword"},
         {"calibre_check", "calibre"},
-        {"evince_check", "evince"},
+        {"papers_check", "papers"},
         {"okular_check", "okular"},
         {"paperwork_check", "paperwork"},
 
@@ -1136,7 +1170,11 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"putty_check", "putty"},
         {"stremio_check", "stremio"},
         {"mission_center_check", "mission-center"},
+        {"resources_check", "resources"},
         {"htop_check", "htop"},
+        {"bottom_check", "bottom"},
+        {"btop_check", "btop"},
+        {"vim_check", "vim"},
         {"neovim_check", "neovim"},
         {"timeshift_check", "timeshift"},
         {"keepassxc_check", "keepassxc"},

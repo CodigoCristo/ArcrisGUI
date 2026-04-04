@@ -80,6 +80,7 @@ unsetopt ALL_EXPORT
 
 ### Set alias
 #############
+alias q='exit'
 alias ll='ls -al'
 alias ls='ls --color=auto '
 
@@ -177,3 +178,159 @@ zstyle '*' single-ignored show
 ### Source plugins
 ##################
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+
+# montar_ntfs sdd1              # Monta en /run/media/cristo/sdd1
+# montar_ntfs sdd1 MiDisco      # Monta en /run/media/cristo/MiDisco
+# Ver qué particiones tienes
+# listar_ntfs
+
+# Montar una partición
+# montar_ntfs sdd1
+
+# Desmontar cuando termines
+# desmontar_ntfs sdd1
+
+# reparar_ntfs sdd1 -d
+
+reparar_ntfs() {
+    if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+        echo "Uso: reparar_ntfs <particion> [-d]"
+        echo "Ejemplo: reparar_ntfs sdd1"
+        echo "         reparar_ntfs sdd1 -d  (reparación agresiva)"
+        return 1
+    fi
+
+    local particion=$1
+    local opcion=$2
+
+    # Agregar /dev/ si no está presente
+    case $particion in
+        /dev/*) ;;
+        *) particion="/dev/$particion" ;;
+    esac
+
+    if [ "$opcion" = "-d" ]; then
+        echo "Reparando $particion (modo agresivo)..."
+        sudo ntfsfix -d "$particion"
+    else
+        echo "Reparando $particion..."
+        sudo ntfsfix "$particion"
+    fi
+
+    if [ $? -eq 0 ]; then
+        echo "✓ Reparación completada"
+    else
+        echo "✗ Error en la reparación"
+    fi
+}
+
+montar_ntfs() {
+    if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+        echo "Uso: montar_ntfs <particion> [nombre_carpeta]"
+        echo "Ejemplo: montar_ntfs sdd1"
+        echo "         montar_ntfs sdd1 MiDisco"
+        return 1
+    fi
+
+    local particion=$1
+    local nombre=$2
+
+    # Agregar /dev/ si no está presente
+    case $particion in
+        /dev/*) ;;
+        *) particion="/dev/$particion" ;;
+    esac
+
+    # Si no se proporciona nombre, usar el nombre de la partición
+    if [ -z "$nombre" ]; then
+        nombre=$(basename "$particion")
+    fi
+
+    local punto_montaje="/run/media/cristo/$nombre"
+
+    # Verificar que la partición existe
+    if [ ! -b "$particion" ]; then
+        echo "✗ Error: La partición $particion no existe"
+        return 1
+    fi
+
+    # Crear el directorio de montaje si no existe
+    if [ ! -d "$punto_montaje" ]; then
+        echo "Creando directorio: $punto_montaje"
+        sudo mkdir -p "$punto_montaje"
+        if [ $? -ne 0 ]; then
+            echo "✗ Error al crear el directorio de montaje"
+            return 1
+        fi
+    fi
+
+    # Verificar si ya está montada
+    if mount | grep -q "$particion"; then
+        echo "⚠ La partición $particion ya está montada en:"
+        mount | grep "$particion" | awk '{print "  "$3}'
+        return 0
+    fi
+
+    # Montar la partición
+    echo "Montando $particion en $punto_montaje..."
+    sudo mount -t ntfs-3g -o uid=$(id -u),gid=$(id -g),dmask=022,fmask=133 "$particion" "$punto_montaje"
+
+    if [ $? -eq 0 ]; then
+        echo "✓ Partición montada exitosamente en: $punto_montaje"
+        ls -la "$punto_montaje" | head -n 5
+    else
+        echo "✗ Error al montar la partición"
+        echo "Intenta reparar con: reparar_ntfs $particion"
+        return 1
+    fi
+}
+
+# Función complementaria para desmontar
+desmontar_ntfs() {
+    if [ $# -ne 1 ]; then
+        echo "Uso: desmontar_ntfs <particion|ruta>"
+        echo "Ejemplo: desmontar_ntfs sdd1"
+        echo "         desmontar_ntfs /run/media/cristo/sdd1"
+        return 1
+    fi
+
+    local objetivo=$1
+
+    # Si es una partición, agregar /dev/
+    if [[ ! $objetivo == /* ]]; then
+        case $objetivo in
+            /dev/*) ;;
+            *) objetivo="/dev/$objetivo" ;;
+        esac
+    fi
+
+    # Verificar si está montada
+    if ! mount | grep -q "$objetivo"; then
+        echo "⚠ No se encontró montada: $objetivo"
+        return 1
+    fi
+
+    echo "Desmontando $objetivo..."
+    sudo umount "$objetivo"
+
+    if [ $? -eq 0 ]; then
+        echo "✓ Desmontado exitosamente"
+    else
+        echo "✗ Error al desmontar"
+        echo "Intenta con: sudo umount -l $objetivo (desmontaje lazy)"
+        return 1
+    fi
+}
+
+# Función para listar particiones NTFS
+listar_ntfs() {
+    echo "Particiones NTFS disponibles:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    lsblk -f | grep -E "ntfs|DEVICE" | head -1
+    lsblk -f | grep "ntfs"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Particiones actualmente montadas:"
+    mount | grep ntfs
+}

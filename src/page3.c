@@ -1,4 +1,5 @@
 #include "page3.h"
+#include "variables_utils.h"
 
 #include "disk_manager.h"
 #include "partition_manager.h"
@@ -1622,88 +1623,21 @@ void on_partition_config_saved(PartitionConfig *config, gpointer user_data)
 
 
 // Función para guardar el modo de particionado en variables.sh
+static void apply_partition_mode(GString *content, gpointer user_data)
+{
+    vars_upsert(content, "PARTITION_MODE", (const gchar *)user_data);
+}
+
 void page3_save_partition_mode(const gchar *partition_mode)
 {
     if (!partition_mode) return;
-
     LOG_INFO("Guardando PARTITION_MODE: %s", partition_mode);
-
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
-
-    // Leer el archivo existente para preservar otras variables
-    GString *existing_content = g_string_new("");
-    gchar *current_selected_disk = NULL;
-    FILE *read_file = fopen(bash_file_path, "r");
-
-    if (read_file) {
-        char line[1024];
-        while (fgets(line, sizeof(line), read_file)) {
-            // Preservar SELECTED_DISK para reescribirlo después
-            if (g_str_has_prefix(line, "SELECTED_DISK=")) {
-                gchar *disk_value = strchr(line, '=');
-                if (disk_value) {
-                    disk_value++; // Saltar el '='
-                    disk_value = g_strstrip(disk_value);
-                    // Remover comillas si existen
-                    if (disk_value[0] == '"' && disk_value[strlen(disk_value)-1] == '"') {
-                        disk_value[strlen(disk_value)-1] = '\0';
-                        disk_value++;
-                    }
-                    current_selected_disk = g_strdup(disk_value);
-                }
-                continue;
-            }
-            // Skip la línea de PARTITION_MODE si existe
-            if (g_str_has_prefix(line, "PARTITION_MODE=")) {
-                continue;
-            }
-            // Skip líneas de fin de archivo
-            if (g_str_has_prefix(line, "# Fin del archivo")) {
-                continue;
-            }
-            g_string_append(existing_content, line);
-        }
-        fclose(read_file);
-    }
-
-    // Escribir el archivo actualizado
-    FILE *file = fopen(bash_file_path, "w");
-    if (!file) {
-        LOG_ERROR("No se pudo crear el archivo %s", bash_file_path);
-        g_free(bash_file_path);
-        g_string_free(existing_content, TRUE);
-        if (current_selected_disk) g_free(current_selected_disk);
-        return;
-    }
-
-    // Si no había contenido previo, agregar header
-    if (existing_content->len == 0) {
-        fprintf(file, "#!/bin/bash\n");
-        fprintf(file, "# Variables de configuración generadas por Arcris\n");
-        fprintf(file, "# Archivo generado automáticamente - No editar manualmente\n\n");
-    } else {
-        // Escribir contenido existente
-        fprintf(file, "%s", existing_content->str);
-    }
-
-    // Reescribir SELECTED_DISK si existía
-    if (current_selected_disk) {
-        fprintf(file, "SELECTED_DISK=\"%s\"\n", current_selected_disk);
-        LOG_INFO("SELECTED_DISK preservado: %s", current_selected_disk);
-        g_free(current_selected_disk);
-    }
-
-    // Agregar la variable del modo de particionado
-    fprintf(file, "PARTITION_MODE=\"%s\"\n", partition_mode);
-
-    fclose(file);
-    g_string_free(existing_content, TRUE);
-
-    LOG_INFO("Variable PARTITION_MODE guardada exitosamente: %s", partition_mode);
-    g_free(bash_file_path);
+    if (!vars_update(apply_partition_mode, (gpointer)partition_mode))
+        LOG_WARNING("No se pudo guardar PARTITION_MODE");
+    else
+        LOG_INFO("Variable PARTITION_MODE guardada exitosamente: %s", partition_mode);
 }
 
-// Función para actualizar sensibilidad del botón siguiente
 void page3_update_next_button_sensitivity(Page3Data *data, gboolean is_manual_mode)
 {
     if (!data) {
@@ -1829,7 +1763,7 @@ void page3_load_partition_mode(Page3Data *data)
     gchar *variables_content = NULL;
     GError *error = NULL;
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
+    gchar *bash_file_path = g_build_filename(".", "data", "bash", "variables.sh", NULL);
     LOG_INFO("Intentando cargar archivo: %s", bash_file_path);
 
     if (g_file_get_contents(bash_file_path, &variables_content, NULL, &error)) {
@@ -2159,61 +2093,35 @@ void page3_update_encryption_variables(Page3Data *data)
 {
     if (!data) return;
 
-    LOG_INFO("=== DEBUG page3_update_encryption_variables ===");
-
     const gchar *password = gtk_editable_get_text(GTK_EDITABLE(data->password_entry));
-    LOG_INFO("Password obtenida: %s", password ? "SÍ" : "NULL");
-    LOG_INFO("Password length: %zu", password ? strlen(password) : 0);
-
     if (!password || strlen(password) == 0) {
         LOG_ERROR("Password está vacía, no se puede guardar");
         return;
     }
 
-    LOG_INFO("*** INICIANDO GUARDADO DE CONTRASEÑA ***");
     LOG_INFO("Actualizando contraseña de cifrado en variables.sh");
 
-    // Actualizar archivo variables.sh con la contraseña
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
-
-    // Leer archivo existente
-    GString *existing_content = g_string_new("");
-    FILE *read_file = fopen(bash_file_path, "r");
-    if (read_file) {
-        gchar line[1024];
-        while (fgets(line, sizeof(line), read_file)) {
-            // Reemplazar líneas de cifrado con valores actualizados
-            if (strncmp(line, "ENCRYPTION_ENABLED=", 19) == 0) {
-                g_string_append(existing_content, "ENCRYPTION_ENABLED=\"true\"\n");
-            } else if (strncmp(line, "ENCRYPTION_PASSWORD=", 20) == 0) {
-                g_string_append_printf(existing_content, "ENCRYPTION_PASSWORD=\"%s\"\n", password);
-            } else {
-                g_string_append(existing_content, line);
-            }
-        }
-        fclose(read_file);
+    GError *error = NULL;
+    gchar *file_content = NULL;
+    if (!g_file_get_contents(VARIABLES_FILE_PATH, &file_content, NULL, &error)) {
+        LOG_ERROR("No se pudo leer variables.sh: %s", error ? error->message : "Unknown error");
+        if (error) g_error_free(error);
+        return;
     }
 
-    // Escribir archivo actualizado
-    FILE *file = fopen(bash_file_path, "w");
-    if (file) {
-        fprintf(file, "%s", existing_content->str);
-        fclose(file);
+    GString *content = g_string_new(file_content);
+    g_free(file_content);
+
+    vars_upsert_after(content, "ENCRYPTION_ENABLED",  "true",   "PARTITION_MODE");
+    vars_upsert_after(content, "ENCRYPTION_PASSWORD", password, "ENCRYPTION_ENABLED");
+
+    if (!g_file_set_contents(VARIABLES_FILE_PATH, content->str, -1, &error))
+        LOG_ERROR("Error guardando variables.sh: %s", error ? error->message : "Unknown error");
+    else
         LOG_INFO("*** CONTRASEÑA GUARDADA EXITOSAMENTE EN VARIABLES.SH ***");
 
-        // Verificar que se guardó correctamente
-        if (strstr(existing_content->str, "ENCRYPTION_PASSWORD=") != NULL) {
-            LOG_INFO("Verificación: ENCRYPTION_PASSWORD encontrada en el contenido");
-        } else {
-            LOG_WARNING("Verificación: ENCRYPTION_PASSWORD NO encontrada en el contenido");
-        }
-    } else {
-        LOG_ERROR("*** ERROR: No se pudo abrir variables.sh para escritura ***");
-        LOG_ERROR("Ruta del archivo: %s", bash_file_path);
-    }
-
-    g_free(bash_file_path);
-    g_string_free(existing_content, TRUE);
+    if (error) g_error_free(error);
+    g_string_free(content, TRUE);
 }
 
 // Función para obtener la contraseña de cifrado
@@ -2233,162 +2141,27 @@ void page3_save_encryption_config(Page3Data *data)
 
     LOG_INFO("Guardando configuración de cifrado");
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
-
-    // Leer el archivo existente para preservar otras variables
-    GString *existing_content = g_string_new("");
-    gchar *current_selected_disk = NULL;
-    gchar *current_partition_mode = NULL;
-    gchar *current_keyboard_layout = NULL;
-    gchar *current_keymap_tty = NULL;
-    gchar *current_timezone = NULL;
-    gchar *current_locale = NULL;
-
-    FILE *read_file = fopen(bash_file_path, "r");
-    if (read_file) {
-        gchar line[1024];
-        while (fgets(line, sizeof(line), read_file)) {
-            // Preservar variables existentes (excepto ENCRYPTION_*)
-            if (strncmp(line, "SELECTED_DISK=", 14) == 0) {
-                gchar *disk_value = strchr(line, '=');
-                if (disk_value) {
-                    disk_value++; // Saltar el '='
-                    disk_value = g_strstrip(disk_value);
-                    // Remover comillas si existen
-                    if (disk_value[0] == '"' && disk_value[strlen(disk_value)-1] == '"') {
-                        disk_value[strlen(disk_value)-1] = '\0';
-                        disk_value++;
-                    }
-                    current_selected_disk = g_strdup(disk_value);
-                }
-            } else if (strncmp(line, "PARTITION_MODE=", 15) == 0) {
-                gchar *mode_value = strchr(line, '=');
-                if (mode_value) {
-                    mode_value++; // Saltar el '='
-                    mode_value = g_strstrip(mode_value);
-                    // Remover comillas si existen
-                    if (mode_value[0] == '"' && mode_value[strlen(mode_value)-1] == '"') {
-                        mode_value[strlen(mode_value)-1] = '\0';
-                        mode_value++;
-                    }
-                    current_partition_mode = g_strdup(mode_value);
-                }
-            } else if (strncmp(line, "KEYBOARD_LAYOUT=", 16) == 0) {
-                gchar *layout_value = strchr(line, '=');
-                if (layout_value) {
-                    layout_value++; // Saltar el '='
-                    layout_value = g_strstrip(layout_value);
-                    // Remover comillas si existen
-                    if (layout_value[0] == '"' && layout_value[strlen(layout_value)-1] == '"') {
-                        layout_value[strlen(layout_value)-1] = '\0';
-                        layout_value++;
-                    }
-                    current_keyboard_layout = g_strdup(layout_value);
-                }
-            } else if (strncmp(line, "KEYMAP_TTY=", 11) == 0) {
-                gchar *keymap_value = strchr(line, '=');
-                if (keymap_value) {
-                    keymap_value++; // Saltar el '='
-                    keymap_value = g_strstrip(keymap_value);
-                    // Remover comillas si existen
-                    if (keymap_value[0] == '"' && keymap_value[strlen(keymap_value)-1] == '"') {
-                        keymap_value[strlen(keymap_value)-1] = '\0';
-                        keymap_value++;
-                    }
-                    current_keymap_tty = g_strdup(keymap_value);
-                }
-            } else if (strncmp(line, "TIMEZONE=", 9) == 0) {
-                gchar *timezone_value = strchr(line, '=');
-                if (timezone_value) {
-                    timezone_value++; // Saltar el '='
-                    timezone_value = g_strstrip(timezone_value);
-                    // Remover comillas si existen
-                    if (timezone_value[0] == '"' && timezone_value[strlen(timezone_value)-1] == '"') {
-                        timezone_value[strlen(timezone_value)-1] = '\0';
-                        timezone_value++;
-                    }
-                    current_timezone = g_strdup(timezone_value);
-                }
-            } else if (strncmp(line, "LOCALE=", 7) == 0) {
-                gchar *locale_value = strchr(line, '=');
-                if (locale_value) {
-                    locale_value++; // Saltar el '='
-                    locale_value = g_strstrip(locale_value);
-                    // Remover comillas si existen
-                    if (locale_value[0] == '"' && locale_value[strlen(locale_value)-1] == '"') {
-                        locale_value[strlen(locale_value)-1] = '\0';
-                        locale_value++;
-                    }
-                    current_locale = g_strdup(locale_value);
-                }
-            }
-        }
-        fclose(read_file);
+    GError *error = NULL;
+    gchar *file_content = NULL;
+    if (!g_file_get_contents(VARIABLES_FILE_PATH, &file_content, NULL, &error)) {
+        LOG_ERROR("No se pudo leer variables.sh: %s", error ? error->message : "Unknown error");
+        if (error) g_error_free(error);
+        return;
     }
 
-    // Escribir el archivo completo
-    FILE *file = fopen(bash_file_path, "w");
-    if (file) {
-        fprintf(file, "#!/bin/bash\n");
-        fprintf(file, "# Variables de configuración generadas por Arcris\n");
-        fprintf(file, "# Archivo generado automáticamente - No editar manualmente\n\n");
+    GString *content = g_string_new(file_content);
+    g_free(file_content);
 
-        // Escribir variables preservadas
-        if (current_keyboard_layout) {
-            fprintf(file, "KEYBOARD_LAYOUT=\"%s\"\n", current_keyboard_layout);
-        } else {
-            fprintf(file, "KEYBOARD_LAYOUT=\"es\"\n");
-        }
+    vars_upsert_after(content, "ENCRYPTION_ENABLED",  "true",   "PARTITION_MODE");
+    vars_upsert_after(content, "ENCRYPTION_PASSWORD", password, "ENCRYPTION_ENABLED");
 
-        if (current_keymap_tty) {
-            fprintf(file, "KEYMAP_TTY=\"%s\"\n", current_keymap_tty);
-        } else {
-            fprintf(file, "KEYMAP_TTY=\"es\"\n");
-        }
-
-        if (current_timezone) {
-            fprintf(file, "TIMEZONE=\"%s\"\n", current_timezone);
-        } else {
-            fprintf(file, "TIMEZONE=\"America/Lima\"\n");
-        }
-
-        if (current_locale) {
-            fprintf(file, "LOCALE=\"%s\"\n", current_locale);
-        } else {
-            fprintf(file, "LOCALE=\"es_PE.UTF-8\"\n");
-        }
-
-        if (current_selected_disk) {
-            fprintf(file, "SELECTED_DISK=\"%s\"\n", current_selected_disk);
-        } else {
-            fprintf(file, "SELECTED_DISK=\"/dev/sda\"\n");
-        }
-
-        if (current_partition_mode) {
-            fprintf(file, "PARTITION_MODE=\"%s\"\n", current_partition_mode);
-        } else {
-            fprintf(file, "PARTITION_MODE=\"auto\"\n");
-        }
-
-        // Escribir variables de cifrado
-        fprintf(file, "ENCRYPTION_ENABLED=\"true\"\n");
-        fprintf(file, "ENCRYPTION_PASSWORD=\"%s\"\n", password);
-
-        fclose(file);
+    if (!g_file_set_contents(VARIABLES_FILE_PATH, content->str, -1, &error))
+        LOG_ERROR("Error guardando variables.sh: %s", error ? error->message : "Unknown error");
+    else
         LOG_INFO("Configuración de cifrado guardada exitosamente");
-    } else {
-        LOG_ERROR("No se pudo escribir el archivo de configuración de cifrado");
-    }
 
-    // Limpiar memoria
-    g_free(current_selected_disk);
-    g_free(current_partition_mode);
-    g_free(current_keyboard_layout);
-    g_free(current_keymap_tty);
-    g_free(current_timezone);
-    g_free(current_locale);
-    g_free(bash_file_path);
-    g_string_free(existing_content, TRUE);
+    if (error) g_error_free(error);
+    g_string_free(content, TRUE);
 }
 
 // Función para crear variables de cifrado iniciales
@@ -2396,37 +2169,27 @@ void page3_create_encryption_variables(void)
 {
     LOG_INFO("Creando variables de cifrado iniciales");
 
-    gchar *bash_file_path = g_build_filename(".", "data", "variables.sh", NULL);
-
-    // Leer el archivo existente
-    GString *existing_content = g_string_new("");
-    FILE *read_file = fopen(bash_file_path, "r");
-    if (read_file) {
-        gchar line[1024];
-        while (fgets(line, sizeof(line), read_file)) {
-            // Evitar duplicar líneas de cifrado
-            if (strncmp(line, "ENCRYPTION_ENABLED=", 19) != 0 &&
-                strncmp(line, "ENCRYPTION_PASSWORD=", 20) != 0) {
-                g_string_append(existing_content, line);
-            }
-        }
-        fclose(read_file);
+    GError *error = NULL;
+    gchar *file_content = NULL;
+    if (!g_file_get_contents(VARIABLES_FILE_PATH, &file_content, NULL, &error)) {
+        LOG_ERROR("No se pudo leer variables.sh: %s", error ? error->message : "Unknown error");
+        if (error) g_error_free(error);
+        return;
     }
 
-    // Escribir el archivo con las variables de cifrado
-    FILE *file = fopen(bash_file_path, "w");
-    if (file) {
-        fprintf(file, "%s", existing_content->str);
-        fprintf(file, "ENCRYPTION_ENABLED=\"true\"\n");
-        fprintf(file, "ENCRYPTION_PASSWORD=\"\"\n");
-        fclose(file);
+    GString *content = g_string_new(file_content);
+    g_free(file_content);
+
+    vars_upsert_after(content, "ENCRYPTION_ENABLED",  "true", "PARTITION_MODE");
+    vars_upsert_after(content, "ENCRYPTION_PASSWORD", "",     "ENCRYPTION_ENABLED");
+
+    if (!g_file_set_contents(VARIABLES_FILE_PATH, content->str, -1, &error))
+        LOG_ERROR("Error guardando variables.sh: %s", error ? error->message : "Unknown error");
+    else
         LOG_INFO("Variables de cifrado creadas exitosamente");
-    } else {
-        LOG_ERROR("No se pudo crear las variables de cifrado");
-    }
 
-    g_free(bash_file_path);
-    g_string_free(existing_content, TRUE);
+    if (error) g_error_free(error);
+    g_string_free(content, TRUE);
 }
 
 // ============================================================================

@@ -1,5 +1,6 @@
 #include "page8.h"
 #include "page9.h"
+#include "page10.h"
 #include "config.h"
 #include <glib/gstdio.h>
 #include <vte/vte.h>
@@ -80,7 +81,7 @@ void page8_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
 
     // Obtener widgets del carousel
     g_page8_data->image_carousel = ADW_CAROUSEL(gtk_builder_get_object(page_builder, "image_carousel"));
-    g_page8_data->carousel_indicators = ADW_CAROUSEL_INDICATOR_DOTS(gtk_builder_get_object(page_builder, "carousel_indicators"));
+    g_page8_data->carousel_indicators = ADW_CAROUSEL_INDICATOR_LINES(gtk_builder_get_object(page_builder, "carousel_indicators"));
     LOG_INFO("DEBUG: main_stack = %p, terminal_button = %p, image_carousel = %p",
              g_page8_data->main_stack, g_page8_data->terminal_button, g_page8_data->image_carousel);
 
@@ -477,7 +478,12 @@ static void on_install_script_finished(VteTerminal *terminal, gint status, gpoin
         LOG_INFO("DEBUG: Timeout programado con ID: %u", timeout_id);
     } else {
         LOG_ERROR("Script de instalación falló con código: %d", status);
-        page8_terminal_output(data, "\nERROR: La instalación falló. Revise los mensajes anteriores.\n");
+        page8_stop_carousel_timer(data);
+        page8_stop_progress_bar_pulse(data);
+        GtkWidget *page10_widget = page10_get_widget();
+        if (page10_widget && data->carousel) {
+            adw_carousel_scroll_to(data->carousel, page10_widget, TRUE);
+        }
     }
 
     // Desconectar la señal para evitar múltiples llamadas
@@ -504,8 +510,8 @@ static gboolean page8_navigate_to_completion(Page8Data *data)
         return FALSE;
     }
 
-    guint page9_index = total_pages - 1;
-    LOG_INFO("DEBUG: Calculado page9_index = %u (última página)", page9_index);
+    guint page9_index = total_pages - 2; // page9 es la penúltima (page10/error es la última)
+    LOG_INFO("DEBUG: Calculado page9_index = %u (penúltima página, page10/error es la última)", page9_index);
 
     // Listar todas las páginas para debugging
     for (guint i = 0; i < total_pages; i++) {
@@ -539,7 +545,7 @@ void page8_execute_install_script(Page8Data *data)
     LOG_INFO("Ejecutando script de instalación en terminal VTE");
 
     // Ruta al script de instalación
-    gchar *script_path = g_build_filename(g_get_current_dir(), "data", "install.sh", NULL);
+    gchar *script_path = g_build_filename(g_get_current_dir(), "data", "bash", "install.sh", NULL);
 
     LOG_INFO("Ruta del script: %s", script_path);
 
@@ -559,8 +565,10 @@ void page8_execute_install_script(Page8Data *data)
     g_free(chmod_command);
 
     // Preparar argumentos para ejecutar el script
+    // --return: propagar el exit code del comando interno
     gchar *argv[] = {
         "/usr/bin/script",
+        "--return",
         "-q",
         "-c",
         g_strdup_printf("bash %s", script_path),

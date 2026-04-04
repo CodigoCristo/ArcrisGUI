@@ -1,0 +1,11 @@
+[Unit]
+Description=BTRFS Maintenance
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/btrfs-maintenance
+User=root
+
+[Install]
+WantedBy=multi-user.target

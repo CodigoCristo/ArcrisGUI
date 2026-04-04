@@ -176,11 +176,11 @@ void page9_setup_styles(Page9Data *data)
     
     LOG_INFO("Configurando estilos CSS para página 9");
     
-    // CSS personalizado para los estilos específicos
+    // CSS personalizado para los estilos específicos con colores válidos
     const gchar *css_data = 
         ".success-icon { "
         "  color: #26a269; "
-        "  -gtk-icon-shadow: 0 1px 3px rgba(0,0,0,0.2); "
+        "  -gtk-icon-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); "
         "} "
         ".success-text { "
         "  color: #26a269; "
@@ -188,7 +188,7 @@ void page9_setup_styles(Page9Data *data)
         "} "
         ".shutdown-button { "
         "  background: linear-gradient(to bottom, #a51d2d, #8b1a1a); "
-        "  color: white; "
+        "  color: #ffffff; "
         "  border: 1px solid #721e20; "
         "  font-weight: bold; "
         "} "
@@ -197,7 +197,7 @@ void page9_setup_styles(Page9Data *data)
         "} "
         ".restart-button { "
         "  background: linear-gradient(to bottom, #ff7800, #e66100); "
-        "  color: white; "
+        "  color: #ffffff; "
         "  border: 1px solid #cc5500; "
         "  font-weight: bold; "
         "} "
@@ -206,7 +206,7 @@ void page9_setup_styles(Page9Data *data)
         "} "
         ".exit-button { "
         "  background: linear-gradient(to bottom, #3584e4, #1c71d8); "
-        "  color: white; "
+        "  color: #ffffff; "
         "  border: 1px solid #1a5fb4; "
         "  font-weight: bold; "
         "} "
@@ -214,18 +214,24 @@ void page9_setup_styles(Page9Data *data)
         "  background: linear-gradient(to bottom, #62a0ea, #3584e4); "
         "}";
     
-    // Aplicar CSS
+    // Aplicar CSS con manejo de errores
     GtkCssProvider *css_provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(css_provider, css_data);
     
     GdkDisplay *display = gdk_display_get_default();
+    if (!display) {
+        LOG_WARNING("No se pudo obtener el display para aplicar CSS");
+        g_object_unref(css_provider);
+        return;
+    }
+    
     gtk_style_context_add_provider_for_display(display, 
                                                 GTK_STYLE_PROVIDER(css_provider),
                                                 GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     
     g_object_unref(css_provider);
     
-    LOG_INFO("Estilos CSS aplicados");
+    LOG_INFO("Estilos CSS aplicados correctamente");
 }
 
 // Cargar datos de la página

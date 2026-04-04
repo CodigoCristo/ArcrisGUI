@@ -1,4 +1,5 @@
 #include "page5.h"
+#include "variables_utils.h"
 #include "window_kernel.h"
 #include "config.h"
 #include <stdio.h>
@@ -27,6 +28,7 @@ static const char* DE_NAMES[] = {
 // Nombres de los gestores de ventanas
 static const char* WM_NAMES[] = {
     "HYPRLAND",
+    "NIRI",
     "SWAY",
     "DWL",
     "DWM",
@@ -58,6 +60,7 @@ static const char* DE_IMAGE_RESOURCES[] = {
 // Recursos de imágenes para WM
 static const char* WM_IMAGE_RESOURCES[] = {
     "/org/gtk/arcris/HYPRLAND.png",
+    "/org/gtk/arcris/NIRI.png",
     "/org/gtk/arcris/SWAY.png",
     "/org/gtk/arcris/DWL.png",
     "/org/gtk/arcris/DWM.png",
@@ -463,99 +466,27 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
 {
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "data/variables.sh";
+    const gchar *config_path = "data/bash/variables.sh";
 
-    // Leer el archivo actual
     if (!g_file_get_contents(config_path, &config_content, NULL, &error)) {
         LOG_ERROR("Error al leer archivo de configuración: %s", error ? error->message : "Unknown error");
         if (error) g_error_free(error);
         return FALSE;
     }
 
-    // Obtener el nombre del DE
-    gchar *de_name = NULL;
-    switch (de) {
-        case DE_TYPE_GNOME:
-            de_name = g_strdup("GNOME");
-            break;
-        case DE_TYPE_BUDGIE:
-            de_name = g_strdup("BUDGIE");
-            break;
-        case DE_TYPE_CINNAMON:
-            de_name = g_strdup("CINNAMON");
-            break;
-        case DE_TYPE_COSMIC:
-            de_name = g_strdup("COSMIC");
-            break;
-        case DE_TYPE_CUTEFISH:
-            de_name = g_strdup("CUTEFISH");
-            break;
-        case DE_TYPE_ENLIGHTENMENT:
-            de_name = g_strdup("ENLIGHTENMENT");
-            break;
-        case DE_TYPE_KDE:
-            de_name = g_strdup("KDE");
-            break;
-        case DE_TYPE_LXDE:
-            de_name = g_strdup("LXDE");
-            break;
-        case DE_TYPE_LXQT:
-            de_name = g_strdup("LXQT");
-            break;
-        case DE_TYPE_MATE:
-            de_name = g_strdup("MATE");
-            break;
-        case DE_TYPE_XFCE4:
-            de_name = g_strdup("XFCE4");
-            break;
-        case DE_TYPE_UKUI:
-            de_name = g_strdup("UKUI");
-            break;
-        case DE_TYPE_PANTHEON:
-            de_name = g_strdup("PANTHEON");
-            break;
-        default:
-            de_name = g_strdup("GNOME");
-            break;
-    }
+    /* Orden exacto del enum DesktopEnvironmentType en page5.h */
+    static const char *de_names[] = {
+        "GNOME", "KDE", "XFCE4", "BUDGIE", "CINNAMON", "LXDE", "LXQT",
+        "COSMIC", "MATE", "CUTEFISH", "UKUI", "PANTHEON", "ENLIGHTENMENT"
+    };
+    gchar *de_name = g_strdup(de < (int)(sizeof(de_names)/sizeof(de_names[0])) ? de_names[de] : "GNOME");
 
-    // Buscar si ya existe la variable DESKTOP_ENVIRONMENT
-    gchar **lines = g_strsplit(config_content, "\n", -1);
-    GString *new_content = g_string_new("");
-    gboolean found = FALSE;
-    int total_lines = 0;
+    GString *content = g_string_new(config_content);
+    g_free(config_content);
 
-    // Contar líneas totales
-    while (lines[total_lines] != NULL) total_lines++;
-
-    for (int i = 0; lines[i] != NULL; i++) {
-        if (g_str_has_prefix(lines[i], "DESKTOP_ENVIRONMENT=")) {
-            // Reemplazar la línea existente
-            g_string_append_printf(new_content, "DESKTOP_ENVIRONMENT=\"%s\"\n", de_name);
-            found = TRUE;
-        } else if (g_str_has_prefix(lines[i], "# Variable DE seleccionada")) {
-            // Omitir comentarios duplicados
-            continue;
-        } else {
-            // Mantener la línea original
-            g_string_append(new_content, lines[i]);
-            if (lines[i + 1] != NULL) {
-                g_string_append_c(new_content, '\n');
-            }
-        }
-    }
-
-    // Si no se encontró, agregar al final
-    if (!found) {
-        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
-            g_string_append_c(new_content, '\n');
-        }
-        g_string_append_printf(new_content, "# Variable DE seleccionada\nDESKTOP_ENVIRONMENT=\"%s\"\n", de_name);
-    }
-
-    // Escribir el nuevo contenido
-    gboolean success = g_file_set_contents(config_path, new_content->str, -1, &error);
-
+    vars_upsert_after(content, "DESKTOP_ENVIRONMENT", de_name, "INSTALLATION_TYPE");
+    vars_trim_trailing_newlines(content);
+    gboolean success = g_file_set_contents(config_path, content->str, -1, &error);
     if (error) {
         LOG_ERROR("Error al guardar variable DE: %s", error->message);
         g_error_free(error);
@@ -564,103 +495,36 @@ static gboolean page5_save_de_variable(DesktopEnvironmentType de)
         LOG_INFO("Variable DE guardada: %s", de_name);
     }
 
-    g_strfreev(lines);
-    g_string_free(new_content, TRUE);
-    g_free(config_content);
+    g_string_free(content, TRUE);
     g_free(de_name);
-
     return success;
 }
 
-// Función auxiliar para guardar variable WM en el archivo de configuración
 static gboolean page5_save_wm_variable(WindowManagerType wm)
 {
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "data/variables.sh";
+    const gchar *config_path = "data/bash/variables.sh";
 
-    // Leer el archivo actual
     if (!g_file_get_contents(config_path, &config_content, NULL, &error)) {
         LOG_ERROR("Error al leer archivo de configuración: %s", error ? error->message : "Unknown error");
         if (error) g_error_free(error);
         return FALSE;
     }
 
-    // Obtener el nombre del WM
-    gchar *wm_name = NULL;
-    switch (wm) {
-        case WM_TYPE_I3WM:
-            wm_name = g_strdup("I3WM");
-            break;
-        case WM_TYPE_AWESOME:
-            wm_name = g_strdup("AWESOME");
-            break;
-        case WM_TYPE_BSPWM:
-            wm_name = g_strdup("BSPWM");
-            break;
-        case WM_TYPE_DWL:
-            wm_name = g_strdup("DWL");
-            break;
-        case WM_TYPE_DWM:
-            wm_name = g_strdup("DWM");
-            break;
-        case WM_TYPE_HYPRLAND:
-            wm_name = g_strdup("HYPRLAND");
-            break;
-        case WM_TYPE_OPENBOX:
-            wm_name = g_strdup("OPENBOX");
-            break;
-        case WM_TYPE_QTITLE:
-            wm_name = g_strdup("QTITLE");
-            break;
-        case WM_TYPE_SWAY:
-            wm_name = g_strdup("SWAY");
-            break;
-        case WM_TYPE_XMONAD:
-            wm_name = g_strdup("XMONAD");
-            break;
-        default:
-            wm_name = g_strdup("HYPRLAND");
-            break;
-    }
+    /* Orden exacto del enum WindowManagerType en page5.h */
+    static const char *wm_names[] = {
+        "HYPRLAND", "NIRI", "SWAY", "DWL", "DWM", "I3WM",
+        "BSPWM", "QTITLE", "AWESOME", "XMONAD", "OPENBOX"
+    };
+    gchar *wm_name = g_strdup(wm < (int)(sizeof(wm_names)/sizeof(wm_names[0])) ? wm_names[wm] : "HYPRLAND");
 
-    // Buscar si ya existe la variable WINDOW_MANAGER
-    gchar **lines = g_strsplit(config_content, "\n", -1);
-    GString *new_content = g_string_new("");
-    gboolean found = FALSE;
-    int total_lines = 0;
+    GString *content = g_string_new(config_content);
+    g_free(config_content);
 
-    // Contar líneas totales
-    while (lines[total_lines] != NULL) total_lines++;
-
-    for (int i = 0; lines[i] != NULL; i++) {
-        if (g_str_has_prefix(lines[i], "WINDOW_MANAGER=")) {
-            // Reemplazar la línea existente
-            g_string_append_printf(new_content, "WINDOW_MANAGER=\"%s\"\n", wm_name);
-            found = TRUE;
-        } else if (g_str_has_prefix(lines[i], "# Variable WM seleccionada")) {
-            // Omitir comentarios duplicados
-            continue;
-        } else {
-            // Mantener la línea original
-            g_string_append(new_content, lines[i]);
-            if (lines[i + 1] != NULL) {
-                g_string_append_c(new_content, '\n');
-            }
-        }
-    }
-
-    // Si no se encontró, agregar al final
-    if (!found) {
-        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
-            g_string_append_c(new_content, '\n');
-        }
-        g_string_append_printf(new_content, "\n# Variable WM seleccionada\nWINDOW_MANAGER=\"%s\"\n", wm_name);
-    }
-
-    // Escribir el nuevo contenido
-    gboolean success = g_file_set_contents(config_path, new_content->str, -1, &error);
-
+    vars_upsert_after(content, "WINDOW_MANAGER", wm_name, "INSTALLATION_TYPE");
+    vars_trim_trailing_newlines(content);
+    gboolean success = g_file_set_contents(config_path, content->str, -1, &error);
     if (error) {
         LOG_ERROR("Error al guardar variable WM: %s", error->message);
         g_error_free(error);
@@ -669,86 +533,32 @@ static gboolean page5_save_wm_variable(WindowManagerType wm)
         LOG_INFO("Variable WM guardada: %s", wm_name);
     }
 
-    g_strfreev(lines);
-    g_string_free(new_content, TRUE);
-    g_free(config_content);
+    g_string_free(content, TRUE);
     g_free(wm_name);
-
     return success;
 }
 
-// Función auxiliar para guardar el tipo de instalación en el archivo de configuración
 static gboolean page5_save_installation_type_variable(InstallationType type)
 {
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "data/variables.sh";
+    const gchar *config_path = "data/bash/variables.sh";
 
-
-
-    // Leer el archivo actual
     if (!g_file_get_contents(config_path, &config_content, NULL, &error)) {
         LOG_ERROR("Error al leer archivo de configuración: %s", error ? error->message : "Unknown error");
         if (error) g_error_free(error);
         return FALSE;
     }
 
+    static const char *type_names[] = { "TERMINAL", "DESKTOP", "WINDOW_MANAGER" };
+    gchar *type_name = g_strdup(type < (int)(sizeof(type_names)/sizeof(type_names[0])) ? type_names[type] : "TERMINAL");
 
+    GString *content = g_string_new(config_content);
+    g_free(config_content);
 
-    // Obtener el nombre del tipo de instalación
-    gchar *type_name = NULL;
-    switch (type) {
-        case INSTALL_TYPE_TERMINAL:
-            type_name = g_strdup("TERMINAL");
-            break;
-        case INSTALL_TYPE_DESKTOP:
-            type_name = g_strdup("DESKTOP");
-            break;
-        case INSTALL_TYPE_WINDOW_MANAGER:
-            type_name = g_strdup("WINDOW_MANAGER");
-            break;
-        default:
-            type_name = g_strdup("TERMINAL");
-            break;
-    }
-
-    // Buscar si ya existe la variable INSTALLATION_TYPE
-    gchar **lines = g_strsplit(config_content, "\n", -1);
-    GString *new_content = g_string_new("");
-    gboolean found = FALSE;
-    int total_lines = 0;
-
-    // Contar líneas totales
-    while (lines[total_lines] != NULL) total_lines++;
-
-    for (int i = 0; lines[i] != NULL; i++) {
-        if (g_str_has_prefix(lines[i], "INSTALLATION_TYPE=")) {
-            // Reemplazar la línea existente
-            g_string_append_printf(new_content, "INSTALLATION_TYPE=\"%s\"\n", type_name);
-            found = TRUE;
-        } else if (g_str_has_prefix(lines[i], "# Tipo de instalación seleccionado")) {
-            // Omitir comentarios duplicados
-            continue;
-        } else {
-            // Mantener la línea original
-            g_string_append(new_content, lines[i]);
-            if (lines[i + 1] != NULL) {
-                g_string_append_c(new_content, '\n');
-            }
-        }
-    }
-
-    // Si no se encontró, agregar al final
-    if (!found) {
-        if (new_content->len > 0 && new_content->str[new_content->len - 1] != '\n') {
-            g_string_append_c(new_content, '\n');
-        }
-        g_string_append_printf(new_content, "\n# Tipo de instalación seleccionado\nINSTALLATION_TYPE=\"%s\"\n", type_name);
-    }
-
-    // Escribir el nuevo contenido
-    gboolean success = g_file_set_contents(config_path, new_content->str, -1, &error);
-
+    vars_upsert(content, "INSTALLATION_TYPE", type_name);
+    vars_trim_trailing_newlines(content);
+    gboolean success = g_file_set_contents(config_path, content->str, -1, &error);
     if (error) {
         LOG_ERROR("Error al guardar tipo de instalación: %s", error->message);
         g_error_free(error);
@@ -757,20 +567,16 @@ static gboolean page5_save_installation_type_variable(InstallationType type)
         LOG_INFO("Tipo de instalación guardado: %s", type_name);
     }
 
-    g_strfreev(lines);
-    g_string_free(new_content, TRUE);
-    g_free(config_content);
+    g_string_free(content, TRUE);
     g_free(type_name);
-
     return success;
 }
 
-// Función auxiliar para eliminar una variable específica del archivo de configuración
 static gboolean page5_remove_variable_from_config(const char* variable_name)
 {
     GError *error = NULL;
     gchar *config_content = NULL;
-    const gchar *config_path = "data/variables.sh";
+    const gchar *config_path = "data/bash/variables.sh";
 
     LOG_INFO("=== Iniciando eliminación de variable: %s ===", variable_name);
 
@@ -824,6 +630,7 @@ static gboolean page5_remove_variable_from_config(const char* variable_name)
     gboolean success = TRUE;
     if (found) {
         LOG_INFO("Escribiendo archivo actualizado sin la variable %s", variable_name);
+        vars_trim_trailing_newlines(new_content);
         success = g_file_set_contents(config_path, new_content->str, -1, &error);
 
         if (error) {

@@ -261,6 +261,7 @@
                   <object class="GtkStringList">
                     <items>
                       <item>HYPRLAND</item>
+                      <item>NIRI</item>
                       <item>SWAY</item>
                       <item>DWL</item>
                       <item>DWM</item>

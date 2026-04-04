@@ -1,5 +1,6 @@
 #include "page4.h"
 #include "config.h"
+#include "variables_utils.h"
 #include <stdio.h>
 
 #include <string.h>
@@ -642,7 +643,7 @@ gboolean page4_save_user_data(Page4Data *data)
     gsize file_size = 0;
     GError *error = NULL;
 
-    if (!g_file_get_contents("data/variables.sh", &file_content, &file_size, &error)) {
+    if (!g_file_get_contents("data/bash/variables.sh", &file_content, &file_size, &error)) {
         LOG_WARNING("No se pudo leer variables.sh existente: %s", error ? error->message : "Error desconocido");
         g_clear_error(&error);
         file_content = g_strdup("#!/bin/bash\n# Variables de configuración generadas por Arcris\n# Archivo generado automáticamente - No editar manualmente\n\n");
@@ -673,6 +674,26 @@ gboolean page4_save_user_data(Page4Data *data)
     for (int i = 0; lines[i] != NULL; i++) {
         gchar *line = g_strstrip(g_strdup(lines[i]));
 
+        // Si llegamos a INSTALLATION_TYPE y aún faltan vars de usuario, insertarlas aquí
+        if (g_str_has_prefix(line, "INSTALLATION_TYPE=") &&
+            (!user_found || !password_user_found || !hostname_found || !password_root_found)) {
+            if (!last_line_empty) g_string_append_c(new_content, '\n');
+            g_string_append(new_content, "# Variables de configuración del usuario\n");
+            if (!user_found)
+                g_string_append_printf(new_content, "export USER=\"%s\"\n", username);
+            if (!password_user_found)
+                g_string_append_printf(new_content, "export PASSWORD_USER=\"%s\"\n", password);
+            if (!hostname_found)
+                g_string_append_printf(new_content, "export HOSTNAME=\"%s\"\n", hostname ? hostname : "arcris");
+            if (!password_root_found) {
+                g_string_append(new_content, "# La contraseña del usuario también será la contraseña de root\n");
+                g_string_append_printf(new_content, "export PASSWORD_ROOT=\"%s\"\n", password);
+            }
+            user_found = password_user_found = hostname_found = password_root_found = TRUE;
+            g_string_append_c(new_content, '\n');
+            last_line_empty = TRUE;
+        }
+
         if (g_str_has_prefix(line, "export USER=") || g_str_has_prefix(line, "USER=")) {
             g_string_append_printf(new_content, "export USER=\"%s\"\n", username);
             user_found = TRUE;
@@ -690,7 +711,6 @@ gboolean page4_save_user_data(Page4Data *data)
             hostname_found = TRUE;
             last_line_empty = FALSE;
         } else if (strlen(line) == 0) {
-            // Solo agregar línea vacía si la anterior no era vacía
             if (!last_line_empty) {
                 g_string_append_c(new_content, '\n');
                 last_line_empty = TRUE;
@@ -703,22 +723,16 @@ gboolean page4_save_user_data(Page4Data *data)
         g_free(line);
     }
 
-    // Añadir variables que no se encontraron
+    // Fallback: si INSTALLATION_TYPE tampoco existía, agregar al final
     if (!user_found || !password_user_found || !password_root_found || !hostname_found) {
-        if (!last_line_empty) {
-            g_string_append_c(new_content, '\n');
-        }
+        if (!last_line_empty) g_string_append_c(new_content, '\n');
         g_string_append(new_content, "# Variables de configuración del usuario\n");
-
-        if (!user_found) {
+        if (!user_found)
             g_string_append_printf(new_content, "export USER=\"%s\"\n", username);
-        }
-        if (!password_user_found) {
+        if (!password_user_found)
             g_string_append_printf(new_content, "export PASSWORD_USER=\"%s\"\n", password);
-        }
-        if (!hostname_found) {
+        if (!hostname_found)
             g_string_append_printf(new_content, "export HOSTNAME=\"%s\"\n", hostname ? hostname : "arcris");
-        }
         if (!password_root_found) {
             g_string_append(new_content, "# La contraseña del usuario también será la contraseña de root\n");
             g_string_append_printf(new_content, "export PASSWORD_ROOT=\"%s\"\n", password);
@@ -747,7 +761,8 @@ gboolean page4_save_user_data(Page4Data *data)
     }
 
     // Escribir el archivo actualizado
-    if (!g_file_set_contents("data/variables.sh", new_content->str, -1, &error)) {
+    vars_trim_trailing_newlines(new_content);
+    if (!g_file_set_contents("data/bash/variables.sh", new_content->str, -1, &error)) {
         LOG_ERROR("Error al escribir variables.sh: %s", error ? error->message : "Error desconocido");
         g_clear_error(&error);
         g_strfreev(lines);
@@ -763,7 +778,7 @@ gboolean page4_save_user_data(Page4Data *data)
     g_free(driver_wifi_value);
     g_free(driver_bluetooth_value);
 
-    LOG_INFO("Datos del usuario guardados correctamente en data/variables.sh");
+    LOG_INFO("Datos del usuario guardados correctamente en data/bash/variables.sh");
     LOG_INFO("Usuario: %s", username);
     LOG_INFO("Hostname: %s", hostname ? hostname : "arcris");
 
