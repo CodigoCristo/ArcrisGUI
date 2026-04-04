@@ -50,7 +50,7 @@ package() {
   install -m755 data/bash/driver_video.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
   install -m755 data/bash/driver_wifi.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
   install -m755 data/bash/entorno_grafico.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
-  install -m755 data/bash/program_essential.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"  
+  install -m755 data/bash/program_essential.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
   install -m755 data/bash/install.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
   install -m644 data/bash/variables.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
 
@@ -72,7 +72,7 @@ package() {
   install -m644 data/bash/i3/atajos.txt "${pkgdir}/usr/share/${pkgname}/data/bash/i3/"
   install -m644 data/bash/i3/i3-config.zip "${pkgdir}/usr/share/${pkgname}/data/bash/i3/"
   install -m644 data/bash/rofi/config.rasi "${pkgdir}/usr/share/${pkgname}/data/bash/rofi/"
-  
+
   # Install other data files
   install -m644 data/PKGBUILD "${pkgdir}/usr/share/${pkgname}/data/"
   install -m644 data/reserved_usernames "${pkgdir}/usr/share/${pkgname}/data/"
@@ -88,9 +88,9 @@ package() {
 
   # Add fallback with full icon path for better compatibility
   sed -i 's|Icon=org.gtk.arcris|Icon=/usr/share/icons/hicolor/scalable/apps/org.gtk.arcris.svg|' "${pkgdir}/usr/share/applications/org.gtk.arcris.desktop"
-  
+
   echo "$(git rev-parse HEAD)" > "$pkgdir/usr/share/arcrisgui/commit"
-  
+
   # Create wrapper script that uses user-writable directory
   cat > "${pkgdir}/usr/bin/arcris" << 'EOF'
 #!/bin/bash
@@ -111,6 +111,7 @@ cd "$USER_DATA_DIR"
 exec /usr/lib/arcrisgui/arcris "$@"
 EOF
   chmod 755 "${pkgdir}/usr/bin/arcris"
+  cp /usr/share/arcrisgui/data/PKGBUILD "/home/arcris/Arcris/PKGBUILD"
 }
 
 # Post-install hooks
