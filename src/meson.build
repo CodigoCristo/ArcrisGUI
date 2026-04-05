@@ -35,6 +35,7 @@ executable('arcris',
     'window_program_extra.c',
     'window_apps.c',
     'window_repos.c',
+    'window_disk.c',
     'partitionmanual.c',
 
 

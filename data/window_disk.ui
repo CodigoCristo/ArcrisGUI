@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwApplicationWindow" id="DiskConfigWindow">
+    <property name="title">Disco</property>
+    <property name="default-width">650</property>
+    <property name="default-height">610</property>
+    <property name="modal">true</property>
+    <property name="resizable">true</property>
+    <property name="deletable">false</property>
+    <property name="hide-on-close">true</property>
+
+    <child>
+      <object class="AdwToolbarView">
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="AdwWindowTitle">
+                <property name="title">Disco</property>
+              </object>
+            </property>
+            <child type="start">
+              <object class="GtkButton" id="close_button">
+                <property name="label">Cerrar</property>
+                <property name="valign">center</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="save_button">
+                <property name="label">Guardar</property>
+                <property name="valign">center</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <property name="content">
+          <object class="GtkScrolledWindow">
+            <property name="hscrollbar-policy">never</property>
+            <property name="vscrollbar-policy">automatic</property>
+            <child>
+              <object class="AdwClamp">
+                <property name="maximum-size">420</property>
+                <property name="tightening-threshold">500</property>
+                <property name="margin-top">24</property>
+                <property name="margin-bottom">24</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">24</property>
+
+                    <!-- ══════════════════════════════════════ -->
+                    <!-- Grupo: Selección de Sistema de Archivos -->
+                    <!-- ══════════════════════════════════════ -->
+                    <child>
+                      <object class="AdwPreferencesGroup" id="filesystem_group">
+                        <property name="title">Sistema de Archivos</property>
+                        <property name="description">Formatear el almacenamiento como:</property>
+
+                        <!-- EXT4 primero -->
+                        <child>
+                          <object class="AdwActionRow" id="ext4_row">
+                            <property name="title">EXT4</property>
+                            <property name="activatable-widget">ext4_radio</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="ext4_radio">
+                                <property name="valign">center</property>
+                                <property name="active">true</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <!-- BTRFS segundo -->
+                        <child>
+                          <object class="AdwActionRow" id="btrfs_row">
+                            <property name="title">BTRFS</property>
+                            <property name="activatable-widget">btrfs_radio</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="btrfs_radio">
+                                <property name="valign">center</property>
+                                <property name="group">ext4_radio</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <!-- XFS tercero -->
+                        <child>
+                          <object class="AdwActionRow" id="xfs_row">
+                            <property name="title">XFS</property>
+                            <property name="activatable-widget">xfs_radio</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="xfs_radio">
+                                <property name="valign">center</property>
+                                <property name="group">ext4_radio</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                      </object>
+                    </child>
+
+                    <!-- ══════════════════════════════════════ -->
+                    <!-- Grupo: Separación del Directorio Home  -->
+                    <!-- ══════════════════════════════════════ -->
+                    <child>
+                      <object class="AdwPreferencesGroup" id="home_group">
+                        <property name="title">Separación del Directorio Personal</property>
+                        <property name="description">¿Desea crear una partición separada para '/home'?</property>
+
+                        <child>
+                          <object class="AdwActionRow" id="home_no_row">
+                            <property name="title">No</property>
+                            <property name="activatable-widget">home_no_radio</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="home_no_radio">
+                                <property name="valign">center</property>
+                                <property name="active">true</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <child>
+                          <object class="AdwActionRow" id="home_subvolume_row">
+                            <property name="title">Sí, como un subvolumen</property>
+                            <property name="activatable-widget">home_subvolume_radio</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="home_subvolume_radio">
+                                <property name="valign">center</property>
+                                <property name="group">home_no_radio</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <child>
+                          <object class="AdwActionRow" id="home_partition_row">
+                            <property name="title">Sí, como una partición</property>
+                            <property name="activatable-widget">home_partition_radio</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="home_partition_radio">
+                                <property name="valign">center</property>
+                                <property name="group">home_no_radio</property>
+
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <!-- ExpanderRow: Slider tamaño partición raíz -->
+                        <child>
+                          <object class="AdwExpanderRow" id="root_size_expander">
+                            <property name="title">Tamaño de la partición raíz</property>
+                            <property name="subtitle">Ajustar el espacio para '/' y '/home'</property>
+                            <property name="expanded">false</property>
+
+                            <!-- Sufijo del expander: valor en azul con Pango -->
+                            <child type="suffix">
+                              <object class="GtkLabel" id="root_size_suffix_label">
+                                <property name="valign">center</property>
+                                <property name="label">15 GB</property>
+                                <attributes>
+                                  <attribute name="foreground" value="#3584e4"/>
+                                  <attribute name="weight" value="bold"/>
+                                </attributes>
+                              </object>
+                            </child>
+
+                            <!-- Fila: Slider -->
+                            <child>
+                              <object class="AdwActionRow" id="slider_row">
+                                <property name="title">Raíz ('/')</property>
+                                <child type="suffix">
+                                  <object class="GtkScale" id="root_size_scale">
+                                    <property name="orientation">horizontal</property>
+                                    <property name="adjustment">
+                                      <object class="GtkAdjustment" id="root_size_adjustment">
+                                        <property name="lower">1</property>
+                                        <property name="upper">29</property>
+                                        <property name="value">15</property>
+                                        <property name="step-increment">1</property>
+                                        <property name="page-increment">5</property>
+                                      </object>
+                                    </property>
+                                    <property name="width-request">200</property>
+                                    <property name="valign">center</property>
+                                    <property name="draw-value">false</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <!-- Fila: Tamaño raíz — azul con Pango -->
+                            <child>
+                              <object class="AdwActionRow" id="root_label_row">
+                                <property name="title">Tamaño partición raíz ('/')</property>
+                                <child type="suffix">
+                                  <object class="GtkLabel" id="root_size_label">
+                                    <property name="valign">center</property>
+                                    <property name="label">15 GB</property>
+                                    <attributes>
+                                      <attribute name="foreground" value="#3584e4"/>
+                                      <attribute name="weight" value="bold"/>
+                                    </attributes>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <!-- Fila: Tamaño /home — verde con Pango -->
+                            <child>
+                              <object class="AdwActionRow" id="home_label_row">
+                                <property name="title">Tamaño partición '/home'</property>
+                                <child type="suffix">
+                                  <object class="GtkLabel" id="home_size_label">
+                                    <property name="valign">center</property>
+                                    <property name="label">15 GB</property>
+                                    <attributes>
+                                      <attribute name="foreground" value="#26a269"/>
+                                      <attribute name="weight" value="bold"/>
+                                    </attributes>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+
+                      </object>
+                    </child>
+
+                    <!-- ══════════════════════════════════════ -->
+                    <!-- Grupo: Tamaño de Swap                  -->
+                    <!-- ══════════════════════════════════════ -->
+                    <child>
+                      <object class="AdwPreferencesGroup" id="swap_group">
+                        <property name="title">Memoria de Intercambio</property>
+                        <property name="description">Selecciona el método de memoria virtual: Zram comprime datos en RAM, Swap usa espacio en disco</property>
+
+                        <child>
+                          <object class="AdwActionRow" id="swap_none_row">
+                            <property name="title">Zram (compresión en RAM)</property>
+                            <property name="subtitle">Recomendado — no usa espacio en disco</property>
+                            <property name="activatable-widget">swap_none_radio</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="swap_none_radio">
+                                <property name="valign">center</property>
+                                <property name="active">true</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <child>
+                          <object class="AdwActionRow" id="swap_half_row">
+                            <property name="title">Swap: mitad de la RAM del sistema</property>
+                            <property name="subtitle">Zram activo + archivo de intercambio de la mitad de la RAM</property>
+                            <property name="activatable-widget">swap_half_radio</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="swap_half_radio">
+                                <property name="valign">center</property>
+                                <property name="group">swap_none_radio</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <child>
+                          <object class="AdwActionRow" id="swap_equal_row">
+                            <property name="title">Swap: igual a la RAM del sistema</property>
+                            <property name="subtitle">Zram activo + archivo de intercambio igual a la RAM</property>
+                            <property name="activatable-widget">swap_equal_radio</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="swap_equal_radio">
+                                <property name="valign">center</property>
+                                <property name="group">swap_none_radio</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <child>
+                          <object class="AdwActionRow" id="swap_custom_row">
+                            <property name="title">Swap: tamaño personalizado</property>
+                            <property name="subtitle">Zram activo + archivo de intercambio de tamaño definido manualmente</property>
+                            <property name="activatable-widget">swap_custom_radio</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="swap_custom_radio">
+                                <property name="valign">center</property>
+                                <property name="group">swap_none_radio</property>
+                              </object>
+                            </child>
+                            <child type="suffix">
+                              <object class="GtkBox">
+                                <property name="orientation">horizontal</property>
+                                <property name="spacing">6</property>
+                                <property name="valign">center</property>
+                                <child>
+                                  <object class="GtkButton" id="swap_decrease_button">
+                                    <property name="icon-name">list-remove-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <style>
+                                      <class name="circular"/>
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel" id="swap_size_label">
+                                    <property name="label">1</property>
+                                    <property name="width-chars">3</property>
+                                    <property name="xalign">0.5</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="swap_increase_button">
+                                    <property name="icon-name">list-add-symbolic</property>
+                                    <property name="valign">center</property>
+                                    <style>
+                                      <class name="circular"/>
+                                    </style>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                      </object>
+                    </child>
+
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </child>
+  </object>
+</interface>
