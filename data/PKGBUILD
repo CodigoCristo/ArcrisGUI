@@ -41,6 +41,10 @@ package() {
   fi
 
   # Install bash scripts
+  install -m755 data/bash/config_disk.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
+  install -m755 data/bash/config_fstab.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
+  install -m755 data/bash/config_grub.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
+  install -m755 data/bash/config_zram.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
   install -m755 data/bash/config_conectividad.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
   install -m755 data/bash/config_kitty.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
   install -m755 data/bash/config_ly.sh "${pkgdir}/usr/share/${pkgname}/data/bash/"
