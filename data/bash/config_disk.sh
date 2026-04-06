@@ -102,10 +102,15 @@ _auto_mount_root_and_home() {
             echo -e "${CYAN}Creando subvolúmenes BTRFS...${NC}"
             btrfs subvolume create /mnt/@
             btrfs subvolume create /mnt/@var_log
-            # Crear @home solo si no hay partición separada
-            if [ "$HOME_PARTITION" = "subvolume" ]; then
-                btrfs subvolume create /mnt/@home
-            fi
+            case "$HOME_PARTITION" in
+                "subvolume")
+                    btrfs subvolume create /mnt/@home
+                    ;;
+                "no")
+                    # Sin subvolumen @home — /home vivirá dentro de @
+                    echo -e "${CYAN}  • /home dentro del subvolumen @ (sin subvolumen separado)${NC}"
+                    ;;
+            esac
             umount /mnt
 
             # Montar subvolumen root
@@ -113,16 +118,25 @@ _auto_mount_root_and_home() {
             mkdir -p /mnt/var/log
             mount -o noatime,compress=zstd,space_cache=v2,subvol=@var_log "$root_dev" /mnt/var/log
 
-            # Montar home
-            if [ "$HOME_PARTITION" = "subvolume" ]; then
-                mkdir -p /mnt/home
-                mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$root_dev" /mnt/home
-            elif [ "$HOME_PARTITION" = "partition" ] && [ -n "$home_dev" ]; then
-                mkfs.btrfs -f "$home_dev"
-                sleep 2
-                mkdir -p /mnt/home
-                mount -o noatime,compress=zstd,space_cache=v2 "$home_dev" /mnt/home
-            fi
+            # Montar home según configuración
+            case "$HOME_PARTITION" in
+                "subvolume")
+                    mkdir -p /mnt/home
+                    mount -o noatime,compress=zstd,space_cache=v2,subvol=@home "$root_dev" /mnt/home
+                    ;;
+                "partition")
+                    if [ -n "$home_dev" ]; then
+                        mkfs.btrfs -f "$home_dev"
+                        sleep 2
+                        mkdir -p /mnt/home
+                        mount -o noatime,compress=zstd,space_cache=v2 "$home_dev" /mnt/home
+                    fi
+                    ;;
+                "no")
+                    # Solo crear el directorio, sin montar nada
+                    mkdir -p /mnt/home
+                    ;;
+            esac
             ;;
         "xfs")
             mount -t xfs "$root_dev" /mnt

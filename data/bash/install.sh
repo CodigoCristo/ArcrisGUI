@@ -507,6 +507,8 @@ clear
 # Instala sin verificar firmas temporalmente
 install_pacman_livecd_with_retry "archlinux-keyring"
 # Luego reinicia las claves
+sudo chmod 700 /root/.gnupg
+sudo chmod 600 /root/.gnupg/*
 run_command_with_retry "sudo pacman-key --init"
 run_command_with_retry "sudo pacman-key --populate archlinux"
 sleep 2

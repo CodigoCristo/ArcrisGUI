@@ -83,11 +83,9 @@ static void update_filesystem_home_constraints(WindowDiskData *data)
                         gtk_check_button_get_active(data->btrfs_radio);
 
     if (is_btrfs) {
-        /* BTRFS: solo deshabilitar "No"; subvolumen y partición disponibles como radio */
-        if (data->home_no_radio && gtk_check_button_get_active(data->home_no_radio))
-            gtk_check_button_set_active(data->home_subvolume_radio, TRUE);
+        /* BTRFS: no, subvolumen y partición disponibles */
         if (data->home_no_radio)
-            gtk_widget_set_sensitive(GTK_WIDGET(data->home_no_radio), FALSE);
+            gtk_widget_set_sensitive(GTK_WIDGET(data->home_no_radio), TRUE);
         if (data->home_subvolume_radio)
             gtk_widget_set_sensitive(GTK_WIDGET(data->home_subvolume_radio), TRUE);
         if (data->home_partition_radio)
