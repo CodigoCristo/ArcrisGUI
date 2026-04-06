@@ -7,22 +7,44 @@ echo ""
 
 # Detectar RAM total del sistema
 TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024 + 900))
+TOTAL_RAM_MB=$((TOTAL_RAM_KB / 1024))
 TOTAL_RAM_GB=$((TOTAL_RAM_MB / 1024))
 
-# Calcular zram exacto: 50% de RAM, máximo 8GB, mínimo 2GB
-ZRAM_SIZE_MB=$((TOTAL_RAM_MB / 2))
-if [ $ZRAM_SIZE_MB -gt 8192 ]; then
-    ZRAM_SIZE_MB=8192
+# Redondear al GB superior si la fracción >= 512MB (≥ 0.5G) y la RAM total >= 3584MB (3.5G)
+RAM_REMAINDER=$((TOTAL_RAM_MB % 1024))
+if [ $TOTAL_RAM_MB -ge 3584 ] && [ $RAM_REMAINDER -ge 512 ]; then
+    TOTAL_RAM_MB=$(( (TOTAL_RAM_GB + 1) * 1024 ))
+    echo -e "${CYAN}  • RAM redondeada a $((TOTAL_RAM_MB / 1024))G (fracción >= 0.5G)${NC}"
 fi
-if [ $ZRAM_SIZE_MB -lt 2048 ]; then
-    ZRAM_SIZE_MB=2048
-fi
+
+# Calcular tamaño de zram según SWAP_TYPE (misma regla que la partición en disco)
+case "$SWAP_TYPE" in
+    "zram")
+        # Solo zram, sin disco → 50% de RAM
+        ZRAM_SIZE_MB=$((TOTAL_RAM_MB / 2))
+        ;;
+    "half")
+        # Zram + disco de mitad RAM → zram también es mitad de RAM
+        ZRAM_SIZE_MB=$((TOTAL_RAM_MB / 2))
+        ;;
+    "equal")
+        # Zram + disco igual a RAM → zram igual a RAM
+        ZRAM_SIZE_MB=$TOTAL_RAM_MB
+        ;;
+    "custom")
+        # Zram + disco de tamaño custom → zram del mismo tamaño custom
+        ZRAM_SIZE_MB=$(( SWAP_CUSTOM_SIZE * 1024 ))
+        ;;
+    *)
+        ZRAM_SIZE_MB=$((TOTAL_RAM_MB / 2))
+        ;;
+esac
+
 ZRAM_SIZE_GB=$((ZRAM_SIZE_MB / 1024))
 
 echo -e "${CYAN}  • RAM total: ${TOTAL_RAM_GB}GB (${TOTAL_RAM_MB}MB)${NC}"
-echo -e "${CYAN}  • zram calculado: ${ZRAM_SIZE_GB}GB (${ZRAM_SIZE_MB}MB)${NC}"
 echo -e "${CYAN}  • SWAP_TYPE: ${SWAP_TYPE}${NC}"
+echo -e "${CYAN}  • zram calculado: ${ZRAM_SIZE_GB}GB (${ZRAM_SIZE_MB}MB)${NC}"
 echo ""
 
 # Instalar zram-generator (método oficial)
