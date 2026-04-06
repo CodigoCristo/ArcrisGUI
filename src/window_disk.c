@@ -161,9 +161,9 @@ static void update_home_partition_sensitivity(WindowDiskData *data)
         GtkAdjustment *adj = gtk_range_get_adjustment(GTK_RANGE(data->root_size_scale));
 
         if (total_gb <= 30) {
-            /* Disco ≤ 30 GB: bloquear slider en la mitad exacta */
-            gtk_adjustment_set_lower(adj, (gdouble)half);
-            gtk_adjustment_set_upper(adj, (gdouble)half);
+            /* Disco ≤ 30 GB: mostrar slider fijo en la mitad, sin poder moverlo */
+            gtk_adjustment_set_lower(adj, 1.0);
+            gtk_adjustment_set_upper(adj, (gdouble)(total_gb - 1));
             gtk_range_set_value(GTK_RANGE(data->root_size_scale), (gdouble)half);
             gtk_widget_set_sensitive(GTK_WIDGET(data->root_size_scale), FALSE);
         } else {
