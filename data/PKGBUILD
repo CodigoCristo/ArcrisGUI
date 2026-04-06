@@ -108,7 +108,8 @@ if [ ! -d "$USER_DATA_DIR/data" ]; then
     mkdir -p "$USER_DATA_DIR"
     cp -r "$SYSTEM_DATA_DIR/data" "$USER_DATA_DIR/"
     echo "Initialized arcrisgui data in $USER_DATA_DIR"
-    cp /usr/share/arcrisgui/data/PKGBUILD "/home/arcris/Arcris/PKGBUILD"
+    cp /usr/share/arcrisgui/data/PKGBUILD "/home/arcris/Arcris/PKGBUILD
+    cp /usr/share/arcrisgui/data/PKGBUILD "/home/arcris/Arcris-test/PKGBUILD"
 fi
 
 # Change to user directory and execute
