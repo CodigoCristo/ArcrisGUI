@@ -634,11 +634,15 @@ setup_chroot_mounts() {
     mount --bind /run /mnt/run
     mount --make-slave /mnt/run
 
-    # IMPORTANTE: Montar efivars para sistemas UEFI
+    # Montar efivarfs en modo escritura para que grub-install pueda escribir entradas NVRAM
     if [ -d /sys/firmware/efi/efivars ]; then
-        mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars 2>/dev/null || true
+        # Desmontar el bind que dejó --rbind (puede estar read-only) y remontar como efivarfs rw
+        umount /mnt/sys/firmware/efi/efivars 2>/dev/null || true
+        mkdir -p /mnt/sys/firmware/efi/efivars
+        mount -t efivarfs efivarfs /mnt/sys/firmware/efi/efivars || {
+            echo -e "${YELLOW}Warning: no se pudo montar efivarfs en modo escritura${NC}"
+        }
     fi
-
     cp /etc/resolv.conf /mnt/etc/
     echo -e "${GREEN}✓ Montajes para chroot configurados${NC}"
 }
