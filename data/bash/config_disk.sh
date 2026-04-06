@@ -25,6 +25,13 @@ _auto_calc_swap() {
     local ram_mib
     ram_mib=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo)
 
+    # Redondear al GB superior si fracción >= 512MB y RAM total >= 3584MB (3.5G)
+    local ram_remainder=$(( ram_mib % 1024 ))
+    local ram_gb=$(( ram_mib / 1024 ))
+    if [ $ram_mib -ge 3584 ] && [ $ram_remainder -ge 512 ]; then
+        ram_mib=$(( (ram_gb + 1) * 1024 ))
+    fi
+
     case "$SWAP_TYPE" in
         "zram")
             SWAP_SIZE_MIB=0
