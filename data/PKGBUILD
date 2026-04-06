@@ -11,7 +11,7 @@ depends=('gtk4' 'libadwaita' 'vte4' 'glib2' 'curl' 'wget' 'udisks2')
 makedepends=('meson' 'ninja' 'git')
 provides=("${pkgname}")
 conflicts=("${pkgname}")
-source=("${pkgname}::git+$url.git")
+source=("${pkgname}::git+$url.git#branch=test")
 sha256sums=('SKIP')
 
 build() {
@@ -99,20 +99,28 @@ package() {
   cat > "${pkgdir}/usr/bin/arcris" << 'EOF'
 #!/bin/bash
 
-# Create user data directory
 USER_DATA_DIR="$HOME/.local/share/arcrisgui"
 SYSTEM_DATA_DIR="/usr/share/arcrisgui"
 
-# Copy all data files to user directory if they don't exist
+# Inicializar directorio si no existe
 if [ ! -d "$USER_DATA_DIR/data" ]; then
     mkdir -p "$USER_DATA_DIR"
     cp -r "$SYSTEM_DATA_DIR/data" "$USER_DATA_DIR/"
     echo "Initialized arcrisgui data in $USER_DATA_DIR"
-    cp /usr/share/arcrisgui/data/PKGBUILD "/home/arcris/Arcris/PKGBUILD
-    cp /usr/share/arcrisgui/data/PKGBUILD "/home/arcris/Arcris-test/PKGBUILD"
 fi
 
-# Change to user directory and execute
+# Copiar PKGBUILD si el commit del sistema es distinto al último copiado
+SYSTEM_COMMIT=$(cat "$SYSTEM_DATA_DIR/commit" 2>/dev/null)
+CACHED_COMMIT=$(cat "$USER_DATA_DIR/last_commit" 2>/dev/null)
+
+if [ "$SYSTEM_COMMIT" != "$CACHED_COMMIT" ]; then
+    echo "==> Nueva versión detectada, actualizando PKGBUILD..."
+    cp -r "$SYSTEM_DATA_DIR/data" "$USER_DATA_DIR/"
+    cp "$SYSTEM_DATA_DIR/data/PKGBUILD" "/home/arcris/Arcris-test/PKGBUILD"
+    echo "$SYSTEM_COMMIT" > "$USER_DATA_DIR/last_commit"
+    echo "==> PKGBUILD actualizado en /home/arcris/Arcris-test/"
+fi
+
 cd "$USER_DATA_DIR"
 exec /usr/lib/arcrisgui/arcris "$@"
 EOF
