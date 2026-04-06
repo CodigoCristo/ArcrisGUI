@@ -668,8 +668,8 @@ void on_install_button_clicked(GtkButton *button, gpointer user_data)
         LOG_INFO("DEBUG: current_page = %u, total_pages = %u", current_page, total_pages);
         LOG_INFO("Navegando de página %u a página 8 (total: %u)", current_page, total_pages);
         
-        // La página 8 es la penúltima página (índice 7), page9 es la última (índice 8)
-        guint page8_index = total_pages - 2;
+        // page8=índice 7, page9=índice 8, page10=índice 9 → total_pages=10
+        guint page8_index = total_pages - 3;
         LOG_INFO("DEBUG: Calculado page8_index = %u", page8_index);
         
         GtkWidget *page8_widget = adw_carousel_get_nth_page(data->carousel, page8_index);
