@@ -11,7 +11,7 @@ depends=('gtk4' 'libadwaita' 'vte4' 'glib2' 'curl' 'wget' 'udisks2')
 makedepends=('meson' 'ninja' 'git')
 provides=("${pkgname}")
 conflicts=("${pkgname}")
-source=("${pkgname}::git+$url.git")
+source=("${pkgname}::git+$url.git#branch=test")
 sha256sums=('SKIP')
 
 build() {
@@ -116,9 +116,9 @@ CACHED_COMMIT=$(cat "$USER_DATA_DIR/last_commit" 2>/dev/null)
 if [ "$SYSTEM_COMMIT" != "$CACHED_COMMIT" ]; then
     echo "==> Nueva versión detectada, actualizando PKGBUILD..."
     cp -r "$SYSTEM_DATA_DIR/data" "$USER_DATA_DIR/"
-    cp "$SYSTEM_DATA_DIR/data/PKGBUILD" "/home/arcris/Arcris/PKGBUILD"
+    cp "$SYSTEM_DATA_DIR/data/PKGBUILD" "/home/arcris/Arcris-test/PKGBUILD"
     echo "$SYSTEM_COMMIT" > "$USER_DATA_DIR/last_commit"
-    echo "==> PKGBUILD actualizado en /home/arcris/Arcris/"
+    echo "==> PKGBUILD actualizado en /home/arcris/Arcris-test/"
 fi
 
 cd "$USER_DATA_DIR"

@@ -94,8 +94,6 @@ update_system_chroot() {
             ((attempt++))
         fi
     done
-
-
 }
 
 # Función para actualizar repositorios con pacman con bucle infinito
@@ -307,6 +305,38 @@ install_pacman_livecd_with_retry() {
     done
 
 
+}
+
+# Función para ejecutar un comando con reintentos y verificación de internet (bucle infinito)
+run_command_with_retry() {
+    local cmd="$1"
+    local attempt=1
+
+    if [[ -z "$cmd" ]]; then
+        echo -e "${RED}❌ Error: No se especificó comando${NC}"
+        return 1
+    fi
+
+    echo -e "${GREEN}🔄 Ejecutando: ${YELLOW}$cmd${NC}"
+
+    while true; do
+        echo -e "${CYAN}🔄 Intento #$attempt para ejecutar: $cmd${NC}"
+
+        # Verificar conectividad antes del intento
+        wait_for_internet
+
+        # Ejecutar el comando
+        if eval "$cmd"; then
+            echo -e "${GREEN}✅ Comando ejecutado correctamente${NC}"
+            return 0
+        else
+            echo -e "${YELLOW}⚠️  Falló la ejecución del comando (intento #$attempt)${NC}"
+            echo -e "${RED}🔍 Comando ejecutado: $cmd${NC}"
+            echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
+            sleep 5
+            ((attempt++))
+        fi
+    done
 }
 
 # ================================================================================================

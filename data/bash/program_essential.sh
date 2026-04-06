@@ -75,7 +75,7 @@ if [ "${FILESYSTEMS_ENABLED:-false}" = "true" ]; then
     install_pacman_chroot_with_retry "cifs-utils"
     install_pacman_chroot_with_retry "jfsutils"
     # btrfs-progs se instala condicionalmente según el sistema de archivos
-    if [ "$PARTITION_MODE" != "auto_btrfs" ]; then
+    if ! { [ "$PARTITION_MODE" = "auto" ] && [ "$FILESYSTEM_TYPE" = "btrfs" ]; }; then
         install_pacman_chroot_with_retry "btrfs-progs"
         install_pacman_chroot_with_retry "btrfsmaintenance"
         install_pacman_chroot_with_retry "snapper"

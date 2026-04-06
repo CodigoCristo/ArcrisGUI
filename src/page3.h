@@ -7,6 +7,7 @@
 #include <udisks/udisks.h>
 #include "disk_manager.h"
 #include "partition_manager.h"
+#include "window_disk.h"
 
 
 
@@ -42,6 +43,10 @@ typedef struct _Page3Data {
     GtkButton *refresh_button;
     GtkButton *configure_partitions_button;
     GtkButton *save_key_disk_button;
+    GtkButton *configure_disk_button;
+
+    // Sub-ventana de configuración del disco
+    WindowDiskData *window_disk;
     
     // Widgets de la página de particiones manuales
     GtkLabel *disk_label_page4;
@@ -112,6 +117,7 @@ void on_page3_partition_mode_changed(GtkCheckButton *button, gpointer user_data)
 void on_page3_refresh_clicked(GtkButton *button, gpointer user_data);
 void on_page3_configure_partitions_clicked(GtkButton *button, gpointer user_data);
 void on_page3_save_key_disk_clicked(GtkButton *button, gpointer user_data);
+void on_page3_configure_disk_clicked(GtkButton *button, gpointer user_data);
 
 // Callbacks para la página de particiones manuales
 void on_page3_gparted_button_clicked(GtkButton *button, gpointer user_data);

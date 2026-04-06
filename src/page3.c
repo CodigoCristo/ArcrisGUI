@@ -49,6 +49,7 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page3_data->refresh_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "refresh_button"));
     g_page3_data->configure_partitions_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "configure_partitions_button"));
     g_page3_data->save_key_disk_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "save_key_disk_button"));
+    g_page3_data->configure_disk_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "configure_disk_button"));
 
     // Obtener widgets de la página de particiones manuales
     g_page3_data->disk_label_page4 = GTK_LABEL(gtk_builder_get_object(page_builder, "disk_label_page4"));
@@ -68,6 +69,7 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     if (!g_page3_data->navigation_view || !g_page3_data->disk_combo || !g_page3_data->auto_partition_radio ||
         !g_page3_data->auto_btrfs_radio || !g_page3_data->cifrado_partition_button || !g_page3_data->manual_partition_radio ||
         !g_page3_data->refresh_button || !g_page3_data->configure_partitions_button || !g_page3_data->save_key_disk_button ||
+        !g_page3_data->configure_disk_button ||
         !g_page3_data->disk_label_page4 || !g_page3_data->disk_size_label_page4 ||
         !g_page3_data->gparted_button || !g_page3_data->return_disks || !g_page3_data->return_disks_encryption ||
         !g_page3_data->partitions_group || !g_page3_data->password_entry || !g_page3_data->password_confirm_entry ||
@@ -116,6 +118,8 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
                      G_CALLBACK(on_page3_partition_mode_changed), g_page3_data);
     g_signal_connect(g_page3_data->save_key_disk_button, "clicked",
                      G_CALLBACK(on_page3_save_key_disk_clicked), g_page3_data);
+    g_signal_connect(g_page3_data->configure_disk_button, "clicked",
+                     G_CALLBACK(on_page3_configure_disk_clicked), g_page3_data);
 
     // Conectar señales de los campos de contraseña
     if (g_page3_data->password_entry) {
@@ -144,6 +148,13 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
 
     // Liberar el builder de la página
     g_object_unref(page_builder);
+
+    // Inicializar variables del disco en variables.sh (solo si no existen)
+    window_disk_init_variables();
+
+    // Inicializar sub-ventana de configuración del disco
+    g_page3_data->window_disk = window_disk_new();
+    window_disk_init(g_page3_data->window_disk);
 
     // Inicializar el manejador de particiones
     page3_init_partition_manager(g_page3_data);
@@ -657,6 +668,11 @@ void on_page3_partition_mode_changed(GtkCheckButton *button, gpointer user_data)
         LOG_INFO("Botón configurar particiones %s", is_manual ? "ACTIVADO" : "DESACTIVADO");
     } else {
         LOG_WARNING("configure_partitions_button es NULL");
+    }
+
+    // Habilitar configure_disk_button solo cuando "Borra el disco" (auto) está seleccionado
+    if (data->configure_disk_button) {
+        gtk_widget_set_sensitive(GTK_WIDGET(data->configure_disk_button), is_auto);
     }
 
     // Actualizar estado del botón de cifrado
@@ -2249,6 +2265,17 @@ void on_page3_save_key_disk_clicked(GtkButton *button, gpointer user_data)
 
     // Navegar a la página de configuración de clave
     page3_navigate_to_encryption_key(data);
+}
+
+// Callback para el botón de configurar disco (abre window_disk)
+void on_page3_configure_disk_clicked(GtkButton *button, gpointer user_data)
+{
+    (void)button;
+    Page3Data *data = user_data;
+    if (!data || !data->window_disk) return;
+
+    GtkWindow *parent = GTK_WINDOW(gtk_widget_get_root(GTK_WIDGET(data->configure_disk_button)));
+    window_disk_show(data->window_disk, parent);
 }
 
 // ============================================================================
