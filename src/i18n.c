@@ -1183,6 +1183,46 @@ static const TransEntry g_trans[] = {
       "Gestionnaire de mots de passe multiplateforme et open source",
       "Plattformübergreifender und quelloffener Passwort-Manager" },
 
+    /* ── Page 10 — Error ── */
+    { "Error en la instalación",
+      "Erro na instalação",
+      "Erreur d'installation",
+      "Installationsfehler" },
+    { "La instalación no pudo completarse. Revisa el registro para más información.",
+      "A instalação não pôde ser concluída. Verifique o registro para mais informações.",
+      "L'installation n'a pas pu être complétée. Consultez le journal pour plus d'informations.",
+      "Die Installation konnte nicht abgeschlossen werden. Überprüfen Sie das Protokoll für weitere Informationen." },
+    { "Ver registro log",
+      "Ver registro",
+      "Voir le journal",
+      "Protokoll anzeigen" },
+
+    /* ── Page 8 — Instalación ── */
+    { "Instalando Arch Linux",
+      "Instalando Arch Linux",
+      "Installation d'Arch Linux",
+      "Arch Linux wird installiert" },
+    { "Esto puede demorar varios minutos, dependiendo de su conexión a Internet, por favor, espere...",
+      "Isto pode demorar vários minutos dependendo da sua conexão com a Internet, por favor aguarde...",
+      "Cela peut prendre plusieurs minutes selon votre connexion Internet, veuillez patienter...",
+      "Dies kann je nach Ihrer Internetverbindung mehrere Minuten dauern, bitte warten..." },
+    { "Aquí se muestra la salida detallada del proceso de instalación",
+      "Aqui é mostrada a saída detalhada do processo de instalação",
+      "Voici la sortie détaillée du processus d'installation",
+      "Hier wird die detaillierte Ausgabe des Installationsprozesses angezeigt" },
+
+    /* ── Page 9 — Completado ── */
+    { "¡Bienvenido a Arch Linux!",
+      "Bem-vindo ao Arch Linux!",
+      "Bienvenue sur Arch Linux !",
+      "Willkommen bei Arch Linux!" },
+    { "El sistema se ha instalado correctamente y está listo para usar",
+      "O sistema foi instalado com sucesso e está pronto para uso",
+      "Le système a été installé avec succès et est prêt à l'emploi",
+      "Das System wurde erfolgreich installiert und ist einsatzbereit" },
+    { "Apagar",   "Desligar",  "Éteindre",   "Ausschalten" },
+    { "Reiniciar","Reiniciar", "Redémarrer",  "Neustart"    },
+
     /* sentinel */
     { NULL, NULL, NULL, NULL }
 };

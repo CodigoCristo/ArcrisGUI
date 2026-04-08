@@ -23,6 +23,7 @@
 #include "page7.h"
 #include "page8.h"
 #include "page9.h"
+#include "page10.h"
 #include "i18n.h"
 
 #include "close.h"
@@ -137,6 +138,7 @@ static void set_language_action(GSimpleAction *action, GVariant *new_state, gpoi
     page7_update_language();
     page8_update_language();
     page9_update_language();
+    page10_update_language();
 
     if (g_app_carousel_manager)
         carousel_update_button_labels(g_app_carousel_manager);

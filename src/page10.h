@@ -24,5 +24,6 @@ void on_view_log_button_toggled(GtkToggleButton *button, gpointer user_data);
 
 void page10_on_page_shown(void);
 void page10_on_page_hidden(void);
+void page10_update_language(void);
 
 #endif /* PAGE10_H */

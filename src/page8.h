@@ -29,6 +29,7 @@ typedef struct _Page8Data {
     
     // Labels y otros widgets
     GtkLabel *install_title;
+    GtkLabel *carousel_info;
     GtkProgressBar *progress_bar;
     
     // Widgets de la terminal
