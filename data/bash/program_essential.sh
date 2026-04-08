@@ -62,7 +62,6 @@ if [ "${FILESYSTEMS_ENABLED:-false}" = "true" ]; then
     install_pacman_chroot_with_retry "gvfs-mtp"
     install_pacman_chroot_with_retry "gvfs-goa"
     install_pacman_chroot_with_retry "gvfs-nfs"
-    install_pacman_chroot_with_retry "gvfs-google"
     install_pacman_chroot_with_retry "gst-libav"
     install_pacman_chroot_with_retry "dosfstools"
     install_pacman_chroot_with_retry "f2fs-tools"
