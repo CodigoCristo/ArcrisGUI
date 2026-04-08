@@ -15,7 +15,7 @@
         <property name="tag">disk_selection</property>
 
         <property name="child">
-          <object class="AdwStatusPage">
+          <object class="AdwStatusPage" id="page3_status">
                 <property name="title" translatable="true">Seleccionar Disco</property>
                 <property name="description" translatable="true">Selecciona un disco de la lista de dispositivos disponibles</property>
 
@@ -33,7 +33,7 @@
                         <property name="tightening-threshold">650</property>
                         <property name="margin-bottom">24</property>
                         <child>
-                          <object class="AdwPreferencesGroup">
+                          <object class="AdwPreferencesGroup" id="group_disco_lista">
                             <property name="title" translatable="yes">Lista de Discos:</property>
                             <property name="header-suffix">
                               <object class="GtkButton" id="refresh_button">
@@ -73,10 +73,10 @@
                         <property name="margin-bottom">24</property>
 
                         <child>
-                          <object class="AdwPreferencesGroup">
+                          <object class="AdwPreferencesGroup" id="group_opciones">
                             <property name="title" translatable="yes">Elige una opción</property>
                             <child>
-                              <object class="AdwActionRow">
+                              <object class="AdwActionRow" id="auto_partition_row">
                                 <property name="title" translatable="yes">Borra el disco e Instala Arch Linux</property>
                                 <property name="subtitle" translatable="yes">Eliminará todos los datos del disco seleccionado</property>
                                 <property name="activatable">false</property>
@@ -192,7 +192,7 @@
       <property name="tag">manual_partitions</property>
 
       <property name="child">
-        <object class="AdwStatusPage">
+        <object class="AdwStatusPage" id="page3_manual_status">
           <property name="title" translatable="true">Partición Manual</property>
           <property name="description" translatable="true">Configura las particiones usando Gparted en el disco seleccionado</property>
 
@@ -293,7 +293,7 @@
                                             </object>
                                           </child>
                                           <child>
-                                            <object class="GtkLabel">
+                                            <object class="GtkLabel" id="gparted_button_label">
                                               <property name="label" translatable="true"> Abrir Gparted</property>
                                             </object>
                                           </child>
@@ -346,7 +346,7 @@
         <property name="title" translatable="true">Clave del Disco Cifrado</property>
         <property name="tag">encryption_key</property>
         <property name="child">
-          <object class="AdwStatusPage">
+          <object class="AdwStatusPage" id="encryption_status_page">
             <property name="title">Clave del Disco Cifrado</property>
             <property name="description">Si pierde esta clave de seguridad, perderá todos los datos del disco.</property>
             <property name="child">
@@ -365,7 +365,7 @@
 
                     <!-- Grupo de campos de usuario -->
                     <child>
-                      <object class="AdwPreferencesGroup">
+                      <object class="AdwPreferencesGroup" id="encryption_prefs_group">
                       <property name="title">Elija Una clave para su disco</property>
                       <property name="description">El cifrado del disco protege sus archivos en caso de extravío del equipo.</property>
                         <child>

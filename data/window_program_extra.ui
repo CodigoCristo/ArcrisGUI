@@ -14,7 +14,7 @@
         <child type="top">
           <object class="AdwHeaderBar">
             <property name="title-widget">
-              <object class="AdwWindowTitle">
+              <object class="AdwWindowTitle" id="program_extra_window_title">
                 <property name="title">Programas Extras</property>
               </object>
             </property>
@@ -53,7 +53,7 @@
 
                 <!-- Título principal -->
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="program_extra_title_label">
                     <property name="label">Agrega tus programas aquí</property>
                     <property name="halign">start</property>
                     <style>
@@ -64,7 +64,7 @@
 
                 <!-- Subtítulo -->
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="program_extra_subtitle_label">
                     <property name="label">Sea en lista o con espacios:</property>
                     <property name="halign">start</property>
                     <property name="margin-top">1</property>

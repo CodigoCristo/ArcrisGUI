@@ -14,25 +14,35 @@ typedef struct _InfoButtonData {
 typedef struct _WindowAppsData {
     GtkWindow *window;
     GtkBuilder *builder;
-    
+
     // Botones de la ventana
     GtkButton *close_button;
     GtkButton *save_button;
-    
+
+    // Título de ventana y grupo de paquetes
+    AdwWindowTitle *window_title;
+    AdwPreferencesGroup *packages_group;
+
     // Elementos de búsqueda
     GtkSearchEntry *search_entry;
-    
+
     // Expanderes para categorías
     AdwExpanderRow *browsers_expander;
     AdwExpanderRow *graphics_expander;
     AdwExpanderRow *video_expander;
-    
+    AdwExpanderRow *audio_expander;
+    AdwExpanderRow *mail_expander;
+    AdwExpanderRow *developers_expander;
+    AdwExpanderRow *office_expander;
+    AdwExpanderRow *gamming_expander;
+    AdwExpanderRow *other_expander;
+
     // Estado de inicialización
     gboolean is_initialized;
-    
+
     // Datos de aplicaciones seleccionadas
     GHashTable *selected_apps;
-    
+
 } WindowAppsData;
 
 // Funciones principales de la ventana
@@ -76,5 +86,8 @@ void window_apps_set_selected_apps(WindowAppsData *data, GHashTable *apps);
 
 // Función para obtener la instancia global
 WindowAppsData* window_apps_get_instance(void);
+
+// Función de actualización de idioma
+void window_apps_update_language(WindowAppsData *data);
 
 #endif /* WINDOW_APPS_H */

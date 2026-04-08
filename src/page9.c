@@ -1,5 +1,6 @@
 #include "page9.h"
 #include "config.h"
+#include "i18n.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -839,4 +840,29 @@ static void on_exit_dialog_response(AdwAlertDialog *dialog, GAsyncResult *result
     } else {
         LOG_INFO("Usuario canceló la salida");
     }
+}
+
+void page9_update_language(void)
+{
+    if (!g_page9_data) return;
+
+    if (g_page9_data->completion_message)
+        gtk_label_set_text(g_page9_data->completion_message,
+            i18n_t("¡Bienvenido a Arch Linux!",
+                   "Welcome to Arch Linux!",
+                   "Добро пожаловать в Arch Linux!"));
+    if (g_page9_data->secondary_message)
+        gtk_label_set_text(g_page9_data->secondary_message,
+            i18n_t("El sistema se ha instalado correctamente y está listo para usar",
+                   "The system has been successfully installed and is ready to use",
+                   "Система успешно установлена и готова к использованию"));
+    if (g_page9_data->shutdown_button)
+        gtk_button_set_label(g_page9_data->shutdown_button,
+            i18n_t("Apagar", "Shutdown", "Выключить"));
+    if (g_page9_data->restart_button)
+        gtk_button_set_label(g_page9_data->restart_button,
+            i18n_t("Reiniciar", "Restart", "Перезагрузить"));
+    if (g_page9_data->exit_button)
+        gtk_button_set_label(g_page9_data->exit_button,
+            i18n_t("Salir", "Exit", "Выйти"));
 }

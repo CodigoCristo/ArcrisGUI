@@ -1,5 +1,6 @@
 #include "page3.h"
 #include "variables_utils.h"
+#include "i18n.h"
 
 #include "disk_manager.h"
 #include "partition_manager.h"
@@ -55,6 +56,7 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page3_data->disk_label_page4 = GTK_LABEL(gtk_builder_get_object(page_builder, "disk_label_page4"));
     g_page3_data->disk_size_label_page4 = GTK_LABEL(gtk_builder_get_object(page_builder, "disk_size_label_page4"));
     g_page3_data->gparted_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "gparted_button"));
+    g_page3_data->gparted_label = GTK_LABEL(gtk_builder_get_object(page_builder, "gparted_button_label"));
     g_page3_data->refresh_partitions_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "refresh_partitions_button"));
     g_page3_data->return_disks = GTK_BUTTON(gtk_builder_get_object(page_builder, "return_disks"));
     g_page3_data->return_disks_encryption = ADW_BUTTON_ROW(gtk_builder_get_object(page_builder, "return_disks_encryption"));
@@ -64,6 +66,21 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page3_data->password_entry = ADW_PASSWORD_ENTRY_ROW(gtk_builder_get_object(page_builder, "password_entry"));
     g_page3_data->password_confirm_entry = ADW_PASSWORD_ENTRY_ROW(gtk_builder_get_object(page_builder, "password_confirm_entry"));
     g_page3_data->password_error_label = GTK_LABEL(gtk_builder_get_object(page_builder, "password_error_label"));
+
+    // Obtener widgets de traducción (página principal de selección)
+    g_page3_data->status_page = ADW_STATUS_PAGE(gtk_builder_get_object(page_builder, "page3_status"));
+    g_page3_data->group_disco_lista = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "group_disco_lista"));
+    g_page3_data->group_opciones = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "group_opciones"));
+    g_page3_data->auto_partition_row = ADW_ACTION_ROW(gtk_builder_get_object(page_builder, "auto_partition_row"));
+    g_page3_data->cifrado_partition_row = ADW_ACTION_ROW(gtk_builder_get_object(page_builder, "cifrado_partition_radio"));
+    g_page3_data->manual_partition_row = ADW_ACTION_ROW(gtk_builder_get_object(page_builder, "manual_partition_row"));
+
+    // Obtener widgets de traducción (página manual de particiones)
+    g_page3_data->manual_status_page = ADW_STATUS_PAGE(gtk_builder_get_object(page_builder, "page3_manual_status"));
+
+    // Obtener widgets de traducción (página de cifrado)
+    g_page3_data->encryption_status_page = ADW_STATUS_PAGE(gtk_builder_get_object(page_builder, "encryption_status_page"));
+    g_page3_data->encryption_prefs_group = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "encryption_prefs_group"));
 
     // Verificar que todos los widgets se obtuvieron correctamente
     if (!g_page3_data->navigation_view || !g_page3_data->disk_combo || !g_page3_data->auto_partition_radio ||
@@ -838,7 +855,8 @@ void page3_update_manual_partitions_info(Page3Data *data)
     }
 
     // Actualizar etiquetas de disco
-    gchar *disk_text = g_strdup_printf("Disco %s", selected_disk);
+    gchar *disk_text = g_strdup_printf("%s %s",
+        i18n_t("Disco", "Disk", "Диск"), selected_disk);
     gtk_label_set_text(data->disk_label_page4, disk_text);
     LOG_INFO("Label de disco actualizado: %s", disk_text);
     g_free(disk_text);
@@ -1741,15 +1759,17 @@ GtkWidget* page3_find_next_button_recursive(GtkWidget *widget)
                  label ? label : "NULL",
                  widget_name ? widget_name : "NULL");
 
-        if (label && (g_str_has_suffix(label, "Siguiente") || g_str_has_suffix(label, "Next") ||
-                      g_strrstr(label, "siguiente") || g_strrstr(label, "next"))) {
-            LOG_INFO("¡Botón siguiente encontrado! Label: '%s'", label);
+        // Verificar por nombre del widget (método principal, independiente del idioma)
+        if (widget_name && g_strcmp0(widget_name, "next_button") == 0) {
+            LOG_INFO("¡Botón siguiente encontrado por nombre! Name: '%s'", widget_name);
             return widget;
         }
 
-        // También verificar por nombre del widget
-        if (widget_name && (g_strrstr(widget_name, "next") || g_strrstr(widget_name, "siguiente"))) {
-            LOG_INFO("¡Botón siguiente encontrado por nombre! Name: '%s'", widget_name);
+        // Fallback: verificar por label en español, inglés y ruso
+        if (label && (g_strcmp0(label, "Siguiente") == 0 ||
+                      g_strcmp0(label, "Next") == 0 ||
+                      g_strcmp0(label, "Далее") == 0)) {
+            LOG_INFO("¡Botón siguiente encontrado por label! Label: '%s'", label);
             return widget;
         }
     }
@@ -1950,6 +1970,8 @@ void page3_check_password_match(Page3Data *data)
         if (confirm_password && strlen(confirm_password) > 0) {
             if (!data->passwords_match) {
                 // Mostrar error cuando no coinciden
+                gtk_label_set_text(data->password_error_label,
+                    i18n_t("Las contraseñas no coinciden", "Passwords do not match", "Пароли не совпадают"));
                 gtk_widget_set_visible(GTK_WIDGET(data->password_error_label), TRUE);
                 gtk_widget_add_css_class(GTK_WIDGET(data->password_confirm_entry), "error");
                 gtk_widget_remove_css_class(GTK_WIDGET(data->password_confirm_entry), "success");
@@ -2418,4 +2440,144 @@ gchar* page3_get_firmware_type(void)
 
     // Si no se puede determinar que es UEFI, asumir BIOS Legacy
     return g_strdup("BIOS Legacy");
+}
+
+void page3_update_language(void)
+{
+    if (!g_page3_data) return;
+
+    // Página principal: status page
+    if (g_page3_data->status_page) {
+        adw_status_page_set_title(g_page3_data->status_page,
+            i18n_t("Seleccionar Disco", "Select Disk", "Выбор диска"));
+        adw_status_page_set_description(g_page3_data->status_page,
+            i18n_t("Selecciona un disco de la lista de dispositivos disponibles",
+                   "Select a disk from the list of available devices",
+                   "Выберите диск из списка доступных устройств"));
+    }
+
+    // Grupo lista de discos
+    if (g_page3_data->group_disco_lista)
+        adw_preferences_group_set_title(g_page3_data->group_disco_lista,
+            i18n_t("Lista de Discos:", "Disk List:", "Список дисков:"));
+
+    // Combo de dispositivos
+    if (g_page3_data->disk_combo)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->disk_combo),
+            i18n_t("Dispositivo", "Device", "Устройство"));
+
+    // Grupo opciones de particionado
+    if (g_page3_data->group_opciones)
+        adw_preferences_group_set_title(g_page3_data->group_opciones,
+            i18n_t("Elige una opción", "Choose an option", "Выберите вариант"));
+
+    // Fila: borrar e instalar
+    if (g_page3_data->auto_partition_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->auto_partition_row),
+            i18n_t("Borra el disco e Instala Arch Linux",
+                   "Erase disk and Install Arch Linux",
+                   "Очистить диск и установить Arch Linux"));
+        adw_action_row_set_subtitle(g_page3_data->auto_partition_row,
+            i18n_t("Eliminará todos los datos del disco seleccionado",
+                   "Will erase all data on the selected disk",
+                   "Удалит все данные на выбранном диске"));
+    }
+
+    // Fila: borrar e instalar con cifrado
+    if (g_page3_data->cifrado_partition_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->cifrado_partition_row),
+            i18n_t("Borra el disco e Instala Arch Linux con Cifrado",
+                   "Erase disk and Install Arch Linux with Encryption",
+                   "Очистить диск и установить Arch Linux с шифрованием"));
+        adw_action_row_set_subtitle(g_page3_data->cifrado_partition_row,
+            i18n_t("Elimina y crea una clave en el Disco (LUKS) y LVM",
+                   "Erases and creates a key on the disk (LUKS) and LVM",
+                   "Удаляет и создаёт ключ на диске (LUKS) и LVM"));
+    }
+
+    // Fila: particionado manual
+    if (g_page3_data->manual_partition_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->manual_partition_row),
+            i18n_t("Particionado Manual", "Manual Partitioning", "Ручное разбиение"));
+        adw_action_row_set_subtitle(g_page3_data->manual_partition_row,
+            i18n_t("Puede crear y asignar montajes para instalar Arch Linux",
+                   "You can create and assign mount points to install Arch Linux",
+                   "Можно создать и назначить точки монтирования для установки Arch Linux"));
+    }
+
+    // Grupo de particiones del disco (página manual)
+    if (g_page3_data->partitions_group) {
+        adw_preferences_group_set_title(g_page3_data->partitions_group,
+            i18n_t("Particiones del disco", "Disk Partitions", "Разделы диска"));
+        adw_preferences_group_set_description(g_page3_data->partitions_group,
+            i18n_t("Presiona + para seleccionar los puntos de montaje",
+                   "Press + to select the mount points",
+                   "Нажмите + для выбора точек монтирования"));
+    }
+
+    // Página manual de particiones
+    if (g_page3_data->manual_status_page) {
+        adw_status_page_set_title(g_page3_data->manual_status_page,
+            i18n_t("Partición Manual", "Manual Partition", "Ручное разбиение"));
+        adw_status_page_set_description(g_page3_data->manual_status_page,
+            i18n_t("Configura las particiones usando Gparted en el disco seleccionado",
+                   "Configure partitions using Gparted on the selected disk",
+                   "Настройте разделы с помощью Gparted на выбранном диске"));
+    }
+
+    // Página de cifrado
+    if (g_page3_data->encryption_status_page) {
+        adw_status_page_set_title(g_page3_data->encryption_status_page,
+            i18n_t("Clave del Disco Cifrado", "Encrypted Disk Key", "Ключ зашифрованного диска"));
+        adw_status_page_set_description(g_page3_data->encryption_status_page,
+            i18n_t("Si pierde esta clave de seguridad, perderá todos los datos del disco.",
+                   "If you lose this security key, you will lose all data on the disk.",
+                   "Если вы потеряете этот ключ, вы потеряете все данные на диске."));
+    }
+    if (g_page3_data->encryption_prefs_group) {
+        adw_preferences_group_set_title(g_page3_data->encryption_prefs_group,
+            i18n_t("Elija Una clave para su disco",
+                   "Choose a key for your disk",
+                   "Выберите ключ для диска"));
+        adw_preferences_group_set_description(g_page3_data->encryption_prefs_group,
+            i18n_t("El cifrado del disco protege sus archivos en caso de extravío del equipo.",
+                   "Disk encryption protects your files in case of device loss.",
+                   "Шифрование диска защищает ваши файлы в случае потери устройства."));
+    }
+    if (g_page3_data->password_entry)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->password_entry),
+            i18n_t("Elija una contraseña", "Choose a password", "Введите пароль"));
+    if (g_page3_data->password_confirm_entry)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->password_confirm_entry),
+            i18n_t("Confirme su contraseña", "Confirm your password", "Подтвердите пароль"));
+    if (g_page3_data->return_disks_encryption)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->return_disks_encryption),
+            i18n_t("Regresar a seleccionar disco", "Return to disk selection", "Вернуться к выбору диска"));
+    if (g_page3_data->password_error_label &&
+        gtk_widget_get_visible(GTK_WIDGET(g_page3_data->password_error_label)))
+        gtk_label_set_text(g_page3_data->password_error_label,
+            i18n_t("Las contraseñas no coinciden", "Passwords do not match", "Пароли не совпадают"));
+
+    // Botón Gparted
+    if (g_page3_data->gparted_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page3_data->gparted_button),
+            i18n_t("Abrir Gparted para edición avanzada",
+                   "Open Gparted for advanced editing",
+                   "Открыть Gparted для расширенного редактирования"));
+    if (g_page3_data->gparted_label)
+        gtk_label_set_text(g_page3_data->gparted_label,
+            i18n_t(" Abrir Gparted", " Open Gparted", " Открыть Gparted"));
+
+    // Tooltip botón actualizar particiones
+    if (g_page3_data->refresh_partitions_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page3_data->refresh_partitions_button),
+            i18n_t("Actualizar lista", "Refresh list", "Обновить список"));
+
+    // Diálogo de configuración de partición
+    if (g_page3_data->partition_manager)
+        partition_manager_update_language(g_page3_data->partition_manager);
+
+    // Sub-ventana de configuración del disco
+    if (g_page3_data->window_disk)
+        window_disk_update_language(g_page3_data->window_disk);
 }

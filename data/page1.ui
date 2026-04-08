@@ -19,7 +19,7 @@
           </object>
         </child>
         <child>
-          <object class="AdwStatusPage">
+          <object class="AdwStatusPage" id="page1_status">
             <property name="title" translatable="true">Arcris</property>
             <property name="description" translatable="true">Instalación fácil de ArchLinux</property>
           </object>

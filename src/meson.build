@@ -42,7 +42,8 @@ executable('arcris',
     'config.c',
     'disk_manager.c',
     'partition_manager.c',
-    'variables_utils.c'
+    'variables_utils.c',
+    'i18n.c'
   ],
   dependencies : [gtkdep, glib_dep, gio_dep, adwaita, libsoup, udisks2, vte_dep, arcris_resources_dep],
   install : true,

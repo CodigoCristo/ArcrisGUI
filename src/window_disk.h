@@ -37,11 +37,27 @@ typedef struct _WindowDiskData {
 
     guint    disk_total_gb;   /* tamaño del disco seleccionado en GB */
     gboolean is_initialized;
+
+    /* Widgets para traducción */
+    AdwWindowTitle       *title_widget;
+    AdwPreferencesGroup  *filesystem_group;
+    AdwPreferencesGroup  *home_group;
+    AdwPreferencesGroup  *swap_group;
+    AdwActionRow         *home_subvolume_row;
+    AdwActionRow         *home_partition_row;
+    AdwActionRow         *slider_row;
+    AdwActionRow         *root_label_row;
+    AdwActionRow         *home_label_row;
+    AdwActionRow         *swap_none_row;
+    AdwActionRow         *swap_half_row;
+    AdwActionRow         *swap_equal_row;
+    AdwActionRow         *swap_custom_row;
 } WindowDiskData;
 
 /* Ciclo de vida */
 WindowDiskData *window_disk_new(void);
 void            window_disk_init(WindowDiskData *data);
+void            window_disk_update_language(WindowDiskData *data);
 void            window_disk_show(WindowDiskData *data, GtkWindow *parent);
 
 /* Variables.sh */

@@ -1,6 +1,7 @@
 #include "page7.h"
 #include "page8.h"
 #include "config.h"
+#include "i18n.h"
 #include <stdio.h>
 
 #include <string.h>
@@ -93,6 +94,14 @@ void page7_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     
     // Obtener botón de instalación
     g_page7_data->install_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "install_button"));
+
+    // Obtener widgets de sección para traducción
+    g_page7_data->status_page = ADW_STATUS_PAGE(gtk_builder_get_object(page_builder, "page7"));
+    g_page7_data->group_sistema_local = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "group_sistema_local"));
+    g_page7_data->group_disco = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "group_disco"));
+    g_page7_data->group_usuario = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "group_usuario"));
+    g_page7_data->group_personalizacion = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "group_personalizacion"));
+    g_page7_data->group_sistema = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "group_sistema"));
     
     // Verificar que se obtuvieron todos los widgets necesarios
     if (!g_page7_data->teclado_row || !g_page7_data->zona_horaria_row || !g_page7_data->ubicacion_row ||
@@ -255,27 +264,41 @@ void page7_load_disco_data(Page7Data *data)
     } else if (selected_disk) {
         disk_info = g_strdup(selected_disk);
     } else {
-        disk_info = g_strdup("No seleccionado");
+        disk_info = g_strdup(i18n_t("No seleccionado", "Not selected", "Не выбрано"));
     }
     adw_action_row_set_subtitle(data->disco_seleccionado_row, disk_info);
     
     // Cargar tipo de firmware
     gchar *firmware_type = page7_get_firmware_type(selected_disk);
-    const gchar *firmware_info = firmware_type ? firmware_type : "No detectado";
+    const gchar *firmware_info = firmware_type ? firmware_type : i18n_t("No detectado", "Not detected", "Не обнаружено");
     adw_action_row_set_subtitle(data->firmware_row, firmware_info);
     
     // Cargar datos del tipo de particionado
     gchar *partition_mode = page7_read_variable_from_file("PARTITION_MODE");
-    gchar *partition_info = page7_format_partition_mode_info(partition_mode);
+    gchar *filesystem_type = page7_read_variable_from_file("FILESYSTEM_TYPE");
+
+    gchar *partition_info;
+    if (g_strcmp0(partition_mode, "auto") == 0) {
+        // Para modo auto, mostrar el filesystem real (ext4, xfs, btrfs)
+        const gchar *fs = filesystem_type ? filesystem_type : "ext4";
+        gchar *fs_upper = g_ascii_strup(fs, -1);
+        partition_info = g_strdup_printf("%s (%s)",
+            i18n_t("Automático", "Automatic", "Автоматически"), fs_upper);
+        g_free(fs_upper);
+    } else {
+        partition_info = page7_format_partition_mode_info(partition_mode);
+    }
+
     adw_action_row_set_subtitle(data->particionado_row, partition_info);
     g_free(partition_info);
-    
+
     // Limpiar memoria
     g_free(selected_disk);
     g_free(disk_size);
     g_free(disk_info);
     g_free(firmware_type);
     g_free(partition_mode);
+    g_free(filesystem_type);
     
     LOG_INFO("Datos del disco cargados en el resumen");
 }
@@ -287,12 +310,12 @@ void page7_load_usuario_data(Page7Data *data)
     
     // Cargar nombre de usuario
     gchar *username = page7_read_variable_from_file("USER");
-    const gchar *user_info = username ? username : "No configurado";
+    const gchar *user_info = username ? username : i18n_t("No configurado", "Not configured", "Не настроено");
     adw_action_row_set_subtitle(data->nombre_usuario_row, user_info);
-    
+
     // Cargar hostname
     gchar *hostname = page7_read_variable_from_file("HOSTNAME");
-    const gchar *hostname_info = hostname ? hostname : "No configurado";
+    const gchar *hostname_info = hostname ? hostname : i18n_t("No configurado", "Not configured", "Не настроено");
     adw_action_row_set_subtitle(data->hostname_row, hostname_info);
     
     // Limpiar memoria
@@ -322,10 +345,10 @@ void page7_load_personalizacion_data(Page7Data *data)
         } else if (g_strcmp0(installation_type, "WINDOW_MANAGER") == 0 && window_manager) {
             entorno_info = g_strdup_printf("WM: %s", window_manager);
         } else {
-            entorno_info = g_strdup("No configurado");
+            entorno_info = g_strdup(i18n_t("No configurado", "Not configured", "Не настроено"));
         }
     } else {
-        entorno_info = g_strdup("No configurado");
+        entorno_info = g_strdup(i18n_t("No configurado", "Not configured", "Не настроено"));
     }
     
     adw_action_row_set_subtitle(data->entorno_escritorio_row, entorno_info);
@@ -358,14 +381,16 @@ void page7_load_sistema_data(Page7Data *data)
     // Cargar aplicaciones base
     gchar *essential_apps_str = page7_read_variable_from_file("ESSENTIAL_APPS_ENABLED");
     gboolean essential_apps = essential_apps_str && g_strcmp0(essential_apps_str, "true") == 0;
-    const gchar *apps_info = essential_apps ? "Habilitadas" : "Deshabilitadas";
-    adw_action_row_set_subtitle(data->aplicaciones_base_row, apps_info);
-    
+    adw_action_row_set_subtitle(data->aplicaciones_base_row,
+        essential_apps ? i18n_t("Habilitadas", "Enabled", "Включено")
+                       : i18n_t("Deshabilitadas", "Disabled", "Отключено"));
+
     // Cargar utilidades
     gchar *utilities_str = page7_read_variable_from_file("UTILITIES_ENABLED");
     gboolean utilities = utilities_str && g_strcmp0(utilities_str, "true") == 0;
-    const gchar *utilities_info = utilities ? "Habilitadas" : "Deshabilitadas";
-    adw_action_row_set_subtitle(data->utilidades_row, utilities_info);
+    adw_action_row_set_subtitle(data->utilidades_row,
+        utilities ? i18n_t("Habilitadas", "Enabled", "Включено")
+                  : i18n_t("Deshabilitadas", "Disabled", "Отключено"));
     
     // Limpiar memoria
     g_free(kernel);
@@ -827,47 +852,50 @@ gchar* page7_get_disk_size(const gchar* disk_path)
 // Función para formatear información del disco
 gchar* page7_format_disk_info(const gchar* disk_path, const gchar* partition_mode)
 {
-    const gchar *disk_name = disk_path ? disk_path : "No seleccionado";
-    const gchar *mode_name = "Desconocido";
-    
+    const gchar *disk_name = disk_path ? disk_path : i18n_t("No seleccionado", "Not selected", "Не выбрано");
+    const gchar *mode_name = i18n_t("Desconocido", "Unknown", "Неизвестно");
+
     if (partition_mode) {
         if (g_strcmp0(partition_mode, "auto") == 0) {
-            mode_name = "Automático";
+            mode_name = i18n_t("Automático", "Automatic", "Автоматически");
         } else if (g_strcmp0(partition_mode, "auto_btrfs") == 0) {
-            mode_name = "Automático (Btrfs)";
+            mode_name = i18n_t("Automático (Btrfs)", "Automatic (Btrfs)", "Автоматически (Btrfs)");
         } else if (g_strcmp0(partition_mode, "manual") == 0) {
-            mode_name = "Manual";
+            mode_name = i18n_t("Manual", "Manual", "Вручную");
         }
     }
-    
-    return g_strdup_printf("Disco: %s | Particionado: %s", disk_name, mode_name);
+
+    return g_strdup_printf("%s: %s | %s: %s",
+        i18n_t("Disco", "Disk", "Диск"), disk_name,
+        i18n_t("Particionado", "Partition", "Разметка"), mode_name);
 }
 
 // Función para formatear información del usuario
 gchar* page7_format_user_info(const gchar* username, const gchar* hostname)
 {
-    const gchar *user = username ? username : "No configurado";
-    const gchar *host = hostname ? hostname : "No configurado";
-    
-    return g_strdup_printf("Usuario: %s | Hostname: %s", user, host);
+    const gchar *user = username ? username : i18n_t("No configurado", "Not configured", "Не настроено");
+    const gchar *host = hostname ? hostname : i18n_t("No configurado", "Not configured", "Не настроено");
+
+    return g_strdup_printf("%s: %s | Hostname: %s",
+        i18n_t("Usuario", "User", "Пользователь"), user, host);
 }
 
 // Función para formatear información de personalización
 gchar* page7_format_personalization_info(const gchar* installation_type)
 {
-    const gchar *type_name = "No configurado";
-    
+    const gchar *type_name = i18n_t("No configurado", "Not configured", "Не настроено");
+
     if (installation_type) {
         if (g_strcmp0(installation_type, "TERMINAL") == 0) {
             type_name = "TTY (Terminal)";
         } else if (g_strcmp0(installation_type, "DESKTOP") == 0) {
-            type_name = "Entorno de Escritorio";
+            type_name = i18n_t("Entorno de Escritorio", "Desktop Environment", "Рабочий стол");
         } else if (g_strcmp0(installation_type, "WINDOW_MANAGER") == 0) {
-            type_name = "Gestor de Ventanas";
+            type_name = i18n_t("Gestor de Ventanas", "Window Manager", "Оконный менеджер");
         }
     }
-    
-    return g_strdup_printf("%s", type_name);
+
+    return g_strdup(type_name);
 }
 
 // Función para formatear información del sistema
@@ -898,8 +926,8 @@ gchar* page7_format_system_info(const gchar* kernel, const gchar* drivers, gbool
 // Función para formatear información del teclado
 gchar* page7_format_keyboard_info(const gchar* keyboard_layout, const gchar* keymap_tty)
 {
-    const gchar *layout = keyboard_layout ? keyboard_layout : "No configurado";
-    const gchar *tty_keymap = keymap_tty ? keymap_tty : "No configurado";
+    const gchar *layout = keyboard_layout ? keyboard_layout : i18n_t("No configurado", "Not configured", "Не настроено");
+    const gchar *tty_keymap = keymap_tty ? keymap_tty : i18n_t("No configurado", "Not configured", "Не настроено");
     
     return g_strdup_printf("%s (TTY: %s)", layout, tty_keymap);
 }
@@ -908,7 +936,7 @@ gchar* page7_format_keyboard_info(const gchar* keyboard_layout, const gchar* key
 gchar* page7_format_timezone_info(const gchar* timezone)
 {
     if (!timezone) {
-        return g_strdup("No configurado");
+        return g_strdup(i18n_t("No configurado", "Not configured", "Не настроено"));
     }
     
     // Simplificar la zona horaria para mostrar solo la ciudad/región
@@ -927,7 +955,7 @@ gchar* page7_format_timezone_info(const gchar* timezone)
 gchar* page7_format_locale_info(const gchar* locale)
 {
     if (!locale) {
-        return g_strdup("No configurado");
+        return g_strdup(i18n_t("No configurado", "Not configured", "Не настроено"));
     }
     
     // Extraer el código de idioma y país del locale
@@ -951,18 +979,18 @@ gchar* page7_format_locale_info(const gchar* locale)
 gchar* page7_format_partition_mode_info(const gchar* partition_mode)
 {
     if (!partition_mode) {
-        return g_strdup("No configurado");
+        return g_strdup(i18n_t("No configurado", "Not configured", "Не настроено"));
     }
-    
+
     if (g_strcmp0(partition_mode, "auto") == 0) {
-        return g_strdup("Automático (ext4)");
+        return g_strdup(i18n_t("Automático (ext4)", "Automatic (ext4)", "Автоматически (ext4)"));
     } else if (g_strcmp0(partition_mode, "auto_btrfs") == 0) {
-        return g_strdup("Automático (Btrfs)");
+        return g_strdup(i18n_t("Automático (Btrfs)", "Automatic (Btrfs)", "Автоматически (Btrfs)"));
     } else if (g_strcmp0(partition_mode, "manual") == 0) {
-        return g_strdup("Manual");
+        return g_strdup(i18n_t("Manual", "Manual", "Вручную"));
     }
-    
-    return g_strdup("Desconocido");
+
+    return g_strdup(i18n_t("Desconocido", "Unknown", "Неизвестно"));
 }
 
 // Función para formatear información de drivers (formato simple)
@@ -974,20 +1002,20 @@ gchar* page7_format_drivers_info(void)
 // Función para formatear información completa del disco
 gchar* page7_format_disk_complete_info(const gchar* disk_path, const gchar* firmware_type, const gchar* partition_mode)
 {
-    const gchar *disk_name = disk_path ? disk_path : "No seleccionado";
+    const gchar *disk_name = disk_path ? disk_path : i18n_t("No seleccionado", "Not selected", "Не выбрано");
     const gchar *firmware = firmware_type ? firmware_type : "BIOS";
-    const gchar *mode_name = "Automático";
-    
+    const gchar *mode_name = i18n_t("Automático", "Automatic", "Автоматически");
+
     if (partition_mode) {
         if (g_strcmp0(partition_mode, "auto") == 0) {
-            mode_name = "Automático";
+            mode_name = i18n_t("Automático", "Automatic", "Автоматически");
         } else if (g_strcmp0(partition_mode, "auto_btrfs") == 0) {
-            mode_name = "Automático (Btrfs)";
+            mode_name = i18n_t("Automático (Btrfs)", "Automatic (Btrfs)", "Автоматически (Btrfs)");
         } else if (g_strcmp0(partition_mode, "manual") == 0) {
-            mode_name = "Manual";
+            mode_name = i18n_t("Manual", "Manual", "Вручную");
         }
     }
-    
+
     return g_strdup_printf("%s - %s - %s", disk_name, firmware, mode_name);
 }
 
@@ -1009,22 +1037,26 @@ void page7_load_driver_details(Page7Data *data)
     
     // Cargar driver de video
     gchar *video_driver = page7_read_variable_from_file("DRIVER_VIDEO");
-    const gchar *video_info = video_driver ? video_driver : "No configurado";
+    const gchar *video_info = video_driver ? video_driver : i18n_t("No configurado", "Not configured", "Не настроено");
     adw_action_row_set_subtitle(data->driver_video_row, video_info);
-    
+
     // Cargar driver de audio
     gchar *audio_driver = page7_read_variable_from_file("DRIVER_AUDIO");
-    const gchar *audio_info = audio_driver ? audio_driver : "No configurado";
+    const gchar *audio_info = audio_driver ? audio_driver : i18n_t("No configurado", "Not configured", "Не настроено");
     adw_action_row_set_subtitle(data->driver_audio_row, audio_info);
-    
+
     // Cargar driver de WiFi
     gchar *wifi_driver = page7_read_variable_from_file("DRIVER_WIFI");
-    const gchar *wifi_info = wifi_driver ? wifi_driver : "No configurado";
+    const gchar *wifi_info = (!wifi_driver) ? i18n_t("No configurado", "Not configured", "Не настроено")
+                           : (g_strcmp0(wifi_driver, "Ninguno") == 0) ? i18n_t("Ninguno", "None", "Нет")
+                           : wifi_driver;
     adw_action_row_set_subtitle(data->driver_wifi_row, wifi_info);
-    
+
     // Cargar driver de Bluetooth
     gchar *bluetooth_driver = page7_read_variable_from_file("DRIVER_BLUETOOTH");
-    const gchar *bluetooth_info = bluetooth_driver ? bluetooth_driver : "No configurado";
+    const gchar *bluetooth_info = (!bluetooth_driver) ? i18n_t("No configurado", "Not configured", "Не настроено")
+                                : (g_strcmp0(bluetooth_driver, "Ninguno") == 0) ? i18n_t("Ninguno", "None", "Нет")
+                                : bluetooth_driver;
     adw_action_row_set_subtitle(data->driver_bluetooth_row, bluetooth_info);
     
     // Limpiar memoria
@@ -1069,7 +1101,8 @@ void page7_load_programas_extras_data(Page7Data *data)
         page7_update_programas_extras_subtitle(programs_text);
     } else {
         // Sin programas, mostrar mensaje de sin programas extras
-        adw_action_row_set_subtitle(data->programas_extras_row, "Sin Programas Extras");
+        adw_action_row_set_subtitle(data->programas_extras_row,
+    i18n_t("Sin Programas Extras", "No Extra Programs", "Нет дополнительных программ"));
     }
     
     if (programs_text) g_free(programs_text);
@@ -1140,7 +1173,8 @@ void page7_update_programas_extras_subtitle(const gchar *programs_text)
             adw_action_row_set_subtitle(data->programas_extras_row, final_list->str);
         } else {
             LOG_INFO("Sin programas válidos, usando mensaje de sin programas");
-            adw_action_row_set_subtitle(data->programas_extras_row, "Sin Programas Extras");
+            adw_action_row_set_subtitle(data->programas_extras_row,
+    i18n_t("Sin Programas Extras", "No Extra Programs", "Нет дополнительных программ"));
         }
         
         // Liberar memoria
@@ -1151,12 +1185,14 @@ void page7_update_programas_extras_subtitle(const gchar *programs_text)
         } else {
             // Sin programas, mostrar mensaje de sin programas
             LOG_INFO("Texto vacío después de limpiar, mostrando mensaje de sin programas");
-            adw_action_row_set_subtitle(data->programas_extras_row, "Sin Programas Extras");
+            adw_action_row_set_subtitle(data->programas_extras_row,
+    i18n_t("Sin Programas Extras", "No Extra Programs", "Нет дополнительных программ"));
         }
     } else {
         // Sin programas, mostrar mensaje de sin programas
         LOG_INFO("Texto vacío o NULL, mostrando mensaje de sin programas");
-        adw_action_row_set_subtitle(data->programas_extras_row, "Sin Programas Extras");
+        adw_action_row_set_subtitle(data->programas_extras_row,
+    i18n_t("Sin Programas Extras", "No Extra Programs", "Нет дополнительных программ"));
     }
     
     LOG_INFO("Subtitle de programas extras actualizado correctamente");
@@ -1165,4 +1201,92 @@ void page7_update_programas_extras_subtitle(const gchar *programs_text)
 Page7Data* page7_get_data(void)
 {
     return g_page7_data;
+}
+
+void page7_update_language(void)
+{
+    if (!g_page7_data) return;
+
+    if (g_page7_data->status_page) {
+        adw_status_page_set_title(g_page7_data->status_page,
+            i18n_t("Resumen de Configuración", "Configuration Summary", "Сводка конфигурации"));
+        adw_status_page_set_description(g_page7_data->status_page,
+            i18n_t("Revisa tu configuración antes de continuar con la instalación.",
+                   "Review your configuration before proceeding with installation.",
+                   "Проверьте настройки перед началом установки."));
+    }
+    if (g_page7_data->group_sistema_local)
+        adw_preferences_group_set_title(g_page7_data->group_sistema_local,
+            i18n_t("Sistema Local", "Local System", "Локальная система"));
+    if (g_page7_data->group_disco)
+        adw_preferences_group_set_title(g_page7_data->group_disco,
+            i18n_t("Selección de Disco", "Disk Selection", "Выбор диска"));
+    if (g_page7_data->group_usuario)
+        adw_preferences_group_set_title(g_page7_data->group_usuario,
+            i18n_t("Usuario", "User", "Пользователь"));
+    if (g_page7_data->group_personalizacion)
+        adw_preferences_group_set_title(g_page7_data->group_personalizacion,
+            i18n_t("Personalización", "Customization", "Персонализация"));
+    if (g_page7_data->group_sistema)
+        adw_preferences_group_set_title(g_page7_data->group_sistema,
+            i18n_t("Sistema", "System", "Система"));
+
+    /* Row titles */
+    if (g_page7_data->teclado_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->teclado_row),
+            i18n_t("Teclado", "Keyboard", "Клавиатура"));
+    if (g_page7_data->zona_horaria_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->zona_horaria_row),
+            i18n_t("Zona Horaria", "Timezone", "Часовой пояс"));
+    if (g_page7_data->ubicacion_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->ubicacion_row),
+            i18n_t("Ubicación", "Location", "Местоположение"));
+    if (g_page7_data->disco_seleccionado_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->disco_seleccionado_row),
+            i18n_t("Disco", "Disk", "Диск"));
+    if (g_page7_data->firmware_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->firmware_row),
+            i18n_t("Tipo de Firmware", "Firmware Type", "Тип прошивки"));
+    if (g_page7_data->particionado_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->particionado_row),
+            i18n_t("Tipo de Particionado", "Partition Type", "Тип разметки"));
+    if (g_page7_data->nombre_usuario_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->nombre_usuario_row),
+            i18n_t("Nombre de Usuario", "Username", "Имя пользователя"));
+    if (g_page7_data->entorno_escritorio_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->entorno_escritorio_row),
+            i18n_t("Entorno de Escritorio", "Desktop Environment", "Рабочий стол"));
+    if (g_page7_data->kernel_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->kernel_row),
+            i18n_t("Kernel", "Kernel", "Ядро"));
+    if (g_page7_data->drivers_expander)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->drivers_expander),
+            i18n_t("Drivers", "Drivers", "Драйверы"));
+    if (g_page7_data->driver_video_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->driver_video_row),
+            i18n_t("Driver de Video", "Video Driver", "Драйвер видео"));
+    if (g_page7_data->driver_audio_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->driver_audio_row),
+            i18n_t("Driver de Audio", "Audio Driver", "Драйвер аудио"));
+    if (g_page7_data->driver_wifi_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->driver_wifi_row),
+            i18n_t("Driver de WiFi", "WiFi Driver", "Драйвер WiFi"));
+    if (g_page7_data->driver_bluetooth_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->driver_bluetooth_row),
+            i18n_t("Driver de Bluetooth", "Bluetooth Driver", "Драйвер Bluetooth"));
+    if (g_page7_data->aplicaciones_base_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->aplicaciones_base_row),
+            i18n_t("Aplicaciones Base", "Base Applications", "Базовые приложения"));
+    if (g_page7_data->utilidades_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->utilidades_row),
+            i18n_t("Programas de Utilidades", "Utility Programs", "Программы-утилиты"));
+    if (g_page7_data->programas_extras_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->programas_extras_row),
+            i18n_t("Programas Extras", "Extra Programs", "Дополнительные программы"));
+    if (g_page7_data->install_button)
+        gtk_button_set_label(g_page7_data->install_button,
+            i18n_t("Instalar Sistema", "Install System", "Установить систему"));
+
+    // Recargar todos los datos dinámicos con el nuevo idioma
+    page7_load_data(g_page7_data);
 }

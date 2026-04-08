@@ -12,6 +12,9 @@ typedef struct _WindowProgramExtraData {
     // Botones de la ventana
     GtkButton *close_button;
     GtkButton *save_button;
+    AdwWindowTitle *window_title;
+    GtkLabel *title_label;
+    GtkLabel *subtitle_label;
     
     // TextView y buffer para programas extra
     GtkTextView *hardware_textview;
@@ -59,5 +62,8 @@ gboolean window_program_extra_validate_programs_text(const gchar *text);
 
 // Función para obtener la instancia global
 WindowProgramExtraData* window_program_extra_get_instance(void);
+
+// Función de actualización de idioma
+void window_program_extra_update_language(WindowProgramExtraData *data);
 
 #endif /* WINDOW_PROGRAM_EXTRA_H */

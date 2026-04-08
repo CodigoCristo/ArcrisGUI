@@ -17,12 +17,70 @@
 #include "page1.h"
 #include "page2.h"
 #include "page3.h"
+#include "page4.h"
+#include "page5.h"
+#include "page6.h"
+#include "page7.h"
+#include "page8.h"
+#include "page9.h"
+#include "i18n.h"
 
 #include "close.h"
 #include "about.h"
 
 // Manager global del carousel
 static CarouselManager *g_app_carousel_manager = NULL;
+
+// Referencia global al botón de menú para actualizar el idioma
+static GtkMenuButton *g_menu_button = NULL;
+
+// Construir el menú de la aplicación con el idioma actual
+static GMenuModel *build_app_menu(void)
+{
+    GMenu *menu = g_menu_new();
+
+    // Sección: Actualizar
+    GMenu *section_update = g_menu_new();
+    g_menu_append(section_update,
+        i18n_t("Arcris Update", "Arcris Update", "Arcris Update"),
+        "app.check_updates");
+    g_menu_append_section(menu, NULL, G_MENU_MODEL(section_update));
+    g_object_unref(section_update);
+
+    // Sección: Idioma (submenú)
+    GMenu *section_lang = g_menu_new();
+    GMenu *submenu_lang = g_menu_new();
+    g_menu_append(submenu_lang, "Español",    "app.set_language::es");
+    g_menu_append(submenu_lang, "English",    "app.set_language::en");
+    g_menu_append(submenu_lang, "Русский",    "app.set_language::ru");
+    g_menu_append(submenu_lang, "Português",  "app.set_language::pt");
+    g_menu_append(submenu_lang, "Français",   "app.set_language::fr");
+    g_menu_append(submenu_lang, "Deutsch",    "app.set_language::de");
+    GMenuItem *lang_item = g_menu_item_new_submenu("Idioma / Language", G_MENU_MODEL(submenu_lang));
+    g_menu_append_item(section_lang, lang_item);
+    g_object_unref(lang_item);
+    g_object_unref(submenu_lang);
+    g_menu_append_section(menu, NULL, G_MENU_MODEL(section_lang));
+    g_object_unref(section_lang);
+
+    // Sección: Acerca de
+    GMenu *section_about = g_menu_new();
+    g_menu_append(section_about,
+        i18n_t("Arcris About", "Arcris About", "Arcris About"),
+        "app.about");
+    g_menu_append_section(menu, NULL, G_MENU_MODEL(section_about));
+    g_object_unref(section_about);
+
+    // Sección: Salir
+    GMenu *section_quit = g_menu_new();
+    g_menu_append(section_quit,
+        i18n_t("Salir", "Exit", "Выход"),
+        "app.quit");
+    g_menu_append_section(menu, NULL, G_MENU_MODEL(section_quit));
+    g_object_unref(section_quit);
+
+    return G_MENU_MODEL(menu);
+}
 
 // Función de limpieza de la aplicación
 static void cleanup_application(void)
@@ -51,6 +109,44 @@ static void check_updates_action(GSimpleAction *action, GVariant *parameter, gpo
 
     // Iniciar búsqueda de actualizaciones en page1
     page1_start_update_check();
+}
+
+// Función para cambiar el idioma de la interfaz (change-state callback para acción radio)
+static void set_language_action(GSimpleAction *action, GVariant *new_state, gpointer user_data)
+{
+    if (!new_state) return;
+    const char *lang_code = g_variant_get_string(new_state, NULL);
+
+    AppLang lang = LANG_ES;
+    if      (g_strcmp0(lang_code, "en") == 0) lang = LANG_EN;
+    else if (g_strcmp0(lang_code, "ru") == 0) lang = LANG_RU;
+    else if (g_strcmp0(lang_code, "pt") == 0) lang = LANG_PT;
+    else if (g_strcmp0(lang_code, "fr") == 0) lang = LANG_FR;
+    else if (g_strcmp0(lang_code, "de") == 0) lang = LANG_DE;
+
+    // Actualizar el estado de la acción (muestra el radio seleccionado)
+    g_simple_action_set_state(action, new_state);
+    i18n_set_lang(lang);
+
+    page1_update_language();
+    page2_update_language();
+    page3_update_language();
+    page4_update_language();
+    page5_update_language();
+    page6_update_language();
+    page7_update_language();
+    page8_update_language();
+    page9_update_language();
+
+    if (g_app_carousel_manager)
+        carousel_update_button_labels(g_app_carousel_manager);
+
+    // Reconstruir el menú con el nuevo idioma
+    if (g_menu_button) {
+        GMenuModel *new_menu = build_app_menu();
+        gtk_menu_button_set_menu_model(g_menu_button, new_menu);
+        g_object_unref(new_menu);
+    }
 }
 
 // Función para cerrar la aplicación con Ctrl+Q
@@ -140,6 +236,14 @@ static void activate_cb(GtkApplication *app)
         return;
     }
 
+    // Guardar referencia al botón de menú y establecer el menú inicial
+    g_menu_button = GTK_MENU_BUTTON(gtk_builder_get_object(builder, "button_menu"));
+    if (g_menu_button) {
+        GMenuModel *initial_menu = build_app_menu();
+        gtk_menu_button_set_menu_model(g_menu_button, initial_menu);
+        g_object_unref(initial_menu);
+    }
+
     // Configurar la aplicación y mostrar la ventana
     gtk_window_set_application(GTK_WINDOW(window), GTK_APPLICATION(app));
     gtk_window_present(GTK_WINDOW(window));
@@ -173,6 +277,7 @@ int main(int argc, char *argv[])
         { "check_updates", check_updates_action, NULL, NULL, NULL },
         { "about", about_action, NULL, NULL, NULL },
         { "quit", quit_action, NULL, NULL, NULL },
+        { "set_language", NULL, "s", "'es'", set_language_action },
     };
 
     // Crear la aplicación

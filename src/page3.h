@@ -45,6 +45,21 @@ typedef struct _Page3Data {
     GtkButton *save_key_disk_button;
     GtkButton *configure_disk_button;
 
+    // Widgets de traducción (página principal de selección)
+    AdwStatusPage *status_page;
+    AdwPreferencesGroup *group_disco_lista;
+    AdwPreferencesGroup *group_opciones;
+    AdwActionRow *auto_partition_row;
+    AdwActionRow *cifrado_partition_row;
+    AdwActionRow *manual_partition_row;
+
+    // Widgets de traducción (página manual)
+    AdwStatusPage *manual_status_page;
+
+    // Widgets de traducción (página cifrado)
+    AdwStatusPage *encryption_status_page;
+    AdwPreferencesGroup *encryption_prefs_group;
+
     // Sub-ventana de configuración del disco
     WindowDiskData *window_disk;
     
@@ -52,6 +67,7 @@ typedef struct _Page3Data {
     GtkLabel *disk_label_page4;
     GtkLabel *disk_size_label_page4;
     GtkButton *gparted_button;
+    GtkLabel *gparted_label;
     GtkButton *refresh_partitions_button;
     GtkButton *return_disks;
     AdwButtonRow *return_disks_encryption;
@@ -106,6 +122,9 @@ void page3_refresh_disk_list(void);
 
 // Función para seleccionar automáticamente la opción 0 del disk_combo
 void page3_auto_select_disk_option_1(void);
+
+// Función de actualización de idioma
+void page3_update_language(void);
 
 // Funciones callback para cambios de disco
 void page3_refresh_partitions(void);

@@ -25,7 +25,7 @@
             <property name="tightening-threshold">650</property>
 
             <child>
-              <object class="AdwPreferencesGroup">
+              <object class="AdwPreferencesGroup" id="group_sistema_local">
                 <property name="title" translatable="yes">Sistema Local</property>
 
                 <!-- Teclado -->
@@ -101,7 +101,7 @@
             <property name="tightening-threshold">650</property>
 
             <child>
-              <object class="AdwPreferencesGroup">
+              <object class="AdwPreferencesGroup" id="group_disco">
                 <property name="title" translatable="yes">Selección de Disco</property>
 
                 <!-- Disco Seleccionado -->
@@ -177,7 +177,7 @@
             <property name="tightening-threshold">650</property>
 
             <child>
-              <object class="AdwPreferencesGroup">
+              <object class="AdwPreferencesGroup" id="group_usuario">
                 <property name="title" translatable="yes">Usuario</property>
 
                 <!-- Nombre de Usuario -->
@@ -233,7 +233,7 @@
             <property name="tightening-threshold">650</property>
 
             <child>
-              <object class="AdwPreferencesGroup">
+              <object class="AdwPreferencesGroup" id="group_personalizacion">
                 <property name="title" translatable="yes">Personalización</property>
 
                 <!-- Entorno de Escritorio -->
@@ -269,7 +269,7 @@
             <property name="tightening-threshold">650</property>
 
             <child>
-              <object class="AdwPreferencesGroup">
+              <object class="AdwPreferencesGroup" id="group_sistema">
                 <property name="title" translatable="yes">Sistema</property>
 
                 <!-- Kernel -->

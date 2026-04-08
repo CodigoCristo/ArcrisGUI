@@ -57,15 +57,21 @@ typedef struct _Page5Data {
     AdwStatusPage *page5;
     AdwClamp *de_page;
     AdwClamp *wm_page;
-    
+
     // Widgets de la página principal
     GtkCheckButton *terminal_check;
     GtkCheckButton *desktop_check;
     GtkCheckButton *wm_check;
-    
+
     // Botones go-next-symbolic
     GtkButton *desktop_next_button;
     GtkButton *wm_next_button;
+
+    // Filas de opciones (para traducción)
+    AdwPreferencesGroup *options_group;
+    AdwActionRow *terminal_row;
+    AdwActionRow *desktop_row;
+    AdwActionRow *wm_row;
     
     // Widgets de la página DE
     AdwComboRow *de_combo;
@@ -163,6 +169,9 @@ const char* page5_get_wm_name(WindowManagerType wm);
 // Funciones de configuración del sistema
 gboolean page5_save_configuration(Page5Data *data);
 gboolean page5_apply_configuration(Page5Data *data);
+
+// Función de actualización de idioma
+void page5_update_language(void);
 
 // Funciones de estado
 void page5_on_page_shown(void);

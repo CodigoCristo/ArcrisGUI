@@ -3,47 +3,32 @@
   <requires lib="gtk" version="4.0"/>
   <requires lib="libadwaita" version="1.0"/>
 
-  <object class="AdwClamp" id="main_clamp">
-    <property name="maximum-size">500</property>
-    <property name="tightening-threshold">400</property>
-    <property name="margin-top">5</property>
-    <property name="margin-bottom">5</property>
-    <property name="margin-start">5</property>
-    <property name="margin-end">5</property>
+  <object class="AdwStatusPage" id="page6_status">
+    <property name="title">Sistema</property>
+    <property name="description">Elige que Kernel, Drivers y Aplicaciones deseas instalar.</property>
 
     <child>
-      <object class="GtkBox">
-        <property name="orientation">vertical</property>
-        <property name="spacing">12</property>
-        <property name="margin-top">24</property>
+      <object class="AdwClamp" id="main_clamp">
+        <property name="maximum-size">500</property>
+        <property name="tightening-threshold">400</property>
         <property name="margin-bottom">24</property>
+        <property name="margin-top">24</property>
         <property name="margin-start">24</property>
         <property name="margin-end">24</property>
         <property name="halign">center</property>
         <property name="valign">center</property>
 
-
-        <!-- Status Page Header -->
-        <child>
-          <object class="AdwStatusPage">
-            <property name="title">Sistema</property>
-            <property name="description">Elige que Kernel, Drivers y Aplicaciones deseas instalar.</property>
-          </object>
-        </child>
-
-        <!-- Preferences Group -->
         <child>
           <object class="AdwPreferencesGroup">
 
-
-           <child>
+            <child>
               <object class="AdwActionRow" id="kernel_row">
                 <property name="title">Kernel</property>
                 <property name="subtitle">Kernel: linux</property>
                 <property name="activatable">false</property>
                 <child type="suffix">
                   <object class="GtkButton" id="kernel_button">
-                  <property name="margin-end">30</property>
+                    <property name="margin-end">30</property>
                     <property name="icon-name">tab-new</property>
                     <property name="valign">center</property>
                     <style>
@@ -55,7 +40,7 @@
             </child>
 
             <child>
-              <object class="AdwActionRow">
+              <object class="AdwActionRow" id="drivers_row">
                 <property name="title">Drivers</property>
                 <property name="subtitle">Módulos de video, sonido, wifi, Bluetooth</property>
                 <property name="activatable">false</property>
@@ -72,9 +57,8 @@
               </object>
             </child>
 
-
             <child>
-              <object class="AdwActionRow">
+              <object class="AdwActionRow" id="repos_row">
                 <property name="title">Repositorios</property>
                 <property name="subtitle">Official y Unofficial Repositorios de usuarios</property>
                 <property name="activatable">false</property>
@@ -91,11 +75,10 @@
               </object>
             </child>
 
-
             <child>
               <object class="AdwSwitchRow" id="essential_apps_switch">
                 <property name="title">Aplicaciones base</property>
-                <property name="subtitle">Sistemas de archivos, shell, códecs, etc </property>
+                <property name="subtitle">Sistemas de archivos, shell, códecs, etc</property>
                 <property name="active">false</property>
                 <property name="activatable">false</property>
                 <child type="suffix">
@@ -111,11 +94,10 @@
               </object>
             </child>
 
-
             <child>
               <object class="AdwSwitchRow" id="utilities_switch">
                 <property name="title">Utilidades</property>
-                <property name="subtitle">Como navegadores, IDEs, Office, Vlc, Gamming, etc   </property>
+                <property name="subtitle">Como navegadores, IDEs, Office, Vlc, Gamming, etc</property>
                 <property name="active">false</property>
                 <property name="activatable">false</property>
                 <child type="suffix">
@@ -135,17 +117,13 @@
               <object class="AdwButtonRow" id="program_extra_button">
                 <property name="title">Agrega Programas Extras</property>
                 <property name="activatable">True</property>
-
               </object>
             </child>
 
-
-
-
           </object>
         </child>
-
       </object>
     </child>
   </object>
+
 </interface>

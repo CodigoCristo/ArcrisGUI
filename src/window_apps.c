@@ -1,6 +1,7 @@
 #include "window_apps.h"
 #include "config.h"
 #include "variables_utils.h"
+#include "i18n.h"
 #include <glib/gstdio.h>
 #include <string.h>
 #include <gio/gio.h>
@@ -60,6 +61,7 @@ void window_apps_init(WindowAppsData *data)
     window_apps_load_selected_apps_from_file(data);
 
     data->is_initialized = TRUE;
+    window_apps_update_language(data);
     LOG_INFO("Ventana de utilities apps inicializada correctamente");
 }
 
@@ -140,6 +142,8 @@ void window_apps_load_widgets_from_builder(WindowAppsData *data)
     // Cargar botones
     data->close_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "close_button"));
     data->save_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "save_button"));
+    data->window_title = ADW_WINDOW_TITLE(gtk_builder_get_object(data->builder, "apps_window_title"));
+    data->packages_group = ADW_PREFERENCES_GROUP(gtk_builder_get_object(data->builder, "packages_group"));
 
     // Cargar entrada de búsqueda
     data->search_entry = GTK_SEARCH_ENTRY(gtk_builder_get_object(data->builder, "searchApp"));
@@ -148,6 +152,12 @@ void window_apps_load_widgets_from_builder(WindowAppsData *data)
     data->browsers_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "browsers_expander"));
     data->graphics_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "graphics_expander"));
     data->video_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "video_expander"));
+    data->audio_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "audio_expander"));
+    data->mail_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "mail_expander"));
+    data->developers_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "developers_expander"));
+    data->office_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "office_expander"));
+    data->gamming_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "gamming_expander"));
+    data->other_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "other_expander"));
 
     if (!data->close_button) LOG_WARNING("No se pudo cargar close_button");
     if (!data->save_button) LOG_WARNING("No se pudo cargar save_button");
@@ -176,9 +186,6 @@ void window_apps_setup_widgets(WindowAppsData *data)
 void window_apps_setup_search(WindowAppsData *data)
 {
     if (!data || !data->search_entry) return;
-
-    // Configurar propiedades de la entrada de búsqueda
-    gtk_search_entry_set_placeholder_text(data->search_entry, "Busca tu aplicación");
 
     LOG_INFO("Búsqueda de utilities apps configurada");
 }
@@ -1220,4 +1227,597 @@ WindowAppsData* window_apps_get_instance(void)
         global_apps_data = window_apps_new();
     }
     return global_apps_data;
+}
+
+static void set_row_subtitle(WindowAppsData *data, const char *check_id,
+                             const char *es, const char *en, const char *ru)
+{
+    GObject *check = gtk_builder_get_object(data->builder, check_id);
+    if (!check) return;
+    GtkWidget *w = gtk_widget_get_parent(GTK_WIDGET(check));
+    while (w && !ADW_IS_ACTION_ROW(w))
+        w = gtk_widget_get_parent(w);
+    if (w)
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(w), i18n_t(es, en, ru));
+}
+
+void window_apps_update_language(WindowAppsData *data)
+{
+    if (!data || !data->builder) return;
+
+    if (data->close_button)
+        gtk_button_set_label(data->close_button,
+            i18n_t("Cerrar", "Close", "Закрыть"));
+    if (data->save_button)
+        gtk_button_set_label(data->save_button,
+            i18n_t("Guardar", "Save", "Сохранить"));
+    if (data->window_title)
+        adw_window_title_set_title(data->window_title,
+            i18n_t("Utilidades", "Utilities", "Утилиты"));
+    if (data->packages_group)
+        adw_preferences_group_set_title(data->packages_group,
+            i18n_t("Categorías de Paquetes", "Package Categories", "Категории пакетов"));
+    if (data->search_entry)
+        gtk_search_entry_set_placeholder_text(data->search_entry,
+            i18n_t("Busca tu aplicación", "Search your application", "Поиск приложения"));
+
+    // Expanders - títulos y subtítulos de categorías
+    if (data->graphics_expander) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->graphics_expander),
+            i18n_t("Gráficos", "Graphics", "Графика"));
+        adw_expander_row_set_subtitle(data->graphics_expander,
+            i18n_t("Herramientas de diseño y edición",
+                   "Design and editing tools",
+                   "Инструменты дизайна и редактирования"));
+    }
+    if (data->video_expander) {
+        adw_expander_row_set_subtitle(data->video_expander,
+            i18n_t("Reproductores, editores, transcodificadores y grabadores de video",
+                   "Video players, editors, transcoders and recorders",
+                   "Видеоплееры, редакторы, перекодировщики и рекордеры"));
+    }
+    if (data->audio_expander) {
+        adw_expander_row_set_subtitle(data->audio_expander,
+            i18n_t("Editores y reproductores de Audio",
+                   "Audio editors and players",
+                   "Аудиоредакторы и плееры"));
+    }
+    if (data->mail_expander) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->mail_expander),
+            i18n_t("Comunicaciones", "Communications", "Коммуникации"));
+        adw_expander_row_set_subtitle(data->mail_expander,
+            i18n_t("Clientes de correo electrónico y Chat",
+                   "Email clients and Chat",
+                   "Почтовые клиенты и чат"));
+    }
+    if (data->developers_expander) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->developers_expander),
+            i18n_t("Desarrollo", "Development", "Разработка"));
+        adw_expander_row_set_subtitle(data->developers_expander,
+            i18n_t("IDE's y Herramientas para developers",
+                   "IDEs and developer tools",
+                   "IDE и инструменты разработчика"));
+    }
+    if (data->office_expander) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->office_expander),
+            i18n_t("Ofimática", "Office", "Офис"));
+        adw_expander_row_set_subtitle(data->office_expander,
+            i18n_t("Productividad y documentos",
+                   "Productivity and documents",
+                   "Производительность и документы"));
+    }
+    if (data->gamming_expander) {
+        adw_expander_row_set_subtitle(data->gamming_expander,
+            i18n_t("Plataformas, emuladores, herramientas y juegos",
+                   "Platforms, emulators, tools and games",
+                   "Платформы, эмуляторы, инструменты и игры"));
+    }
+    if (data->other_expander) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->other_expander),
+            i18n_t("Otros", "Others", "Прочее"));
+        adw_expander_row_set_subtitle(data->other_expander,
+            i18n_t("Aplicaciones diversas",
+                   "Miscellaneous applications",
+                   "Разные приложения"));
+    }
+
+    // --- Subtítulos de filas individuales ---
+
+    // Browsers
+    set_row_subtitle(data, "chrome_check",
+        "Navegador web rápido, seguro y gratuito de Google",
+        "Fast, secure and free web browser by Google",
+        "Быстрый, безопасный и бесплатный браузер от Google");
+    set_row_subtitle(data, "brave_check",
+        "Navegador web privado que bloquea anuncios y rastreadores por defecto",
+        "Privacy-focused browser that blocks ads and trackers by default",
+        "Браузер с защитой конфиденциальности, блокировкой рекламы и трекеров");
+    set_row_subtitle(data, "chromium_check",
+        "Proyecto de navegador web de código abierto que sirve como base para Google Chrome",
+        "Open-source web browser project that serves as the base for Google Chrome",
+        "Браузер с открытым исходным кодом, основа для Google Chrome");
+    set_row_subtitle(data, "firefox_check",
+        "Navegador web libre y de código abierto desarrollado por Mozilla",
+        "Free and open-source web browser developed by Mozilla",
+        "Свободный браузер с открытым кодом от Mozilla");
+    set_row_subtitle(data, "opera_check",
+        "Navegador web con VPN gratuita, bloqueador de anuncios y herramientas de productividad",
+        "Web browser with free VPN, ad blocker and productivity tools",
+        "Браузер с бесплатным VPN, блокировщиком рекламы и инструментами продуктивности");
+
+    // Graphics
+    set_row_subtitle(data, "gimp_check",
+        "Programa de manipulación de imágenes GNU, editor de imágenes libre y de código abierto",
+        "GNU Image Manipulation Program, free and open-source image editor",
+        "Программа обработки изображений GNU, свободный редактор с открытым кодом");
+    set_row_subtitle(data, "inkscape_check",
+        "Editor de gráficos vectoriales libre y de código abierto",
+        "Free and open-source vector graphics editor",
+        "Свободный редактор векторной графики с открытым кодом");
+    set_row_subtitle(data, "krita_check",
+        "Programa de pintura digital libre y de código abierto",
+        "Free and open-source digital painting program",
+        "Свободная программа для цифровой живописи с открытым кодом");
+    set_row_subtitle(data, "pinta_check",
+        "Programa de edición y pintura de imágenes simple y fácil de usar",
+        "Simple and easy-to-use image editing and painting program",
+        "Простая программа для редактирования и рисования изображений");
+    set_row_subtitle(data, "blender_check",
+        "Suite de creación 3D libre que incluye modelado, animación, renderizado y más",
+        "Free 3D creation suite including modeling, animation, rendering and more",
+        "Свободный пакет для 3D: моделирование, анимация, рендеринг и многое другое");
+    set_row_subtitle(data, "darktable_check",
+        "Aplicación de fotografía y flujo de trabajo de imagen RAW de código abierto",
+        "Open-source photography and RAW image workflow application",
+        "Приложение для фотографии и обработки RAW с открытым кодом");
+    set_row_subtitle(data, "freecad_check",
+        "Modelador CAD 3D paramétrico libre y de código abierto",
+        "Free and open-source parametric 3D CAD modeler",
+        "Свободный параметрический 3D CAD-моделировщик");
+    set_row_subtitle(data, "ristretto_check",
+        "Visor de imágenes rápido y ligero para el entorno de escritorio Xfce",
+        "Fast and lightweight image viewer for the Xfce desktop environment",
+        "Быстрый и лёгкий просмотрщик изображений для Xfce");
+    set_row_subtitle(data, "viewnior_check",
+        "Visor de imágenes elegante y simple con interfaz de usuario minimalista",
+        "Elegant and simple image viewer with minimalist user interface",
+        "Элегантный и простой просмотрщик изображений с минималистичным интерфейсом");
+
+    // Video
+    set_row_subtitle(data, "baka_check",
+        "Un reproductor multimedia libre, multiplataforma, basado en libmpv",
+        "A free, cross-platform multimedia player based on libmpv",
+        "Свободный кроссплатформенный медиаплеер на основе libmpv");
+    set_row_subtitle(data, "dragon_check",
+        "Un reproductor multimedia donde el foco está en la simplicidad, en lugar de características",
+        "A multimedia player focused on simplicity over features",
+        "Медиаплеер с упором на простоту, а не на функциональность");
+    set_row_subtitle(data, "mpv_check",
+        "Reproductor multimedia libre, de código abierto y multiplataforma",
+        "Free, open-source and cross-platform multimedia player",
+        "Свободный кроссплатформенный медиаплеер с открытым кодом");
+    set_row_subtitle(data, "celluloid_check",
+        "Interfaz GTK simple para el reproductor multimedia mpv",
+        "Simple GTK frontend for the mpv media player",
+        "Простой GTK-интерфейс для медиаплеера mpv");
+    set_row_subtitle(data, "showtime_check",
+        "Reproductor de vídeo para el escritorio GNOME",
+        "Video player for the GNOME desktop",
+        "Видеоплеер для рабочего стола GNOME");
+    set_row_subtitle(data, "smplayer_check",
+        "Reproductor multimedia con códecs incorporados que puede reproducir prácticamente todos los formatos de video y audio",
+        "Multimedia player with built-in codecs that can play virtually all video and audio formats",
+        "Медиаплеер со встроенными кодеками для воспроизведения практически всех форматов");
+    set_row_subtitle(data, "vlc_check",
+        "Reproductor multiplataforma MPEG, VCD/DVD y DivX",
+        "Cross-platform MPEG, VCD/DVD and DivX player",
+        "Кроссплатформенный MPEG, VCD/DVD и DivX плеер");
+    set_row_subtitle(data, "kdenlive_check",
+        "Un editor de video no lineal para Linux usando el framework de video MLT",
+        "A non-linear video editor for Linux using the MLT video framework",
+        "Нелинейный видеоредактор для Linux на основе MLT");
+    set_row_subtitle(data, "openshot_check",
+        "Un galardonado editor de video libre y de código abierto",
+        "An award-winning free and open-source video editor",
+        "Отмеченный наградами свободный видеоредактор с открытым кодом");
+    set_row_subtitle(data, "pitivi_check",
+        "Editor para proyectos de audio/video usando el framework GStreamer",
+        "Editor for audio/video projects using the GStreamer framework",
+        "Редактор аудио/видео проектов на основе GStreamer");
+    set_row_subtitle(data, "shotcut_check",
+        "Editor de video multiplataforma basado en Qt",
+        "Cross-platform video editor based on Qt",
+        "Кроссплатформенный видеоредактор на Qt");
+    set_row_subtitle(data, "handbrake_check",
+        "Transcodificador de video de código abierto",
+        "Open-source video transcoder",
+        "Видеотранскодер с открытым исходным кодом");
+    set_row_subtitle(data, "obs_check",
+        "Software libre y de código abierto para streaming en vivo y grabación",
+        "Free and open-source software for live streaming and recording",
+        "Свободное ПО для прямых трансляций и записи экрана");
+    set_row_subtitle(data, "kooha_check",
+        "Grabador de pantalla elegantemente diseñado construido con GTK",
+        "Elegantly designed screen recorder built with GTK",
+        "Элегантная программа записи экрана на GTK");
+    set_row_subtitle(data, "vokoscreen_check",
+        "Grabador de pantalla fácil de usar para Linux con soporte para múltiples formatos",
+        "Easy-to-use screen recorder for Linux with support for multiple formats",
+        "Простая программа записи экрана для Linux с поддержкой множества форматов");
+
+    // Audio
+    set_row_subtitle(data, "audacious_check",
+        "Reproductor de audio libre y ligero con soporte para muchos formatos",
+        "Free and lightweight audio player with support for many formats",
+        "Свободный и лёгкий аудиоплеер с поддержкой множества форматов");
+    set_row_subtitle(data, "decibels_check",
+        "Reproductor de sonido simple que reproduce archivos de sonido sin bibliotecas",
+        "Simple sound player that plays sound files without external libraries",
+        "Простой аудиоплеер без внешних зависимостей");
+    set_row_subtitle(data, "clementine_check",
+        "Reproductor y organizador de música moderno multiplataforma",
+        "Modern and cross-platform music player and organizer",
+        "Современный кроссплатформенный музыкальный плеер и органайзер");
+    set_row_subtitle(data, "audacity_check",
+        "Editor de audio libre y multiplataforma",
+        "Free and cross-platform audio editor",
+        "Свободный кроссплатформенный аудиоредактор");
+    set_row_subtitle(data, "ardour_check",
+        "Estación de trabajo de audio digital profesional",
+        "Professional digital audio workstation",
+        "Профессиональная цифровая аудиостанция");
+    set_row_subtitle(data, "lmms_check",
+        "Estación de trabajo de audio digital libre y multiplataforma",
+        "Free and cross-platform digital audio workstation",
+        "Свободная кроссплатформенная цифровая аудиостанция");
+    set_row_subtitle(data, "elisa_check",
+        "Reproductor de música simple y elegante por KDE",
+        "Simple and elegant music player by KDE",
+        "Простой и элегантный музыкальный плеер от KDE");
+    set_row_subtitle(data, "euphonica_check",
+        "Reproductor de audio avanzado con funciones profesionales",
+        "Advanced audio player with professional features",
+        "Расширенный аудиоплеер с профессиональными функциями");
+    set_row_subtitle(data, "spotify_check",
+        "Lanzador de Spotify para Linux",
+        "Spotify launcher for Linux",
+        "Лаунчер Spotify для Linux");
+
+    // Communications
+    set_row_subtitle(data, "whatsapp_check",
+        "WhatsApp nativo para Linux",
+        "Native WhatsApp for Linux",
+        "Нативный WhatsApp для Linux");
+    set_row_subtitle(data, "telegram_check",
+        "Aplicación de mensajería instantánea rápida y segura",
+        "Fast and secure instant messaging application",
+        "Быстрый и безопасный мессенджер");
+    set_row_subtitle(data, "element_check",
+        "Cliente seguro de mensajería y colaboración basado en Matrix",
+        "Secure messaging and collaboration client based on Matrix",
+        "Безопасный клиент для общения и совместной работы на Matrix");
+    set_row_subtitle(data, "discord_check",
+        "Plataforma de comunicación para comunidades y gamers",
+        "Communication platform for communities and gamers",
+        "Платформа общения для сообществ и геймеров");
+    set_row_subtitle(data, "thunderbird_check",
+        "Cliente de correo electrónico libre de Mozilla",
+        "Free email client from Mozilla",
+        "Свободный почтовый клиент от Mozilla");
+    set_row_subtitle(data, "signal_check",
+        "Mensajería privada con cifrado de extremo a extremo",
+        "Private messaging with end-to-end encryption",
+        "Приватный мессенджер со сквозным шифрованием");
+    set_row_subtitle(data, "evolution_check",
+        "Cliente de correo y organizador personal de GNOME",
+        "GNOME email client and personal organizer",
+        "Почтовый клиент и персональный органайзер GNOME");
+    set_row_subtitle(data, "fractal_check",
+        "Cliente Matrix para GNOME escrito en Rust",
+        "Matrix client for GNOME written in Rust",
+        "Клиент Matrix для GNOME, написанный на Rust");
+
+    // Development
+    set_row_subtitle(data, "vscode_check",
+        "Editor de código fuente desarrollado por Microsoft",
+        "Source code editor developed by Microsoft",
+        "Редактор исходного кода от Microsoft");
+    set_row_subtitle(data, "vscodium_check",
+        "Versión libre de VS Code sin telemetría de Microsoft",
+        "Free version of VS Code without Microsoft telemetry",
+        "Свободная версия VS Code без телеметрии Microsoft");
+    set_row_subtitle(data, "zed_check",
+        "Editor de código colaborativo de alto rendimiento",
+        "High-performance collaborative code editor",
+        "Высокопроизводительный совместный редактор кода");
+    set_row_subtitle(data, "geany_check",
+        "IDE ligero usando GTK con características básicas",
+        "Lightweight IDE using GTK with basic features",
+        "Лёгкая IDE на GTK с базовыми функциями");
+    set_row_subtitle(data, "sublime_check",
+        "Editor de texto sofisticado para código, marcado y prosa",
+        "Sophisticated text editor for code, markup and prose",
+        "Функциональный текстовый редактор для кода, разметки и прозы");
+    set_row_subtitle(data, "emacs_check",
+        "Editor de texto extensible, personalizable y autodocumentado",
+        "Extensible, customizable and self-documenting text editor",
+        "Расширяемый настраиваемый самодокументирующий текстовый редактор");
+    set_row_subtitle(data, "docker_check",
+        "Plataforma de contenedores para desarrollar, enviar y ejecutar aplicaciones",
+        "Container platform for developing, shipping and running applications",
+        "Платформа контейнеризации для разработки и запуска приложений");
+    set_row_subtitle(data, "pycharm_check",
+        "IDE para desarrollo en Python por JetBrains",
+        "IDE for Python development by JetBrains",
+        "IDE для разработки на Python от JetBrains");
+    set_row_subtitle(data, "intellij_check",
+        "IDE para desarrollo en Java por JetBrains",
+        "IDE for Java development by JetBrains",
+        "IDE для разработки на Java от JetBrains");
+    set_row_subtitle(data, "android_studio_check",
+        "IDE oficial para desarrollo Android por Google",
+        "Official IDE for Android development by Google",
+        "Официальная IDE для разработки Android от Google");
+    set_row_subtitle(data, "netbeans_check",
+        "IDE de código abierto para Java, PHP, C++ y más",
+        "Open-source IDE for Java, PHP, C++ and more",
+        "IDE с открытым кодом для Java, PHP, C++ и других языков");
+
+    // Office
+    set_row_subtitle(data, "libreoffice_check",
+        "Suite ofimática libre completa compatible con Microsoft Office",
+        "Complete free office suite compatible with Microsoft Office",
+        "Полный свободный офисный пакет, совместимый с Microsoft Office");
+    set_row_subtitle(data, "onlyoffice_check",
+        "Suite ofimática con alta compatibilidad con Microsoft Office",
+        "Office suite with high compatibility with Microsoft Office",
+        "Офисный пакет с высокой совместимостью с Microsoft Office");
+    set_row_subtitle(data, "wps_check",
+        "Suite ofimática con interfaz moderna y compatibilidad con MS Office",
+        "Office suite with modern interface and MS Office compatibility",
+        "Офисный пакет с современным интерфейсом и совместимостью с MS Office");
+    set_row_subtitle(data, "abiword_check",
+        "Procesador de textos libre y ligero",
+        "Free and lightweight word processor",
+        "Свободный и лёгкий текстовый процессор");
+    set_row_subtitle(data, "calibre_check",
+        "Gestor y lector de libros electrónicos completo",
+        "Complete ebook manager and reader",
+        "Полноценный менеджер и читалка электронных книг");
+    set_row_subtitle(data, "papers_check",
+        "Visor de documentos moderno para GNOME que soporta PDF y más",
+        "Modern document viewer for GNOME supporting PDF and more",
+        "Современный просмотрщик документов для GNOME с поддержкой PDF");
+    set_row_subtitle(data, "okular_check",
+        "Visor universal de documentos de KDE",
+        "KDE universal document viewer",
+        "Универсальный просмотрщик документов KDE");
+    set_row_subtitle(data, "paperwork_check",
+        "Gestor de documentos personales con OCR",
+        "Personal document manager with OCR",
+        "Персональный менеджер документов с OCR");
+
+    // Gaming
+    set_row_subtitle(data, "steam_check",
+        "Plataforma de distribución digital de videojuegos",
+        "Digital video game distribution platform",
+        "Платформа цифрового распространения видеоигр");
+    set_row_subtitle(data, "lutris_check",
+        "Plataforma de gaming libre para Linux",
+        "Free gaming platform for Linux",
+        "Свободная игровая платформа для Linux");
+    set_row_subtitle(data, "heroic_check",
+        "Launcher alternativo para Epic Games Store y GOG",
+        "Alternative launcher for Epic Games Store and GOG",
+        "Альтернативный лаунчер для Epic Games Store и GOG");
+    set_row_subtitle(data, "bottles_check",
+        "Gestor de prefijos de Wine fácil de usar",
+        "Easy-to-use Wine prefix manager",
+        "Удобный менеджер префиксов Wine");
+    set_row_subtitle(data, "wine_check",
+        "Capa de compatibilidad para ejecutar aplicaciones Windows en Linux",
+        "Compatibility layer for running Windows applications on Linux",
+        "Слой совместимости для запуска Windows-приложений в Linux");
+    set_row_subtitle(data, "playonlinux_check",
+        "Frontend gráfico para Wine con scripts automáticos",
+        "Graphical frontend for Wine with automatic scripts",
+        "Графический интерфейс для Wine с автоматическими скриптами");
+    set_row_subtitle(data, "supertuxkart_check",
+        "Juego de carreras de karts 3D de código abierto",
+        "Open-source 3D kart racing game",
+        "Гонки на картах 3D с открытым кодом");
+    set_row_subtitle(data, "supertux_check",
+        "Juego de plataformas 2D inspirado en Super Mario Bros",
+        "2D platform game inspired by Super Mario Bros",
+        "2D-платформер, вдохновлённый Super Mario Bros");
+    set_row_subtitle(data, "proton_ge_check",
+        "Versión personalizada de Proton con parches adicionales para mejor compatibilidad",
+        "Custom Proton version with additional patches for better compatibility",
+        "Кастомная версия Proton с дополнительными патчами для совместимости");
+    set_row_subtitle(data, "winetricks_check",
+        "Script helper para instalar bibliotecas necesarias en Wine",
+        "Helper script to install libraries needed in Wine",
+        "Вспомогательный скрипт для установки библиотек в Wine");
+    set_row_subtitle(data, "gamemode_check",
+        "Optimización temporal del sistema para mejorar el rendimiento en juegos",
+        "Temporary system optimization to improve gaming performance",
+        "Временная оптимизация системы для улучшения производительности в играх");
+    set_row_subtitle(data, "mangohud_check",
+        "Overlay de información del sistema para juegos basado en Vulkan y OpenGL",
+        "System information overlay for games based on Vulkan and OpenGL",
+        "Оверлей системной информации для игр на Vulkan и OpenGL");
+    set_row_subtitle(data, "gnome_games_check",
+        "Colección de juegos simples para el escritorio GNOME",
+        "Collection of simple games for the GNOME desktop",
+        "Коллекция простых игр для рабочего стола GNOME");
+    set_row_subtitle(data, "retroarch_check",
+        "Frontend para emuladores, motores de juego y reproductores multimedia",
+        "Frontend for emulators, game engines and media players",
+        "Фронтенд для эмуляторов, игровых движков и медиаплееров");
+    set_row_subtitle(data, "ppsspp_check",
+        "Emulador de PlayStation Portable multiplataforma",
+        "Cross-platform PlayStation Portable emulator",
+        "Кроссплатформенный эмулятор PlayStation Portable");
+    set_row_subtitle(data, "duckstation_check",
+        "Emulador de PlayStation 1 con precisión y mejoras gráficas",
+        "PlayStation 1 emulator with accuracy and graphical enhancements",
+        "Эмулятор PlayStation 1 с точностью и графическими улучшениями");
+    set_row_subtitle(data, "pcsx2_check",
+        "Emulador de PlayStation 2 de código abierto",
+        "Open-source PlayStation 2 emulator",
+        "Эмулятор PlayStation 2 с открытым кодом");
+    set_row_subtitle(data, "rpcs3_check",
+        "Emulador experimental de PlayStation 3 de código abierto",
+        "Experimental open-source PlayStation 3 emulator",
+        "Экспериментальный эмулятор PlayStation 3 с открытым кодом");
+    set_row_subtitle(data, "shadps4_check",
+        "Emulador experimental de PlayStation 4 en desarrollo",
+        "Experimental PlayStation 4 emulator in development",
+        "Экспериментальный эмулятор PlayStation 4 в разработке");
+    set_row_subtitle(data, "snes9x_gtk_check",
+        "Emulador de Super Nintendo con interfaz GTK",
+        "Super Nintendo emulator with GTK interface",
+        "Эмулятор Super Nintendo с интерфейсом GTK");
+    set_row_subtitle(data, "zsnes_check",
+        "Emulador clásico de Super Nintendo Entertainment System",
+        "Classic Super Nintendo Entertainment System emulator",
+        "Классический эмулятор Super Nintendo");
+    set_row_subtitle(data, "citron_check",
+        "Emulador de Nintendo Switch basado en yuzu",
+        "Nintendo Switch emulator based on yuzu",
+        "Эмулятор Nintendo Switch на основе yuzu");
+    set_row_subtitle(data, "ryujinx_check",
+        "Emulador experimental de Nintendo Switch de código abierto",
+        "Experimental open-source Nintendo Switch emulator",
+        "Экспериментальный эмулятор Nintendo Switch с открытым кодом");
+    set_row_subtitle(data, "dolphin_emu_check",
+        "Emulador de Nintendo GameCube y Wii",
+        "Nintendo GameCube and Wii emulator",
+        "Эмулятор Nintendo GameCube и Wii");
+    set_row_subtitle(data, "mesen2_check",
+        "Emulador multi-sistema para NES, SNES, Game Boy y PC Engine",
+        "Multi-system emulator for NES, SNES, Game Boy and PC Engine",
+        "Многосистемный эмулятор для NES, SNES, Game Boy и PC Engine");
+    set_row_subtitle(data, "fceux_check",
+        "Emulador de Nintendo Entertainment System (NES)",
+        "Nintendo Entertainment System (NES) emulator",
+        "Эмулятор Nintendo Entertainment System (NES)");
+    set_row_subtitle(data, "bsnes_qt5_check",
+        "Emulador de Super Nintendo con alta precisión",
+        "High accuracy Super Nintendo emulator",
+        "Высокоточный эмулятор Super Nintendo");
+    set_row_subtitle(data, "mgba_qt_check",
+        "Emulador de Game Boy Advance con interfaz Qt",
+        "Game Boy Advance emulator with Qt interface",
+        "Эмулятор Game Boy Advance с интерфейсом Qt");
+    set_row_subtitle(data, "skyemu_check",
+        "Emulador de Game Boy Advance con funciones avanzadas",
+        "Game Boy Advance emulator with advanced features",
+        "Эмулятор Game Boy Advance с расширенными функциями");
+    set_row_subtitle(data, "azahar_check",
+        "Emulador de Nintendo DS desarrollado en Rust",
+        "Nintendo DS emulator developed in Rust",
+        "Эмулятор Nintendo DS, написанный на Rust");
+    set_row_subtitle(data, "melonds_check",
+        "Emulador de Nintendo DS con alta precisión",
+        "High accuracy Nintendo DS emulator",
+        "Высокоточный эмулятор Nintendo DS");
+    set_row_subtitle(data, "mame_check",
+        "Emulador de máquinas arcade y sistemas de computadora vintage",
+        "Arcade machine and vintage computer system emulator",
+        "Эмулятор аркадных автоматов и ретро-компьютеров");
+
+    // Others
+    set_row_subtitle(data, "octopi_check",
+        "Frontend gráfico para pacman con notificaciones",
+        "Graphical frontend for pacman with notifications",
+        "Графический интерфейс для pacman с уведомлениями");
+    set_row_subtitle(data, "pamac_check",
+        "Gestor de paquetes gráfico para Arch Linux con soporte AUR",
+        "Graphical package manager for Arch Linux with AUR support",
+        "Графический менеджер пакетов Arch Linux с поддержкой AUR");
+    set_row_subtitle(data, "gnome_boxes_check",
+        "Aplicación simple de virtualización para GNOME",
+        "Simple virtualization application for GNOME",
+        "Простое приложение виртуализации для GNOME");
+    set_row_subtitle(data, "virt_manager_check",
+        "Gestor de máquinas virtuales para KVM/QEMU",
+        "Virtual machine manager for KVM/QEMU",
+        "Менеджер виртуальных машин для KVM/QEMU");
+    set_row_subtitle(data, "virtualbox_check",
+        "Hipervisor de virtualización multiplataforma",
+        "Cross-platform virtualization hypervisor",
+        "Кроссплатформенный гипервизор виртуализации");
+    set_row_subtitle(data, "genymotion_check",
+        "Emulador de Android rápido y fácil de usar",
+        "Fast and easy-to-use Android emulator",
+        "Быстрый и удобный эмулятор Android");
+    set_row_subtitle(data, "gufw_check",
+        "Frontend gráfico para el firewall UFW",
+        "Graphical frontend for the UFW firewall",
+        "Графический интерфейс для брандмауэра UFW");
+    set_row_subtitle(data, "brasero_check",
+        "Aplicación de grabación de CD/DVD para GNOME",
+        "CD/DVD burning application for GNOME",
+        "Приложение записи CD/DVD для GNOME");
+    set_row_subtitle(data, "gparted_check",
+        "Editor de particiones gráfico libre y de código abierto",
+        "Free and open-source graphical partition editor",
+        "Свободный графический редактор разделов");
+    set_row_subtitle(data, "gnome_disk_utility_check",
+        "Utilidad para gestión y configuración de discos para GNOME",
+        "Disk management and configuration utility for GNOME",
+        "Утилита управления дисками для GNOME");
+    set_row_subtitle(data, "transmission_check",
+        "Cliente BitTorrent ligero y fácil de usar",
+        "Lightweight and easy-to-use BitTorrent client",
+        "Лёгкий и удобный BitTorrent-клиент");
+    set_row_subtitle(data, "filezilla_check",
+        "Cliente FTP, FTPS y SFTP multiplataforma",
+        "Cross-platform FTP, FTPS and SFTP client",
+        "Кроссплатформенный FTP, FTPS и SFTP клиент");
+    set_row_subtitle(data, "putty_check",
+        "Cliente SSH, Telnet y rlogin",
+        "SSH, Telnet and rlogin client",
+        "Клиент SSH, Telnet и rlogin");
+    set_row_subtitle(data, "stremio_check",
+        "Centro multimedia moderno para video streaming",
+        "Modern media center for video streaming",
+        "Современный медиацентр для потокового видео");
+    set_row_subtitle(data, "mission_center_check",
+        "Monitor del sistema nativo para GNOME",
+        "Native system monitor for GNOME",
+        "Нативный системный монитор для GNOME");
+    set_row_subtitle(data, "resources_check",
+        "Monitor del sistema simple y limpio para GNOME",
+        "Simple and clean system monitor for GNOME",
+        "Простой и чистый системный монитор для GNOME");
+    set_row_subtitle(data, "htop_check",
+        "Visor de procesos interactivo para sistemas Unix",
+        "Interactive process viewer for Unix systems",
+        "Интерактивный просмотрщик процессов для Unix");
+    set_row_subtitle(data, "bottom_check",
+        "Monitor de sistema y procesos multiplataforma escrito en Rust",
+        "Cross-platform system and process monitor written in Rust",
+        "Кроссплатформенный монитор системы и процессов на Rust");
+    set_row_subtitle(data, "btop_check",
+        "Monitor de recursos con interfaz TUI avanzada",
+        "Resource monitor with advanced TUI interface",
+        "Монитор ресурсов с расширенным TUI-интерфейсом");
+    set_row_subtitle(data, "vim_check",
+        "Editor de texto altamente configurable para edición eficiente",
+        "Highly configurable text editor for efficient editing",
+        "Высоконастраиваемый текстовый редактор для эффективного редактирования");
+    set_row_subtitle(data, "neovim_check",
+        "Fork moderno de Vim centrado en extensibilidad",
+        "Modern fork of Vim focused on extensibility",
+        "Современный форк Vim с упором на расширяемость");
+    set_row_subtitle(data, "timeshift_check",
+        "Herramienta de backup del sistema tipo Time Machine",
+        "Time Machine-like system backup tool",
+        "Инструмент резервного копирования системы в стиле Time Machine");
+    set_row_subtitle(data, "keepassxc_check",
+        "Gestor de contraseñas multiplataforma y de código abierto",
+        "Cross-platform and open-source password manager",
+        "Кроссплатформенный менеджер паролей с открытым кодом");
 }

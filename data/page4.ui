@@ -1,7 +1,7 @@
 <interface>
   <object class="AdwBin" id="main_bin">
     <property name="child">
-      <object class="AdwStatusPage">
+      <object class="AdwStatusPage" id="page4_status">
         <property name="title">Crear usuario</property>
         <property name="description">Configure su nueva cuenta de usuario</property>
         <property name="child">
@@ -65,7 +65,7 @@
                     <property name="spacing">12</property>
 
                     <child>
-                      <object class="GtkLabel">
+                      <object class="GtkLabel" id="hostname_title_label">
                         <property name="label">Hostname</property>
                         <property name="halign">start</property>
                         <style>
@@ -75,7 +75,7 @@
                     </child>
 
                     <child>
-                      <object class="GtkLabel">
+                      <object class="GtkLabel" id="hostname_desc_label">
                         <property name="label">El nombre que utiliza al comunicarse con otros equipos.</property>
                         <property name="halign">start</property>
                         <property name="wrap">true</property>

@@ -28,6 +28,15 @@ typedef struct _WindowKernelData {
     GtkCheckButton *lts_radio;
     GtkCheckButton *rt_lts_radio;
     GtkCheckButton *zen_radio;
+
+    // Widgets para traducción
+    AdwWindowTitle *kernel_window_title;
+    AdwPreferencesGroup *kernel_group;
+    AdwActionRow *row_linux;
+    AdwActionRow *row_hardened;
+    AdwActionRow *row_lts;
+    AdwActionRow *row_rt_lts;
+    AdwActionRow *row_zen;
     
     // Estado actual
     KernelType current_kernel;
@@ -79,5 +88,8 @@ void window_kernel_log_selection_change(KernelType old_kernel, KernelType new_ke
 
 // Función para obtener la instancia global
 WindowKernelData* window_kernel_get_instance(void);
+
+// Función de actualización de idioma
+void window_kernel_update_language(WindowKernelData *data);
 
 #endif /* WINDOW_KERNEL_H */

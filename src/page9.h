@@ -52,6 +52,9 @@ void on_exit_button_clicked(GtkButton *button, gpointer user_data);
 
 
 
+// Función de actualización de idioma
+void page9_update_language(void);
+
 // Funciones de navegación
 void page9_on_page_shown(void);
 void page9_on_page_hidden(void);

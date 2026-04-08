@@ -2,6 +2,7 @@
 #include "page9.h"
 #include "page10.h"
 #include "config.h"
+#include "i18n.h"
 #include <glib/gstdio.h>
 #include <vte/vte.h>
 
@@ -678,4 +679,18 @@ gboolean page8_is_final_page(void)
 Page8Data* page8_get_data(void)
 {
     return g_page8_data;
+}
+
+void page8_update_language(void)
+{
+    if (!g_page8_data) return;
+
+    if (g_page8_data->install_title)
+        gtk_label_set_text(g_page8_data->install_title,
+            i18n_t("Instalando Arch Linux", "Installing Arch Linux", "Установка Arch Linux"));
+    if (g_page8_data->terminal_info)
+        gtk_label_set_text(g_page8_data->terminal_info,
+            i18n_t("Aquí se muestra la salida detallada del proceso de instalación",
+                   "This shows the detailed output of the installation process",
+                   "Здесь отображается подробный вывод процесса установки"));
 }

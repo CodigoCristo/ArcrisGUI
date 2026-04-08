@@ -16,7 +16,7 @@
         <child type="top">
           <object class="AdwHeaderBar">
             <property name="title-widget">
-              <object class="AdwWindowTitle">
+              <object class="AdwWindowTitle" id="repos_window_title">
                 <property name="title">Repositorios</property>
               </object>
             </property>

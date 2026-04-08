@@ -1,6 +1,7 @@
 #include "window_hardware.h"
 #include "config.h"
 #include "variables_utils.h"
+#include "i18n.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -66,6 +67,10 @@ void window_hardware_init(WindowHardwareData *data)
 
 
     data->is_initialized = TRUE;
+
+    // Aplicar idioma actual
+    window_hardware_update_language(data);
+
     LOG_INFO("WindowHardwareData inicializada correctamente");
 }
 
@@ -82,6 +87,12 @@ void window_hardware_load_widgets_from_builder(WindowHardwareData *data)
     // Obtener botones
     data->close_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "close_button"));
     data->save_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "save_button"));
+    data->window_title = ADW_WINDOW_TITLE(gtk_builder_get_object(data->builder, "hardware_window_title"));
+
+    // Obtener grupos
+    data->video_group = ADW_PREFERENCES_GROUP(gtk_builder_get_object(data->builder, "video_group"));
+    data->audio_group = ADW_PREFERENCES_GROUP(gtk_builder_get_object(data->builder, "audio_group"));
+    data->network_group = ADW_PREFERENCES_GROUP(gtk_builder_get_object(data->builder, "network_group"));
 
     // Obtener combo rows
     data->driver_video_combo = ADW_COMBO_ROW(gtk_builder_get_object(data->builder, "driver_video_combo"));
@@ -201,9 +212,11 @@ HardwareInfo* window_hardware_detect_hardware(void)
 
     // Detectar wifi
     info->wifi_card_name = window_hardware_get_wifi_card_info();
+    info->wifi_detected = (info->wifi_card_name != NULL);
 
     // Detectar bluetooth
     info->bluetooth_card_name = window_hardware_get_bluetooth_card_info();
+    info->bluetooth_detected = (info->bluetooth_card_name != NULL);
 
     LOG_INFO("Hardware detectado correctamente");
     return info;
@@ -306,7 +319,7 @@ char* window_hardware_get_wifi_card_info(void)
     }
     if (!result || strlen(result) == 0) {
         if (result) g_free(result);
-        result = g_strdup("No se detectó tarjeta WiFi");
+        result = NULL;
     }
     return result;
 }
@@ -331,7 +344,7 @@ char* window_hardware_get_bluetooth_card_info(void)
     }
     if (!result || strlen(result) == 0) {
         if (result) g_free(result);
-        result = g_strdup("No se detectó dispositivo Bluetooth");
+        result = NULL;
     }
     return result;
 }
@@ -351,27 +364,27 @@ void window_hardware_update_hardware_descriptions(WindowHardwareData *data)
     }
 
     // Actualizar subtítulo de WiFi
-    if (data->hardware_info->wifi_card_name && data->driver_wifi_combo) {
-        g_object_set(data->driver_wifi_combo, "subtitle", data->hardware_info->wifi_card_name, NULL);
-        // Verificar si WiFi no está disponible y deshabilitar
-        if (strstr(data->hardware_info->wifi_card_name, "No se detectó") != NULL) {
-            gtk_widget_set_sensitive(GTK_WIDGET(data->driver_wifi_combo), FALSE);
-        } else {
+    if (data->driver_wifi_combo) {
+        if (data->hardware_info->wifi_detected && data->hardware_info->wifi_card_name) {
+            g_object_set(data->driver_wifi_combo, "subtitle", data->hardware_info->wifi_card_name, NULL);
             gtk_widget_set_sensitive(GTK_WIDGET(data->driver_wifi_combo), TRUE);
+        } else {
+            g_object_set(data->driver_wifi_combo, "subtitle",
+                i18n_t("No se detectó tarjeta WiFi", "No WiFi card detected", "WiFi карта не обнаружена"), NULL);
+            gtk_widget_set_sensitive(GTK_WIDGET(data->driver_wifi_combo), FALSE);
         }
-        LOG_INFO("Subtítulo WiFi actualizado: %s", data->hardware_info->wifi_card_name);
     }
 
     // Actualizar subtítulo de Bluetooth
-    if (data->hardware_info->bluetooth_card_name && data->driver_bluetooth_combo) {
-        g_object_set(data->driver_bluetooth_combo, "subtitle", data->hardware_info->bluetooth_card_name, NULL);
-        // Verificar si Bluetooth no está disponible y deshabilitar
-        if (strstr(data->hardware_info->bluetooth_card_name, "No se detectó") != NULL) {
-            gtk_widget_set_sensitive(GTK_WIDGET(data->driver_bluetooth_combo), FALSE);
-        } else {
+    if (data->driver_bluetooth_combo) {
+        if (data->hardware_info->bluetooth_detected && data->hardware_info->bluetooth_card_name) {
+            g_object_set(data->driver_bluetooth_combo, "subtitle", data->hardware_info->bluetooth_card_name, NULL);
             gtk_widget_set_sensitive(GTK_WIDGET(data->driver_bluetooth_combo), TRUE);
+        } else {
+            g_object_set(data->driver_bluetooth_combo, "subtitle",
+                i18n_t("No se detectó dispositivo Bluetooth", "No Bluetooth device detected", "Устройство Bluetooth не обнаружено"), NULL);
+            gtk_widget_set_sensitive(GTK_WIDGET(data->driver_bluetooth_combo), FALSE);
         }
-        LOG_INFO("Subtítulo Bluetooth actualizado: %s", data->hardware_info->bluetooth_card_name);
     }
 
     LOG_INFO("Descripciones de hardware actualizadas");
@@ -390,7 +403,8 @@ void window_hardware_update_video_description(WindowHardwareData *data, const ch
 
     // Crear el texto con formato y color azul negrita con salto de línea
     char *description_markup = g_strdup_printf(
-        "Tu tarjeta Gráfica es:\n<span color='#5fa3f5' weight='bold'>%s</span>",
+        "%s\n<span color='#5fa3f5' weight='bold'>%s</span>",
+        i18n_t("Tu tarjeta Gráfica es:", "Your Graphics card is:", "Ваша видеокарта:"),
         graphics_card
     );
 
@@ -414,7 +428,8 @@ void window_hardware_update_audio_description(WindowHardwareData *data, const ch
 
     // Crear el texto con formato con salto de línea
     char *description_markup = g_strdup_printf(
-        "Tu tarjeta Audio es:\n<span color='#5fa3f5' weight='bold'>%s</span>",
+        "%s\n<span color='#5fa3f5' weight='bold'>%s</span>",
+        i18n_t("Tu tarjeta Audio es:", "Your Audio card is:", "Ваша звуковая карта:"),
         audio_card
     );
 
@@ -881,4 +896,68 @@ gboolean window_hardware_init_default_variables(void)
 gboolean window_hardware_init_auto_variables(void)
 {
     return window_hardware_init_default_variables();
+}
+
+void window_hardware_update_language(WindowHardwareData *data)
+{
+    if (!data) return;
+
+    if (data->close_button)
+        gtk_button_set_label(data->close_button,
+            i18n_t("Cerrar", "Close", "Закрыть"));
+    if (data->save_button)
+        gtk_button_set_label(data->save_button,
+            i18n_t("Guardar", "Save", "Сохранить"));
+    if (data->window_title)
+        adw_window_title_set_title(data->window_title,
+            i18n_t("Hardware", "Hardware", "Оборудование"));
+    if (data->video_group)
+        adw_preferences_group_set_title(data->video_group,
+            i18n_t("Video", "Video", "Видео"));
+    if (data->audio_group)
+        adw_preferences_group_set_title(data->audio_group,
+            i18n_t("Audio", "Audio", "Аудио"));
+    if (data->network_group)
+        adw_preferences_group_set_title(data->network_group,
+            i18n_t("Red", "Network", "Сеть"));
+    if (data->driver_video_combo) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->driver_video_combo),
+            i18n_t("Driver de Video:", "Video Driver:", "Драйвер видео:"));
+        GtkStringList *model = GTK_STRING_LIST(adw_combo_row_get_model(data->driver_video_combo));
+        if (model) {
+            guint sel = adw_combo_row_get_selected(data->driver_video_combo);
+            const char *vm = i18n_t("Máquina Virtual", "Virtual Machine", "Виртуальная машина");
+            gtk_string_list_splice(model, 9, 1, (const char * const[]){vm, NULL});
+            adw_combo_row_set_selected(data->driver_video_combo, sel);
+        }
+    }
+    if (data->driver_sonido_combo)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->driver_sonido_combo),
+            i18n_t("Driver de Audio:", "Audio Driver:", "Драйвер аудио:"));
+    if (data->driver_wifi_combo) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->driver_wifi_combo),
+            i18n_t("Wifi", "Wifi", "Wifi"));
+        GtkStringList *model = GTK_STRING_LIST(adw_combo_row_get_model(data->driver_wifi_combo));
+        if (model) {
+            guint sel = adw_combo_row_get_selected(data->driver_wifi_combo);
+            const char *none = i18n_t("Ninguno", "None", "Нет");
+            gtk_string_list_splice(model, 0, 1, (const char * const[]){none, NULL});
+            adw_combo_row_set_selected(data->driver_wifi_combo, sel);
+        }
+    }
+    if (data->driver_bluetooth_combo) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->driver_bluetooth_combo),
+            i18n_t("Bluetooth:", "Bluetooth:", "Bluetooth:"));
+        GtkStringList *model = GTK_STRING_LIST(adw_combo_row_get_model(data->driver_bluetooth_combo));
+        if (model) {
+            guint sel = adw_combo_row_get_selected(data->driver_bluetooth_combo);
+            const char *none = i18n_t("Ninguno", "None", "Нет");
+            gtk_string_list_splice(model, 0, 1, (const char * const[]){none, NULL});
+            adw_combo_row_set_selected(data->driver_bluetooth_combo, sel);
+        }
+    }
+
+    // Re-aplicar descripciones de hardware con el idioma actual
+    if (data->hardware_info)
+        window_hardware_update_hardware_descriptions(data);
 }

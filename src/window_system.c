@@ -1,6 +1,7 @@
 #include "window_system.h"
 #include "variables_utils.h"
 #include "config.h"
+#include "i18n.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,6 +66,7 @@ void window_system_init(WindowSystemData *data)
     window_system_load_configuration(data);
 
     data->is_initialized = TRUE;
+    window_system_update_language(data);
     LOG_INFO("WindowSystemData inicializada correctamente");
 }
 
@@ -109,6 +111,7 @@ void window_system_load_widgets_from_builder(WindowSystemData *data)
     // Cargar botones del header
     data->close_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "close_button"));
     data->save_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "save_button"));
+    data->window_title = ADW_WINDOW_TITLE(gtk_builder_get_object(data->builder, "system_window_title"));
 
     // Cargar widgets de configuración
     data->shell_combo = ADW_COMBO_ROW(gtk_builder_get_object(data->builder, "shell_combo"));
@@ -517,4 +520,48 @@ void save_system_variables_to_file(void)
         LOG_WARNING("No se pudo guardar variables del sistema");
     else
         LOG_INFO("=== save_system_variables_to_file FINALIZADO ===");
+}
+
+void window_system_update_language(WindowSystemData *data)
+{
+    if (!data) return;
+
+    if (data->close_button)
+        gtk_button_set_label(data->close_button,
+            i18n_t("Cerrar", "Close", "Закрыть"));
+    if (data->save_button)
+        gtk_button_set_label(data->save_button,
+            i18n_t("Guardar", "Save", "Сохранить"));
+    if (data->window_title)
+        adw_window_title_set_title(data->window_title,
+            i18n_t("Aplicaciones Base", "Base Applications", "Базовые приложения"));
+    if (data->shell_combo)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->shell_combo),
+            i18n_t("Shell del sistema", "System Shell", "Системная оболочка"));
+    if (data->filesystems_switch) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->filesystems_switch),
+            i18n_t("Sistemas de archivos", "File Systems", "Файловые системы"));
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(data->filesystems_switch),
+            i18n_t("Lectura y formateo de todo tipo de discos                Android, Btrfs, VFAT, ReiserFS, exFat, etc",
+                   "Read and format all types of disks — Android, Btrfs, VFAT, ReiserFS, exFat, etc",
+                   "Чтение и форматирование всех типов дисков — Android, Btrfs, VFAT, ReiserFS, exFat и др."));
+    }
+    if (data->compression_switch) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->compression_switch),
+            i18n_t("Compresión y Descompresión de archivos",
+                   "File Compression and Decompression",
+                   "Сжатие и распаковка файлов"));
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(data->compression_switch),
+            i18n_t("7zip, tar, unrar, zip, unarchiver",
+                   "7zip, tar, unrar, zip, unarchiver",
+                   "7zip, tar, unrar, zip, unarchiver"));
+    }
+    if (data->video_codecs_switch) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->video_codecs_switch),
+            i18n_t("Códecs de video", "Video Codecs", "Видеокодеки"));
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(data->video_codecs_switch),
+            i18n_t("Lectura de todos los formatos de vídeo",
+                   "Read all video formats",
+                   "Воспроизведение всех видеоформатов"));
+    }
 }

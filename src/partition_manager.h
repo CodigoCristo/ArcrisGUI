@@ -27,6 +27,9 @@ typedef struct _PartitionManager {
     GtkButton *cancel_button;
     GtkButton *save_button;
     AdwWindowTitle *window_title;
+    AdwPreferencesGroup *swap_group;
+    AdwActionRow *swap_row;
+    AdwPreferencesGroup *config_group;
     
     // Modelos de datos
     GtkStringList *mount_point_list;
@@ -111,6 +114,9 @@ gboolean partition_manager_validate_all_configs(PartitionManager *manager);
 GList* partition_manager_get_configs(PartitionManager *manager);
 guint partition_manager_get_config_count(PartitionManager *manager);
 gchar* partition_manager_get_summary_text(PartitionManager *manager);
+
+// Función de actualización de idioma
+void partition_manager_update_language(PartitionManager *manager);
 
 // Funciones para callback personalizado
 void partition_manager_set_save_callback(PartitionManager *manager, 

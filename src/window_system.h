@@ -22,6 +22,7 @@ typedef struct _WindowSystemData {
     AdwHeaderBar *header_bar;
     GtkButton *close_button;
     GtkButton *save_button;
+    AdwWindowTitle *window_title;
     
     // Widgets principales
     AdwComboRow *shell_combo;
@@ -77,5 +78,8 @@ gboolean window_system_get_video_codecs_enabled(void);
 // Funciones de utilidad
 const char* window_system_shell_to_string(SystemShell shell);
 SystemShell window_system_string_to_shell(const char *shell_name);
+
+// Función de actualización de idioma
+void window_system_update_language(WindowSystemData *data);
 
 #endif /* WINDOW_SYSTEM_H */

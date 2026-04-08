@@ -1,6 +1,7 @@
 #include "window_disk.h"
 #include "variables_utils.h"
 #include "config.h"
+#include "i18n.h"
 
 static WindowDiskData *g_window_disk = NULL;
 
@@ -237,6 +238,21 @@ void window_disk_load_widgets(WindowDiskData *data)
     data->swap_decrease_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "swap_decrease_button"));
     data->swap_increase_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "swap_increase_button"));
     data->swap_size_label      = GTK_LABEL(gtk_builder_get_object(data->builder, "swap_size_label"));
+
+    /* Widgets para traducción */
+    data->title_widget       = ADW_WINDOW_TITLE(gtk_builder_get_object(data->builder, "disk_window_title"));
+    data->filesystem_group   = ADW_PREFERENCES_GROUP(gtk_builder_get_object(data->builder, "filesystem_group"));
+    data->home_group         = ADW_PREFERENCES_GROUP(gtk_builder_get_object(data->builder, "home_group"));
+    data->swap_group         = ADW_PREFERENCES_GROUP(gtk_builder_get_object(data->builder, "swap_group"));
+    data->home_subvolume_row = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "home_subvolume_row"));
+    data->home_partition_row = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "home_partition_row"));
+    data->slider_row         = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "slider_row"));
+    data->root_label_row     = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "root_label_row"));
+    data->home_label_row     = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "home_label_row"));
+    data->swap_none_row      = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "swap_none_row"));
+    data->swap_half_row      = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "swap_half_row"));
+    data->swap_equal_row     = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "swap_equal_row"));
+    data->swap_custom_row    = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "swap_custom_row"));
 }
 
 /* ── conexión de señales ─────────────────────────────────────────────────── */
@@ -586,3 +602,125 @@ void on_disk_swap_increase_clicked(GtkButton *button, gpointer user_data)
     gtk_label_set_text(data->swap_size_label, text);
     window_disk_save_to_variables(data);
 }
+
+/* ── traducción en tiempo real ───────────────────────────────────────────── */
+
+void window_disk_update_language(WindowDiskData *data)
+{
+    if (!data) return;
+
+    if (data->title_widget)
+        adw_window_title_set_title(data->title_widget,
+            i18n_t("Disco", "Disk", "Диск"));
+    if (data->window)
+        gtk_window_set_title(data->window,
+            i18n_t("Disco", "Disk", "Диск"));
+    if (data->close_button)
+        gtk_button_set_label(data->close_button,
+            i18n_t("Cerrar", "Close", "Закрыть"));
+    if (data->save_button)
+        gtk_button_set_label(data->save_button,
+            i18n_t("Guardar", "Save", "Сохранить"));
+
+    /* Grupo: Sistema de Archivos */
+    if (data->filesystem_group) {
+        adw_preferences_group_set_title(data->filesystem_group,
+            i18n_t("Sistema de Archivos", "File System", "Файловая система"));
+        adw_preferences_group_set_description(data->filesystem_group,
+            i18n_t("Formatear el almacenamiento como:",
+                   "Format storage as:",
+                   "Форматировать хранилище как:"));
+    }
+
+    /* Grupo: Directorio Personal */
+    if (data->home_group) {
+        adw_preferences_group_set_title(data->home_group,
+            i18n_t("Separación del Directorio Personal",
+                   "Home Directory Separation",
+                   "Разделение домашнего каталога"));
+        adw_preferences_group_set_description(data->home_group,
+            i18n_t("¿Desea crear una partición separada para '/home'?",
+                   "Do you want to create a separate partition for '/home'?",
+                   "Хотите создать отдельный раздел для '/home'?"));
+    }
+    if (data->home_subvolume_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->home_subvolume_row),
+            i18n_t("Sí, como un subvolumen", "Yes, as a subvolume", "Да, как субтом"));
+    if (data->home_partition_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->home_partition_row),
+            i18n_t("Sí, como una partición", "Yes, as a partition", "Да, как раздел"));
+
+    /* Expander: tamaño de partición raíz */
+    if (data->root_size_expander) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->root_size_expander),
+            i18n_t("Tamaño de la partición raíz",
+                   "Root partition size",
+                   "Размер корневого раздела"));
+        adw_expander_row_set_subtitle(data->root_size_expander,
+            i18n_t("Ajustar el espacio para '/' y '/home'",
+                   "Adjust space for '/' and '/home'",
+                   "Настройте пространство для '/' и '/home'"));
+    }
+    if (data->slider_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->slider_row),
+            i18n_t("Raíz ('/')", "Root ('/')", "Корень ('/')"));
+    if (data->root_label_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->root_label_row),
+            i18n_t("Tamaño partición raíz ('/')",
+                   "Root partition size ('/')",
+                   "Размер корневого раздела ('/')"));
+    if (data->home_label_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->home_label_row),
+            i18n_t("Tamaño partición '/home'",
+                   "Home partition size ('/home')",
+                   "Размер раздела '/home'"));
+
+    /* Grupo: Swap */
+    if (data->swap_group) {
+        adw_preferences_group_set_title(data->swap_group,
+            i18n_t("Memoria de Intercambio", "Swap Memory", "Память подкачки"));
+        adw_preferences_group_set_description(data->swap_group,
+            i18n_t("Selecciona el método de memoria virtual: Zram comprime datos en RAM, Swap usa una partición en disco y permite hibernación",
+                   "Select virtual memory method: Zram compresses data in RAM, Swap uses a disk partition and enables hibernation",
+                   "Выберите метод виртуальной памяти: Zram сжимает данные в ОЗУ, Swap использует раздел диска и поддерживает гибернацию"));
+    }
+    if (data->swap_none_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->swap_none_row),
+            i18n_t("Zram (compresión en RAM)", "Zram (RAM compression)", "Zram (сжатие в ОЗУ)"));
+        adw_action_row_set_subtitle(data->swap_none_row,
+            i18n_t("Recomendado — no usa espacio en disco",
+                   "Recommended — no disk space used",
+                   "Рекомендуется — не использует место на диске"));
+    }
+    if (data->swap_half_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->swap_half_row),
+            i18n_t("Swap: mitad de la RAM del sistema",
+                   "Swap: half system RAM",
+                   "Подкачка: половина ОЗУ системы"));
+        adw_action_row_set_subtitle(data->swap_half_row,
+            i18n_t("Zram activo + partición swap de la mitad de la RAM",
+                   "Zram active + swap partition of half the RAM",
+                   "Zram активен + раздел подкачки половины ОЗУ"));
+    }
+    if (data->swap_equal_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->swap_equal_row),
+            i18n_t("Swap: igual a la RAM del sistema",
+                   "Swap: equal to system RAM",
+                   "Подкачка: равна ОЗУ системы"));
+        adw_action_row_set_subtitle(data->swap_equal_row,
+            i18n_t("Zram activo + partición swap igual a la RAM",
+                   "Zram active + swap partition equal to RAM",
+                   "Zram активен + раздел подкачки равный ОЗУ"));
+    }
+    if (data->swap_custom_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->swap_custom_row),
+            i18n_t("Swap: tamaño personalizado",
+                   "Swap: custom size",
+                   "Подкачка: пользовательский размер"));
+        adw_action_row_set_subtitle(data->swap_custom_row,
+            i18n_t("Zram activo + partición swap de tamaño definido manualmente",
+                   "Zram active + swap partition of manually defined size",
+                   "Zram активен + раздел подкачки заданного вручную размера"));
+    }
+}
+

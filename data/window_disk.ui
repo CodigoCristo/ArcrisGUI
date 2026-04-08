@@ -14,7 +14,7 @@
         <child type="top">
           <object class="AdwHeaderBar">
             <property name="title-widget">
-              <object class="AdwWindowTitle">
+              <object class="AdwWindowTitle" id="disk_window_title">
                 <property name="title">Disco</property>
               </object>
             </property>
@@ -243,7 +243,7 @@
                     <child>
                       <object class="AdwPreferencesGroup" id="swap_group">
                         <property name="title">Memoria de Intercambio</property>
-                        <property name="description">Selecciona el método de memoria virtual: Zram comprime datos en RAM, Swap usa espacio en disco</property>
+                        <property name="description">Selecciona el método de memoria virtual: Zram comprime datos en RAM, Swap usa una partición en disco y permite hibernación</property>
 
                         <child>
                           <object class="AdwActionRow" id="swap_none_row">
@@ -262,7 +262,7 @@
                         <child>
                           <object class="AdwActionRow" id="swap_half_row">
                             <property name="title">Swap: mitad de la RAM del sistema</property>
-                            <property name="subtitle">Zram activo + archivo de intercambio de la mitad de la RAM</property>
+                            <property name="subtitle">Zram activo + partición swap de la mitad de la RAM</property>
                             <property name="activatable-widget">swap_half_radio</property>
                             <child type="prefix">
                               <object class="GtkCheckButton" id="swap_half_radio">
@@ -276,7 +276,7 @@
                         <child>
                           <object class="AdwActionRow" id="swap_equal_row">
                             <property name="title">Swap: igual a la RAM del sistema</property>
-                            <property name="subtitle">Zram activo + archivo de intercambio igual a la RAM</property>
+                            <property name="subtitle">Zram activo + partición swap igual a la RAM</property>
                             <property name="activatable-widget">swap_equal_radio</property>
                             <child type="prefix">
                               <object class="GtkCheckButton" id="swap_equal_radio">
@@ -290,7 +290,7 @@
                         <child>
                           <object class="AdwActionRow" id="swap_custom_row">
                             <property name="title">Swap: tamaño personalizado</property>
-                            <property name="subtitle">Zram activo + archivo de intercambio de tamaño definido manualmente</property>
+                            <property name="subtitle">Zram activo + partición swap de tamaño definido manualmente</property>
                             <property name="activatable-widget">swap_custom_radio</property>
                             <child type="prefix">
                               <object class="GtkCheckButton" id="swap_custom_radio">

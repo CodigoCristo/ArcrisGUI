@@ -1,5 +1,6 @@
 #include "page6.h"
 #include "variables_utils.h"
+#include "i18n.h"
 #include "window_kernel.h"
 #include "window_hardware.h"
 #include "window_system.h"
@@ -29,16 +30,12 @@ void page6_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
         return;
     }
 
-    // Obtener el widget principal
-    GtkWidget *page6 = GTK_WIDGET(gtk_builder_get_object(page_builder, "main_clamp"));
+    // Obtener el widget principal (AdwStatusPage como raíz)
+    GtkWidget *page6 = GTK_WIDGET(gtk_builder_get_object(page_builder, "page6_status"));
     if (!page6) {
-        // Intentar obtener el primer objeto AdwClamp disponible
-        page6 = GTK_WIDGET(gtk_builder_get_object(page_builder, "clamp"));
-        if (!page6) {
-            LOG_ERROR("No se pudo cargar la página 6 desde el archivo UI");
-            g_object_unref(page_builder);
-            return;
-        }
+        LOG_ERROR("No se pudo cargar la página 6 desde el archivo UI");
+        g_object_unref(page_builder);
+        return;
     }
 
     // Guardar referencia al widget principal
@@ -116,6 +113,10 @@ void page6_get_ui_widgets(Page6Data *data, GtkBuilder *builder)
     data->repository_button = GTK_BUTTON(gtk_builder_get_object(builder, "repository_button"));
     if (!data->repository_button) LOG_WARNING("No se pudo obtener repository_button");
 
+    data->drivers_row = ADW_ACTION_ROW(gtk_builder_get_object(builder, "drivers_row"));
+    data->repos_row = ADW_ACTION_ROW(gtk_builder_get_object(builder, "repos_row"));
+    data->status_page = ADW_STATUS_PAGE(gtk_builder_get_object(builder, "page6_status"));
+
     // Verificar que se obtuvieron correctamente
     if (!data->essential_apps_switch) LOG_WARNING("No se pudo obtener essential_apps_switch");
 
@@ -125,9 +126,6 @@ void page6_get_ui_widgets(Page6Data *data, GtkBuilder *builder)
     if (!data->utilities_button) LOG_WARNING("No se pudo obtener utilities_button");
     if (!data->driver_hardware_button) LOG_WARNING("No se pudo obtener driver_hardware_button");
     if (!data->program_extra_button) LOG_WARNING("No se pudo obtener program_extra_button");
-
-    // Los widgets sin IDs específicos se inicializan con NULL
-    data->drivers_row = NULL;
 
     // Inicializar estados por defecto
     data->essential_apps_enabled = TRUE;
@@ -495,7 +493,8 @@ void page6_update_kernel_subtitle(const char* kernel_name)
     if (!g_page6_data || !kernel_name || !g_page6_data->kernel_row) return;
 
     // Crear el nuevo subtítulo con el kernel seleccionado
-    gchar *new_subtitle = g_strdup_printf("Kernel seleccionado: %s", kernel_name);
+    gchar *new_subtitle = g_strdup_printf("%s %s",
+        i18n_t("Kernel seleccionado:", "Selected kernel:", "Выбранное ядро:"), kernel_name);
 
     // Actualizar el subtítulo del AdwActionRow del kernel
     adw_action_row_set_subtitle(g_page6_data->kernel_row, new_subtitle);
@@ -927,4 +926,82 @@ void page6_open_repos_window(Page6Data *data)
 
     window_repos_show(repos_data, parent_window);
     LOG_INFO("Ventana de repositorios abierta");
+}
+
+void page6_update_language(void)
+{
+    if (!g_page6_data) return;
+
+    if (g_page6_data->status_page) {
+        adw_status_page_set_title(g_page6_data->status_page,
+            i18n_t("Sistema", "System", "Система"));
+        adw_status_page_set_description(g_page6_data->status_page,
+            i18n_t("Elige que Kernel, Drivers y Aplicaciones deseas instalar.",
+                   "Choose the Kernel, Drivers and Applications to install.",
+                   "Выберите ядро, драйверы и приложения для установки."));
+    }
+    if (g_page6_data->kernel_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page6_data->kernel_row),
+            i18n_t("Kernel", "Kernel", "Ядро"));
+        page6_display_current_kernel();
+    }
+    if (g_page6_data->drivers_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page6_data->drivers_row),
+            i18n_t("Drivers", "Drivers", "Драйверы"));
+        adw_action_row_set_subtitle(g_page6_data->drivers_row,
+            i18n_t("Módulos de video, sonido, wifi, Bluetooth",
+                   "Video, audio, wifi, Bluetooth modules",
+                   "Модули видео, аудио, wifi, Bluetooth"));
+    }
+    if (g_page6_data->repos_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page6_data->repos_row),
+            i18n_t("Repositorios", "Repositories", "Репозитории"));
+        adw_action_row_set_subtitle(g_page6_data->repos_row,
+            i18n_t("Official y Unofficial Repositorios de usuarios",
+                   "Official and unofficial user repositories",
+                   "Официальные и неофициальные репозитории"));
+    }
+    if (g_page6_data->essential_apps_switch) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page6_data->essential_apps_switch),
+            i18n_t("Aplicaciones base", "Base Applications", "Базовые приложения"));
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(g_page6_data->essential_apps_switch),
+            i18n_t("Sistemas de archivos, shell, códecs, etc",
+                   "Filesystems, shell, codecs, etc",
+                   "Файловые системы, shell, кодеки и т.д."));
+    }
+    if (g_page6_data->utilities_switch) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page6_data->utilities_switch),
+            i18n_t("Utilidades", "Utilities", "Утилиты"));
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(g_page6_data->utilities_switch),
+            i18n_t("Como navegadores, IDEs, Office, Vlc, Gamming, etc",
+                   "Browsers, IDEs, Office, VLC, Gaming, etc",
+                   "Браузеры, IDE, офис, VLC, игры и т.д."));
+    }
+    if (g_page6_data->program_extra_button)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page6_data->program_extra_button),
+            i18n_t("Agrega Programas Extras", "Add Extra Programs", "Добавить дополнительные программы"));
+
+    WindowKernelData *kernel_window = window_kernel_get_instance();
+    if (kernel_window)
+        window_kernel_update_language(kernel_window);
+
+    WindowHardwareData *hardware_window = window_hardware_get_instance();
+    if (hardware_window)
+        window_hardware_update_language(hardware_window);
+
+    WindowReposData *repos_window = window_repos_get_instance();
+    if (repos_window)
+        window_repos_update_language(repos_window);
+
+    WindowSystemData *system_window = window_system_get_instance();
+    if (system_window)
+        window_system_update_language(system_window);
+
+    WindowProgramExtraData *extra_window = window_program_extra_get_instance();
+    if (extra_window && extra_window->is_initialized)
+        window_program_extra_update_language(extra_window);
+
+    WindowAppsData *apps_window = window_apps_get_instance();
+    if (apps_window && apps_window->is_initialized)
+        window_apps_update_language(apps_window);
 }
