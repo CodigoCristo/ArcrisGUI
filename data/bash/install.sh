@@ -1092,6 +1092,13 @@ fi
 echo -e "${CYAN}Generando initramfs...${NC}"
 echo -e "${YELLOW}Nota: Los warnings de firmware son normales${NC}"
 
+# Con LUKS+LVM: activar vg0 antes de mkinitcpio para que autodetect
+# detecte dm-crypt y lvm2 y los incluya en el initramfs
+if [ "$ENCRYPTION" = "true" ]; then
+    vgchange -ay vg0 2>/dev/null || true
+    udevadm settle --timeout=10
+fi
+
 if chroot /mnt /bin/bash -c "mkinitcpio -P"; then
     echo -e "${GREEN}✓ Initramfs generado correctamente${NC}"
 else

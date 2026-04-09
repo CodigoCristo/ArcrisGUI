@@ -174,11 +174,33 @@ _auto_setup_luks_lvm() {
     echo -e "${GREEN}| Configurando LUKS en $luks_dev |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 
-    # Cifrar y abrir partición
+    # Cifrar y abrir partición usando archivo temporal (más fiable que pipe)
     wipefs -af "$luks_dev" 2>/dev/null || true
-    echo -n "$ENCRYPTION_KEY" | cryptsetup luksFormat --batch-mode "$luks_dev" -
-    echo -n "$ENCRYPTION_KEY" | cryptsetup open "$luks_dev" cryptlvm -
+    dd if=/dev/zero of="$luks_dev" bs=1M count=10 2>/dev/null || true
+    sync
+    sleep 2
+
+    echo -n "$ENCRYPTION_KEY" > /tmp/luks_pass
+    if ! cryptsetup luksFormat --batch-mode --key-file /tmp/luks_pass "$luks_dev"; then
+        rm -f /tmp/luks_pass
+        echo -e "${RED}ERROR: falló luksFormat en $luks_dev${NC}"
+        exit 1
+    fi
+    if ! cryptsetup open --key-file /tmp/luks_pass "$luks_dev" cryptlvm; then
+        rm -f /tmp/luks_pass
+        echo -e "${RED}ERROR: falló cryptsetup open en $luks_dev${NC}"
+        exit 1
+    fi
+    rm -f /tmp/luks_pass
+
+    # Obtener UUID del header LUKS (necesario para GRUB y crypttab)
+    sync
+    udevadm settle --timeout=10
     CRYPT_LUKS_UUID=$(blkid -s UUID -o value "$luks_dev")
+    if [ -z "$CRYPT_LUKS_UUID" ]; then
+        echo -e "${RED}ERROR: no se pudo obtener UUID de $luks_dev${NC}"
+        exit 1
+    fi
     export CRYPT_LUKS_UUID
     echo -e "${GREEN}✓ LUKS abierto: /dev/mapper/cryptlvm (UUID: $CRYPT_LUKS_UUID)${NC}"
 
