@@ -1283,9 +1283,86 @@ void page7_update_language(void)
     if (g_page7_data->programas_extras_row)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page7_data->programas_extras_row),
             i18n_t("Programas Extras", "Extra Programs", "Дополнительные программы"));
-    if (g_page7_data->install_button)
+    if (g_page7_data->install_button) {
         gtk_button_set_label(g_page7_data->install_button,
             i18n_t("Instalar Sistema", "Install System", "Установить систему"));
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->install_button),
+            i18n_t("Iniciar instalación del sistema",
+                   "Start system installation",
+                   "Начать установку системы"));
+    }
+
+    /* Tooltips de botones de edición */
+    if (g_page7_data->edit_teclado_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_teclado_button),
+            i18n_t("Editar configuración del teclado",
+                   "Edit keyboard configuration",
+                   "Изменить настройки клавиатуры"));
+    if (g_page7_data->edit_zona_horaria_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_zona_horaria_button),
+            i18n_t("Editar zona horaria",
+                   "Edit timezone",
+                   "Изменить часовой пояс"));
+    if (g_page7_data->edit_ubicacion_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_ubicacion_button),
+            i18n_t("Editar ubicación e idioma",
+                   "Edit location and language",
+                   "Изменить местоположение и язык"));
+    if (g_page7_data->edit_disco_seleccionado_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_disco_seleccionado_button),
+            i18n_t("Cambiar disco seleccionado",
+                   "Change selected disk",
+                   "Изменить выбранный диск"));
+    if (g_page7_data->edit_firmware_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_firmware_button),
+            i18n_t("Información del firmware",
+                   "Firmware information",
+                   "Информация о прошивке"));
+    if (g_page7_data->edit_particionado_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_particionado_button),
+            i18n_t("Cambiar tipo de particionado",
+                   "Change partition type",
+                   "Изменить тип разметки"));
+    if (g_page7_data->edit_nombre_usuario_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_nombre_usuario_button),
+            i18n_t("Editar nombre de usuario",
+                   "Edit username",
+                   "Изменить имя пользователя"));
+    if (g_page7_data->edit_hostname_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_hostname_button),
+            i18n_t("Editar hostname",
+                   "Edit hostname",
+                   "Изменить имя хоста"));
+    if (g_page7_data->edit_entorno_escritorio_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_entorno_escritorio_button),
+            i18n_t("Cambiar entorno de escritorio",
+                   "Change desktop environment",
+                   "Изменить рабочий стол"));
+    if (g_page7_data->edit_kernel_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_kernel_button),
+            i18n_t("Cambiar kernel",
+                   "Change kernel",
+                   "Изменить ядро"));
+    if (g_page7_data->edit_drivers_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_drivers_button),
+            i18n_t("Configurar drivers",
+                   "Configure drivers",
+                   "Настроить драйверы"));
+    if (g_page7_data->edit_aplicaciones_base_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_aplicaciones_base_button),
+            i18n_t("Configurar aplicaciones base",
+                   "Configure base applications",
+                   "Настроить базовые приложения"));
+    if (g_page7_data->edit_utilidades_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_utilidades_button),
+            i18n_t("Configurar programas de utilidades",
+                   "Configure utility programs",
+                   "Настроить программы-утилиты"));
+    if (g_page7_data->edit_programas_extras_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page7_data->edit_programas_extras_button),
+            i18n_t("Configurar programas extras",
+                   "Configure extra programs",
+                   "Настроить дополнительные программы"));
 
     // Recargar todos los datos dinámicos con el nuevo idioma
     page7_load_data(g_page7_data);

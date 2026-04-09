@@ -3,6 +3,7 @@
 #include "disk_manager.h"
 #include "config.h"
 #include "partition_manager.h"
+#include "i18n.h"
 #include <stdio.h>
 
 #include <string.h>
@@ -934,7 +935,8 @@ void partitionmanual_add_partition_row(PartitionManualData *data, PartitionInfo 
     // Añadir botón de configuración
     GtkButton *config_button = GTK_BUTTON(gtk_button_new_from_icon_name("list-add-symbolic"));
     gtk_widget_set_valign(GTK_WIDGET(config_button), GTK_ALIGN_CENTER);
-    gtk_widget_set_tooltip_text(GTK_WIDGET(config_button), "Configurar partición");
+    gtk_widget_set_tooltip_text(GTK_WIDGET(config_button),
+        i18n_t("Configurar partición", "Configure partition", "Настроить раздел"));
 
     // Añadir clases CSS
     gtk_widget_add_css_class(GTK_WIDGET(config_button), "flat");

@@ -686,6 +686,11 @@ void page8_update_language(void)
 {
     if (!g_page8_data) return;
 
+    if (g_page8_data->terminal_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page8_data->terminal_button),
+            i18n_t("Mostrar/Ocultar Terminal",
+                   "Show/Hide Terminal",
+                   "Показать/Скрыть терминал"));
     if (g_page8_data->install_title)
         gtk_label_set_text(g_page8_data->install_title,
             i18n_t("Instalando Arch Linux", "Installing Arch Linux", "Установка Arch Linux"));

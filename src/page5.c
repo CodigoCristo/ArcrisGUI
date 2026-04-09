@@ -1297,4 +1297,14 @@ void page5_update_language(void)
     if (g_page5_data->wm_combo)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page5_data->wm_combo),
             i18n_t("Gestor de Ventanas", "Window Manager", "Менеджер окон"));
+    if (g_page5_data->de_back_to_main_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page5_data->de_back_to_main_button),
+            i18n_t("Regresar a Personalización",
+                   "Back to Customization",
+                   "Вернуться к настройке"));
+    if (g_page5_data->wm_back_to_main_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page5_data->wm_back_to_main_button),
+            i18n_t("Regresar a Personalización",
+                   "Back to Customization",
+                   "Вернуться к настройке"));
 }

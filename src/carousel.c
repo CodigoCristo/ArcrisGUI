@@ -487,10 +487,20 @@ void carousel_update_button_labels(CarouselManager *manager)
 {
     if (!manager) return;
 
-    if (manager->back_button)
+    if (manager->back_button) {
         gtk_button_set_label(manager->back_button,
             i18n_t("Anterior", "Back", "Назад"));
-    if (manager->next_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(manager->back_button),
+            i18n_t("Ir a la página anterior",
+                   "Go to previous page",
+                   "Перейти на предыдущую страницу"));
+    }
+    if (manager->next_button) {
         gtk_button_set_label(manager->next_button,
             i18n_t("Siguiente", "Next", "Далее"));
+        gtk_widget_set_tooltip_text(GTK_WIDGET(manager->next_button),
+            i18n_t("Ir a la página siguiente",
+                   "Go to next page",
+                   "Перейти на следующую страницу"));
+    }
 }
