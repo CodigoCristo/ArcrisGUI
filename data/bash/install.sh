@@ -828,8 +828,8 @@ echo ""
 
 case "$SELECTED_KERNEL" in
     "linux")
-        install_pacman_chroot_with_retry "linux"
-        # install_pacman_chroot_with_retry "linux linux-firmware linux-headers"
+        #install_pacman_chroot_with_retry "linux"
+        install_pacman_chroot_with_retry "linux linux-firmware linux-headers"
         ;;
     "linux-hardened")
         install_pacman_chroot_with_retry "linux-hardened linux-firmware linux-hardened-headers"
@@ -984,6 +984,7 @@ echo -e "${GREEN}✓ Instalanado extras${NC}"
 #sleep 2
 sleep 3
 install_aur_with_retry "yay"
+install_aur_with_retry "alsi"
 sleep 2
 install_pacman_chroot_with_retry "fastfetch"
 
@@ -1141,7 +1142,8 @@ install_pacman_chroot_with_retry "dhclient"
 install_pacman_chroot_with_retry "networkmanager"
 install_pacman_chroot_with_retry "wpa_supplicant"
 # Deshabilitar dhcpcd para evitar conflictos con NetworkManager
-chroot /mnt /bin/bash -c "systemctl enable NetworkManager dhcpcd" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+chroot /mnt /bin/bash -c "systemctl enable NetworkManager dhcpcd" || echo -e "${RED}ERROR: Falló systemctl enable NetworkManager dhcpcd${NC}"
+chroot /mnt /bin/bash -c "timedatectl set-ntp true" || echo -e "${RED}ERROR: Falló set-ntp${NC}"
 clear
 
 # Copiado de archivos de configuración de bash
@@ -1518,13 +1520,16 @@ fi
 echo -e "${CYAN}• Puedes iniciar sesión con:${NC}"
 echo -e "  Usuario: ${GREEN}$USER${NC}"
 echo ""
+sleep 2
+clear
+chroot /mnt /bin/bash -c "alsi -l"
 sleep 5
+clear
 # Barra de progreso final
 titulo_progreso="| Finalizando instalación de ARCRIS LINUX |"
 barra_progreso
-
 echo -e "${GREEN}✓ Instalación de ARCRIS LINUX completada exitosamente!${NC}"
-
+clear
 # Mostrar información importante para sistemas cifrados
 if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo ""
