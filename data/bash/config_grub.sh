@@ -95,7 +95,7 @@ if true; then
                 exit 1
             fi
             echo -e "${GREEN}✓ UUID partición LUKS: ${CRYPT_LUKS_UUID}${NC}"
-            local _grub_cmdline="cryptdevice=UUID=${CRYPT_LUKS_UUID}:cryptlvm root=/dev/vg0/root"
+            _grub_cmdline="cryptdevice=UUID=${CRYPT_LUKS_UUID}:cryptlvm root=/dev/vg0/root"
             [ "$FILESYSTEM_TYPE" = "btrfs" ] && _grub_cmdline="$_grub_cmdline rootflags=subvol=@"
             [ "${SWAP_SIZE_MIB:-0}" -gt 0 ] && _grub_cmdline="$_grub_cmdline resume=/dev/vg0/swap"
             _grub_cmdline="$_grub_cmdline splash loglevel=3"
@@ -235,7 +235,7 @@ if true; then
                 exit 1
             fi
             echo -e "${GREEN}✓ UUID partición LUKS: ${CRYPT_LUKS_UUID}${NC}"
-            local _grub_cmdline="cryptdevice=UUID=${CRYPT_LUKS_UUID}:cryptlvm root=/dev/vg0/root"
+            _grub_cmdline="cryptdevice=UUID=${CRYPT_LUKS_UUID}:cryptlvm root=/dev/vg0/root"
             [ "$FILESYSTEM_TYPE" = "btrfs" ] && _grub_cmdline="$_grub_cmdline rootflags=subvol=@"
             [ "${SWAP_SIZE_MIB:-0}" -gt 0 ] && _grub_cmdline="$_grub_cmdline resume=/dev/vg0/swap"
             _grub_cmdline="$_grub_cmdline splash loglevel=3"
