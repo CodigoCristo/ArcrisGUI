@@ -1,5 +1,8 @@
 #!/bin/bash
 
+export LANG=C
+export LC_ALL=C
+
 # Importar variables de configuración
 source "$(dirname "$0")/variables.sh"
 
@@ -669,9 +672,6 @@ case "$PARTITION_MODE" in
     "auto")
         partition_auto
         ;;
-    "cifrado")
-        partition_cifrado
-        ;;
     "manual")
         partition_manual
         ;;
@@ -790,8 +790,8 @@ if [ "$PARTITION_MODE" = "manual" ]; then
         install_pacstrap_with_retry "f2fs-tools"
     fi
 
-elif [ "$PARTITION_MODE" = "cifrado" ]; then
-    echo -e "${CYAN}Instalando herramientas de cifrado...${NC}"
+elif [ "$ENCRYPTION" = "true" ]; then
+    echo -e "${CYAN}Instalando herramientas de cifrado LUKS+LVM...${NC}"
     install_pacstrap_with_retry "cryptsetup"
     install_pacstrap_with_retry "lvm2"
     install_pacstrap_with_retry "device-mapper"
@@ -825,8 +825,8 @@ echo ""
 
 case "$SELECTED_KERNEL" in
     "linux")
-        install_pacman_chroot_with_retry "linux"
-        # install_pacman_chroot_with_retry "linux linux-firmware linux-headers"
+        #install_pacman_chroot_with_retry "linux"
+        install_pacman_chroot_with_retry "linux linux-firmware linux-headers"
         ;;
     "linux-hardened")
         install_pacman_chroot_with_retry "linux-hardened linux-firmware linux-hardened-headers"
@@ -981,6 +981,7 @@ echo -e "${GREEN}✓ Instalanado extras${NC}"
 #sleep 2
 sleep 3
 install_aur_with_retry "yay"
+install_aur_with_retry "alsi"
 sleep 2
 install_pacman_chroot_with_retry "fastfetch"
 
@@ -992,19 +993,21 @@ echo -e "${GREEN}| Configurando mkinitcpio |${NC}"
 printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
 echo ""
 
-if [ "$PARTITION_MODE" = "cifrado" ]; then
-    echo -e "${GREEN}Configurando mkinitcpio para cifrado LUKS+LVM...${NC}"
-
-    # Configurar módulos básicos para LUKS+LVM
-    echo -e "${CYAN}Configurando módulos del kernel para cifrado...${NC}"
-    sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt ext4)/' /mnt/etc/mkinitcpio.conf
-
-    # Configurar hooks básicos - orden: encrypt antes de lvm2
-    echo -e "${CYAN}Configurando hooks básicos...${NC}"
+if [ "$ENCRYPTION" = "true" ]; then
+    echo -e "${GREEN}Configurando mkinitcpio para LUKS+LVM ($FILESYSTEM_TYPE)...${NC}"
+    case "$FILESYSTEM_TYPE" in
+        "btrfs")
+            sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt btrfs crc32c zstd lzo lz4 zlib_deflate)/' /mnt/etc/mkinitcpio.conf
+            ;;
+        "xfs")
+            sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt xfs crc32c)/' /mnt/etc/mkinitcpio.conf
+            ;;
+        *)
+            sed -i 's/^MODULES=.*/MODULES=(dm_mod dm_crypt ext4)/' /mnt/etc/mkinitcpio.conf
+            ;;
+    esac
     sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect modconf block encrypt lvm2 filesystems fsck)/' /mnt/etc/mkinitcpio.conf
-
-    echo -e "${GREEN}✓ Configuración mkinitcpio simplificada${NC}"
-    echo -e "${CYAN}  • Módulos: dm_mod dm_crypt ext4${NC}"
+    echo -e "${GREEN}✓ Configuración mkinitcpio para LUKS+LVM${NC}"
     echo -e "${CYAN}  • Hooks: base udev autodetect modconf block encrypt lvm2 filesystems fsck${NC}"
 
 elif [ "$PARTITION_MODE" = "auto" ] && [ "$FILESYSTEM_TYPE" = "btrfs" ]; then
@@ -1100,7 +1103,11 @@ clear
 
 
 # -------------------------------------------------
-source "$(dirname "$0")/config_zram.sh"
+if [ "$SWAP_TYPE" != "none" ]; then
+    source "$(dirname "$0")/config_zram.sh"
+else
+    echo -e "${CYAN}  • SWAP_TYPE=none: sin zram ni swap${NC}"
+fi
 # -------------------------------------------------
 source "$(dirname "$0")/config_grub.sh"
 # -------------------------------------------------
@@ -1138,7 +1145,8 @@ install_pacman_chroot_with_retry "dhclient"
 install_pacman_chroot_with_retry "networkmanager"
 install_pacman_chroot_with_retry "wpa_supplicant"
 # Deshabilitar dhcpcd para evitar conflictos con NetworkManager
-chroot /mnt /bin/bash -c "systemctl enable NetworkManager dhcpcd" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
+chroot /mnt /bin/bash -c "systemctl enable NetworkManager dhcpcd" || echo -e "${RED}ERROR: Falló systemctl enable NetworkManager dhcpcd${NC}"
+chroot /mnt /bin/bash -c "timedatectl set-ntp true" || echo -e "${RED}ERROR: Falló set-ntp${NC}"
 clear
 
 # Copiado de archivos de configuración de bash
@@ -1162,72 +1170,26 @@ echo ""
 # Configurar directorios de usuario
 chroot /mnt /bin/bash -c "su - $USER -c 'xdg-user-dirs-update'"
 
-# Configuración especial para cifrado
-# Configuración adicional para cifrado
-if [ "$PARTITION_MODE" = "cifrado" ]; then
-    echo -e "${GREEN}| Configuración adicional para cifrado |${NC}"
+# Configuración adicional para cifrado LUKS+LVM
+if [ "$ENCRYPTION" = "true" ]; then
+    echo -e "${GREEN}| Configuración adicional para cifrado LUKS+LVM |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
 
-    # Configurar crypttab
-    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
-        CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_3")
-    else
-        PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
-        CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_2")
-    fi
-    echo "cryptlvm UUID=${CRYPT_UUID} none luks,discard" >> /mnt/etc/crypttab
-    echo -e "${GREEN}✓ Configuración crypttab creada para montaje automático${NC}"
+    # crypttab: una sola entrada para la partición LUKS (LVM está dentro)
+    echo "cryptlvm UUID=${CRYPT_LUKS_UUID} none luks,discard" >> /mnt/etc/crypttab
+    echo -e "${GREEN}✓ crypttab configurado (UUID: $CRYPT_LUKS_UUID)${NC}"
 
-    # Crear archivo de configuración para LVM
-    echo "# LVM devices for encrypted setup" > /mnt/etc/lvm/lvm.conf.local
-    echo -e "${CYAN}Configuración LVM aplicada para sistema cifrado${NC}"
-    echo "activation {" >> /mnt/etc/lvm/lvm.conf.local
-    echo "    udev_sync = 1" >> /mnt/etc/lvm/lvm.conf.local
-    echo "    udev_rules = 1" >> /mnt/etc/lvm/lvm.conf.local
-    echo "}" >> /mnt/etc/lvm/lvm.conf.local
-
-    # Verificar que los servicios LVM estén habilitados
-    chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"
-
-    # Configuración adicional para reducir timeouts de cifrado y LVM
-    echo -e "${CYAN}Aplicando optimizaciones para sistema cifrado...${NC}"
-
-    # Asegurar que LVM esté disponible y activo
-    echo -e "${CYAN}Activando volumes LVM...${NC}"
+    # Habilitar y activar LVM dentro del chroot
+    chroot /mnt /bin/bash -c "systemctl enable lvm2-monitor.service"
     chroot /mnt /bin/bash -c "vgchange -ay vg0"
-    chroot /mnt /bin/bash -c "lvchange -ay vg0/root"
-    chroot /mnt /bin/bash -c "lvchange -ay vg0/swap"
-
-    # Generar fstab correctamente con nombres de dispositivos apropiados
-    echo -e "${CYAN}Generando fstab con dispositivos LVM...${NC}"
-    # Limpiar fstab existente
-    > /mnt/etc/fstab
-    # Agregar entradas manualmente para asegurar nombres correctos
-    echo "# <file system> <mount point> <type> <options> <dump> <pass>" >> /mnt/etc/fstab
-    echo "/dev/mapper/vg0-root / ext4 rw,relatime 0 1" >> /mnt/etc/fstab
-    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
-        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
-        echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro 0 2" >> /mnt/etc/fstab
-    else
-        PARTITION_1=$(get_partition_name "$SELECTED_DISK" "1")
-        echo "UUID=$(blkid -s UUID -o value "$PARTITION_1") /boot ext4 rw,relatime 0 2" >> /mnt/etc/fstab
-    fi
-    # Usar UUID para swap LVM si está disponible, sino usar nombre de dispositivo como fallback
-    SWAP_UUID=$(blkid -s UUID -o value /dev/mapper/vg0-swap 2>/dev/null)
-    if [ -n "$SWAP_UUID" ]; then
-        echo "UUID=$SWAP_UUID none swap defaults,pri=10 0 0" >> /mnt/etc/fstab
-        echo -e "${GREEN}✓ Swap agregada al fstab con UUID: $SWAP_UUID${NC}"
-    else
-        echo "/dev/mapper/vg0-swap none swap defaults,pri=10 0 0" >> /mnt/etc/fstab
-        echo -e "${YELLOW}Warning: Swap agregada al fstab con nombre de dispositivo (no se pudo obtener UUID)${NC}"
-    fi
-
+    echo -e "${GREEN}✓ LVM habilitado en el sistema instalado${NC}"
 fi
 
-# Configuración adicional para BTRFS
+# Configuración adicional para BTRFS (sin cifrado o con cifrado)
 if [ "$PARTITION_MODE" = "auto" ] && [ "$FILESYSTEM_TYPE" = "btrfs" ]; then
+    configurar_btrfs
+elif [ "$ENCRYPTION" = "true" ] && [ "$FILESYSTEM_TYPE" = "btrfs" ]; then
     configurar_btrfs
 fi
 
@@ -1509,21 +1471,24 @@ echo ""
 echo -e "${YELLOW}IMPORTANTE:${NC}"
 echo -e "${CYAN}• Reinicia el sistema y retira el medio de instalación${NC}"
 echo -e "${CYAN}• El sistema iniciará con GRUB${NC}"
-if [ "$PARTITION_MODE" = "cifrado" ]; then
+if [ "$ENCRYPTION" = "true" ]; then
     echo -e "${CYAN}• Se solicitará la contraseña de cifrado al iniciar${NC}"
 fi
 echo -e "${CYAN}• Puedes iniciar sesión con:${NC}"
 echo -e "  Usuario: ${GREEN}$USER${NC}"
 echo ""
+sleep 2
+clear
+chroot /mnt /bin/bash -c "alsi -l"
 sleep 5
+clear
 # Barra de progreso final
 titulo_progreso="| Finalizando instalación de ARCRIS LINUX |"
 barra_progreso
-
 echo -e "${GREEN}✓ Instalación de ARCRIS LINUX completada exitosamente!${NC}"
-
+clear
 # Mostrar información importante para sistemas cifrados
-if [ "$PARTITION_MODE" = "cifrado" ]; then
+if [ "$ENCRYPTION" = "true" ]; then
     echo ""
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════════════${NC}"
     echo -e "${GREEN}           SISTEMA CIFRADO CON LUKS+LVM CONFIGURADO EXITOSAMENTE${NC}"
@@ -1534,32 +1499,23 @@ if [ "$PARTITION_MODE" = "cifrado" ]; then
     echo -e "${YELLOW}🔐 INFORMACIÓN CRÍTICA SOBRE TU SISTEMA CIFRADO:${NC}"
     echo ""
     echo -e "${GREEN}✓ Configuración aplicada:${NC}"
-    echo -e "${CYAN}  • Solo las particiones EFI y boot quedan sin cifrar (necesario para arrancar)${NC}"
-    echo -e "${CYAN}  • Toda la partición principal está cifrada con LUKS${NC}"
-    echo -e "${CYAN}  • LVM gestiona las particiones sobre el cifrado${NC}"
-    echo -e "${CYAN}  • Swap cifrado incluido (8GB)${NC}"
+    echo -e "${CYAN}  • Filesystem: $FILESYSTEM_TYPE | Home: $HOME_PARTITION | Swap: $SWAP_TYPE${NC}"
+    echo -e "${CYAN}  • Partición LUKS UUID: $CRYPT_LUKS_UUID${NC}"
+    echo -e "${CYAN}  • LVM vg0: $([ "${SWAP_SIZE_MIB:-0}" -gt 0 ] && echo "swap(${SWAP_SIZE_MIB}MiB) + " || echo "")root + $([ "$HOME_PARTITION" = "partition" ] && echo "home" || echo "(sin home LV)")${NC}"
     echo ""
     echo -e "${RED}⚠️  ADVERTENCIAS IMPORTANTES:${NC}"
     echo -e "${RED}  • SIN LA CONTRASEÑA LUKS PERDERÁS TODOS TUS DATOS${NC}"
     echo -e "${RED}  • Guarda la contraseña en un lugar seguro${NC}"
-    echo -e "${RED}  • Considera hacer backup del header LUKS${NC}"
+    echo -e "${RED}  • Haz backup del header: cryptsetup luksHeaderBackup /dev/disk/by-uuid/$CRYPT_LUKS_UUID --header-backup-file luks-header.bak${NC}"
     echo ""
     echo -e "${GREEN}🚀 Al reiniciar:${NC}"
     echo -e "${CYAN}  1. El sistema pedirá tu contraseña LUKS para desbloquear el disco${NC}"
     echo -e "${CYAN}  2. Una vez desbloqueado, el sistema arrancará normalmente${NC}"
     echo -e "${CYAN}  3. Si olvidas la contraseña, no podrás acceder a tus datos${NC}"
     echo ""
-    echo -e "${GREEN}📁 Backup del header LUKS:${NC}"
-    echo -e "${CYAN}  • Se creó un backup en /tmp/luks-header-backup${NC}"
-    echo -e "${YELLOW}  • CÓPIALO A UN LUGAR SEGURO después del primer arranque${NC}"
-    echo -e "${CYAN}  • Comando: cp /tmp/luks-header-backup ~/luks-backup-$(date +%Y%m%d)${NC}"
-    echo ""
-
-    echo ""
     echo -e "${GREEN}🔧 Comandos útiles post-instalación:${NC}"
     echo -e "${CYAN}  • Ver estado LVM: sudo vgdisplay && sudo lvdisplay${NC}"
     echo -e "${CYAN}  • Redimensionar particiones: sudo lvresize${NC}"
-    echo -e "${CYAN}  • Backup adicional header: sudo cryptsetup luksHeaderBackup /dev/sdaX${NC}"
     echo ""
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════════════${NC}"
     echo ""

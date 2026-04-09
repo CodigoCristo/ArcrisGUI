@@ -44,6 +44,8 @@ typedef struct _HardwareInfo {
     char *audio_card_name;
     char *wifi_card_name;
     char *bluetooth_card_name;
+    gboolean wifi_detected;
+    gboolean bluetooth_detected;
 } HardwareInfo;
 
 // Estructura para datos de la ventana de hardware
@@ -54,6 +56,7 @@ typedef struct _WindowHardwareData {
     // Botones de la ventana
     GtkButton *close_button;
     GtkButton *save_button;
+    AdwWindowTitle *window_title;
 
     // Grupos de preferencias
     AdwPreferencesGroup *video_group;
@@ -154,5 +157,8 @@ void window_hardware_log_driver_change(const char *component, const char *old_dr
 
 // Función para obtener la instancia global
 WindowHardwareData* window_hardware_get_instance(void);
+
+// Función de actualización de idioma
+void window_hardware_update_language(WindowHardwareData *data);
 
 #endif /* WINDOW_HARDWARE_H */

@@ -10,11 +10,14 @@ typedef struct _WindowReposData {
 
     GtkButton *close_button;
     GtkButton *save_button;
+    AdwWindowTitle *window_title;
 
     AdwSwitchRow *chaotic_aur_switch;
     AdwSwitchRow *archlinuxcn_switch;
     AdwSwitchRow *cachyos_switch;
 
+    AdwExpanderRow *mirrorlist_expander;
+    GtkLinkButton *mirrorlist_link;
     GtkToggleButton *auto_button;
     GtkToggleButton *manual_button;
     GtkListBoxRow *repos_manual_row;
@@ -32,5 +35,6 @@ void window_repos_init_defaults(void);
 
 void on_repos_close_button_clicked(GtkButton *button, gpointer user_data);
 void on_repos_save_button_clicked(GtkButton *button, gpointer user_data);
+void window_repos_update_language(WindowReposData *data);
 
 #endif /* WINDOW_REPOS_H */

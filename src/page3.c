@@ -1,5 +1,6 @@
 #include "page3.h"
 #include "variables_utils.h"
+#include "i18n.h"
 
 #include "disk_manager.h"
 #include "partition_manager.h"
@@ -43,37 +44,38 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page3_data->navigation_view = ADW_NAVIGATION_VIEW(gtk_builder_get_object(page_builder, "navigation_view"));
     g_page3_data->disk_combo = ADW_COMBO_ROW(gtk_builder_get_object(page_builder, "disk_combo"));
     g_page3_data->auto_partition_radio = GTK_CHECK_BUTTON(gtk_builder_get_object(page_builder, "auto_partition_radio"));
-    g_page3_data->auto_btrfs_radio = GTK_CHECK_BUTTON(gtk_builder_get_object(page_builder, "auto_btrfs_radio"));
-    g_page3_data->cifrado_partition_button = GTK_CHECK_BUTTON(gtk_builder_get_object(page_builder, "cifrado_partition_button"));
     g_page3_data->manual_partition_radio = GTK_CHECK_BUTTON(gtk_builder_get_object(page_builder, "manual_partition_radio"));
     g_page3_data->refresh_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "refresh_button"));
     g_page3_data->configure_partitions_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "configure_partitions_button"));
-    g_page3_data->save_key_disk_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "save_key_disk_button"));
     g_page3_data->configure_disk_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "configure_disk_button"));
 
     // Obtener widgets de la página de particiones manuales
     g_page3_data->disk_label_page4 = GTK_LABEL(gtk_builder_get_object(page_builder, "disk_label_page4"));
     g_page3_data->disk_size_label_page4 = GTK_LABEL(gtk_builder_get_object(page_builder, "disk_size_label_page4"));
     g_page3_data->gparted_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "gparted_button"));
+    g_page3_data->gparted_label = GTK_LABEL(gtk_builder_get_object(page_builder, "gparted_button_label"));
     g_page3_data->refresh_partitions_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "refresh_partitions_button"));
     g_page3_data->return_disks = GTK_BUTTON(gtk_builder_get_object(page_builder, "return_disks"));
-    g_page3_data->return_disks_encryption = ADW_BUTTON_ROW(gtk_builder_get_object(page_builder, "return_disks_encryption"));
     g_page3_data->partitions_group = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "partitions_group"));
 
-    // Obtener widgets para particionado cifrado
-    g_page3_data->password_entry = ADW_PASSWORD_ENTRY_ROW(gtk_builder_get_object(page_builder, "password_entry"));
-    g_page3_data->password_confirm_entry = ADW_PASSWORD_ENTRY_ROW(gtk_builder_get_object(page_builder, "password_confirm_entry"));
-    g_page3_data->password_error_label = GTK_LABEL(gtk_builder_get_object(page_builder, "password_error_label"));
+    // Obtener widgets de traducción (página principal de selección)
+    g_page3_data->status_page = ADW_STATUS_PAGE(gtk_builder_get_object(page_builder, "page3_status"));
+    g_page3_data->group_disco_lista = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "group_disco_lista"));
+    g_page3_data->group_opciones = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "group_opciones"));
+    g_page3_data->auto_partition_row = ADW_ACTION_ROW(gtk_builder_get_object(page_builder, "auto_partition_row"));
+    g_page3_data->manual_partition_row = ADW_ACTION_ROW(gtk_builder_get_object(page_builder, "manual_partition_row"));
+
+    // Obtener widgets de traducción (página manual de particiones)
+    g_page3_data->manual_status_page = ADW_STATUS_PAGE(gtk_builder_get_object(page_builder, "page3_manual_status"));
 
     // Verificar que todos los widgets se obtuvieron correctamente
     if (!g_page3_data->navigation_view || !g_page3_data->disk_combo || !g_page3_data->auto_partition_radio ||
-        !g_page3_data->auto_btrfs_radio || !g_page3_data->cifrado_partition_button || !g_page3_data->manual_partition_radio ||
-        !g_page3_data->refresh_button || !g_page3_data->configure_partitions_button || !g_page3_data->save_key_disk_button ||
+        !g_page3_data->manual_partition_radio ||
+        !g_page3_data->refresh_button || !g_page3_data->configure_partitions_button ||
         !g_page3_data->configure_disk_button ||
         !g_page3_data->disk_label_page4 || !g_page3_data->disk_size_label_page4 ||
-        !g_page3_data->gparted_button || !g_page3_data->return_disks || !g_page3_data->return_disks_encryption ||
-        !g_page3_data->partitions_group || !g_page3_data->password_entry || !g_page3_data->password_confirm_entry ||
-        !g_page3_data->password_error_label) {
+        !g_page3_data->gparted_button || !g_page3_data->return_disks ||
+        !g_page3_data->partitions_group) {
         LOG_ERROR("No se pudieron obtener todos los widgets necesarios de la página 3");
         g_object_unref(page_builder);
         return;
@@ -96,11 +98,6 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page3_data->partitions = NULL;
     g_page3_data->partition_rows = NULL;
 
-    // Inicializar estado del cifrado
-    g_page3_data->encryption_enabled = FALSE;
-    g_page3_data->passwords_match = FALSE;
-    g_page3_data->password_length_valid = FALSE;
-
     // Realizar configuraciones iniciales específicas de la página 3
     page3_setup_widgets(g_page3_data);
     page3_load_data(g_page3_data);
@@ -112,33 +109,14 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
                      G_CALLBACK(on_page3_partition_mode_changed), g_page3_data);
     g_signal_connect(g_page3_data->auto_partition_radio, "toggled",
                      G_CALLBACK(on_page3_partition_mode_changed), g_page3_data);
-    g_signal_connect(g_page3_data->auto_btrfs_radio, "toggled",
-                     G_CALLBACK(on_page3_partition_mode_changed), g_page3_data);
-    g_signal_connect(g_page3_data->cifrado_partition_button, "toggled",
-                     G_CALLBACK(on_page3_partition_mode_changed), g_page3_data);
-    g_signal_connect(g_page3_data->save_key_disk_button, "clicked",
-                     G_CALLBACK(on_page3_save_key_disk_clicked), g_page3_data);
     g_signal_connect(g_page3_data->configure_disk_button, "clicked",
                      G_CALLBACK(on_page3_configure_disk_clicked), g_page3_data);
-
-    // Conectar señales de los campos de contraseña
-    if (g_page3_data->password_entry) {
-        g_signal_connect(g_page3_data->password_entry, "changed",
-                         G_CALLBACK(on_page3_password_changed), g_page3_data);
-    }
-
-    if (g_page3_data->password_confirm_entry) {
-        g_signal_connect(g_page3_data->password_confirm_entry, "changed",
-                         G_CALLBACK(on_page3_password_confirm_changed), g_page3_data);
-    }
     g_signal_connect(g_page3_data->gparted_button, "clicked",
                      G_CALLBACK(on_page3_gparted_button_clicked), g_page3_data);
     g_signal_connect(g_page3_data->refresh_partitions_button, "clicked",
                      G_CALLBACK(on_page3_refresh_partitions_clicked), g_page3_data);
     g_signal_connect(g_page3_data->return_disks, "clicked",
                      G_CALLBACK(on_page3_return_disks_clicked), g_page3_data);
-    g_signal_connect(g_page3_data->return_disks_encryption, "activated",
-                     G_CALLBACK(on_page3_return_disks_encryption_clicked), g_page3_data);
 
     // Crear botones de navegación
     page3_create_navigation_buttons(g_page3_data);
@@ -155,6 +133,7 @@ void page3_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     // Inicializar sub-ventana de configuración del disco
     g_page3_data->window_disk = window_disk_new();
     window_disk_init(g_page3_data->window_disk);
+
 
     // Inicializar el manejador de particiones
     page3_init_partition_manager(g_page3_data);
@@ -247,16 +226,6 @@ void page3_setup_widgets(Page3Data *data)
         auto_partition_row = gtk_widget_get_parent(auto_partition_row);
     }
 
-    GtkWidget *auto_btrfs_row = GTK_WIDGET(data->auto_btrfs_radio);
-    while (auto_btrfs_row && !ADW_IS_ACTION_ROW(auto_btrfs_row)) {
-        auto_btrfs_row = gtk_widget_get_parent(auto_btrfs_row);
-    }
-
-    GtkWidget *cifrado_row = GTK_WIDGET(data->cifrado_partition_button);
-    while (cifrado_row && !ADW_IS_ACTION_ROW(cifrado_row)) {
-        cifrado_row = gtk_widget_get_parent(cifrado_row);
-    }
-
 }
 
 // Función para cargar datos
@@ -310,8 +279,6 @@ static gboolean page3_validate_selection(Page3Data *data)
     // Verificar que se haya seleccionado un modo de particionado
     if (data->auto_partition_radio && gtk_check_button_get_active(data->auto_partition_radio)) {
         LOG_INFO("Modo de particionado seleccionado: Auto Partition");
-    } else if (data->auto_btrfs_radio && gtk_check_button_get_active(data->auto_btrfs_radio)) {
-        LOG_INFO("Modo de particionado seleccionado: Auto Btrfs");
     } else if (data->manual_partition_radio && gtk_check_button_get_active(data->manual_partition_radio)) {
         LOG_INFO("Modo de particionado seleccionado: Manual Partition");
     }
@@ -344,6 +311,7 @@ gboolean page3_go_to_next_page(Page3Data *data)
     if (!page3_validate_selection(data)) {
         return FALSE;
     }
+
 
     // Guardar configuración
     page3_save_configuration(data);
@@ -447,11 +415,7 @@ DiskMode page3_get_partition_mode(void)
 {
     if (!g_page3_data) return DISK_MODE_AUTO_PARTITION;
 
-    if (g_page3_data->auto_btrfs_radio && gtk_check_button_get_active(g_page3_data->auto_btrfs_radio)) {
-        return DISK_MODE_AUTO_BTRFS;
-    } else if (g_page3_data->cifrado_partition_button && gtk_check_button_get_active(g_page3_data->cifrado_partition_button)) {
-        return DISK_MODE_CIFRADO;
-    } else if (g_page3_data->manual_partition_radio && gtk_check_button_get_active(g_page3_data->manual_partition_radio)) {
+    if (g_page3_data->manual_partition_radio && gtk_check_button_get_active(g_page3_data->manual_partition_radio)) {
         return DISK_MODE_MANUAL_PARTITION;
     }
 
@@ -635,26 +599,13 @@ void on_page3_partition_mode_changed(GtkCheckButton *button, gpointer user_data)
     // Determinar el modo de particionado actual
     gboolean is_manual = gtk_check_button_get_active(data->manual_partition_radio);
     gboolean is_auto = gtk_check_button_get_active(data->auto_partition_radio);
-    gboolean is_auto_btrfs = gtk_check_button_get_active(data->auto_btrfs_radio);
-    gboolean is_cifrado = gtk_check_button_get_active(data->cifrado_partition_button);
 
-    LOG_INFO("Estados de radio buttons: manual=%s, auto=%s, auto_btrfs=%s, cifrado=%s",
+    LOG_INFO("Estados de radio buttons: manual=%s, auto=%s",
              is_manual ? "TRUE" : "FALSE",
-             is_auto ? "TRUE" : "FALSE",
-             is_auto_btrfs ? "TRUE" : "FALSE",
-             is_cifrado ? "TRUE" : "FALSE");
+             is_auto ? "TRUE" : "FALSE");
 
     // Guardar modo en variables.sh
-    const gchar *partition_mode = "auto";
-    if (is_manual) {
-        partition_mode = "manual";
-    } else if (is_auto_btrfs) {
-        partition_mode = "auto_btrfs";
-    } else if (is_cifrado) {
-        partition_mode = "cifrado";
-    } else if (is_auto) {
-        partition_mode = "auto";
-    }
+    const gchar *partition_mode = is_manual ? "manual" : "auto";
 
     LOG_INFO("Modo de particionado determinado: %s", partition_mode);
 
@@ -670,13 +621,14 @@ void on_page3_partition_mode_changed(GtkCheckButton *button, gpointer user_data)
         LOG_WARNING("configure_partitions_button es NULL");
     }
 
-    // Actualizar estado del botón de cifrado
-    page3_update_encryption_button_state(data);
+    // Habilitar configure_disk_button solo cuando "Borra el disco" (auto) está seleccionado
+    if (data->configure_disk_button) {
+        gtk_widget_set_sensitive(GTK_WIDGET(data->configure_disk_button), is_auto);
+    }
 
     // Habilitar/deshabilitar botón siguiente según el modo
-    // En modo manual y cifrado, el botón siguiente se desactiva hasta que se configure
     LOG_INFO("Actualizando sensibilidad del botón siguiente...");
-    page3_update_next_button_sensitivity(data, is_manual || is_cifrado);
+    page3_update_next_button_sensitivity(data, is_manual);
 
     LOG_INFO("Modo de particionado cambiado a: %s", partition_mode);
     LOG_INFO("=== on_page3_partition_mode_changed FINALIZADO ===");
@@ -833,7 +785,8 @@ void page3_update_manual_partitions_info(Page3Data *data)
     }
 
     // Actualizar etiquetas de disco
-    gchar *disk_text = g_strdup_printf("Disco %s", selected_disk);
+    gchar *disk_text = g_strdup_printf("%s %s",
+        i18n_t("Disco", "Disk", "Диск"), selected_disk);
     gtk_label_set_text(data->disk_label_page4, disk_text);
     LOG_INFO("Label de disco actualizado: %s", disk_text);
     g_free(disk_text);
@@ -884,32 +837,6 @@ void on_page3_return_disks_clicked(GtkButton *button, gpointer user_data)
     if (!data || !data->navigation_view) return;
 
     LOG_INFO("Regresando a selección de discos");
-    page3_navigate_back_to_disk_selection(data);
-}
-
-void on_page3_return_disks_encryption_clicked(AdwButtonRow *button, gpointer user_data)
-{
-    Page3Data *data = (Page3Data *)user_data;
-    if (!data || !data->navigation_view) return;
-
-    LOG_INFO("Regresando a selección de discos desde página de encriptación");
-
-    // Desactivar el botón siguiente al regresar de la página de encriptación
-    GtkWidget *next_button = NULL;
-    if (data->revealer) {
-        GtkWidget *revealer_child = gtk_revealer_get_child(data->revealer);
-        if (revealer_child) {
-            next_button = page3_find_next_button_recursive(revealer_child);
-        }
-    }
-
-    if (next_button) {
-        gtk_widget_set_sensitive(next_button, FALSE);
-        LOG_INFO("Botón siguiente desactivado al regresar de página de encriptación");
-    } else {
-        LOG_WARNING("No se pudo encontrar el botón siguiente para desactivar");
-    }
-
     page3_navigate_back_to_disk_selection(data);
 }
 
@@ -1221,7 +1148,8 @@ void page3_add_partition_row(Page3Data *data, Page3PartitionInfo *partition)
     // Añadir botón de configuración
     GtkButton *config_button = GTK_BUTTON(gtk_button_new_from_icon_name("list-add-symbolic"));
     gtk_widget_set_valign(GTK_WIDGET(config_button), GTK_ALIGN_CENTER);
-    gtk_widget_set_tooltip_text(GTK_WIDGET(config_button), "Configurar partición");
+    gtk_widget_set_tooltip_text(GTK_WIDGET(config_button),
+        i18n_t("Configurar partición", "Configure partition", "Настроить раздел"));
 
     // Añadir clases CSS
     gtk_widget_add_css_class(GTK_WIDGET(config_button), "flat");
@@ -1661,7 +1589,7 @@ void page3_update_next_button_sensitivity(Page3Data *data, gboolean is_manual_mo
         return;
     }
 
-    LOG_INFO("Buscando botón siguiente en revealer para modo: %s", is_manual_mode ? "manual/cifrado" : "automático");
+    LOG_INFO("Buscando botón siguiente en revealer para modo: %s", is_manual_mode ? "manual" : "automático");
 
     // Buscar el botón siguiente en el revealer
     GtkWidget *next_button = NULL;
@@ -1678,10 +1606,6 @@ void page3_update_next_button_sensitivity(Page3Data *data, gboolean is_manual_mo
 
     if (next_button) {
         LOG_INFO("Botón siguiente encontrado exitosamente");
-        // Verificar si estamos en modo cifrado
-        gboolean is_encryption_mode = data->cifrado_partition_button &&
-                                     gtk_check_button_get_active(data->cifrado_partition_button);
-
         if (is_manual_mode) {
             // En modo manual, desactivar el botón hasta que se configure al menos una partición
             gboolean has_root_partition = FALSE;
@@ -1692,13 +1616,6 @@ void page3_update_next_button_sensitivity(Page3Data *data, gboolean is_manual_mo
             LOG_INFO("Botón siguiente %s (modo manual, partición root: %s)",
                      has_root_partition ? "activado" : "desactivado",
                      has_root_partition ? "sí" : "no");
-        } else if (is_encryption_mode) {
-            // En modo cifrado, desactivar el botón hasta que las contraseñas sean válidas
-            gboolean passwords_valid = data->passwords_match && data->password_length_valid;
-            gtk_widget_set_sensitive(next_button, passwords_valid);
-            LOG_INFO("Botón siguiente %s (modo cifrado, contraseñas válidas: %s)",
-                     passwords_valid ? "activado" : "desactivado",
-                     passwords_valid ? "sí" : "no");
         } else {
             // En modo automático, activar el botón
             gtk_widget_set_sensitive(next_button, TRUE);
@@ -1736,15 +1653,17 @@ GtkWidget* page3_find_next_button_recursive(GtkWidget *widget)
                  label ? label : "NULL",
                  widget_name ? widget_name : "NULL");
 
-        if (label && (g_str_has_suffix(label, "Siguiente") || g_str_has_suffix(label, "Next") ||
-                      g_strrstr(label, "siguiente") || g_strrstr(label, "next"))) {
-            LOG_INFO("¡Botón siguiente encontrado! Label: '%s'", label);
+        // Verificar por nombre del widget (método principal, independiente del idioma)
+        if (widget_name && g_strcmp0(widget_name, "next_button") == 0) {
+            LOG_INFO("¡Botón siguiente encontrado por nombre! Name: '%s'", widget_name);
             return widget;
         }
 
-        // También verificar por nombre del widget
-        if (widget_name && (g_strrstr(widget_name, "next") || g_strrstr(widget_name, "siguiente"))) {
-            LOG_INFO("¡Botón siguiente encontrado por nombre! Name: '%s'", widget_name);
+        // Fallback: verificar por label en español, inglés y ruso
+        if (label && (g_strcmp0(label, "Siguiente") == 0 ||
+                      g_strcmp0(label, "Next") == 0 ||
+                      g_strcmp0(label, "Далее") == 0)) {
+            LOG_INFO("¡Botón siguiente encontrado por label! Label: '%s'", label);
             return widget;
         }
     }
@@ -1815,10 +1734,6 @@ void page3_load_partition_mode(Page3Data *data)
                         LOG_INFO("Estableciendo modo manual");
                         gtk_check_button_set_active(data->manual_partition_radio, TRUE);
                         LOG_INFO("Radio button manual activado");
-                    } else if (g_strcmp0(mode_value, "auto_btrfs") == 0) {
-                        LOG_INFO("Estableciendo modo auto_btrfs");
-                        gtk_check_button_set_active(data->auto_btrfs_radio, TRUE);
-                        LOG_INFO("Radio button auto_btrfs activado");
                     } else {
                         LOG_INFO("Estableciendo modo auto (valor: '%s')", mode_value);
                         gtk_check_button_set_active(data->auto_partition_radio, TRUE);
@@ -1895,371 +1810,6 @@ void page3_init_partition_manager(Page3Data *data)
     g_object_unref(partition_builder);
 
     LOG_INFO("PartitionManager inicializado correctamente para page3");
-}
-
-// ============================================================================
-// FUNCIONES PARA MANEJO DE PARTICIONADO CIFRADO
-// ============================================================================
-
-// Función para navegar a la página de clave de cifrado
-void page3_navigate_to_encryption_key(Page3Data *data)
-{
-    if (!data || !data->navigation_view) return;
-
-    AdwNavigationPage *encryption_page = adw_navigation_view_find_page(data->navigation_view, "encryption_key");
-    if (encryption_page) {
-        adw_navigation_view_push(data->navigation_view, encryption_page);
-        LOG_INFO("Navegando a página de clave de cifrado");
-    } else {
-        LOG_ERROR("No se pudo encontrar la página de clave de cifrado");
-    }
-}
-
-// Función para navegar de regreso desde la página de cifrado
-void page3_navigate_back_from_encryption(Page3Data *data)
-{
-    if (!data || !data->navigation_view) return;
-
-    adw_navigation_view_pop(data->navigation_view);
-    LOG_INFO("Regresando desde página de clave de cifrado");
-}
-
-// Función para verificar coincidencia de contraseñas
-void page3_check_password_match(Page3Data *data)
-{
-    if (!data || !data->password_entry || !data->password_confirm_entry) return;
-
-    const gchar *password = gtk_editable_get_text(GTK_EDITABLE(data->password_entry));
-    const gchar *confirm_password = gtk_editable_get_text(GTK_EDITABLE(data->password_confirm_entry));
-
-    // Verificar si las contraseñas coinciden (solo si ambas tienen contenido)
-    data->passwords_match = (password && confirm_password &&
-                            strlen(password) > 0 &&
-                            strlen(confirm_password) > 0 &&
-                            strcmp(password, confirm_password) == 0);
-
-
-
-    // Mostrar/ocultar mensaje de error y aplicar estilos
-    if (data->password_error_label) {
-        if (confirm_password && strlen(confirm_password) > 0) {
-            if (!data->passwords_match) {
-                // Mostrar error cuando no coinciden
-                gtk_widget_set_visible(GTK_WIDGET(data->password_error_label), TRUE);
-                gtk_widget_add_css_class(GTK_WIDGET(data->password_confirm_entry), "error");
-                gtk_widget_remove_css_class(GTK_WIDGET(data->password_confirm_entry), "success");
-                // Remover success del campo de contraseña principal también
-                gtk_widget_remove_css_class(GTK_WIDGET(data->password_entry), "success");
-            } else {
-                // Ocultar error cuando coinciden y agregar success a ambos campos
-                gtk_widget_set_visible(GTK_WIDGET(data->password_error_label), FALSE);
-                gtk_widget_add_css_class(GTK_WIDGET(data->password_confirm_entry), "success");
-                gtk_widget_remove_css_class(GTK_WIDGET(data->password_confirm_entry), "error");
-                // Agregar success al campo de contraseña principal también
-                gtk_widget_add_css_class(GTK_WIDGET(data->password_entry), "success");
-                gtk_widget_remove_css_class(GTK_WIDGET(data->password_entry), "error");
-            }
-        } else {
-            // Campo vacío - remover todas las clases y marcar como inválido
-            data->passwords_match = FALSE;
-            gtk_widget_set_visible(GTK_WIDGET(data->password_error_label), FALSE);
-            gtk_widget_remove_css_class(GTK_WIDGET(data->password_confirm_entry), "error");
-            gtk_widget_remove_css_class(GTK_WIDGET(data->password_confirm_entry), "success");
-            // Remover clases del campo de contraseña principal también
-            gtk_widget_remove_css_class(GTK_WIDGET(data->password_entry), "success");
-        }
-    }
-
-    // Actualizar estado del botón y revealer
-    page3_update_encryption_button_state(data);
-
-    // Verificar si ambos campos están en success y activar
-    page3_check_success_and_activate(data);
-
-    // Actualizar variables.sh si estamos en modo cifrado y las contraseñas son válidas
-    gboolean encryption_mode = data->cifrado_partition_button && gtk_check_button_get_active(data->cifrado_partition_button);
-
-    if (encryption_mode && data->passwords_match && data->password_length_valid) {
-        LOG_INFO("Guardando contraseña de cifrado en variables.sh");
-        page3_update_encryption_variables(data);
-    }
-}
-
-// Función para validar longitud de contraseña
-void page3_validate_password_length(Page3Data *data)
-{
-    if (!data || !data->password_entry) return;
-
-    const gchar *password = gtk_editable_get_text(GTK_EDITABLE(data->password_entry));
-
-    LOG_INFO("=== DEBUG page3_validate_password_length ===");
-    LOG_INFO("password length: %zu", password ? strlen(password) : 0);
-
-    if (strlen(password) > 0) {
-        // Validar longitud mínima (8 caracteres)
-        data->password_length_valid = (strlen(password) >= 8);
-        LOG_INFO("password >= 8 chars: %s", data->password_length_valid ? "TRUE" : "FALSE");
-
-
-        if (!data->password_length_valid) {
-            gtk_widget_add_css_class(GTK_WIDGET(data->password_entry), "error");
-            gtk_widget_remove_css_class(GTK_WIDGET(data->password_entry), "success");
-        } else {
-            gtk_widget_add_css_class(GTK_WIDGET(data->password_entry), "success");
-            gtk_widget_remove_css_class(GTK_WIDGET(data->password_entry), "error");
-        }
-    } else {
-        // Campo vacío = inválido
-        data->password_length_valid = FALSE;
-        LOG_INFO("password field is empty, setting password_length_valid = FALSE");
-        gtk_widget_remove_css_class(GTK_WIDGET(data->password_entry), "error");
-        gtk_widget_remove_css_class(GTK_WIDGET(data->password_entry), "success");
-    }
-
-    LOG_INFO("page3_validate_password_length resultado final: %s", data->password_length_valid ? "TRUE" : "FALSE");
-
-    // Actualizar estado del botón y revealer
-    page3_update_encryption_button_state(data);
-
-    // Verificar si ambos campos están en success y activar
-    page3_check_success_and_activate(data);
-}
-
-// Función para actualizar el estado del botón de cifrado
-void page3_update_encryption_button_state(Page3Data *data)
-{
-    if (!data || !data->save_key_disk_button) return;
-
-    // Habilitar botón solo si el cifrado está seleccionado
-    gboolean encryption_selected = data->cifrado_partition_button &&
-                                  gtk_check_button_get_active(data->cifrado_partition_button);
-
-    gtk_widget_set_sensitive(GTK_WIDGET(data->save_key_disk_button), encryption_selected);
-}
-
-// Función simple: verificar si ambos campos están en success y activar botón
-void page3_check_success_and_activate(Page3Data *data)
-{
-    if (!data || !data->password_entry || !data->password_confirm_entry) return;
-
-    // Verificar si estamos en modo cifrado
-    gboolean is_encryption_mode = data->cifrado_partition_button &&
-                                 gtk_check_button_get_active(data->cifrado_partition_button);
-
-    if (!is_encryption_mode) return;
-
-    // Verificar si ambos campos tienen la clase "success"
-    gboolean password_has_success = gtk_widget_has_css_class(GTK_WIDGET(data->password_entry), "success");
-    gboolean confirm_has_success = gtk_widget_has_css_class(GTK_WIDGET(data->password_confirm_entry), "success");
-
-    LOG_INFO("=== VERIFICANDO CAMPOS SUCCESS ===");
-    LOG_INFO("password_entry tiene success: %s", password_has_success ? "TRUE" : "FALSE");
-    LOG_INFO("password_confirm_entry tiene success: %s", confirm_has_success ? "TRUE" : "FALSE");
-
-    if (password_has_success && confirm_has_success) {
-        LOG_INFO("*** AMBOS CAMPOS EN SUCCESS - ACTIVANDO SISTEMA ***");
-
-        // Buscar el botón siguiente
-        GtkWidget *next_button = NULL;
-        if (data->revealer) {
-            GtkWidget *revealer_child = gtk_revealer_get_child(data->revealer);
-            if (revealer_child) {
-                next_button = page3_find_next_button_recursive(revealer_child);
-            }
-        }
-
-        if (next_button) {
-            // Activar el botón siguiente
-            gtk_widget_set_sensitive(next_button, TRUE);
-            LOG_INFO("*** BOTÓN SIGUIENTE ACTIVADO ***");
-
-            // Guardar la contraseña
-            LOG_INFO("*** GUARDANDO CONTRASEÑA EN VARIABLES.SH ***");
-            page3_update_encryption_variables(data);
-            LOG_INFO("*** GUARDADO COMPLETADO ***");
-        } else {
-            LOG_WARNING("No se pudo encontrar el botón siguiente");
-        }
-    } else {
-        LOG_INFO("Campos no están en success, no activando");
-
-        // Desactivar el botón si no están en success
-        GtkWidget *next_button = NULL;
-        if (data->revealer) {
-            GtkWidget *revealer_child = gtk_revealer_get_child(data->revealer);
-            if (revealer_child) {
-                next_button = page3_find_next_button_recursive(revealer_child);
-            }
-        }
-
-        if (next_button) {
-            gtk_widget_set_sensitive(next_button, FALSE);
-            LOG_INFO("Botón siguiente desactivado");
-        }
-    }
-}
-
-// Función para actualizar las variables de cifrado en variables.sh
-void page3_update_encryption_variables(Page3Data *data)
-{
-    if (!data) return;
-
-    const gchar *password = gtk_editable_get_text(GTK_EDITABLE(data->password_entry));
-    if (!password || strlen(password) == 0) {
-        LOG_ERROR("Password está vacía, no se puede guardar");
-        return;
-    }
-
-    LOG_INFO("Actualizando contraseña de cifrado en variables.sh");
-
-    GError *error = NULL;
-    gchar *file_content = NULL;
-    if (!g_file_get_contents(VARIABLES_FILE_PATH, &file_content, NULL, &error)) {
-        LOG_ERROR("No se pudo leer variables.sh: %s", error ? error->message : "Unknown error");
-        if (error) g_error_free(error);
-        return;
-    }
-
-    GString *content = g_string_new(file_content);
-    g_free(file_content);
-
-    vars_upsert_after(content, "ENCRYPTION_ENABLED",  "true",   "PARTITION_MODE");
-    vars_upsert_after(content, "ENCRYPTION_PASSWORD", password, "ENCRYPTION_ENABLED");
-
-    if (!g_file_set_contents(VARIABLES_FILE_PATH, content->str, -1, &error))
-        LOG_ERROR("Error guardando variables.sh: %s", error ? error->message : "Unknown error");
-    else
-        LOG_INFO("*** CONTRASEÑA GUARDADA EXITOSAMENTE EN VARIABLES.SH ***");
-
-    if (error) g_error_free(error);
-    g_string_free(content, TRUE);
-}
-
-// Función para obtener la contraseña de cifrado
-const gchar* page3_get_encryption_password(Page3Data *data)
-{
-    if (!data || !data->password_entry) return NULL;
-    return gtk_editable_get_text(GTK_EDITABLE(data->password_entry));
-}
-
-// Función para guardar la configuración de cifrado
-void page3_save_encryption_config(Page3Data *data)
-{
-    if (!data) return;
-
-    const gchar *password = page3_get_encryption_password(data);
-    if (!password) return;
-
-    LOG_INFO("Guardando configuración de cifrado");
-
-    GError *error = NULL;
-    gchar *file_content = NULL;
-    if (!g_file_get_contents(VARIABLES_FILE_PATH, &file_content, NULL, &error)) {
-        LOG_ERROR("No se pudo leer variables.sh: %s", error ? error->message : "Unknown error");
-        if (error) g_error_free(error);
-        return;
-    }
-
-    GString *content = g_string_new(file_content);
-    g_free(file_content);
-
-    vars_upsert_after(content, "ENCRYPTION_ENABLED",  "true",   "PARTITION_MODE");
-    vars_upsert_after(content, "ENCRYPTION_PASSWORD", password, "ENCRYPTION_ENABLED");
-
-    if (!g_file_set_contents(VARIABLES_FILE_PATH, content->str, -1, &error))
-        LOG_ERROR("Error guardando variables.sh: %s", error ? error->message : "Unknown error");
-    else
-        LOG_INFO("Configuración de cifrado guardada exitosamente");
-
-    if (error) g_error_free(error);
-    g_string_free(content, TRUE);
-}
-
-// Función para crear variables de cifrado iniciales
-void page3_create_encryption_variables(void)
-{
-    LOG_INFO("Creando variables de cifrado iniciales");
-
-    GError *error = NULL;
-    gchar *file_content = NULL;
-    if (!g_file_get_contents(VARIABLES_FILE_PATH, &file_content, NULL, &error)) {
-        LOG_ERROR("No se pudo leer variables.sh: %s", error ? error->message : "Unknown error");
-        if (error) g_error_free(error);
-        return;
-    }
-
-    GString *content = g_string_new(file_content);
-    g_free(file_content);
-
-    vars_upsert_after(content, "ENCRYPTION_ENABLED",  "true", "PARTITION_MODE");
-    vars_upsert_after(content, "ENCRYPTION_PASSWORD", "",     "ENCRYPTION_ENABLED");
-
-    if (!g_file_set_contents(VARIABLES_FILE_PATH, content->str, -1, &error))
-        LOG_ERROR("Error guardando variables.sh: %s", error ? error->message : "Unknown error");
-    else
-        LOG_INFO("Variables de cifrado creadas exitosamente");
-
-    if (error) g_error_free(error);
-    g_string_free(content, TRUE);
-}
-
-// ============================================================================
-// CALLBACKS PARA CAMPOS DE CONTRASEÑA
-// ============================================================================
-
-// Callback para cambios en el campo de contraseña
-void on_page3_password_changed(AdwPasswordEntryRow *entry, gpointer user_data)
-{
-    Page3Data *data = (Page3Data *)user_data;
-    if (!data) return;
-
-    // Verificar longitud de contraseña
-    page3_validate_password_length(data);
-
-    // Verificar coincidencia cuando cambia la contraseña principal
-    page3_check_password_match(data);
-
-    // Verificar si ambos campos están en success y activar
-    page3_check_success_and_activate(data);
-}
-
-// Callback para cambios en el campo de confirmación de contraseña
-void on_page3_password_confirm_changed(AdwPasswordEntryRow *entry, gpointer user_data)
-{
-    Page3Data *data = (Page3Data *)user_data;
-    if (!data) return;
-
-    // Verificar coincidencia de contraseñas
-    page3_check_password_match(data);
-
-    // Verificar si ambos campos están en success y activar
-    page3_check_success_and_activate(data);
-}
-
-// Callback para el botón de guardar clave de disco
-void on_page3_save_key_disk_clicked(GtkButton *button, gpointer user_data)
-{
-    Page3Data *data = (Page3Data *)user_data;
-    if (!data) return;
-
-    LOG_INFO("Configurando clave de cifrado de disco");
-
-    // Limpiar los campos de contraseña antes de navegar
-    if (data->password_entry) {
-        gtk_editable_set_text(GTK_EDITABLE(data->password_entry), "");
-        LOG_INFO("Campo de contraseña limpiado");
-    }
-
-    if (data->password_confirm_entry) {
-        gtk_editable_set_text(GTK_EDITABLE(data->password_confirm_entry), "");
-        LOG_INFO("Campo de confirmación de contraseña limpiado");
-    }
-
-    // Crear variables de cifrado iniciales en variables.sh
-    page3_create_encryption_variables();
-
-    // Navegar a la página de configuración de clave
-    page3_navigate_to_encryption_key(data);
 }
 
 // Callback para el botón de configurar disco (abre window_disk)
@@ -2413,4 +1963,99 @@ gchar* page3_get_firmware_type(void)
 
     // Si no se puede determinar que es UEFI, asumir BIOS Legacy
     return g_strdup("BIOS Legacy");
+}
+
+void page3_update_language(void)
+{
+    if (!g_page3_data) return;
+
+    // Página principal: status page
+    if (g_page3_data->status_page) {
+        adw_status_page_set_title(g_page3_data->status_page,
+            i18n_t("Seleccionar Disco", "Select Disk", "Выбор диска"));
+        adw_status_page_set_description(g_page3_data->status_page,
+            i18n_t("Selecciona un disco de la lista de dispositivos disponibles",
+                   "Select a disk from the list of available devices",
+                   "Выберите диск из списка доступных устройств"));
+    }
+
+    // Grupo lista de discos
+    if (g_page3_data->group_disco_lista)
+        adw_preferences_group_set_title(g_page3_data->group_disco_lista,
+            i18n_t("Lista de Discos:", "Disk List:", "Список дисков:"));
+
+    // Combo de dispositivos
+    if (g_page3_data->disk_combo)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->disk_combo),
+            i18n_t("Dispositivo", "Device", "Устройство"));
+
+    // Grupo opciones de particionado
+    if (g_page3_data->group_opciones)
+        adw_preferences_group_set_title(g_page3_data->group_opciones,
+            i18n_t("Elige una opción", "Choose an option", "Выберите вариант"));
+
+    // Fila: borrar e instalar
+    if (g_page3_data->auto_partition_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->auto_partition_row),
+            i18n_t("Borra el disco e Instala Arch Linux",
+                   "Erase disk and Install Arch Linux",
+                   "Очистить диск и установить Arch Linux"));
+        adw_action_row_set_subtitle(g_page3_data->auto_partition_row,
+            i18n_t("Eliminará todos los datos del disco seleccionado",
+                   "Will erase all data on the selected disk",
+                   "Удалит все данные на выбранном диске"));
+    }
+
+    // Fila: particionado manual
+    if (g_page3_data->manual_partition_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->manual_partition_row),
+            i18n_t("Particionado Manual", "Manual Partitioning", "Ручное разбиение"));
+        adw_action_row_set_subtitle(g_page3_data->manual_partition_row,
+            i18n_t("Puede crear y asignar montajes para instalar Arch Linux",
+                   "You can create and assign mount points to install Arch Linux",
+                   "Можно создать и назначить точки монтирования для установки Arch Linux"));
+    }
+
+    // Grupo de particiones del disco (página manual)
+    if (g_page3_data->partitions_group) {
+        adw_preferences_group_set_title(g_page3_data->partitions_group,
+            i18n_t("Particiones del disco", "Disk Partitions", "Разделы диска"));
+        adw_preferences_group_set_description(g_page3_data->partitions_group,
+            i18n_t("Presiona + para seleccionar los puntos de montaje",
+                   "Press + to select the mount points",
+                   "Нажмите + для выбора точек монтирования"));
+    }
+
+    // Página manual de particiones
+    if (g_page3_data->manual_status_page) {
+        adw_status_page_set_title(g_page3_data->manual_status_page,
+            i18n_t("Partición Manual", "Manual Partition", "Ручное разбиение"));
+        adw_status_page_set_description(g_page3_data->manual_status_page,
+            i18n_t("Configura las particiones usando Gparted en el disco seleccionado",
+                   "Configure partitions using Gparted on the selected disk",
+                   "Настройте разделы с помощью Gparted на выбранном диске"));
+    }
+
+    // Botón Gparted
+    if (g_page3_data->gparted_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page3_data->gparted_button),
+            i18n_t("Abrir Gparted para edición avanzada",
+                   "Open Gparted for advanced editing",
+                   "Открыть Gparted для расширенного редактирования"));
+    if (g_page3_data->gparted_label)
+        gtk_label_set_text(g_page3_data->gparted_label,
+            i18n_t(" Abrir Gparted", " Open Gparted", " Открыть Gparted"));
+
+    // Tooltip botón actualizar particiones
+    if (g_page3_data->refresh_partitions_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page3_data->refresh_partitions_button),
+            i18n_t("Actualizar lista", "Refresh list", "Обновить список"));
+
+    // Diálogo de configuración de partición
+    if (g_page3_data->partition_manager)
+        partition_manager_update_language(g_page3_data->partition_manager);
+
+    // Sub-ventana de configuración del disco
+    if (g_page3_data->window_disk)
+        window_disk_update_language(g_page3_data->window_disk);
 }

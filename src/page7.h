@@ -8,10 +8,18 @@
 typedef struct _Page7Data {
     AdwCarousel *carousel;
     GtkRevealer *revealer;
-    
+
     // Widget principal de la página
     GtkWidget *main_content;
-    
+
+    // StatusPage y grupos de sección (para traducción)
+    AdwStatusPage *status_page;
+    AdwPreferencesGroup *group_sistema_local;
+    AdwPreferencesGroup *group_disco;
+    AdwPreferencesGroup *group_usuario;
+    AdwPreferencesGroup *group_personalizacion;
+    AdwPreferencesGroup *group_sistema;
+
     // Widgets de Sistema Local
     AdwActionRow *teclado_row;
     AdwActionRow *zona_horaria_row;
@@ -161,5 +169,8 @@ void page7_update_programas_extras_subtitle(const gchar *programs_text);
 
 // Función para obtener datos globales de page7
 Page7Data* page7_get_data(void);
+
+// Función de actualización de idioma
+void page7_update_language(void);
 
 #endif /* PAGE7_H */

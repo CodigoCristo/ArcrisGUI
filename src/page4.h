@@ -8,20 +8,25 @@
 typedef struct _Page4Data {
     AdwCarousel *carousel;
     GtkRevealer *revealer;
-    
+
     // Widget principal de la página
     GtkWidget *main_content;
-    
+
     // Widgets específicos de la página 4 (registro de usuario)
     AdwEntryRow *username_entry;
     AdwPasswordEntryRow *password_entry;
     AdwPasswordEntryRow *password_confirm_entry;
-    
+
     // Widgets para hostname
     AdwEntryRow *hostname_entry;
-    
+
     // Widget para mensaje de error
     GtkLabel *password_error_label;
+
+    // Widgets para traducción
+    AdwStatusPage *status_page;
+    GtkLabel *hostname_title_label;
+    GtkLabel *hostname_desc_label;
     
     // Estado de validación
     gboolean passwords_match;
@@ -82,6 +87,9 @@ void on_page4_hostname_changed(AdwEntryRow *entry, gpointer user_data);
 // Navigation callbacks
 void on_page4_next_button_clicked(GtkButton *button, gpointer user_data);
 void on_page4_back_button_clicked(GtkButton *button, gpointer user_data);
+
+// Función de actualización de idioma
+void page4_update_language(void);
 
 // Funciones de utilidad
 void page4_reset_form(Page4Data *data);

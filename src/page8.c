@@ -2,6 +2,7 @@
 #include "page9.h"
 #include "page10.h"
 #include "config.h"
+#include "i18n.h"
 #include <glib/gstdio.h>
 #include <vte/vte.h>
 
@@ -132,6 +133,7 @@ void page8_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
 
     // Obtener otros widgets
     g_page8_data->install_title = GTK_LABEL(gtk_builder_get_object(page_builder, "install_title"));
+    g_page8_data->carousel_info = GTK_LABEL(gtk_builder_get_object(page_builder, "carousel_info"));
     g_page8_data->progress_bar = GTK_PROGRESS_BAR(gtk_builder_get_object(page_builder, "progress_bar"));
 
     // Obtener widgets de terminal
@@ -678,4 +680,28 @@ gboolean page8_is_final_page(void)
 Page8Data* page8_get_data(void)
 {
     return g_page8_data;
+}
+
+void page8_update_language(void)
+{
+    if (!g_page8_data) return;
+
+    if (g_page8_data->terminal_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page8_data->terminal_button),
+            i18n_t("Mostrar/Ocultar Terminal",
+                   "Show/Hide Terminal",
+                   "Показать/Скрыть терминал"));
+    if (g_page8_data->install_title)
+        gtk_label_set_text(g_page8_data->install_title,
+            i18n_t("Instalando Arch Linux", "Installing Arch Linux", "Установка Arch Linux"));
+    if (g_page8_data->carousel_info)
+        gtk_label_set_text(g_page8_data->carousel_info,
+            i18n_t("Esto puede demorar varios minutos, dependiendo de su conexión a Internet, por favor, espere...",
+                   "This may take several minutes depending on your internet connection, please wait...",
+                   "Это может занять несколько минут в зависимости от вашего интернет-соединения, пожалуйста, подождите..."));
+    if (g_page8_data->terminal_info)
+        gtk_label_set_text(g_page8_data->terminal_info,
+            i18n_t("Aquí se muestra la salida detallada del proceso de instalación",
+                   "This shows the detailed output of the installation process",
+                   "Здесь отображается подробный вывод процесса установки"));
 }

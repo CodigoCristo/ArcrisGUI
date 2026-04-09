@@ -21,7 +21,6 @@
             </property>
             <child type="end">
               <object class="GtkMenuButton" id="button_menu">
-                <property name="menu-model">menu_app</property>
                 <property name="icon-name">open-menu-symbolic</property>
                 <property name="primary">true</property>
               </object>
@@ -67,6 +66,7 @@
                       <property name="homogeneous">true</property>
                       <child>
                         <object class="GtkButton" id="back_button">
+                          <property name="name">back_button</property>
                           <property name="label">Anterior</property>
                           <property name="halign">start</property>
                           <property name="valign">center</property>
@@ -75,6 +75,7 @@
                       </child>
                       <child>
                         <object class="GtkButton" id="next_button">
+                          <property name="name">next_button</property>
                           <property name="label">Siguiente</property>
                           <property name="halign">end</property>
                           <property name="valign">center</property>
@@ -95,25 +96,4 @@
     </child>
   </object>
 
-  <menu id="menu_app">
-    <section>
-      <item>
-        <attribute name="label" translatable="true">Arcris Update</attribute>
-        <attribute name="action">app.check_updates</attribute>
-      </item>
-    </section>
-    <section>
-      <item>
-        <attribute name="label" translatable="true">Arcris About</attribute>
-        <attribute name="action">app.about</attribute>
-      </item>
-    </section>
-    <section>
-      <item>
-        <attribute name="label" translatable="true">Salir</attribute>
-        <attribute name="action">app.quit</attribute>
-        <attribute name="accel">&lt;Primary&gt;q</attribute>
-      </item>
-    </section>
-  </menu>
 </interface>

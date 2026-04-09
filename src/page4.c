@@ -1,6 +1,7 @@
 #include "page4.h"
 #include "config.h"
 #include "variables_utils.h"
+#include "i18n.h"
 #include <stdio.h>
 
 #include <string.h>
@@ -48,6 +49,9 @@ void page4_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page4_data->password_confirm_entry = ADW_PASSWORD_ENTRY_ROW(gtk_builder_get_object(page_builder, "password_confirm_entry"));
     g_page4_data->hostname_entry = ADW_ENTRY_ROW(gtk_builder_get_object(page_builder, "hostname_entry"));
     g_page4_data->password_error_label = GTK_LABEL(gtk_builder_get_object(page_builder, "password_error_label"));
+    g_page4_data->status_page = ADW_STATUS_PAGE(gtk_builder_get_object(page_builder, "page4_status"));
+    g_page4_data->hostname_title_label = GTK_LABEL(gtk_builder_get_object(page_builder, "hostname_title_label"));
+    g_page4_data->hostname_desc_label = GTK_LABEL(gtk_builder_get_object(page_builder, "hostname_desc_label"));
 
     // Verificar que todos los widgets se obtuvieron correctamente
     if (!g_page4_data->username_entry || !g_page4_data->password_entry ||
@@ -234,6 +238,8 @@ void page4_check_password_match(Page4Data *data)
         if (strlen(confirm_password) > 0) {
             if (!data->passwords_match) {
                 // Mostrar error cuando no coinciden
+                gtk_label_set_text(data->password_error_label,
+                    i18n_t("Las contraseñas no coinciden", "Passwords do not match", "Пароли не совпадают"));
                 gtk_widget_set_visible(GTK_WIDGET(data->password_error_label), TRUE);
                 gtk_widget_add_css_class(GTK_WIDGET(data->password_confirm_entry), "error");
                 gtk_widget_remove_css_class(GTK_WIDGET(data->password_confirm_entry), "success");
@@ -974,4 +980,42 @@ void page4_validate_password_length(Page4Data *data)
 
     // Actualizar estado del botón siguiente
     page4_update_next_button_state(data);
+}
+
+void page4_update_language(void)
+{
+    if (!g_page4_data) return;
+
+    if (g_page4_data->status_page) {
+        adw_status_page_set_title(g_page4_data->status_page,
+            i18n_t("Crear usuario", "Create User", "Создать пользователя"));
+        adw_status_page_set_description(g_page4_data->status_page,
+            i18n_t("Configure su nueva cuenta de usuario",
+                   "Configure your new user account",
+                   "Настройте новую учётную запись пользователя"));
+    }
+    if (g_page4_data->username_entry)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page4_data->username_entry),
+            i18n_t("Elija un nombre de usuario", "Choose a username", "Введите имя пользователя"));
+    if (g_page4_data->password_entry)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page4_data->password_entry),
+            i18n_t("Elija una contraseña", "Choose a password", "Введите пароль"));
+    if (g_page4_data->password_confirm_entry)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page4_data->password_confirm_entry),
+            i18n_t("Confirme su contraseña", "Confirm your password", "Подтвердите пароль"));
+    if (g_page4_data->password_error_label &&
+        gtk_widget_get_visible(GTK_WIDGET(g_page4_data->password_error_label)))
+        gtk_label_set_text(g_page4_data->password_error_label,
+            i18n_t("Las contraseñas no coinciden", "Passwords do not match", "Пароли не совпадают"));
+    if (g_page4_data->hostname_entry)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page4_data->hostname_entry),
+            i18n_t("El nombre del equipo", "Computer name", "Имя компьютера"));
+    if (g_page4_data->hostname_title_label)
+        gtk_label_set_text(g_page4_data->hostname_title_label,
+            i18n_t("Hostname", "Hostname", "Имя хоста"));
+    if (g_page4_data->hostname_desc_label)
+        gtk_label_set_text(g_page4_data->hostname_desc_label,
+            i18n_t("El nombre que utiliza al comunicarse con otros equipos.",
+                   "The name used to communicate with other computers.",
+                   "Имя компьютера в сети."));
 }

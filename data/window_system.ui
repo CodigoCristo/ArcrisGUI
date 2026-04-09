@@ -14,7 +14,7 @@
         <child type="top">
           <object class="AdwHeaderBar">
             <property name="title-widget">
-              <object class="AdwWindowTitle">
+              <object class="AdwWindowTitle" id="system_window_title">
                 <property name="title">Aplicaciones Base</property>
               </object>
             </property>

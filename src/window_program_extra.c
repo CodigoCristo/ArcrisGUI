@@ -2,6 +2,7 @@
 #include "page7.h"
 #include "config.h"
 #include "variables_utils.h"
+#include "i18n.h"
 #include <glib/gstdio.h>
 #include <string.h>
 
@@ -57,6 +58,7 @@ void window_program_extra_init(WindowProgramExtraData *data)
     window_program_extra_load_programs_from_file(data);
     
     data->is_initialized = TRUE;
+    window_program_extra_update_language(data);
     LOG_INFO("Ventana de programas extra inicializada correctamente");
 }
 
@@ -134,6 +136,9 @@ void window_program_extra_load_widgets_from_builder(WindowProgramExtraData *data
     // Cargar botones
     data->close_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "close_button"));
     data->save_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "save_button"));
+    data->window_title = ADW_WINDOW_TITLE(gtk_builder_get_object(data->builder, "program_extra_window_title"));
+    data->title_label = GTK_LABEL(gtk_builder_get_object(data->builder, "program_extra_title_label"));
+    data->subtitle_label = GTK_LABEL(gtk_builder_get_object(data->builder, "program_extra_subtitle_label"));
     
     // Cargar TextView
     data->hardware_textview = GTK_TEXT_VIEW(gtk_builder_get_object(data->builder, "programextra_textview"));
@@ -506,3 +511,24 @@ WindowProgramExtraData* window_program_extra_get_instance(void)
     return global_program_extra_data;
 }
 
+
+void window_program_extra_update_language(WindowProgramExtraData *data)
+{
+    if (!data) return;
+
+    if (data->close_button)
+        gtk_button_set_label(data->close_button,
+            i18n_t("Cerrar", "Close", "Закрыть"));
+    if (data->save_button)
+        gtk_button_set_label(data->save_button,
+            i18n_t("Guardar", "Save", "Сохранить"));
+    if (data->window_title)
+        adw_window_title_set_title(data->window_title,
+            i18n_t("Programas Extras", "Extra Programs", "Дополнительные программы"));
+    if (data->title_label)
+        gtk_label_set_text(data->title_label,
+            i18n_t("Agrega tus programas aquí", "Add your programs here", "Добавьте ваши программы здесь"));
+    if (data->subtitle_label)
+        gtk_label_set_text(data->subtitle_label,
+            i18n_t("Sea en lista o con espacios:", "As a list or space-separated:", "Списком или через пробел:"));
+}

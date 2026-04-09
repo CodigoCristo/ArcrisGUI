@@ -1,6 +1,7 @@
 #include "window_repos.h"
 #include "config.h"
 #include "variables_utils.h"
+#include "i18n.h"
 #include <string.h>
 
 
@@ -182,6 +183,9 @@ void window_repos_init(WindowReposData *data)
     data->chaotic_aur_switch  = ADW_SWITCH_ROW(gtk_builder_get_object(data->builder, "chaotic_aur_switch"));
     data->archlinuxcn_switch  = ADW_SWITCH_ROW(gtk_builder_get_object(data->builder, "archlinuxcn_switch"));
     data->cachyos_switch      = ADW_SWITCH_ROW(gtk_builder_get_object(data->builder, "cachyos_switch"));
+    data->window_title        = ADW_WINDOW_TITLE(gtk_builder_get_object(data->builder, "repos_window_title"));
+    data->mirrorlist_expander = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "mirrorlist_expander"));
+    data->mirrorlist_link     = GTK_LINK_BUTTON(gtk_builder_get_object(data->builder, "mirrorlist_link"));
     data->auto_button         = GTK_TOGGLE_BUTTON(gtk_builder_get_object(data->builder, "auto_button"));
     data->manual_button       = GTK_TOGGLE_BUTTON(gtk_builder_get_object(data->builder, "manual_button"));
     data->repos_manual_row    = GTK_LIST_BOX_ROW(gtk_builder_get_object(data->builder, "repos_manual"));
@@ -214,6 +218,7 @@ void window_repos_init(WindowReposData *data)
     update_manual_visibility(data);
 
     data->is_initialized = TRUE;
+    window_repos_update_language(data);
     LOG_INFO("Ventana de repositorios inicializada");
 }
 
@@ -369,4 +374,53 @@ void on_repos_save_button_clicked(GtkButton *button, gpointer user_data)
     LOG_INFO("Mirrorlist guardada en variables.sh");
 
     gtk_widget_set_visible(GTK_WIDGET(data->window), FALSE);
+}
+
+void window_repos_update_language(WindowReposData *data)
+{
+    if (!data) return;
+
+    if (data->close_button)
+        gtk_button_set_label(data->close_button,
+            i18n_t("Cerrar", "Close", "Закрыть"));
+    if (data->save_button)
+        gtk_button_set_label(data->save_button,
+            i18n_t("Guardar", "Save", "Сохранить"));
+    if (data->window_title)
+        adw_window_title_set_title(data->window_title,
+            i18n_t("Repositorios", "Repositories", "Репозитории"));
+    if (data->chaotic_aur_switch)
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(data->chaotic_aur_switch),
+            i18n_t("AUR precompilado, uso general",
+                   "Precompiled AUR, general use",
+                   "Предкомпилированный AUR, общего назначения"));
+    if (data->archlinuxcn_switch)
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(data->archlinuxcn_switch),
+            i18n_t("Paquetes populares precompilados",
+                   "Popular precompiled packages",
+                   "Популярные предкомпилированные пакеты"));
+    if (data->cachyos_switch)
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(data->cachyos_switch),
+            i18n_t("Repositorios separados optimizados para diferentes CPU.",
+                   "Separate repositories optimized for different CPUs.",
+                   "Отдельные репозитории, оптимизированные для разных CPU."));
+    if (data->mirrorlist_expander) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->mirrorlist_expander),
+            i18n_t("Mirrorlist Oficiales", "Official Mirrorlist", "Официальный Mirrorlist"));
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(data->mirrorlist_expander),
+            i18n_t("Lista de espejos oficiales de Arch Linux",
+                   "Official Arch Linux mirror list",
+                   "Официальный список зеркал Arch Linux"));
+    }
+    if (data->auto_button)
+        gtk_button_set_label(GTK_BUTTON(data->auto_button),
+            i18n_t("Automático", "Automatic", "Авто"));
+    if (data->manual_button)
+        gtk_button_set_label(GTK_BUTTON(data->manual_button),
+            i18n_t("Manual", "Manual", "Вручную"));
+    if (data->mirrorlist_link)
+        gtk_button_set_label(GTK_BUTTON(data->mirrorlist_link),
+            i18n_t("Generar mirrorlist en archlinux.org/mirrorlist/",
+                   "Generate mirrorlist at archlinux.org/mirrorlist/",
+                   "Создать mirrorlist на archlinux.org/mirrorlist/"));
 }

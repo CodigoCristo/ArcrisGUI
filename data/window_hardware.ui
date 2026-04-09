@@ -14,7 +14,7 @@
         <child type="top">
           <object class="AdwHeaderBar">
             <property name="title-widget">
-              <object class="AdwWindowTitle">
+              <object class="AdwWindowTitle" id="hardware_window_title">
                 <property name="title">Hardware</property>
               </object>
             </property>

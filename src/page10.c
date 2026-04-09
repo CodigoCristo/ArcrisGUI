@@ -1,5 +1,6 @@
 #include "page10.h"
 #include "config.h"
+#include "i18n.h"
 
 static Page10Data *g_page10_data = NULL;
 
@@ -103,4 +104,25 @@ void page10_on_page_shown(void)
 void page10_on_page_hidden(void)
 {
     LOG_INFO("Página 10 (error) oculta");
+}
+
+void page10_update_language(void)
+{
+    if (!g_page10_data) return;
+
+    if (g_page10_data->error_title)
+        gtk_label_set_text(g_page10_data->error_title,
+            i18n_t("Error en la instalación",
+                   "Installation Error",
+                   "Ошибка установки"));
+    if (g_page10_data->error_message)
+        gtk_label_set_text(g_page10_data->error_message,
+            i18n_t("La instalación no pudo completarse. Revisa el registro para más información.",
+                   "The installation could not be completed. Check the log for more information.",
+                   "Установка не завершена. Проверьте журнал для получения дополнительной информации."));
+    if (g_page10_data->view_log_button)
+        gtk_button_set_label(GTK_BUTTON(g_page10_data->view_log_button),
+            i18n_t("Ver registro log",
+                   "View log",
+                   "Просмотр журнала"));
 }

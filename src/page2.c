@@ -2,6 +2,7 @@
 #include "variables_utils.h"
 #include "config.h"
 #include "internet.h"
+#include "i18n.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,71 +13,315 @@
 // Variable global para datos de la página 2
 static Page2Data *g_page2_data = NULL;
 
-// Función para obtener el idioma desde la API
+// Tabla de mapeo país → layout de teclado
+typedef struct {
+    const gchar *country_code;
+    const gchar *x11_layout;
+    const gchar *tty_keymap;
+} CountryKeyboardMap;
+
+static const CountryKeyboardMap country_keyboard_map[] = {
+    // === LATINOAMÉRICA HISPANOHABLANTE (latam) ===
+    {"MX", "latam", "la-latin1"}, // México
+    {"GT", "latam", "la-latin1"}, // Guatemala
+    {"BZ", "latam", "la-latin1"}, // Belice
+    {"HN", "latam", "la-latin1"}, // Honduras
+    {"SV", "latam", "la-latin1"}, // El Salvador
+    {"NI", "latam", "la-latin1"}, // Nicaragua
+    {"CR", "latam", "la-latin1"}, // Costa Rica
+    {"PA", "latam", "la-latin1"}, // Panamá
+    {"CU", "latam", "la-latin1"}, // Cuba
+    {"DO", "latam", "la-latin1"}, // República Dominicana
+    {"PR", "latam", "la-latin1"}, // Puerto Rico
+    {"CO", "latam", "la-latin1"}, // Colombia
+    {"VE", "latam", "la-latin1"}, // Venezuela
+    {"EC", "latam", "la-latin1"}, // Ecuador
+    {"PE", "latam", "la-latin1"}, // Perú
+    {"BO", "latam", "la-latin1"}, // Bolivia
+    {"PY", "latam", "la-latin1"}, // Paraguay
+    {"CL", "latam", "la-latin1"}, // Chile
+    {"AR", "latam", "la-latin1"}, // Argentina
+    {"UY", "latam", "la-latin1"}, // Uruguay
+    {"GQ", "latam", "la-latin1"}, // Guinea Ecuatorial
+
+    // === BRASIL ===
+    {"BR", "br",   "br-abnt2"},
+
+    // === ESPAÑA ===
+    {"ES", "es",   "es"},
+
+    // === PORTUGAL Y LUSÓFONOS ===
+    {"PT", "pt",   "pt-latin1"}, // Portugal
+    {"AO", "pt",   "pt-latin1"}, // Angola
+    {"MZ", "pt",   "pt-latin1"}, // Mozambique
+    {"CV", "pt",   "pt-latin1"}, // Cabo Verde
+    {"ST", "pt",   "pt-latin1"}, // Santo Tomé y Príncipe
+    {"GW", "pt",   "pt-latin1"}, // Guinea-Bisáu
+
+    // === ANGLOSAJONES ===
+    {"US", "us",   "us"}, // Estados Unidos
+    {"CA", "us",   "us"}, // Canadá
+    {"AU", "us",   "us"}, // Australia
+    {"NZ", "us",   "us"}, // Nueva Zelanda
+    {"GB", "gb",   "uk"}, // Reino Unido
+    {"IE", "gb",   "uk"}, // Irlanda
+    {"JM", "us",   "us"}, // Jamaica
+    {"TT", "us",   "us"}, // Trinidad y Tobago
+    {"BB", "us",   "us"}, // Barbados
+    {"BS", "us",   "us"}, // Bahamas
+    {"GY", "us",   "us"}, // Guyana
+    {"AG", "us",   "us"}, // Antigua y Barbuda
+    {"LC", "us",   "us"}, // Santa Lucía
+    {"VC", "us",   "us"}, // San Vicente
+    {"GD", "us",   "us"}, // Granada
+    {"DM", "us",   "us"}, // Dominica
+    {"KN", "us",   "us"}, // San Cristóbal
+    {"PH", "us",   "us"}, // Filipinas
+    {"SG", "us",   "us"}, // Singapur
+    {"IN", "us",   "us"}, // India
+    {"PK", "us",   "us"}, // Pakistán
+    {"BD", "us",   "us"}, // Bangladesh
+    {"LK", "us",   "us"}, // Sri Lanka
+    {"ZA", "za",   "us"}, // Sudáfrica
+    {"NG", "us",   "us"}, // Nigeria
+    {"GH", "us",   "us"}, // Ghana
+    {"KE", "us",   "us"}, // Kenia
+    {"TZ", "us",   "us"}, // Tanzania
+    {"UG", "us",   "us"}, // Uganda
+    {"ZW", "us",   "us"}, // Zimbabue
+    {"ZM", "us",   "us"}, // Zambia
+    {"MW", "us",   "us"}, // Malaui
+    {"BW", "us",   "us"}, // Botsuana
+    {"NA", "us",   "us"}, // Namibia
+    {"SZ", "us",   "us"}, // Esuatini
+    {"LS", "us",   "us"}, // Lesoto
+    {"SL", "us",   "us"}, // Sierra Leona
+    {"LR", "us",   "us"}, // Liberia
+    {"GM", "us",   "us"}, // Gambia
+    {"SS", "us",   "us"}, // Sudán del Sur
+    {"ER", "us",   "us"}, // Eritrea
+
+    // === FRANCÓFONOS ===
+    {"FR", "fr",   "fr"}, // Francia
+    {"MC", "fr",   "fr"}, // Mónaco
+    {"LU", "fr",   "fr"}, // Luxemburgo
+    {"HT", "fr",   "fr"}, // Haití
+    {"CI", "fr",   "fr"}, // Costa de Marfil
+    {"SN", "fr",   "fr"}, // Senegal
+    {"ML", "fr",   "fr"}, // Mali
+    {"BF", "fr",   "fr"}, // Burkina Faso
+    {"GN", "fr",   "fr"}, // Guinea
+    {"NE", "fr",   "fr"}, // Níger
+    {"BJ", "fr",   "fr"}, // Benín
+    {"TG", "fr",   "fr"}, // Togo
+    {"CM", "fr",   "fr"}, // Camerún
+    {"CD", "fr",   "fr"}, // Congo (RDC)
+    {"CG", "fr",   "fr"}, // Congo
+    {"GA", "fr",   "fr"}, // Gabón
+    {"MG", "fr",   "fr"}, // Madagascar
+    {"KM", "fr",   "fr"}, // Comoras
+    {"MU", "fr",   "fr"}, // Mauricio
+    {"SC", "fr",   "fr"}, // Seychelles
+    {"BI", "fr",   "fr"}, // Burundi
+    {"RW", "fr",   "fr"}, // Ruanda
+    {"CF", "fr",   "fr"}, // Rep. Centroafricana
+    {"TD", "fr",   "fr"}, // Chad
+    {"DJ", "fr",   "fr"}, // Yibuti
+
+    // === BÉLGICA (AZERTY) ===
+    {"BE", "be",   "be-latin1"},
+
+    // === GERMANOS ===
+    {"DE", "de",   "de"}, // Alemania
+    {"AT", "de",   "de"}, // Austria
+    {"CH", "ch",   "sg-latin1"}, // Suiza
+    {"LI", "ch",   "sg-latin1"}, // Liechtenstein
+
+    // === ITALIANOS ===
+    {"IT", "it",   "it"}, // Italia
+    {"SM", "it",   "it"}, // San Marino
+    {"VA", "it",   "it"}, // Vaticano
+
+    // === NEERLANDESES ===
+    {"NL", "nl",   "nl"}, // Países Bajos
+    {"SR", "nl",   "nl"}, // Surinam
+
+    // === NÓRDICOS ===
+    {"SE", "se",   "se-lat6"},   // Suecia
+    {"FI", "fi",   "fi-latin1"}, // Finlandia
+    {"NO", "no",   "no-latin1"}, // Noruega
+    {"DK", "dk",   "dk-latin1"}, // Dinamarca
+    {"IS", "is",   "is-latin1"}, // Islandia
+
+    // === EUROPA DEL ESTE ===
+    {"RU", "ru",    "ru"},         // Rusia
+    {"UA", "ua",    "ua"},         // Ucrania
+    {"BY", "by",    "by"},         // Bielorrusia
+    {"PL", "pl",    "pl2"},        // Polonia
+    {"CZ", "cz",    "cz-lat2"},    // República Checa
+    {"SK", "sk",    "sk-qwerty"},  // Eslovaquia
+    {"HU", "hu",    "hu"},         // Hungría
+    {"RO", "ro",    "ro"},         // Rumanía
+    {"MD", "ro",    "ro"},         // Moldavia
+    {"BG", "bg",    "bg_pho-utf8"},// Bulgaria
+    {"RS", "rs",    "sr-cy"},      // Serbia
+    {"BA", "ba",    "us"},         // Bosnia
+    {"HR", "hr",    "croat"},      // Croacia
+    {"SI", "si",    "slovene"},    // Eslovenia
+    {"MK", "mk",    "mk"},         // Macedonia del Norte
+    {"AL", "al",    "al"},         // Albania
+    {"XK", "rs",    "sr-cy"},      // Kosovo
+    {"ME", "rs",    "sr-cy"},      // Montenegro
+
+    // === GRECIA ===
+    {"GR", "gr",   "gr"}, // Grecia
+    {"CY", "gr",   "gr"}, // Chipre
+
+    // === PAÍSES BÁLTICOS ===
+    {"LV", "lv",   "lv"},       // Letonia
+    {"LT", "lt",   "lt.iso773"},// Lituania
+    {"EE", "ee",   "et"},       // Estonia
+
+    // === CÁUCASO ===
+    {"GE", "ge",   "ge"}, // Georgia
+    {"AM", "am",   "am"}, // Armenia
+    {"AZ", "az",   "az"}, // Azerbaiyán
+
+    // === ASIA CENTRAL ===
+    {"KZ", "kz",   "ru"}, // Kazajistán
+    {"UZ", "uz",   "ru"}, // Uzbekistán
+    {"TM", "tm",   "ru"}, // Turkmenistán
+    {"TJ", "tj",   "ru"}, // Tayikistán
+    {"KG", "kg",   "ru"}, // Kirguistán
+
+    // === TURQUÍA ===
+    {"TR", "tr",   "trq"},
+
+    // === ORIENTE MEDIO ===
+    {"IL", "il",   "il"},     // Israel
+    {"SA", "ara",  "arabic"}, // Arabia Saudita
+    {"AE", "ara",  "arabic"}, // Emiratos Árabes
+    {"EG", "ara",  "arabic"}, // Egipto
+    {"IQ", "ara",  "arabic"}, // Iraq
+    {"JO", "ara",  "arabic"}, // Jordania
+    {"KW", "ara",  "arabic"}, // Kuwait
+    {"LB", "ara",  "arabic"}, // Líbano
+    {"SY", "ara",  "arabic"}, // Siria
+    {"YE", "ara",  "arabic"}, // Yemen
+    {"OM", "ara",  "arabic"}, // Omán
+    {"BH", "ara",  "arabic"}, // Baréin
+    {"QA", "ara",  "arabic"}, // Catar
+    {"PS", "ara",  "arabic"}, // Palestina
+    {"LY", "ara",  "arabic"}, // Libia
+    {"TN", "ara",  "arabic"}, // Túnez
+    {"DZ", "ara",  "arabic"}, // Argelia
+    {"MA", "ara",  "arabic"}, // Marruecos
+    {"MR", "ara",  "arabic"}, // Mauritania
+    {"SD", "ara",  "arabic"}, // Sudán
+    {"SO", "ara",  "arabic"}, // Somalia
+    {"IR", "ir",   "ir-ltrans"}, // Irán
+    {"AF", "af",   "us"},     // Afganistán
+
+    // === ASIA DEL SUR ===
+    {"NP", "us",   "us"}, // Nepal
+    {"BT", "us",   "us"}, // Bután
+    {"MV", "us",   "us"}, // Maldivas
+
+    // === ASIA DEL ESTE ===
+    {"JP", "jp",   "jp"}, // Japón
+    {"CN", "cn",   "us"}, // China
+    {"TW", "us",   "us"}, // Taiwán
+    {"KR", "kr",   "us"}, // Corea del Sur
+    {"MN", "us",   "us"}, // Mongolia
+
+    // === SURESTE ASIÁTICO ===
+    {"TH", "th",   "th-tis"}, // Tailandia
+    {"VN", "vn",   "us"},     // Vietnam
+    {"ID", "us",   "us"},     // Indonesia
+    {"MY", "us",   "us"},     // Malasia
+    {"KH", "us",   "us"},     // Camboya
+    {"LA", "us",   "us"},     // Laos
+    {"MM", "us",   "us"},     // Myanmar
+    {"TL", "us",   "us"},     // Timor-Leste
+    {"BN", "us",   "us"},     // Brunéi
+
+    // === OCEANÍA ===
+    {"FJ", "us",   "us"}, // Fiyi
+    {"PG", "us",   "us"}, // Papúa Nueva Guinea
+    {"SB", "us",   "us"}, // Islas Salomón
+    {"VU", "us",   "us"}, // Vanuatu
+    {"WS", "us",   "us"}, // Samoa
+    {"TO", "us",   "us"}, // Tonga
+    {"KI", "us",   "us"}, // Kiribati
+
+    {NULL, NULL,   NULL}
+};
+
+// Devuelve el layout X11 y keymap TTY para un código de país
+static void country_to_keyboard(const gchar *country_code,
+                                 const gchar **out_x11,
+                                 const gchar **out_tty)
+{
+    *out_x11 = "us";
+    *out_tty = "us";
+    if (!country_code) return;
+
+    for (int i = 0; country_keyboard_map[i].country_code != NULL; i++) {
+        if (g_strcmp0(country_code, country_keyboard_map[i].country_code) == 0) {
+            *out_x11 = country_keyboard_map[i].x11_layout;
+            *out_tty = country_keyboard_map[i].tty_keymap;
+            return;
+        }
+    }
+}
+
+// Obtiene el idioma desde la API (ej: "es-PE,qu,ay")
 static gchar* page2_get_language_from_api(void)
 {
-    SoupSession *session;
-    SoupMessage *msg;
-    GBytes *response_body;
+    SoupSession *session = soup_session_new();
+    SoupMessage *msg = soup_message_new("GET", "https://ipapi.co/languages");
     gchar *language_code = NULL;
 
-    session = soup_session_new();
-    msg = soup_message_new("GET", "https://ipapi.co/languages");
-
     if (msg) {
-        response_body = soup_session_send_and_read(session, msg, NULL, NULL);
-
+        GBytes *response_body = soup_session_send_and_read(session, msg, NULL, NULL);
         if (response_body) {
             const char *body_data = g_bytes_get_data(response_body, NULL);
             if (body_data) {
-                // Extraer el primer código de idioma completo (ej: "es-PE" de "es-PE,qu,ay")
                 gchar **languages = g_strsplit(body_data, ",", -1);
-                if (languages && languages[0]) {
-                    // Limpiar espacios en blanco y saltos de línea
+                if (languages && languages[0])
                     language_code = g_strstrip(g_strdup(languages[0]));
-                    g_print("🌍 Idioma detectado: %s\n", language_code);
-                }
                 g_strfreev(languages);
             }
             g_bytes_unref(response_body);
         }
         g_object_unref(msg);
     }
-
     g_object_unref(session);
     return language_code;
 }
 
-// Función para obtener la zona horaria desde la API
+// Obtiene la zona horaria desde la API
 static gchar* page2_get_timezone_from_api(void)
 {
-    SoupSession *session;
-    SoupMessage *msg;
-    GBytes *response_body;
+    SoupSession *session = soup_session_new();
+    SoupMessage *msg = soup_message_new("GET", "https://ipapi.co/timezone");
     gchar *timezone_code = NULL;
 
-    session = soup_session_new();
-    msg = soup_message_new("GET", "https://ipapi.co/timezone");
-
     if (msg) {
-        response_body = soup_session_send_and_read(session, msg, NULL, NULL);
-
+        GBytes *response_body = soup_session_send_and_read(session, msg, NULL, NULL);
         if (response_body) {
             const char *body_data = g_bytes_get_data(response_body, NULL);
             if (body_data) {
-                // Limpiar el resultado (remover espacios y saltos de línea)
-                gchar *clean_timezone = g_strstrip(g_strdup(body_data));
-                if (clean_timezone && strlen(clean_timezone) > 0) {
-                    timezone_code = g_strdup(clean_timezone);
-                    g_print("🕐 Zona horaria detectada: %s\n", timezone_code);
-                }
-                g_free(clean_timezone);
+                gchar *clean = g_strstrip(g_strdup(body_data));
+                if (clean && strlen(clean) > 0)
+                    timezone_code = clean;
+                else
+                    g_free(clean);
             }
             g_bytes_unref(response_body);
         }
         g_object_unref(msg);
     }
-
     g_object_unref(session);
     return timezone_code;
 }
@@ -125,29 +370,23 @@ static gboolean apply_auto_config_to_ui(gpointer user_data)
         return FALSE;
     }
 
-    // Configurar basándose en el idioma detectado
+    // Configurar teclado basándose en el país del idioma detectado
+    // ej: "es-PE" → extraer "PE" → buscar en tabla → latam / la-latin1
     if (config_data->detected_language) {
-        g_print("🔧 Aplicando configuración automática para idioma: %s\n", config_data->detected_language);
-
-        // Extraer solo el código de idioma para teclados (ej: "es" de "es-PE")
-        gchar **lang_parts = g_strsplit(config_data->detected_language, "-", 2);
-        gchar *keyboard_lang = NULL;
-        if (lang_parts && lang_parts[0]) {
-            keyboard_lang = g_strdup(lang_parts[0]);
+        gchar **parts = g_strsplit(config_data->detected_language, "-", 2);
+        if (parts && parts[0] && parts[1]) {
+            gchar *country = g_strdup(parts[1]);
+            const gchar *x11 = NULL, *tty = NULL;
+            country_to_keyboard(country, &x11, &tty);
+            LOG_INFO("Idioma: %s → país: %s → teclado: %s / keymap: %s",
+                     config_data->detected_language, country, x11, tty);
+            auto_select_in_combo_row(g_page2_data->combo_keyboard, x11);
+            auto_select_in_combo_row(g_page2_data->combo_keymap, tty);
+            g_free(country);
         }
-        g_strfreev(lang_parts);
+        g_strfreev(parts);
 
-        if (keyboard_lang) {
-            // Configurar teclado X11 basándose en el idioma
-            auto_select_in_combo_row(g_page2_data->combo_keyboard, keyboard_lang);
-
-            // Configurar keymap de consola basándose en el idioma
-            auto_select_in_combo_row(g_page2_data->combo_keymap, keyboard_lang);
-
-            g_free(keyboard_lang);
-        }
-
-        // Configurar locale basándose en el idioma detectado, convirtiendo es-PE a es_PE
+        // Configurar locale: "es-PE" → "es_PE"
         gchar *locale_search = g_strdup(config_data->detected_language);
         for (gchar *p = locale_search; *p; p++) {
             if (*p == '-') *p = '_';
@@ -156,59 +395,38 @@ static gboolean apply_auto_config_to_ui(gpointer user_data)
         g_free(locale_search);
     }
 
-    // Configurar basándose en la zona horaria detectada
+    // Configurar zona horaria
     if (config_data->detected_timezone) {
-        g_print("🔧 Aplicando configuración automática zona horaria: %s\n", config_data->detected_timezone);
-
-        // Configurar zona horaria
         auto_select_in_combo_row(g_page2_data->combo_timezone, config_data->detected_timezone);
-
-        // Aplicar inmediatamente la zona horaria detectada
         setenv("TZ", config_data->detected_timezone, 1);
         tzset();
-
-        // Forzar actualización inmediata del tiempo
-        if (g_page2_data->time_label) {
+        if (g_page2_data->time_label)
             update_time_display(NULL);
-        }
     }
 
-    g_print("✅ Configuración automática aplicada a la UI\n");
-
-    // Guardar automáticamente las variables configuradas
     save_combo_selections_to_file();
 
-    // Limpiar memoria
     g_free(config_data->detected_language);
     g_free(config_data->detected_timezone);
     g_free(config_data);
 
-    return FALSE; // No repetir
+    return FALSE;
 }
 
 // Función que se ejecuta en un hilo separado para obtener configuración automática
 static gpointer auto_config_worker_thread(gpointer user_data)
 {
-    g_print("🚀 Iniciando configuración automática en hilo separado...\n");
-
     AutoConfigData *config_data = g_malloc0(sizeof(AutoConfigData));
 
-    // Obtener idioma detectado (sin bloquear UI)
     config_data->detected_language = page2_get_language_from_api();
-    if (!config_data->detected_language) {
-        g_print("⚠ No se pudo detectar el idioma desde API\n");
-    }
-
-    // Obtener zona horaria detectada (sin bloquear UI)
     config_data->detected_timezone = page2_get_timezone_from_api();
-    if (!config_data->detected_timezone) {
-        g_print("⚠ No se pudo detectar la zona horaria desde API\n");
-    }
 
-    // Programar la aplicación de configuración en el hilo principal
+    if (!config_data->detected_language)
+        LOG_WARNING("No se pudo detectar el idioma desde API");
+    if (!config_data->detected_timezone)
+        LOG_WARNING("No se pudo detectar la zona horaria");
+
     g_idle_add(apply_auto_config_to_ui, config_data);
-
-    g_print("✅ Datos de configuración automática obtenidos\n");
     return NULL;
 }
 
@@ -553,7 +771,12 @@ void page2_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page2_data->combo_timezone = ADW_COMBO_ROW(gtk_builder_get_object(page_builder, "combo2_row3"));
     g_page2_data->combo_locale = ADW_COMBO_ROW(gtk_builder_get_object(page_builder, "combo2_row4"));
     g_page2_data->tecla_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "tecla"));
+    g_page2_data->tecla_button_content = ADW_BUTTON_CONTENT(gtk_builder_get_object(page_builder, "tecla_button_content"));
     g_page2_data->time_label = GTK_LABEL(gtk_builder_get_object(page_builder, "locale_time_label"));
+    g_page2_data->status_page = ADW_STATUS_PAGE(gtk_builder_get_object(page_builder, "page2"));
+    g_page2_data->group_keyboard = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "group_keyboard"));
+    g_page2_data->group_timezone = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "group_timezone"));
+    g_page2_data->group_ubicacion = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "group_ubicacion"));
 
     // Obtener modelos de datos
     g_page2_data->keyboard_list = GTK_STRING_LIST(gtk_builder_get_object(page_builder, "main_keyboard"));
@@ -606,4 +829,57 @@ void page2_cleanup(Page2Data *data)
         g_free(g_page2_data);
         g_page2_data = NULL;
     }
+}
+
+void page2_update_language(void)
+{
+    if (!g_page2_data) return;
+
+    if (g_page2_data->status_page) {
+        adw_status_page_set_title(g_page2_data->status_page,
+            i18n_t("Sistema local", "Local System", "Система"));
+        adw_status_page_set_description(g_page2_data->status_page,
+            i18n_t("Ingrese una distribución del teclado, Zona Horaria y Localidad.",
+                   "Enter a keyboard layout, Timezone and Locale.",
+                   "Введите раскладку клавиатуры, часовой пояс и локаль."));
+    }
+    if (g_page2_data->group_keyboard)
+        adw_preferences_group_set_title(g_page2_data->group_keyboard,
+            i18n_t("Teclado", "Keyboard", "Клавиатура"));
+    if (g_page2_data->group_timezone)
+        adw_preferences_group_set_title(g_page2_data->group_timezone,
+            i18n_t("Zona Horaria", "Timezone", "Часовой пояс"));
+    if (g_page2_data->group_ubicacion)
+        adw_preferences_group_set_title(g_page2_data->group_ubicacion,
+            i18n_t("Ubicación", "Location", "Местоположение"));
+    if (g_page2_data->combo_keyboard)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page2_data->combo_keyboard),
+            i18n_t("Idioma del teclado", "Keyboard Language", "Язык клавиатуры"));
+    if (g_page2_data->combo_keymap)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page2_data->combo_keymap),
+            i18n_t("Teclado en terminal", "TTY Keyboard", "Клавиатура в терминале"));
+    if (g_page2_data->combo_timezone) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page2_data->combo_timezone),
+            i18n_t("Región", "Region", "Регион"));
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(g_page2_data->combo_timezone),
+            i18n_t("Selecciona tu región para actualizar la hora",
+                   "Select your region to update the time",
+                   "Выберите регион для обновления времени"));
+    }
+    if (g_page2_data->combo_locale) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page2_data->combo_locale),
+            i18n_t("País", "Country", "Страна"));
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(g_page2_data->combo_locale),
+            i18n_t("Selecciona tu idioma y País",
+                   "Select your language and Country",
+                   "Выберите язык и страну"));
+    }
+    if (g_page2_data->tecla_button_content)
+        adw_button_content_set_label(g_page2_data->tecla_button_content,
+            i18n_t("_Probar", "_Test", "_Проверить"));
+    if (g_page2_data->tecla_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page2_data->tecla_button),
+            i18n_t("Prueba el teclado si es el correcto",
+                   "Test if the keyboard layout is correct",
+                   "Проверьте правильность раскладки клавиатуры"));
 }

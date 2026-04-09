@@ -9,16 +9,23 @@
 typedef struct _Page2Data {
     AdwCarousel *carousel;
     GtkRevealer *revealer;
-    
+
     // ComboRows para configuraciones
     AdwComboRow *combo_keyboard;
     AdwComboRow *combo_keymap;
     AdwComboRow *combo_timezone;
     AdwComboRow *combo_locale;
-    
+
     // Widgets adicionales
     GtkButton *tecla_button;
+    AdwButtonContent *tecla_button_content;
     GtkLabel *time_label;
+
+    // Widgets de sección para traducción
+    AdwStatusPage *status_page;
+    AdwPreferencesGroup *group_keyboard;
+    AdwPreferencesGroup *group_timezone;
+    AdwPreferencesGroup *group_ubicacion;
     
     // Modelos de datos
     GtkStringList *keyboard_list;
@@ -65,5 +72,8 @@ void auto_configure_combo_rows(void);
 
 // Funciones helper para ejecutar comandos del sistema
 gboolean execute_system_command_to_list(const char *command, GtkStringList *list);
+
+// Función de actualización de idioma
+void page2_update_language(void);
 
 #endif

@@ -27,7 +27,7 @@
 
 
             <child>
-              <object class="AdwPreferencesGroup">
+              <object class="AdwPreferencesGroup" id="group_keyboard">
                 <property name="title" translatable="yes">Teclado</property>
                 <property name="header-suffix">
                   <object class="GtkButton" id="tecla">
@@ -36,7 +36,7 @@
                       translatable="true">Prueba el teclado si es el correcto</property>
                     <property name="margin-bottom">10</property>
                     <property name="child">
-                      <object class="AdwButtonContent">
+                      <object class="AdwButtonContent" id="tecla_button_content">
                         <property name="icon-name">keyboard-symbolic</property>
                         <property name="label" translatable="yes">_Probar</property>
                         <property name="use-underline">True</property>
@@ -84,7 +84,7 @@
             <property name="margin-bottom">0</property>
 
             <child>
-              <object class="AdwPreferencesGroup">
+              <object class="AdwPreferencesGroup" id="group_timezone">
                 <property name="title" translatable="yes">Zona Horaria</property>
                 <property name="margin-top">10</property>
                 <property name="header-suffix">
@@ -144,7 +144,7 @@
             <property name="tightening-threshold">450</property>
             <property name="margin-bottom">0</property>
             <child>
-              <object class="AdwPreferencesGroup">
+              <object class="AdwPreferencesGroup" id="group_ubicacion">
                 <property name="title" translatable="yes">Ubicación</property>
                 <property name="margin-top">10</property>
 

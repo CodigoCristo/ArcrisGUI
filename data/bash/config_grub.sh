@@ -89,47 +89,23 @@ if true; then
 
         # Configuración específica según el modo de particionado ANTES de instalar
         echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
-        if [ "$PARTITION_MODE" = "cifrado" ]; then
-            # Esperar que la partición esté lista y obtener UUID
-            echo -e "${CYAN}Obteniendo UUID de la partición cifrada...${NC}"
-            sleep 2
-            sync
-            partprobe $SELECTED_DISK 2>/dev/null || true
-            sleep 1
-
-            PARTITION_3=$(get_partition_name "$SELECTED_DISK" "3")
-            CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_3")
-            # Reintentar si no se obtuvo UUID
-            if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
-                sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_3")
-            fi
-
-            if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada $PARTITION_3${NC}"
-                echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
+        if [ "$ENCRYPTION" = "true" ]; then
+            if [ -z "$CRYPT_LUKS_UUID" ]; then
+                echo -e "${RED}ERROR: CRYPT_LUKS_UUID no disponible${NC}"
                 exit 1
             fi
-            echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
-            # Configurar GRUB para LUKS+LVM (Simplificado)
-            echo -e "${CYAN}Configurando parámetros de kernel...${NC}"
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap splash loglevel=0 rd.systemd.show_status=false rd.udev.log_level=0\"/" /mnt/etc/default/grub
-
-            # Habilitar soporte para discos cifrados en GRUB
+            echo -e "${GREEN}✓ UUID partición LUKS: ${CRYPT_LUKS_UUID}${NC}"
+            local _grub_cmdline="cryptdevice=UUID=${CRYPT_LUKS_UUID}:cryptlvm root=/dev/vg0/root"
+            [ "$FILESYSTEM_TYPE" = "btrfs" ] && _grub_cmdline="$_grub_cmdline rootflags=subvol=@"
+            [ "${SWAP_SIZE_MIB:-0}" -gt 0 ] && _grub_cmdline="$_grub_cmdline resume=/dev/vg0/swap"
+            _grub_cmdline="$_grub_cmdline splash loglevel=3"
+            sed -i "s|GRUB_CMDLINE_LINUX=\"\"|GRUB_CMDLINE_LINUX=\"${_grub_cmdline}\"|" /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
-
-            # Precargar módulos necesarios para cifrado
             echo "GRUB_PRELOAD_MODULES=\"part_gpt part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
-
-            # Configurar GRUB_CMDLINE_LINUX_DEFAULT sin 'quiet' para mejor debugging en sistemas cifrados
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=5"/' /mnt/etc/default/grub
-
-            echo -e "${GREEN}✓ Configuración GRUB para cifrado:${NC}"
-            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
-            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
-            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
-            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
+            echo -e "${GREEN}✓ Configuración GRUB UEFI para LUKS+LVM:${NC}"
+            echo -e "${CYAN}  • ${_grub_cmdline}${NC}"
+            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y${NC}"
         elif [ "$PARTITION_MODE" = "auto" ] && [ "$FILESYSTEM_TYPE" = "btrfs" ]; then
             sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=3\"/' /mnt/etc/default/grub
             sed -i 's/^GRUB_PRELOAD_MODULES=.*/GRUB_PRELOAD_MODULES=\"part_gpt part_msdos btrfs\"/' /mnt/etc/default/grub
@@ -253,42 +229,23 @@ if true; then
 
         # Configuración específica según el modo de particionado ANTES de instalar
         echo -e "${CYAN}Configurando GRUB para el modo de particionado...${NC}"
-        if [ "$PARTITION_MODE" = "cifrado" ]; then
-            # Esperar que la partición esté lista y obtener UUID
-            echo -e "${CYAN}Obteniendo UUID de la partición cifrada...${NC}"
-            sleep 2
-            sync
-            partprobe $SELECTED_DISK 2>/dev/null || true
-            sleep 1
-
-            PARTITION_2=$(get_partition_name "$SELECTED_DISK" "2")
-            CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_2")
-            # Reintentar si no se obtuvo UUID
-            if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${YELLOW}Reintentando obtener UUID...${NC}"
-                sleep 2
-                CRYPT_UUID=$(blkid -s UUID -o value "$PARTITION_2")
-            fi
-
-            if [ -z "$CRYPT_UUID" ]; then
-                echo -e "${RED}ERROR: No se pudo obtener UUID de la partición cifrada $PARTITION_2${NC}"
-                echo -e "${RED}Verificar que la partición esté correctamente formateada${NC}"
+        if [ "$ENCRYPTION" = "true" ]; then
+            if [ -z "$CRYPT_LUKS_UUID" ]; then
+                echo -e "${RED}ERROR: CRYPT_LUKS_UUID no disponible${NC}"
                 exit 1
             fi
-            echo -e "${GREEN}✓ UUID obtenido: ${CRYPT_UUID}${NC}"
-            # Configurar GRUB para LUKS+LVM (Simplificado)
-            sed -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\"cryptdevice=UUID=${CRYPT_UUID}:cryptlvm root=\/dev\/vg0\/root resume=\/dev\/vg0\/swap splash loglevel=0 rd.systemd.show_status=false rd.udev.log_level=0\"/" /mnt/etc/default/grub
-            # Configurar nivel de log básico
+            echo -e "${GREEN}✓ UUID partición LUKS: ${CRYPT_LUKS_UUID}${NC}"
+            local _grub_cmdline="cryptdevice=UUID=${CRYPT_LUKS_UUID}:cryptlvm root=/dev/vg0/root"
+            [ "$FILESYSTEM_TYPE" = "btrfs" ] && _grub_cmdline="$_grub_cmdline rootflags=subvol=@"
+            [ "${SWAP_SIZE_MIB:-0}" -gt 0 ] && _grub_cmdline="$_grub_cmdline resume=/dev/vg0/swap"
+            _grub_cmdline="$_grub_cmdline splash loglevel=3"
+            sed -i "s|GRUB_CMDLINE_LINUX=\"\"|GRUB_CMDLINE_LINUX=\"${_grub_cmdline}\"|" /mnt/etc/default/grub
             sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3"/' /mnt/etc/default/grub
             echo "GRUB_ENABLE_CRYPTODISK=y" >> /mnt/etc/default/grub
             echo "GRUB_PRELOAD_MODULES=\"part_msdos lvm luks gcry_rijndael gcry_sha256 gcry_sha512\"" >> /mnt/etc/default/grub
-
-            echo -e "${GREEN}✓ Configuración GRUB para cifrado BIOS Legacy:${NC}"
-            echo -e "${CYAN}  • cryptdevice=UUID=${CRYPT_UUID}:cryptlvm${NC}"
-            echo -e "${CYAN}  • root=/dev/vg0/root${NC}"
-            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y (permite a GRUB leer discos cifrados)${NC}"
-            echo -e "${CYAN}  • Sin 'quiet' para mejor debugging del arranque cifrado${NC}"
-            echo -e "${CYAN}  • Módulos MBR: part_msdos lvm luks${NC}"
+            echo -e "${GREEN}✓ Configuración GRUB BIOS Legacy para LUKS+LVM:${NC}"
+            echo -e "${CYAN}  • ${_grub_cmdline}${NC}"
+            echo -e "${CYAN}  • GRUB_ENABLE_CRYPTODISK=y${NC}"
 
         elif [ "$PARTITION_MODE" = "auto" ] && [ "$FILESYSTEM_TYPE" = "btrfs" ]; then
             sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"rootflags=subvol=@ loglevel=3\"/' /mnt/etc/default/grub

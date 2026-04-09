@@ -66,6 +66,9 @@ void on_back_button_clicked(GtkButton *button, gpointer user_data);
 void on_next_button_clicked(GtkButton *button, gpointer user_data);
 void on_carousel_page_changed(AdwCarousel *carousel, guint page, gpointer user_data);
 
+// Actualización de etiquetas según idioma
+void carousel_update_button_labels(CarouselManager *manager);
+
 // Funciones de utilidad
 guint carousel_get_current_page(CarouselManager *manager);
 guint carousel_get_total_pages(CarouselManager *manager);

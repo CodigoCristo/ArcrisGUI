@@ -114,7 +114,7 @@ update_repositories() {
             return 0
         else
             echo -e "${YELLOW}⚠️  Falló la actualización de repositorios (intento #$attempt)${NC}"
-            echo -e "${RED}🔍 Comando ejecutado: pacman -Sy${NC}"
+            echo -e "${RED}🔍 Comando ejecutado: pacman -Syy${NC}"
             echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
             sleep 5
             ((attempt++))
@@ -292,12 +292,12 @@ install_pacman_livecd_with_retry() {
         wait_for_internet
 
         # Ejecutar instalación con pacman localmente en LiveCD
-        if pacman -Sy "$package" --noconfirm --disable-download-timeout; then
+        if pacman -Syy "$package" --noconfirm --disable-download-timeout; then
             echo -e "${GREEN}✅ $package instalado correctamente en LiveCD${NC}"
             return 0
         else
             echo -e "${YELLOW}⚠️  Falló la instalación de $package (intento #$attempt)${NC}"
-            echo -e "${RED}🔍 Comando ejecutado: pacman -Sy \"$package\" --noconfirm${NC}"
+            echo -e "${RED}🔍 Comando ejecutado: pacman -Syy \"$package\" --noconfirm${NC}"
             echo -e "${CYAN}🔄 Reintentando en 5 segundos...${NC}"
             sleep 5
             ((attempt++))

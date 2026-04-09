@@ -1,6 +1,7 @@
 #include "partition_manager.h"
 #include "config.h"
 #include "variables_utils.h"
+#include "i18n.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,6 +67,9 @@ partition_manager_init(PartitionManager *manager, GtkBuilder *builder)
     manager->cancel_button = GTK_BUTTON(gtk_builder_get_object(builder, "cancel_button"));
     manager->save_button = GTK_BUTTON(gtk_builder_get_object(builder, "next_button"));
     manager->window_title = ADW_WINDOW_TITLE(gtk_builder_get_object(builder, "window_title"));
+    manager->swap_group = ADW_PREFERENCES_GROUP(gtk_builder_get_object(builder, "swap_group"));
+    manager->swap_row = ADW_ACTION_ROW(gtk_builder_get_object(builder, "swap_row"));
+    manager->config_group = ADW_PREFERENCES_GROUP(gtk_builder_get_object(builder, "config_group"));
 
     // Verificar que se obtuvieron los widgets
     if (!manager->partition_dialog || !manager->swap_switch ||
@@ -823,4 +827,45 @@ gchar* partition_manager_mkfs_to_format(const gchar *mkfs_format)
     }
     
     return g_strdup("Ext4");
+}
+
+void partition_manager_update_language(PartitionManager *manager)
+{
+    if (!manager) return;
+
+    if (manager->cancel_button)
+        gtk_button_set_label(manager->cancel_button,
+            i18n_t("Cerrar", "Close", "Закрыть"));
+    if (manager->save_button)
+        gtk_button_set_label(manager->save_button,
+            i18n_t("Guardar", "Save", "Сохранить"));
+    if (manager->swap_group) {
+        adw_preferences_group_set_title(manager->swap_group,
+            i18n_t("Partición SWAP", "SWAP Partition", "Раздел подкачки"));
+        adw_preferences_group_set_description(manager->swap_group,
+            i18n_t("Una partición swap es un área del disco duro que se utiliza como memoria virtual. Recomendado para sistemas con menos de 8GB de RAM.",
+                   "A swap partition is a hard disk area used as virtual memory. Recommended for systems with less than 8GB of RAM.",
+                   "Раздел подкачки — область диска, используемая как виртуальная память. Рекомендуется для систем с менее 8 ГБ ОЗУ."));
+    }
+    if (manager->swap_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(manager->swap_row),
+            i18n_t("Habilitar SWAP", "Enable SWAP", "Включить подкачку"));
+    if (manager->config_group)
+        adw_preferences_group_set_title(manager->config_group,
+            i18n_t("Configuración", "Configuration", "Настройка"));
+    if (manager->mount_point_combo)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(manager->mount_point_combo),
+            i18n_t("Punto de montaje", "Mount point", "Точка монтирования"));
+    if (manager->format_combo)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(manager->format_combo),
+            i18n_t("Formatear en", "Format as", "Форматировать как"));
+
+    if (manager->format_list) {
+        guint selected = adw_combo_row_get_selected(manager->format_combo);
+        const char *additions[] = {
+            i18n_t("Sin Formatear", "No Format", "Без форматирования"), NULL
+        };
+        gtk_string_list_splice(manager->format_list, 0, 1, additions);
+        adw_combo_row_set_selected(manager->format_combo, selected);
+    }
 }

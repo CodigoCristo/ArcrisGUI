@@ -2,6 +2,7 @@
 #include "variables_utils.h"
 #include "window_kernel.h"
 #include "config.h"
+#include "i18n.h"
 #include <stdio.h>
 
 
@@ -222,6 +223,10 @@ void page5_init(GtkBuilder *builder, AdwCarousel *carousel, GtkRevealer *reveale
     g_page5_data->terminal_check = GTK_CHECK_BUTTON(gtk_builder_get_object(page_builder, "terminal_check"));
     g_page5_data->desktop_check = GTK_CHECK_BUTTON(gtk_builder_get_object(page_builder, "desktop_check"));
     g_page5_data->wm_check = GTK_CHECK_BUTTON(gtk_builder_get_object(page_builder, "wm_check"));
+    g_page5_data->options_group = ADW_PREFERENCES_GROUP(gtk_builder_get_object(page_builder, "options_group"));
+    g_page5_data->terminal_row = ADW_ACTION_ROW(gtk_builder_get_object(page_builder, "terminal_row"));
+    g_page5_data->desktop_row = ADW_ACTION_ROW(gtk_builder_get_object(page_builder, "desktop_row"));
+    g_page5_data->wm_row = ADW_ACTION_ROW(gtk_builder_get_object(page_builder, "wm_row"));
 
     // Obtener botones go-next-symbolic
     g_page5_data->desktop_next_button = GTK_BUTTON(gtk_builder_get_object(page_builder, "desktop_next_button"));
@@ -1245,4 +1250,61 @@ guint page5_wm_type_to_index(WindowManagerType wm)
         return (guint)wm;
     }
     return 0;
+}
+
+void page5_update_language(void)
+{
+    if (!g_page5_data) return;
+
+    if (g_page5_data->page5) {
+        adw_status_page_set_title(g_page5_data->page5,
+            i18n_t("Entorno de Escritorio", "Desktop Environment", "Рабочий стол"));
+        adw_status_page_set_description(g_page5_data->page5,
+            i18n_t("Selecciona un escritorio o un gestor de ventanas o una terminal virtual",
+                   "Select a desktop, window manager, or virtual terminal",
+                   "Выберите рабочий стол, менеджер окон или виртуальный терминал"));
+    }
+    if (g_page5_data->options_group)
+        adw_preferences_group_set_title(g_page5_data->options_group,
+            i18n_t("Elige una opción", "Choose an option", "Выберите вариант"));
+    if (g_page5_data->terminal_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page5_data->terminal_row),
+            i18n_t("Terminal Virtual - TTY", "Virtual Terminal - TTY", "Виртуальный терминал - TTY"));
+        adw_action_row_set_subtitle(g_page5_data->terminal_row,
+            i18n_t("Sin gráficos", "No graphics", "Без графики"));
+    }
+    if (g_page5_data->desktop_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page5_data->desktop_row),
+            i18n_t("Entorno de Escritorio - DE", "Desktop Environment - DE", "Рабочий стол - DE"));
+        adw_action_row_set_subtitle(g_page5_data->desktop_row,
+            i18n_t("Entorno gráfico completo", "Full graphical environment", "Полная графическая среда"));
+    }
+    if (g_page5_data->wm_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page5_data->wm_row),
+            i18n_t("Gestor de ventanas - WM", "Window Manager - WM", "Менеджер окон - WM"));
+        adw_action_row_set_subtitle(g_page5_data->wm_row,
+            i18n_t("Entorno gráfico minimalista", "Minimal graphical environment", "Минималистичная среда"));
+    }
+    if (g_page5_data->de_title_label)
+        gtk_label_set_text(g_page5_data->de_title_label,
+            i18n_t("Selecciona tu DE", "Select your DE", "Выберите DE"));
+    if (g_page5_data->wm_title_label)
+        gtk_label_set_text(g_page5_data->wm_title_label,
+            i18n_t("Selecciona tu WM", "Select your WM", "Выберите WM"));
+    if (g_page5_data->de_combo)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page5_data->de_combo),
+            i18n_t("Entorno de Escritorio", "Desktop Environment", "Рабочий стол"));
+    if (g_page5_data->wm_combo)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page5_data->wm_combo),
+            i18n_t("Gestor de Ventanas", "Window Manager", "Менеджер окон"));
+    if (g_page5_data->de_back_to_main_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page5_data->de_back_to_main_button),
+            i18n_t("Regresar a Personalización",
+                   "Back to Customization",
+                   "Вернуться к настройке"));
+    if (g_page5_data->wm_back_to_main_button)
+        gtk_widget_set_tooltip_text(GTK_WIDGET(g_page5_data->wm_back_to_main_button),
+            i18n_t("Regresar a Personalización",
+                   "Back to Customization",
+                   "Вернуться к настройке"));
 }

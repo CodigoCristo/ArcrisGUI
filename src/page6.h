@@ -8,13 +8,15 @@
 typedef struct _Page6Data {
     AdwCarousel *carousel;
     GtkRevealer *revealer;
-    
+
     // Widget principal de la página
     GtkWidget *main_content;
-    
+
     // Widgets de configuración del sistema
     AdwActionRow *kernel_row;
     AdwActionRow *drivers_row;
+    AdwActionRow *repos_row;
+    AdwStatusPage *status_page;
     AdwSwitchRow *essential_apps_switch;
     // office_switch eliminado - no existe en el UI
     AdwSwitchRow *utilities_switch;
@@ -111,5 +113,8 @@ void on_utilities_switch_toggled(GObject *object, GParamSpec *pspec, gpointer us
 // Callbacks para ventana de kernels
 void on_kernel_save_clicked(GtkButton *button, gpointer user_data);
 gboolean page6_update_kernel_ui_delayed(gpointer user_data);
+
+// Función de actualización de idioma
+void page6_update_language(void);
 
 #endif /* PAGE6_H */

@@ -1,6 +1,7 @@
 #include "window_kernel.h"
 #include "config.h"
 #include "variables_utils.h"
+#include "i18n.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -69,10 +70,13 @@ void window_kernel_init(WindowKernelData *data)
     
     // Cargar selección actual desde variables.sh
     window_kernel_load_from_variables(data);
-    
+
     data->is_initialized = TRUE;
     g_window_kernel_data = data;
-    
+
+    // Aplicar idioma actual
+    window_kernel_update_language(data);
+
     LOG_INFO("WindowKernel inicializada correctamente");
 }
 
@@ -91,6 +95,15 @@ void window_kernel_load_widgets_from_builder(WindowKernelData *data)
     data->lts_radio = GTK_CHECK_BUTTON(gtk_builder_get_object(data->builder, "lts_radio"));
     data->rt_lts_radio = GTK_CHECK_BUTTON(gtk_builder_get_object(data->builder, "rt_lts_radio"));
     data->zen_radio = GTK_CHECK_BUTTON(gtk_builder_get_object(data->builder, "zen_radio"));
+
+    // Obtener widgets de traducción
+    data->kernel_window_title = ADW_WINDOW_TITLE(gtk_builder_get_object(data->builder, "kernel_window_title"));
+    data->kernel_group = ADW_PREFERENCES_GROUP(gtk_builder_get_object(data->builder, "kernel_group"));
+    data->row_linux   = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "row_linux"));
+    data->row_hardened = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "row_hardened"));
+    data->row_lts     = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "row_lts"));
+    data->row_rt_lts  = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "row_rt_lts"));
+    data->row_zen     = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "row_zen"));
     
     // Verificar que se obtuvieron correctamente
     if (!data->close_button) LOG_WARNING("No se pudo obtener close_button");
@@ -552,4 +565,53 @@ void window_kernel_cleanup(WindowKernelData *data)
 WindowKernelData* window_kernel_get_instance(void)
 {
     return g_window_kernel_data;
+}
+void window_kernel_update_language(WindowKernelData *data)
+{
+    if (!data) return;
+
+    if (data->close_button)
+        gtk_button_set_label(data->close_button,
+            i18n_t("Cerrar", "Close", "Закрыть"));
+    if (data->save_button)
+        gtk_button_set_label(data->save_button,
+            i18n_t("Guardar", "Save", "Сохранить"));
+    if (data->kernel_window_title)
+        adw_window_title_set_title(data->kernel_window_title,
+            i18n_t("Lista de Kernels", "Kernel List", "Список ядер"));
+    if (data->kernel_group) {
+        adw_preferences_group_set_title(data->kernel_group,
+            i18n_t("Kernels oficialmente soportados",
+                   "Officially supported kernels",
+                   "Официально поддерживаемые ядра"));
+        adw_preferences_group_set_description(data->kernel_group,
+            i18n_t("Existen varios kernels de Linux alternativos para Arch Linux, además del kernel estable más reciente.",
+                   "There are several alternative Linux kernels for Arch Linux, in addition to the latest stable kernel.",
+                   "Существует несколько альтернативных ядер Linux для Arch Linux, помимо последнего стабильного."));
+    }
+    if (data->row_linux)
+        adw_action_row_set_subtitle(data->row_linux,
+            i18n_t("Versión principal y más reciente del kernel de Linux",
+                   "Main and most recent version of the Linux kernel",
+                   "Основная и последняя версия ядра Linux"));
+    if (data->row_hardened)
+        adw_action_row_set_subtitle(data->row_hardened,
+            i18n_t("Linux con parches de seguridad adicionales para reforzar la protección contra exploits. Ideal para sistemas enfocados en seguridad.",
+                   "Linux with additional security patches to strengthen protection against exploits. Ideal for security-focused systems.",
+                   "Linux с дополнительными патчами безопасности. Идеально для систем, ориентированных на безопасность."));
+    if (data->row_lts)
+        adw_action_row_set_subtitle(data->row_lts,
+            i18n_t("soporte a largo plazo, enfocada en estabilidad y seguridad con menos cambios frecuentes. Ideal para sistemas en producción.",
+                   "Long-term support, focused on stability and security with fewer frequent changes. Ideal for production systems.",
+                   "Долгосрочная поддержка, ориентированная на стабильность. Идеально для производственных систем."));
+    if (data->row_rt_lts)
+        adw_action_row_set_subtitle(data->row_rt_lts,
+            i18n_t("optimizado para minimizar la latencia y garantizar tiempos de respuesta predecibles en tiempo real. Ideal para audio, robótica e industria.",
+                   "Optimized to minimize latency and ensure predictable real-time response. Ideal for audio, robotics and industry.",
+                   "Оптимизировано для минимальной задержки в реальном времени. Идеально для аудио, робототехники и промышленности."));
+    if (data->row_zen)
+        adw_action_row_set_subtitle(data->row_zen,
+            i18n_t("Linux optimizado para el rendimiento y la experiencia del usuario, con parches que mejoran la interactividad, velocidad y respuesta del sistema.",
+                   "Linux optimized for performance and user experience, with patches that improve interactivity, speed and system responsiveness.",
+                   "Linux, оптимизированный для производительности и пользовательского опыта."));
 }

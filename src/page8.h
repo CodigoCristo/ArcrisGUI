@@ -29,6 +29,7 @@ typedef struct _Page8Data {
     
     // Labels y otros widgets
     GtkLabel *install_title;
+    GtkLabel *carousel_info;
     GtkProgressBar *progress_bar;
     
     // Widgets de la terminal
@@ -83,6 +84,9 @@ void page8_terminal_output(Page8Data *data, const gchar *text);
 
 // Callbacks
 void on_terminal_button_toggled(GtkToggleButton *button, gpointer user_data);
+
+// Función de actualización de idioma
+void page8_update_language(void);
 
 // Funciones de estado
 void page8_on_page_shown(void);
