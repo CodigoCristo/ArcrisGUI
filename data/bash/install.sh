@@ -1472,12 +1472,21 @@ cleanup_chroot_mounts
 sleep 1
 clear
 
-# Mostrar resumen final
-echo -e "${GREEN}"
-echo "  ╔════════════════════════════════════════╗"
-echo "  ║        ✓ ARCRIS LINUX INSTALADO        ║"
-echo "  ╚════════════════════════════════════════╝"
-echo -e "${NC}"
+# Colores
+AZUL="\e[1;34m"
+GRIS_NEGRITA="\e[1;37m"
+RESET="\e[0m"
+
+echo -e "${AZUL}
+        ,                       _     _ _
+       /#\\        __ _ _ __ ___| |__ | (_)_ __  _   ___  __
+      /###\\      / _\` | '__/ __| '_ \\| | | '_ \\| | | \\ \\/ /
+     /#####\\    | (_| | | | (__| | | | | | | | | |_| |>  <
+    /##,-,##\\    \\__,_|_|  \\___|_| |_|_|_|_| |_|\\__,_/_/\\_\\
+   /##(   )##\\
+  /#.--   --.#\\ ${RESET}  ${GRIS_NEGRITA}A simple, elegant GNU/Linux distribution.${RESET}
+${AZUL} /\`           \`\\
+${RESET}"
 
 echo ""
 echo -e "${YELLOW}IMPORTANTE:${NC}"
@@ -1489,9 +1498,6 @@ fi
 echo -e "${CYAN}• Puedes iniciar sesión con:${NC}"
 echo -e "  Usuario: ${GREEN}$USER${NC}"
 echo ""
-sleep 2
-clear
-chroot /mnt /bin/bash -c "alsi -l"
 sleep 5
 clear
 # Barra de progreso final
@@ -1501,6 +1507,7 @@ echo -e "${GREEN}✓ Instalación de ARCRIS LINUX completada exitosamente!${NC}"
 clear
 # Mostrar información importante para sistemas cifrados
 if [ "$ENCRYPTION" = "true" ]; then
+    clear
     echo ""
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════════════${NC}"
     echo -e "${GREEN}           SISTEMA CIFRADO CON LUKS+LVM CONFIGURADO EXITOSAMENTE${NC}"
@@ -1529,6 +1536,7 @@ if [ "$ENCRYPTION" = "true" ]; then
     echo -e "${CYAN}  • Ver estado LVM: sudo vgdisplay && sudo lvdisplay${NC}"
     echo -e "${CYAN}  • Redimensionar particiones: sudo lvresize${NC}"
     echo ""
+    sleep 5
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════════════${NC}"
     echo ""
 fi
