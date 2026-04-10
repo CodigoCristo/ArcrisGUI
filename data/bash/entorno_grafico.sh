@@ -46,6 +46,8 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "gnome-control-center"
                 install_pacman_chroot_with_retry "polkit-gnome"      # Autenticación gráfica
                 install_pacman_chroot_with_retry "gnome-keyring"
+                install_pacman_chroot_with_retry "gnome-remote-desktop"
+                install_pacman_chroot_with_retry "gst-thumbnailers"
                 install_pacman_chroot_with_retry "nautilus"
                 install_pacman_chroot_with_retry "gvfs"
                 install_pacman_chroot_with_retry "gvfs-goa"
@@ -68,6 +70,7 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "showtime"
                 install_pacman_chroot_with_retry "papers"
                 install_pacman_chroot_with_retry "sushi"
+                install_pacman_chroot_with_retry "eyedropper"
                 echo "Installing extension-manager..."
                 install_pacman_chroot_with_retry "extension-manager"
                 chroot /mnt /bin/bash -c "systemctl enable gdm" || echo -e "${RED}ERROR: Falló systemctl enable${NC}"

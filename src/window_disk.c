@@ -116,6 +116,14 @@ static void update_swap_custom_sensitivity(WindowDiskData *data)
         gtk_widget_set_sensitive(GTK_WIDGET(data->swap_size_label), active);
 }
 
+static void update_encryption_sensitivity(WindowDiskData *data);       /* forward decl */
+static gboolean encryption_is_valid(WindowDiskData *data);             /* forward decl */
+static void encryption_disable_switch(WindowDiskData *data);           /* forward decl */
+static void on_encryption_close_dialog_response(AdwAlertDialog *dialog,
+                                                const gchar    *response,
+                                                gpointer        user_data); /* forward decl */
+static void show_encryption_close_dialog(WindowDiskData *data);            /* forward decl */
+
 /* Calcula disk_total_gb desde SELECTED_DISK y actualiza el suffix del expander.
  * Se llama siempre al abrir la ventana, independientemente del modo home. */
 static void window_disk_refresh_disk_size(WindowDiskData *data)
@@ -190,6 +198,8 @@ static void apply_disk_defaults(GString *content, gpointer user_data)
     vars_upsert_after(content, "ROOT_SIZE",        "15",    "HOME_PARTITION");
     vars_upsert_after(content, "SWAP_TYPE",        "zram",  "ROOT_SIZE");
     vars_upsert_after(content, "SWAP_CUSTOM_SIZE", "1",     "SWAP_TYPE");
+    vars_upsert_after(content, "ENCRYPTION",     "false", "SWAP_CUSTOM_SIZE");
+    vars_upsert_after(content, "ENCRYPTION_KEY", "",      "ENCRYPTION");
 }
 
 void window_disk_init_variables(void)
@@ -230,11 +240,19 @@ void window_disk_load_widgets(WindowDiskData *data)
     data->root_size_suffix_label = GTK_LABEL(gtk_builder_get_object(data->builder, "root_size_suffix_label"));
     data->home_size_label        = GTK_LABEL(gtk_builder_get_object(data->builder, "home_size_label"));
 
+    /* Cifrado */
+    data->encryption_switch         = GTK_SWITCH(gtk_builder_get_object(data->builder, "encryption_switch"));
+    data->encryption_expander       = ADW_EXPANDER_ROW(gtk_builder_get_object(data->builder, "encryption_expander"));
+    data->encryption_password_entry = ADW_ENTRY_ROW(gtk_builder_get_object(data->builder, "encryption_password_entry"));
+    data->encryption_confirm_entry  = ADW_ENTRY_ROW(gtk_builder_get_object(data->builder, "encryption_confirm_entry"));
+    data->encryption_error_row      = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "encryption_error_row"));
+
     /* Swap */
     data->swap_none_radio      = GTK_CHECK_BUTTON(gtk_builder_get_object(data->builder, "swap_none_radio"));
     data->swap_half_radio      = GTK_CHECK_BUTTON(gtk_builder_get_object(data->builder, "swap_half_radio"));
     data->swap_equal_radio     = GTK_CHECK_BUTTON(gtk_builder_get_object(data->builder, "swap_equal_radio"));
     data->swap_custom_radio    = GTK_CHECK_BUTTON(gtk_builder_get_object(data->builder, "swap_custom_radio"));
+    data->swap_disabled_radio  = GTK_CHECK_BUTTON(gtk_builder_get_object(data->builder, "swap_disabled_radio"));
     data->swap_decrease_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "swap_decrease_button"));
     data->swap_increase_button = GTK_BUTTON(gtk_builder_get_object(data->builder, "swap_increase_button"));
     data->swap_size_label      = GTK_LABEL(gtk_builder_get_object(data->builder, "swap_size_label"));
@@ -253,6 +271,9 @@ void window_disk_load_widgets(WindowDiskData *data)
     data->swap_half_row      = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "swap_half_row"));
     data->swap_equal_row     = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "swap_equal_row"));
     data->swap_custom_row    = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "swap_custom_row"));
+    data->swap_disabled_row   = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "swap_disabled_row"));
+    data->encryption_group    = ADW_PREFERENCES_GROUP(gtk_builder_get_object(data->builder, "encryption_group"));
+    data->encryption_toggle_row = ADW_ACTION_ROW(gtk_builder_get_object(data->builder, "encryption_toggle_row"));
 }
 
 /* ── conexión de señales ─────────────────────────────────────────────────── */
@@ -265,6 +286,22 @@ void window_disk_connect_signals(WindowDiskData *data)
     if (data->save_button)
         g_signal_connect(data->save_button, "clicked",
                          G_CALLBACK(on_disk_save_button_clicked), data);
+
+    /* Interceptar cualquier intento de cerrar la ventana */
+    if (data->window)
+        g_signal_connect(data->window, "close-request",
+                         G_CALLBACK(on_disk_window_close_request), data);
+
+    /* Cifrado */
+    if (data->encryption_switch)
+        g_signal_connect(data->encryption_switch, "state-set",
+                         G_CALLBACK(on_disk_encryption_switch_toggled), data);
+    if (data->encryption_password_entry)
+        g_signal_connect(data->encryption_password_entry, "changed",
+                         G_CALLBACK(on_disk_encryption_password_changed), data);
+    if (data->encryption_confirm_entry)
+        g_signal_connect(data->encryption_confirm_entry, "changed",
+                         G_CALLBACK(on_disk_encryption_confirm_changed), data);
 
     /* Filesystem — aplica restricciones de home según el tipo */
     if (data->ext4_radio)
@@ -305,6 +342,9 @@ void window_disk_connect_signals(WindowDiskData *data)
                          G_CALLBACK(on_disk_swap_radio_toggled), data);
     if (data->swap_custom_radio)
         g_signal_connect(data->swap_custom_radio, "toggled",
+                         G_CALLBACK(on_disk_swap_radio_toggled), data);
+    if (data->swap_disabled_radio)
+        g_signal_connect(data->swap_disabled_radio, "toggled",
                          G_CALLBACK(on_disk_swap_radio_toggled), data);
 
     if (data->swap_decrease_button)
@@ -401,6 +441,8 @@ void window_disk_load_from_variables(WindowDiskData *data)
             gtk_check_button_set_active(data->swap_equal_radio, TRUE);
         else if (g_strcmp0(swap, "custom") == 0 && data->swap_custom_radio)
             gtk_check_button_set_active(data->swap_custom_radio, TRUE);
+        else if (g_strcmp0(swap, "none") == 0 && data->swap_disabled_radio)
+            gtk_check_button_set_active(data->swap_disabled_radio, TRUE);
         else if (data->swap_none_radio)
             gtk_check_button_set_active(data->swap_none_radio, TRUE);
         g_free(swap);
@@ -418,8 +460,30 @@ void window_disk_load_from_variables(WindowDiskData *data)
         g_free(swap_custom);
     }
 
+    /* Cifrado */
+    gchar *enc = disk_read_var("ENCRYPTION");
+    gboolean enc_active = (g_strcmp0(enc, "true") == 0);
+    g_free(enc);
+    if (data->encryption_switch)
+        gtk_switch_set_active(data->encryption_switch, enc_active);
+    if (data->encryption_expander) {
+        gtk_widget_set_sensitive(GTK_WIDGET(data->encryption_expander), enc_active);
+        if (!enc_active)
+            adw_expander_row_set_expanded(data->encryption_expander, FALSE);
+    }
+    if (enc_active) {
+        gchar *key = disk_read_var("ENCRYPTION_KEY");
+        if (key && data->encryption_password_entry) {
+            gtk_editable_set_text(GTK_EDITABLE(data->encryption_password_entry), key);
+            if (data->encryption_confirm_entry)
+                gtk_editable_set_text(GTK_EDITABLE(data->encryption_confirm_entry), key);
+        }
+        g_free(key);
+    }
+
     update_home_partition_sensitivity(data);
     update_swap_custom_sensitivity(data);
+    update_encryption_sensitivity(data);
 }
 
 /* ── guardar en variables.sh ─────────────────────────────────────────────── */
@@ -430,6 +494,8 @@ typedef struct {
     gchar        root_size_buf[8];
     const gchar *swap;
     const gchar *swap_custom;
+    const gchar *encryption;
+    const gchar *encryption_key;
 } DiskSaveCtx;
 
 static void apply_disk_save(GString *content, gpointer user_data)
@@ -440,6 +506,8 @@ static void apply_disk_save(GString *content, gpointer user_data)
     vars_upsert(content, "ROOT_SIZE",        ctx->root_size_buf);
     vars_upsert(content, "SWAP_TYPE",        ctx->swap);
     vars_upsert(content, "SWAP_CUSTOM_SIZE", ctx->swap_custom);
+    vars_upsert(content, "ENCRYPTION",       ctx->encryption);
+    vars_upsert(content, "ENCRYPTION_KEY",   ctx->encryption_key);
 }
 
 gboolean window_disk_save_to_variables(WindowDiskData *data)
@@ -477,6 +545,8 @@ gboolean window_disk_save_to_variables(WindowDiskData *data)
         ctx.swap = "equal";
     else if (data->swap_custom_radio && gtk_check_button_get_active(data->swap_custom_radio))
         ctx.swap = "custom";
+    else if (data->swap_disabled_radio && gtk_check_button_get_active(data->swap_disabled_radio))
+        ctx.swap = "none";
     else
         ctx.swap = "zram";
 
@@ -490,11 +560,22 @@ gboolean window_disk_save_to_variables(WindowDiskData *data)
     g_snprintf(swap_custom_buf, sizeof(swap_custom_buf), "%d", swap_val);
     ctx.swap_custom = swap_custom_buf;
 
+    /* Cifrado */
+    if (data->encryption_switch && gtk_switch_get_active(data->encryption_switch)) {
+        ctx.encryption = "true";
+        ctx.encryption_key = (data->encryption_password_entry)
+            ? gtk_editable_get_text(GTK_EDITABLE(data->encryption_password_entry))
+            : "";
+    } else {
+        ctx.encryption = "false";
+        ctx.encryption_key = "";
+    }
+
     gboolean ok = vars_update(apply_disk_save, &ctx);
 
     if (ok)
-        LOG_INFO("window_disk: guardado — fs=%s home=%s root=%s swap=%s swap_custom=%s",
-                 ctx.filesystem, ctx.home, ctx.root_size_buf, ctx.swap, ctx.swap_custom);
+        LOG_INFO("window_disk: guardado — fs=%s home=%s root=%s swap=%s swap_custom=%s encryption=%s",
+                 ctx.filesystem, ctx.home, ctx.root_size_buf, ctx.swap, ctx.swap_custom, ctx.encryption);
     else
         LOG_ERROR("window_disk: error al guardar configuración");
 
@@ -523,14 +604,68 @@ WindowDiskData *window_disk_get_instance(void)
     return g_window_disk;
 }
 
+
 /* ── callbacks ───────────────────────────────────────────────────────────── */
+
+static void disk_window_defocus_and_close(WindowDiskData *data)
+{
+    /* Fuerza que cualquier GtkText activo suelte el foco antes de cerrar
+     * la ventana, evitando el warning "did not receive a focus-out event" */
+    if (data->window)
+        gtk_widget_grab_focus(GTK_WIDGET(data->window));
+    gtk_window_close(data->window);
+}
+
+static void show_encryption_close_dialog(WindowDiskData *data)
+{
+    AdwAlertDialog *dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new(
+        i18n_t("Cifrado sin contraseña válida",
+               "Encryption without valid password",
+               "Шифрование без корректного пароля"),
+        i18n_t("El cifrado está activo pero la contraseña está vacía o no coincide. "
+               "Si cierra, el cifrado se desactivará automáticamente.",
+               "Encryption is active but the password is empty or does not match. "
+               "If you close, encryption will be disabled automatically.",
+               "Шифрование активно, но пароль пуст или не совпадает. "
+               "При закрытии шифрование будет отключено автоматически.")
+    ));
+    adw_alert_dialog_add_response(dialog, "cancel",
+        i18n_t("Cancelar", "Cancel", "Отмена"));
+    adw_alert_dialog_add_response(dialog, "close",
+        i18n_t("Cerrar de todas formas", "Close anyway", "Закрыть всё равно"));
+    adw_alert_dialog_set_default_response(dialog, "cancel");
+    adw_alert_dialog_set_response_appearance(dialog, "close", ADW_RESPONSE_DESTRUCTIVE);
+    g_signal_connect(dialog, "response",
+                     G_CALLBACK(on_encryption_close_dialog_response), data);
+    adw_dialog_present(ADW_DIALOG(dialog), GTK_WIDGET(data->window));
+}
 
 void on_disk_close_button_clicked(GtkButton *button, gpointer user_data)
 {
     (void)button;
     WindowDiskData *data = user_data;
-    if (data && data->window)
-        gtk_window_close(data->window);
+    if (!data || !data->window) return;
+
+    if (!encryption_is_valid(data)) {
+        show_encryption_close_dialog(data);
+        return;
+    }
+
+    disk_window_defocus_and_close(data);
+}
+
+gboolean on_disk_window_close_request(GtkWindow *window, gpointer user_data)
+{
+    (void)window;
+    WindowDiskData *data = user_data;
+    if (!data) return FALSE;
+
+    if (!encryption_is_valid(data)) {
+        show_encryption_close_dialog(data);
+        return TRUE;  /* bloquea el cierre hasta que el diálogo decida */
+    }
+
+    return FALSE;  /* permite el cierre normal */
 }
 
 void on_disk_save_button_clicked(GtkButton *button, gpointer user_data)
@@ -539,9 +674,32 @@ void on_disk_save_button_clicked(GtkButton *button, gpointer user_data)
     WindowDiskData *data = user_data;
     if (!data) return;
 
+    if (!encryption_is_valid(data)) {
+        const gchar *pass = data->encryption_password_entry
+            ? gtk_editable_get_text(GTK_EDITABLE(data->encryption_password_entry)) : "";
+        gboolean empty = (strlen(pass) == 0);
+
+        AdwAlertDialog *dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new(
+            i18n_t("Contraseña inválida",
+                   "Invalid password",
+                   "Неверный пароль"),
+            empty
+                ? i18n_t("El campo de contraseña está vacío. Ingresa una contraseña de 3 a 15 caracteres.",
+                          "The password field is empty. Enter a password between 3 and 15 characters.",
+                          "Поле пароля пусто. Введите пароль от 3 до 15 символов.")
+                : i18n_t("Las contraseñas no coinciden. Asegúrate de escribir la misma contraseña en ambos campos.",
+                          "The passwords do not match. Make sure you type the same password in both fields.",
+                          "Пароли не совпадают. Убедитесь, что оба поля содержат одинаковый пароль.")
+        ));
+        adw_alert_dialog_add_response(dialog, "ok",
+            i18n_t("Aceptar", "OK", "ОК"));
+        adw_alert_dialog_set_default_response(dialog, "ok");
+        adw_dialog_present(ADW_DIALOG(dialog), GTK_WIDGET(data->window));
+        return;
+    }
+
     window_disk_save_to_variables(data);
-    if (data->window)
-        gtk_window_close(data->window);
+    disk_window_defocus_and_close(data);
 }
 
 void on_disk_filesystem_radio_toggled(GtkCheckButton *radio, gpointer user_data)
@@ -573,6 +731,130 @@ void on_disk_root_scale_value_changed(GtkRange *range, gpointer user_data)
     WindowDiskData *data = user_data;
     update_root_size_labels(data, (int)gtk_range_get_value(range));
     window_disk_save_to_variables(data);
+}
+
+/* ── Validación de cifrado ───────────────────────────────────────────────── */
+
+/* Retorna TRUE si el cifrado no está activo, o si está activo con contraseña válida */
+static gboolean encryption_is_valid(WindowDiskData *data)
+{
+    if (!data->encryption_switch || !gtk_switch_get_active(data->encryption_switch))
+        return TRUE;
+
+    const gchar *pass = data->encryption_password_entry
+        ? gtk_editable_get_text(GTK_EDITABLE(data->encryption_password_entry)) : "";
+    const gchar *confirm = data->encryption_confirm_entry
+        ? gtk_editable_get_text(GTK_EDITABLE(data->encryption_confirm_entry)) : "";
+
+    gsize len = strlen(pass);
+    return (len >= 3 && len <= 15 && g_strcmp0(pass, confirm) == 0);
+}
+
+static void encryption_disable_switch(WindowDiskData *data)
+{
+    gtk_switch_set_active(data->encryption_switch, FALSE);
+    adw_expander_row_set_expanded(data->encryption_expander, FALSE);
+    gtk_widget_set_sensitive(GTK_WIDGET(data->encryption_expander), FALSE);
+    if (data->encryption_password_entry)
+        gtk_editable_set_text(GTK_EDITABLE(data->encryption_password_entry), "");
+    if (data->encryption_confirm_entry)
+        gtk_editable_set_text(GTK_EDITABLE(data->encryption_confirm_entry), "");
+    if (data->encryption_error_row)
+        gtk_widget_set_visible(GTK_WIDGET(data->encryption_error_row), FALSE);
+    window_disk_save_to_variables(data);
+}
+
+static void update_encryption_sensitivity(WindowDiskData *data)
+{
+    if (!data->encryption_switch || !gtk_switch_get_active(data->encryption_switch)) {
+        if (data->encryption_error_row)
+            gtk_widget_set_visible(GTK_WIDGET(data->encryption_error_row), FALSE);
+        return;
+    }
+
+    const gchar *pass    = data->encryption_password_entry
+        ? gtk_editable_get_text(GTK_EDITABLE(data->encryption_password_entry)) : "";
+    const gchar *confirm = data->encryption_confirm_entry
+        ? gtk_editable_get_text(GTK_EDITABLE(data->encryption_confirm_entry)) : "";
+
+    gsize len          = strlen(pass);
+    gboolean empty     = (len == 0);
+    gboolean too_short = (len > 0 && len < 3);
+    gboolean too_long  = (len > 15);
+    gboolean mismatch  = (!empty && g_strcmp0(pass, confirm) != 0);
+    gboolean valid     = (!empty && !too_short && !too_long && !mismatch);
+
+    if (valid)
+        window_disk_save_to_variables(data);
+
+    if (data->encryption_error_row) {
+        const gchar *msg = NULL;
+        if (too_short || too_long) {
+            msg = i18n_t("La contraseña debe tener entre 3 y 15 caracteres",
+                         "Password must be between 3 and 15 characters",
+                         "Пароль должен содержать от 3 до 15 символов");
+        } else if (mismatch) {
+            msg = i18n_t("Las contraseñas no coinciden",
+                         "Passwords do not match",
+                         "Пароли не совпадают");
+        }
+        if (msg) {
+            adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->encryption_error_row), msg);
+            gtk_widget_set_visible(GTK_WIDGET(data->encryption_error_row), TRUE);
+        } else {
+            gtk_widget_set_visible(GTK_WIDGET(data->encryption_error_row), FALSE);
+        }
+    }
+}
+
+/* Callback de respuesta al diálogo de cierre con cifrado inválido */
+static void on_encryption_close_dialog_response(AdwAlertDialog *dialog,
+                                                 const gchar    *response,
+                                                 gpointer        user_data)
+{
+    (void)dialog;
+    WindowDiskData *data = user_data;
+    if (g_strcmp0(response, "close") == 0) {
+        encryption_disable_switch(data);
+        disk_window_defocus_and_close(data);
+    }
+}
+
+gboolean on_disk_encryption_switch_toggled(GtkSwitch *sw, gboolean active, gpointer user_data)
+{
+    (void)sw;
+    WindowDiskData *data = user_data;
+    if (!data || !data->encryption_expander) return FALSE;
+
+    if (active) {
+        gtk_widget_set_sensitive(GTK_WIDGET(data->encryption_expander), TRUE);
+        adw_expander_row_set_expanded(data->encryption_expander, TRUE);
+    } else {
+        adw_expander_row_set_expanded(data->encryption_expander, FALSE);
+        gtk_widget_set_sensitive(GTK_WIDGET(data->encryption_expander), FALSE);
+        if (data->encryption_password_entry)
+            gtk_editable_set_text(GTK_EDITABLE(data->encryption_password_entry), "");
+        if (data->encryption_confirm_entry)
+            gtk_editable_set_text(GTK_EDITABLE(data->encryption_confirm_entry), "");
+        if (data->encryption_error_row)
+            gtk_widget_set_visible(GTK_WIDGET(data->encryption_error_row), FALSE);
+    }
+
+    update_encryption_sensitivity(data);
+    window_disk_save_to_variables(data);
+    return FALSE;  /* permite que el estado visual del switch se confirme */
+}
+
+void on_disk_encryption_password_changed(AdwEntryRow *entry, gpointer user_data)
+{
+    (void)entry;
+    update_encryption_sensitivity((WindowDiskData *)user_data);
+}
+
+void on_disk_encryption_confirm_changed(AdwEntryRow *entry, gpointer user_data)
+{
+    (void)entry;
+    update_encryption_sensitivity((WindowDiskData *)user_data);
 }
 
 void on_disk_swap_decrease_clicked(GtkButton *button, gpointer user_data)
@@ -722,5 +1004,42 @@ void window_disk_update_language(WindowDiskData *data)
                    "Zram active + swap partition of manually defined size",
                    "Zram активен + раздел подкачки заданного вручную размера"));
     }
+    if (data->swap_disabled_row) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->swap_disabled_row),
+            i18n_t("No", "No", "Нет"));
+        adw_action_row_set_subtitle(data->swap_disabled_row,
+            i18n_t("Sin Zram ni Swap - no recomendado en sistemas con poca RAM",
+                   "No Zram or Swap - not recommended on low-RAM systems",
+                   "Без Zram и Swap - не рекомендуется на системах с малым объёмом ОЗУ"));
+    }
+
+    /* Grupo: Cifrado */
+    if (data->encryption_group) {
+        adw_preferences_group_set_title(data->encryption_group,
+            i18n_t("Disco Cifrado", "Encrypted Disk", "Шифрование диска"));
+        adw_preferences_group_set_description(data->encryption_group,
+            i18n_t("Protege tus datos con LUKS y LVM\nSe pedirá una clave al arrancar el sistema",
+                   "Protect your data with LUKS and LVM\nA passphrase will be required at boot",
+                   "Защитите данные с LUKS и LVM\nПри загрузке потребуется ввести пароль"));
+    }
+    if (data->encryption_toggle_row)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->encryption_toggle_row),
+            i18n_t("Cifrar el disco", "Encrypt the disk", "Зашифровать диск"));
+    if (data->encryption_expander) {
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->encryption_expander),
+            i18n_t("Elija una clave para su disco",
+                   "Choose a passphrase for your disk",
+                   "Выберите ключ для диска"));
+        adw_expander_row_set_subtitle(data->encryption_expander,
+            i18n_t("El cifrado del disco protege sus archivos en caso de extravío del equipo",
+                   "Disk encryption protects your files if the device is lost or stolen",
+                   "Шифрование диска защищает файлы в случае утери или кражи устройства"));
+    }
+    if (data->encryption_password_entry)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->encryption_password_entry),
+            i18n_t("Elija una contraseña", "Choose a password", "Введите пароль"));
+    if (data->encryption_confirm_entry)
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->encryption_confirm_entry),
+            i18n_t("Confirme su contraseña", "Confirm your password", "Подтвердите пароль"));
 }
 

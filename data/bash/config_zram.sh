@@ -17,6 +17,12 @@ if [ $TOTAL_RAM_MB -ge 3584 ] && [ $RAM_REMAINDER -ge 512 ]; then
     echo -e "${CYAN}  • RAM redondeada a $((TOTAL_RAM_MB / 1024))G (fracción >= 0.5G)${NC}"
 fi
 
+# Si no hay swap de ningún tipo, salir sin configurar nada
+if [ "$SWAP_TYPE" = "none" ]; then
+    echo -e "${CYAN}  • SWAP_TYPE=none: sin zram ni swap${NC}"
+    return 0 2>/dev/null || exit 0
+fi
+
 # Calcular tamaño de zram según SWAP_TYPE (misma regla que la partición en disco)
 case "$SWAP_TYPE" in
     "zram")

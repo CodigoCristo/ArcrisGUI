@@ -49,9 +49,13 @@ _auto_calc_swap() {
             SWAP_SIZE_MIB=$(( SWAP_CUSTOM_SIZE * 1024 ))
             echo -e "${CYAN}  • Swap: custom = ${SWAP_SIZE_MIB}MiB${NC}"
             ;;
+        "none")
+            SWAP_SIZE_MIB=0
+            echo -e "${CYAN}  • Swap: ninguna (sin zram ni partición)${NC}"
+            ;;
         *)
             SWAP_SIZE_MIB=0
-            echo -e "${YELLOW}  • Swap: tipo desconocido '$SWAP_TYPE', usando zram${NC}"
+            echo -e "${YELLOW}  • Swap: tipo desconocido '$SWAP_TYPE', sin swap${NC}"
             ;;
     esac
 }
@@ -159,6 +163,89 @@ _auto_mount_root_and_home() {
     esac
 }
 
+# Configura LUKS+LVM sobre una partición cruda.
+# Crea vg0 con LVs: swap (según SWAP_TYPE/SWAP_SIZE_MIB), root y opcionalmente home.
+# Formatea y monta todo según FILESYSTEM_TYPE y HOME_PARTITION.
+# Exporta CRYPT_LUKS_UUID (UUID de la partición LUKS) para GRUB y crypttab.
+# $1 = partición a cifrar (ej: /dev/sda2)
+_auto_setup_luks_lvm() {
+    local luks_dev="$1"
+
+    echo -e "${GREEN}| Configurando LUKS en $luks_dev |${NC}"
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
+
+    # Cifrar y abrir partición usando archivo temporal (más fiable que pipe)
+    wipefs -af "$luks_dev" 2>/dev/null || true
+    dd if=/dev/zero of="$luks_dev" bs=1M count=10 2>/dev/null || true
+    sync
+    sleep 2
+
+    echo -n "$ENCRYPTION_KEY" > /tmp/luks_pass
+    if ! cryptsetup luksFormat --batch-mode --key-file /tmp/luks_pass "$luks_dev"; then
+        rm -f /tmp/luks_pass
+        echo -e "${RED}ERROR: falló luksFormat en $luks_dev${NC}"
+        exit 1
+    fi
+    if ! cryptsetup open --key-file /tmp/luks_pass "$luks_dev" cryptlvm; then
+        rm -f /tmp/luks_pass
+        echo -e "${RED}ERROR: falló cryptsetup open en $luks_dev${NC}"
+        exit 1
+    fi
+    rm -f /tmp/luks_pass
+
+    # Obtener UUID del header LUKS (necesario para GRUB y crypttab)
+    sync
+    udevadm settle --timeout=10
+    CRYPT_LUKS_UUID=$(blkid -s UUID -o value "$luks_dev")
+    if [ -z "$CRYPT_LUKS_UUID" ]; then
+        echo -e "${RED}ERROR: no se pudo obtener UUID de $luks_dev${NC}"
+        exit 1
+    fi
+    export CRYPT_LUKS_UUID
+    echo -e "${GREEN}✓ LUKS abierto: /dev/mapper/cryptlvm (UUID: $CRYPT_LUKS_UUID)${NC}"
+
+    # Crear LVM sobre el mapper
+    echo -e "${CYAN}Configurando LVM sobre cryptlvm...${NC}"
+    pvcreate /dev/mapper/cryptlvm
+    vgcreate vg0 /dev/mapper/cryptlvm
+
+    # LV swap (si SWAP_SIZE_MIB > 0)
+    if [ "$SWAP_SIZE_MIB" -gt 0 ]; then
+        lvcreate -L "${SWAP_SIZE_MIB}MiB" vg0 -n swap
+        echo -e "${CYAN}  • LV swap: ${SWAP_SIZE_MIB}MiB${NC}"
+    fi
+
+    # LV root y opcionalmente home
+    if [ "$HOME_PARTITION" = "partition" ]; then
+        lvcreate -L "${ROOT_SIZE}G" vg0 -n root
+        lvcreate -l 100%FREE vg0 -n home
+        echo -e "${CYAN}  • LV root: ${ROOT_SIZE}GB | LV home: resto del disco${NC}"
+    else
+        lvcreate -l 100%FREE vg0 -n root
+        echo -e "${CYAN}  • LV root: 100% del espacio libre${NC}"
+    fi
+
+    vgchange -a y vg0
+    sleep 2
+    udevadm settle --timeout=10
+    echo -e "${GREEN}✓ LVM configurado: vg0${NC}"
+    lvs vg0
+
+    # Activar swap cifrada
+    if [ "$SWAP_SIZE_MIB" -gt 0 ]; then
+        mkswap /dev/vg0/swap
+        swapon /dev/vg0/swap
+        echo -e "${GREEN}✓ Swap cifrada activada: /dev/vg0/swap${NC}"
+    fi
+
+    # Formatear y montar root (y home LV si aplica)
+    local home_lv=""
+    [ "$HOME_PARTITION" = "partition" ] && home_lv="/dev/vg0/home"
+
+    _auto_format_root "/dev/vg0/root"
+    _auto_mount_root_and_home "/dev/vg0/root" "$home_lv"
+}
+
 # Activa swap en disco si SWAP_SIZE_MIB > 0.
 # $1 = dispositivo swap
 _auto_activate_swap() {
@@ -214,7 +301,51 @@ partition_auto() {
 
     _auto_wipe_disk
 
-    if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+    # ── PATH CIFRADO: LUKS + LVM ──────────────────────────────────────────────
+    # Layout UEFI: [EFI 512MB] + [LUKS → vg0 (swap?, root, home?)]
+    # Layout BIOS: [boot 512MB ext4] + [LUKS → vg0 (swap?, root, home?)]
+    # swap, root y home viven como LVs dentro de vg0, respetando
+    # SWAP_TYPE, FILESYSTEM_TYPE y HOME_PARTITION.
+    if [ "$ENCRYPTION" = "true" ]; then
+        if [ "$FIRMWARE_TYPE" = "UEFI" ]; then
+            echo -e "${GREEN}| Configurando particiones UEFI + LUKS+LVM |${NC}"
+            parted "$SELECTED_DISK" --script --align optimal mklabel gpt
+            parted "$SELECTED_DISK" --script --align optimal mkpart ESP fat32 1MiB 513MiB
+            parted "$SELECTED_DISK" --script set 1 esp on
+            parted "$SELECTED_DISK" --script --align optimal mkpart primary 513MiB 100%
+
+            partprobe "$SELECTED_DISK"; sleep 3; udevadm settle --timeout=10
+
+            local efi_part; efi_part=$(get_partition_name "$SELECTED_DISK" "1")
+            local luks_part; luks_part=$(get_partition_name "$SELECTED_DISK" "2")
+
+            mkfs.fat -F32 -v "$efi_part"
+            _auto_setup_luks_lvm "$luks_part"
+
+            mkdir -p /mnt/boot
+            mount "$efi_part" /mnt/boot
+
+        else
+            echo -e "${GREEN}| Configurando particiones BIOS Legacy + LUKS+LVM |${NC}"
+            parted "$SELECTED_DISK" --script --align optimal mklabel msdos
+            parted "$SELECTED_DISK" --script --align optimal mkpart primary ext4 1MiB 513MiB
+            parted "$SELECTED_DISK" --script set 1 boot on
+            parted "$SELECTED_DISK" --script --align optimal mkpart primary 513MiB 100%
+
+            partprobe "$SELECTED_DISK"; sleep 3; udevadm settle --timeout=10
+
+            local boot_part; boot_part=$(get_partition_name "$SELECTED_DISK" "1")
+            local luks_part; luks_part=$(get_partition_name "$SELECTED_DISK" "2")
+
+            mkfs.ext4 -F "$boot_part"
+            _auto_setup_luks_lvm "$luks_part"
+
+            mkdir -p /mnt/boot
+            mount "$boot_part" /mnt/boot
+        fi
+
+    # ── PATH SIN CIFRADO ─────────────────────────────────────────────────────
+    elif [ "$FIRMWARE_TYPE" = "UEFI" ]; then
         echo -e "${GREEN}| Configurando particiones UEFI |${NC}"
         parted "$SELECTED_DISK" --script --align optimal mklabel gpt
         parted "$SELECTED_DISK" --script --align optimal mkpart ESP fat32 1MiB 513MiB
@@ -224,7 +355,6 @@ partition_auto() {
         local part_num=2
         local swap_part="" root_part="" home_part=""
 
-        # Partición swap (opcional)
         if [ "$swap_has_partition" = true ]; then
             local swap_end_mib=$(( next_offset + SWAP_SIZE_MIB ))
             parted "$SELECTED_DISK" --script --align optimal mkpart primary linux-swap "${next_offset}MiB" "${swap_end_mib}MiB"
@@ -233,14 +363,12 @@ partition_auto() {
             (( part_num++ ))
         fi
 
-        # Partición root
         if [ "$HOME_PARTITION" = "partition" ]; then
             local root_end_mib=$(( next_offset + root_size_mib ))
             parted "$SELECTED_DISK" --script --align optimal mkpart primary "$FILESYSTEM_TYPE" "${next_offset}MiB" "${root_end_mib}MiB"
             root_part=$(get_partition_name "$SELECTED_DISK" "$part_num")
             next_offset=$root_end_mib
             (( part_num++ ))
-            # Partición home (resto del disco)
             parted "$SELECTED_DISK" --script --align optimal mkpart primary "$FILESYSTEM_TYPE" "${next_offset}MiB" "100%"
             home_part=$(get_partition_name "$SELECTED_DISK" "$part_num")
         else
@@ -248,19 +376,10 @@ partition_auto() {
             root_part=$(get_partition_name "$SELECTED_DISK" "$part_num")
         fi
 
-        partprobe "$SELECTED_DISK"
-        sleep 3
-        udevadm settle --timeout=10
+        partprobe "$SELECTED_DISK"; sleep 3; udevadm settle --timeout=10
 
-        # Formatear EFI
         mkfs.fat -F32 -v "$(get_partition_name "$SELECTED_DISK" "1")"
-
-        # Formatear swap
-        if [ "$swap_has_partition" = true ]; then
-            mkswap "$swap_part"
-        fi
-
-        # Formatear y montar root (y home si aplica)
+        [ "$swap_has_partition" = true ] && mkswap "$swap_part"
         _auto_format_root "$root_part"
         _auto_activate_swap "$swap_part"
         _auto_mount_root_and_home "$root_part" "$home_part"
@@ -276,7 +395,6 @@ partition_auto() {
         local part_num=1
         local swap_part="" root_part="" home_part=""
 
-        # Partición swap (opcional)
         if [ "$swap_has_partition" = true ]; then
             local swap_end_mib=$(( next_offset + SWAP_SIZE_MIB ))
             parted "$SELECTED_DISK" --script --align optimal mkpart primary linux-swap "${next_offset}MiB" "${swap_end_mib}MiB"
@@ -285,16 +403,13 @@ partition_auto() {
             (( part_num++ ))
         fi
 
-        # Partición root
         if [ "$HOME_PARTITION" = "partition" ]; then
             local root_end_mib=$(( next_offset + root_size_mib ))
             parted "$SELECTED_DISK" --script --align optimal mkpart primary "$FILESYSTEM_TYPE" "${next_offset}MiB" "${root_end_mib}MiB"
             root_part=$(get_partition_name "$SELECTED_DISK" "$part_num")
-            # Marcar boot si es la primera partición (sin swap) o la segunda
             parted "$SELECTED_DISK" --script set "$part_num" boot on
             next_offset=$root_end_mib
             (( part_num++ ))
-            # Partición home
             parted "$SELECTED_DISK" --script --align optimal mkpart primary "$FILESYSTEM_TYPE" "${next_offset}MiB" "100%"
             home_part=$(get_partition_name "$SELECTED_DISK" "$part_num")
         else
@@ -303,16 +418,9 @@ partition_auto() {
             parted "$SELECTED_DISK" --script set "$part_num" boot on
         fi
 
-        partprobe "$SELECTED_DISK"
-        sleep 3
-        udevadm settle --timeout=10
+        partprobe "$SELECTED_DISK"; sleep 3; udevadm settle --timeout=10
 
-        # Formatear swap
-        if [ "$swap_has_partition" = true ]; then
-            mkswap "$swap_part"
-        fi
-
-        # Formatear y montar root (y home si aplica)
+        [ "$swap_has_partition" = true ] && mkswap "$swap_part"
         _auto_format_root "$root_part"
         _auto_activate_swap "$swap_part"
         _auto_mount_root_and_home "$root_part" "$home_part"
@@ -809,7 +917,7 @@ partition_cifrado() {
         echo -e "${CYAN}Aplicando cifrado... (puede tardar unos minutos)${NC}"
 
         # Crear dispositivo LUKS usando archivo temporal para contraseña
-        echo -n "$ENCRYPTION_PASSWORD" > /tmp/luks_pass
+        echo -n "$ENCRYPTION_KEY" > /tmp/luks_pass
 
         if ! cryptsetup luksFormat --batch-mode --key-file /tmp/luks_pass "$PARTITION_3"; then
             rm -f /tmp/luks_pass
@@ -1006,7 +1114,7 @@ partition_cifrado() {
         echo -e "${CYAN}Aplicando cifrado... (puede tardar unos minutos)${NC}"
 
         # Crear dispositivo LUKS usando archivo temporal para contraseña
-        echo -n "$ENCRYPTION_PASSWORD" > /tmp/luks_pass
+        echo -n "$ENCRYPTION_KEY" > /tmp/luks_pass
 
         if ! cryptsetup luksFormat --batch-mode --key-file /tmp/luks_pass "$PARTITION_2"; then
             rm -f /tmp/luks_pass

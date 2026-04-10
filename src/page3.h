@@ -37,12 +37,9 @@ typedef struct _Page3Data {
     // Widgets específicos de la página 3 (selección de disco)
     AdwComboRow *disk_combo;
     GtkCheckButton *auto_partition_radio;
-    GtkCheckButton *auto_btrfs_radio;
-    GtkCheckButton *cifrado_partition_button;
     GtkCheckButton *manual_partition_radio;
     GtkButton *refresh_button;
     GtkButton *configure_partitions_button;
-    GtkButton *save_key_disk_button;
     GtkButton *configure_disk_button;
 
     // Widgets de traducción (página principal de selección)
@@ -50,15 +47,10 @@ typedef struct _Page3Data {
     AdwPreferencesGroup *group_disco_lista;
     AdwPreferencesGroup *group_opciones;
     AdwActionRow *auto_partition_row;
-    AdwActionRow *cifrado_partition_row;
     AdwActionRow *manual_partition_row;
 
     // Widgets de traducción (página manual)
     AdwStatusPage *manual_status_page;
-
-    // Widgets de traducción (página cifrado)
-    AdwStatusPage *encryption_status_page;
-    AdwPreferencesGroup *encryption_prefs_group;
 
     // Sub-ventana de configuración del disco
     WindowDiskData *window_disk;
@@ -70,19 +62,8 @@ typedef struct _Page3Data {
     GtkLabel *gparted_label;
     GtkButton *refresh_partitions_button;
     GtkButton *return_disks;
-    AdwButtonRow *return_disks_encryption;
     AdwPreferencesGroup *partitions_group;
-    
-    // Widgets para particionado cifrado
-    AdwPasswordEntryRow *password_entry;
-    AdwPasswordEntryRow *password_confirm_entry;
-    GtkLabel *password_error_label;
-    
-    // Estado del cifrado
-    gboolean encryption_enabled;
-    gboolean passwords_match;
-    gboolean password_length_valid;
-    
+
     // Cliente UDisks2 para obtener información de particiones
     UDisksClient *udisks_client;
     
@@ -135,14 +116,12 @@ void on_page3_disk_selection_changed(AdwComboRow *combo, GParamSpec *param, gpoi
 void on_page3_partition_mode_changed(GtkCheckButton *button, gpointer user_data);
 void on_page3_refresh_clicked(GtkButton *button, gpointer user_data);
 void on_page3_configure_partitions_clicked(GtkButton *button, gpointer user_data);
-void on_page3_save_key_disk_clicked(GtkButton *button, gpointer user_data);
 void on_page3_configure_disk_clicked(GtkButton *button, gpointer user_data);
 
 // Callbacks para la página de particiones manuales
 void on_page3_gparted_button_clicked(GtkButton *button, gpointer user_data);
 void on_page3_refresh_partitions_clicked(GtkButton *button, gpointer user_data);
 void on_page3_return_disks_clicked(GtkButton *button, gpointer user_data);
-void on_page3_return_disks_encryption_clicked(AdwButtonRow *button, gpointer user_data);
 
 // Navigation callbacks
 void on_page3_next_button_clicked(GtkButton *button, gpointer user_data);
@@ -151,6 +130,7 @@ void on_page3_back_button_clicked(GtkButton *button, gpointer user_data);
 // Funciones de navegación interna
 void page3_navigate_to_manual_partitions(Page3Data *data);
 void page3_navigate_back_to_disk_selection(Page3Data *data);
+
 void page3_update_manual_partitions_info(Page3Data *data);
 
 // Funciones auxiliares para manejo de particiones
@@ -173,22 +153,6 @@ void page3_save_partition_mode(const gchar *partition_mode);
 void page3_update_next_button_sensitivity(Page3Data *data, gboolean is_manual_mode);
 void page3_load_partition_mode(Page3Data *data);
 GtkWidget* page3_find_next_button_recursive(GtkWidget *widget);
-
-// Funciones para manejo de cifrado
-void page3_navigate_to_encryption_key(Page3Data *data);
-void page3_navigate_back_from_encryption(Page3Data *data);
-void page3_check_password_match(Page3Data *data);
-void page3_validate_password_length(Page3Data *data);
-void page3_update_encryption_button_state(Page3Data *data);
-void page3_check_success_and_activate(Page3Data *data);
-void page3_update_encryption_variables(Page3Data *data);
-void page3_create_encryption_variables(void);
-const gchar* page3_get_encryption_password(Page3Data *data);
-void page3_save_encryption_config(Page3Data *data);
-
-// Callbacks para campos de contraseña
-void on_page3_password_changed(AdwPasswordEntryRow *entry, gpointer user_data);
-void on_page3_password_confirm_changed(AdwPasswordEntryRow *entry, gpointer user_data);
 
 // Funciones para manejo de particiones con UDisks2
 Page3PartitionInfo* page3_create_partition_info(const gchar *device_path, UDisksPartition *partition, UDisksBlock *block, UDisksObject *object);

@@ -238,6 +238,63 @@
                     </child>
 
                     <!-- ══════════════════════════════════════ -->
+                    <!-- Grupo: Disco Cifrado                   -->
+                    <!-- ══════════════════════════════════════ -->
+                    <child>
+                      <object class="AdwPreferencesGroup" id="encryption_group">
+                        <property name="title">Disco Cifrado</property>
+                        <property name="description">Protege tus datos con LUKS y LVM
+Se pedirá una clave al arrancar el sistema</property>
+
+                        <child>
+                          <object class="AdwActionRow" id="encryption_toggle_row">
+                            <property name="title">Cifrar el disco</property>
+                            <property name="activatable-widget">encryption_switch</property>
+                            <child type="suffix">
+                              <object class="GtkSwitch" id="encryption_switch">
+                                <property name="valign">center</property>
+                                <property name="active">false</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <child>
+                          <object class="AdwExpanderRow" id="encryption_expander">
+                            <property name="title">Elija una clave para su disco</property>
+                            <property name="subtitle">El cifrado del disco protege sus archivos en caso de extravío del equipo</property>
+                            <property name="expanded">false</property>
+                            <property name="sensitive">false</property>
+
+                            <child>
+                              <object class="AdwPasswordEntryRow" id="encryption_password_entry">
+                                <property name="title">Elija una contraseña</property>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwPasswordEntryRow" id="encryption_confirm_entry">
+                                <property name="title">Confirme su contraseña</property>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow" id="encryption_error_row">
+                                <property name="visible">false</property>
+                                <property name="activatable">false</property>
+                                <style>
+                                  <class name="error"/>
+                                </style>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+
+                      </object>
+                    </child>
+
+                    <!-- ══════════════════════════════════════ -->
                     <!-- Grupo: Tamaño de Swap                  -->
                     <!-- ══════════════════════════════════════ -->
                     <child>
@@ -328,6 +385,20 @@
                                     </style>
                                   </object>
                                 </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <child>
+                          <object class="AdwActionRow" id="swap_disabled_row">
+                            <property name="title">No</property>
+                            <property name="subtitle">Sin Zram ni Swap - no recomendado en sistemas con poca RAM</property>
+                            <property name="activatable-widget">swap_disabled_radio</property>
+                            <child type="prefix">
+                              <object class="GtkCheckButton" id="swap_disabled_radio">
+                                <property name="valign">center</property>
+                                <property name="group">swap_none_radio</property>
                               </object>
                             </child>
                           </object>
