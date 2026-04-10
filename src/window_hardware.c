@@ -370,7 +370,7 @@ void window_hardware_update_hardware_descriptions(WindowHardwareData *data)
             gtk_widget_set_sensitive(GTK_WIDGET(data->driver_wifi_combo), TRUE);
         } else {
             g_object_set(data->driver_wifi_combo, "subtitle",
-                i18n_t("No se detectó tarjeta WiFi", "No WiFi card detected", "WiFi карта не обнаружена"), NULL);
+                i18n_t("No se detectó tarjeta WiFi"), NULL);
             gtk_widget_set_sensitive(GTK_WIDGET(data->driver_wifi_combo), FALSE);
         }
     }
@@ -382,7 +382,7 @@ void window_hardware_update_hardware_descriptions(WindowHardwareData *data)
             gtk_widget_set_sensitive(GTK_WIDGET(data->driver_bluetooth_combo), TRUE);
         } else {
             g_object_set(data->driver_bluetooth_combo, "subtitle",
-                i18n_t("No se detectó dispositivo Bluetooth", "No Bluetooth device detected", "Устройство Bluetooth не обнаружено"), NULL);
+                i18n_t("No se detectó dispositivo Bluetooth"), NULL);
             gtk_widget_set_sensitive(GTK_WIDGET(data->driver_bluetooth_combo), FALSE);
         }
     }
@@ -404,7 +404,7 @@ void window_hardware_update_video_description(WindowHardwareData *data, const ch
     // Crear el texto con formato y color azul negrita con salto de línea
     char *description_markup = g_strdup_printf(
         "%s\n<span color='#5fa3f5' weight='bold'>%s</span>",
-        i18n_t("Tu tarjeta Gráfica es:", "Your Graphics card is:", "Ваша видеокарта:"),
+        i18n_t("Tu tarjeta Gráfica es:"),
         graphics_card
     );
 
@@ -429,7 +429,7 @@ void window_hardware_update_audio_description(WindowHardwareData *data, const ch
     // Crear el texto con formato con salto de línea
     char *description_markup = g_strdup_printf(
         "%s\n<span color='#5fa3f5' weight='bold'>%s</span>",
-        i18n_t("Tu tarjeta Audio es:", "Your Audio card is:", "Ваша звуковая карта:"),
+        i18n_t("Tu tarjeta Audio es:"),
         audio_card
     );
 
@@ -904,54 +904,54 @@ void window_hardware_update_language(WindowHardwareData *data)
 
     if (data->close_button)
         gtk_button_set_label(data->close_button,
-            i18n_t("Cerrar", "Close", "Закрыть"));
+            i18n_t("Cerrar"));
     if (data->save_button)
         gtk_button_set_label(data->save_button,
-            i18n_t("Guardar", "Save", "Сохранить"));
+            i18n_t("Guardar"));
     if (data->window_title)
         adw_window_title_set_title(data->window_title,
-            i18n_t("Hardware", "Hardware", "Оборудование"));
+            i18n_t("Hardware"));
     if (data->video_group)
         adw_preferences_group_set_title(data->video_group,
-            i18n_t("Video", "Video", "Видео"));
+            i18n_t("Video"));
     if (data->audio_group)
         adw_preferences_group_set_title(data->audio_group,
-            i18n_t("Audio", "Audio", "Аудио"));
+            i18n_t("Audio"));
     if (data->network_group)
         adw_preferences_group_set_title(data->network_group,
-            i18n_t("Red", "Network", "Сеть"));
+            i18n_t("Red"));
     if (data->driver_video_combo) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->driver_video_combo),
-            i18n_t("Driver de Video:", "Video Driver:", "Драйвер видео:"));
+            i18n_t("Driver de Video:"));
         GtkStringList *model = GTK_STRING_LIST(adw_combo_row_get_model(data->driver_video_combo));
         if (model) {
             guint sel = adw_combo_row_get_selected(data->driver_video_combo);
-            const char *vm = i18n_t("Máquina Virtual", "Virtual Machine", "Виртуальная машина");
+            const char *vm = i18n_t("Máquina Virtual");
             gtk_string_list_splice(model, 9, 1, (const char * const[]){vm, NULL});
             adw_combo_row_set_selected(data->driver_video_combo, sel);
         }
     }
     if (data->driver_sonido_combo)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->driver_sonido_combo),
-            i18n_t("Driver de Audio:", "Audio Driver:", "Драйвер аудио:"));
+            i18n_t("Driver de Audio:"));
     if (data->driver_wifi_combo) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->driver_wifi_combo),
-            i18n_t("Wifi", "Wifi", "Wifi"));
+            i18n_t("Wifi"));
         GtkStringList *model = GTK_STRING_LIST(adw_combo_row_get_model(data->driver_wifi_combo));
         if (model) {
             guint sel = adw_combo_row_get_selected(data->driver_wifi_combo);
-            const char *none = i18n_t("Ninguno", "None", "Нет");
+            const char *none = i18n_t("Ninguno");
             gtk_string_list_splice(model, 0, 1, (const char * const[]){none, NULL});
             adw_combo_row_set_selected(data->driver_wifi_combo, sel);
         }
     }
     if (data->driver_bluetooth_combo) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->driver_bluetooth_combo),
-            i18n_t("Bluetooth:", "Bluetooth:", "Bluetooth:"));
+            i18n_t("Bluetooth:"));
         GtkStringList *model = GTK_STRING_LIST(adw_combo_row_get_model(data->driver_bluetooth_combo));
         if (model) {
             guint sel = adw_combo_row_get_selected(data->driver_bluetooth_combo);
-            const char *none = i18n_t("Ninguno", "None", "Нет");
+            const char *none = i18n_t("Ninguno");
             gtk_string_list_splice(model, 0, 1, (const char * const[]){none, NULL});
             adw_combo_row_set_selected(data->driver_bluetooth_combo, sel);
         }

@@ -1247,78 +1247,62 @@ void window_apps_update_language(WindowAppsData *data)
 
     if (data->close_button)
         gtk_button_set_label(data->close_button,
-            i18n_t("Cerrar", "Close", "Закрыть"));
+            i18n_t("Cerrar"));
     if (data->save_button)
         gtk_button_set_label(data->save_button,
-            i18n_t("Guardar", "Save", "Сохранить"));
+            i18n_t("Guardar"));
     if (data->window_title)
         adw_window_title_set_title(data->window_title,
-            i18n_t("Utilidades", "Utilities", "Утилиты"));
+            i18n_t("Utilidades"));
     if (data->packages_group)
         adw_preferences_group_set_title(data->packages_group,
-            i18n_t("Categorías de Paquetes", "Package Categories", "Категории пакетов"));
+            i18n_t("Categorías de Paquetes"));
     if (data->search_entry)
         gtk_search_entry_set_placeholder_text(data->search_entry,
-            i18n_t("Busca tu aplicación", "Search your application", "Поиск приложения"));
+            i18n_t("Busca tu aplicación"));
 
     // Expanders - títulos y subtítulos de categorías
     if (data->graphics_expander) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->graphics_expander),
-            i18n_t("Gráficos", "Graphics", "Графика"));
+            i18n_t("Gráficos"));
         adw_expander_row_set_subtitle(data->graphics_expander,
-            i18n_t("Herramientas de diseño y edición",
-                   "Design and editing tools",
-                   "Инструменты дизайна и редактирования"));
+            i18n_t("Herramientas de diseño y edición"));
     }
     if (data->video_expander) {
         adw_expander_row_set_subtitle(data->video_expander,
-            i18n_t("Reproductores, editores, transcodificadores y grabadores de video",
-                   "Video players, editors, transcoders and recorders",
-                   "Видеоплееры, редакторы, перекодировщики и рекордеры"));
+            i18n_t("Reproductores, editores, transcodificadores y grabadores de video"));
     }
     if (data->audio_expander) {
         adw_expander_row_set_subtitle(data->audio_expander,
-            i18n_t("Editores y reproductores de Audio",
-                   "Audio editors and players",
-                   "Аудиоредакторы и плееры"));
+            i18n_t("Editores y reproductores de Audio"));
     }
     if (data->mail_expander) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->mail_expander),
-            i18n_t("Comunicaciones", "Communications", "Коммуникации"));
+            i18n_t("Comunicaciones"));
         adw_expander_row_set_subtitle(data->mail_expander,
-            i18n_t("Clientes de correo electrónico y Chat",
-                   "Email clients and Chat",
-                   "Почтовые клиенты и чат"));
+            i18n_t("Clientes de correo electrónico y Chat"));
     }
     if (data->developers_expander) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->developers_expander),
-            i18n_t("Desarrollo", "Development", "Разработка"));
+            i18n_t("Desarrollo"));
         adw_expander_row_set_subtitle(data->developers_expander,
-            i18n_t("IDE's y Herramientas para developers",
-                   "IDEs and developer tools",
-                   "IDE и инструменты разработчика"));
+            i18n_t("IDE's y Herramientas para developers"));
     }
     if (data->office_expander) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->office_expander),
-            i18n_t("Ofimática", "Office", "Офис"));
+            i18n_t("Ofimática"));
         adw_expander_row_set_subtitle(data->office_expander,
-            i18n_t("Productividad y documentos",
-                   "Productivity and documents",
-                   "Производительность и документы"));
+            i18n_t("Productividad y documentos"));
     }
     if (data->gamming_expander) {
         adw_expander_row_set_subtitle(data->gamming_expander,
-            i18n_t("Plataformas, emuladores, herramientas y juegos",
-                   "Platforms, emulators, tools and games",
-                   "Платформы, эмуляторы, инструменты и игры"));
+            i18n_t("Plataformas, emuladores, herramientas y juegos"));
     }
     if (data->other_expander) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->other_expander),
-            i18n_t("Otros", "Others", "Прочее"));
+            i18n_t("Otros"));
         adw_expander_row_set_subtitle(data->other_expander,
-            i18n_t("Aplicaciones diversas",
-                   "Miscellaneous applications",
-                   "Разные приложения"));
+            i18n_t("Aplicaciones diversas"));
     }
 
     // --- Subtítulos de filas individuales ---

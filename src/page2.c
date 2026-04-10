@@ -837,49 +837,41 @@ void page2_update_language(void)
 
     if (g_page2_data->status_page) {
         adw_status_page_set_title(g_page2_data->status_page,
-            i18n_t("Sistema local", "Local System", "Система"));
+            i18n_t("Sistema local"));
         adw_status_page_set_description(g_page2_data->status_page,
-            i18n_t("Ingrese una distribución del teclado, Zona Horaria y Localidad.",
-                   "Enter a keyboard layout, Timezone and Locale.",
-                   "Введите раскладку клавиатуры, часовой пояс и локаль."));
+            i18n_t("Ingrese una distribución del teclado, Zona Horaria y Localidad."));
     }
     if (g_page2_data->group_keyboard)
         adw_preferences_group_set_title(g_page2_data->group_keyboard,
-            i18n_t("Teclado", "Keyboard", "Клавиатура"));
+            i18n_t("Teclado"));
     if (g_page2_data->group_timezone)
         adw_preferences_group_set_title(g_page2_data->group_timezone,
-            i18n_t("Zona Horaria", "Timezone", "Часовой пояс"));
+            i18n_t("Zona Horaria"));
     if (g_page2_data->group_ubicacion)
         adw_preferences_group_set_title(g_page2_data->group_ubicacion,
-            i18n_t("Ubicación", "Location", "Местоположение"));
+            i18n_t("Ubicación"));
     if (g_page2_data->combo_keyboard)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page2_data->combo_keyboard),
-            i18n_t("Idioma del teclado", "Keyboard Language", "Язык клавиатуры"));
+            i18n_t("Idioma del teclado"));
     if (g_page2_data->combo_keymap)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page2_data->combo_keymap),
-            i18n_t("Teclado en terminal", "TTY Keyboard", "Клавиатура в терминале"));
+            i18n_t("Teclado en terminal"));
     if (g_page2_data->combo_timezone) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page2_data->combo_timezone),
-            i18n_t("Región", "Region", "Регион"));
+            i18n_t("Región"));
         adw_action_row_set_subtitle(ADW_ACTION_ROW(g_page2_data->combo_timezone),
-            i18n_t("Selecciona tu región para actualizar la hora",
-                   "Select your region to update the time",
-                   "Выберите регион для обновления времени"));
+            i18n_t("Selecciona tu región para actualizar la hora"));
     }
     if (g_page2_data->combo_locale) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page2_data->combo_locale),
-            i18n_t("País", "Country", "Страна"));
+            i18n_t("País"));
         adw_action_row_set_subtitle(ADW_ACTION_ROW(g_page2_data->combo_locale),
-            i18n_t("Selecciona tu idioma y País",
-                   "Select your language and Country",
-                   "Выберите язык и страну"));
+            i18n_t("Selecciona tu idioma y País"));
     }
     if (g_page2_data->tecla_button_content)
         adw_button_content_set_label(g_page2_data->tecla_button_content,
-            i18n_t("_Probar", "_Test", "_Проверить"));
+            i18n_t("_Probar"));
     if (g_page2_data->tecla_button)
         gtk_widget_set_tooltip_text(GTK_WIDGET(g_page2_data->tecla_button),
-            i18n_t("Prueba el teclado si es el correcto",
-                   "Test if the keyboard layout is correct",
-                   "Проверьте правильность раскладки клавиатуры"));
+            i18n_t("Prueba el teclado si es el correcto"));
 }

@@ -109,13 +109,12 @@ static void on_mirror_mode_toggled(GtkToggleButton *button, gpointer user_data)
     (void)button;
     WindowReposData *data = (WindowReposData *)user_data;
 
-    // Actualizar visibilidad
     gboolean is_manual = gtk_toggle_button_get_active(data->manual_button);
 
-    if (data->repos_manual_row)
-        gtk_widget_set_visible(GTK_WIDGET(data->repos_manual_row), is_manual);
-    if (data->repos_textview_row)
-        gtk_widget_set_visible(GTK_WIDGET(data->repos_textview_row), is_manual);
+    if (data->mirrorlist_expander) {
+        adw_expander_row_set_enable_expansion(data->mirrorlist_expander, is_manual);
+        adw_expander_row_set_expanded(data->mirrorlist_expander, is_manual);
+    }
     if (data->mirrorlist_textview)
         gtk_text_view_set_editable(data->mirrorlist_textview, is_manual);
 
@@ -127,6 +126,67 @@ static void on_mirror_mode_toggled(GtkToggleButton *button, gpointer user_data)
 }
 
 // ---------------------------------------------------------------------------
+// Cierre con validación
+// ---------------------------------------------------------------------------
+
+static void on_close_validation_dialog_response(AdwAlertDialog *dialog,
+                                                 const gchar    *response,
+                                                 gpointer        user_data)
+{
+    (void)dialog;
+    WindowReposData *data = (WindowReposData *)user_data;
+
+    if (g_strcmp0(response, "close") == 0) {
+        if (data->auto_button)
+            gtk_toggle_button_set_active(data->auto_button, TRUE);
+        if (data->window)
+            gtk_widget_set_visible(GTK_WIDGET(data->window), FALSE);
+    }
+}
+
+static void do_close_with_validation(WindowReposData *data)
+{
+    if (!data) return;
+
+    gboolean is_manual = data->manual_button &&
+                         gtk_toggle_button_get_active(data->manual_button);
+
+    if (is_manual && data->mirrorlist_textview) {
+        GtkTextBuffer *buf = gtk_text_view_get_buffer(data->mirrorlist_textview);
+        GtkTextIter start, end;
+        gtk_text_buffer_get_bounds(buf, &start, &end);
+        gchar *raw_text = gtk_text_buffer_get_text(buf, &start, &end, FALSE);
+        gboolean valid = validate_mirrorlist(raw_text);
+        g_free(raw_text);
+
+        if (!valid) {
+            AdwAlertDialog *dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new(
+                i18n_t("Mirrorlist sin contenido válido"),
+                i18n_t("La mirrorlist está vacía o no contiene entradas válidas. "
+                       "Si cierra, se volverá al modo automático.")
+            ));
+            adw_alert_dialog_add_response(dialog, "cancel", i18n_t("Cancelar"));
+            adw_alert_dialog_add_response(dialog, "close",  i18n_t("Cerrar de todas formas"));
+            adw_alert_dialog_set_default_response(dialog, "cancel");
+            adw_alert_dialog_set_response_appearance(dialog, "close", ADW_RESPONSE_DESTRUCTIVE);
+            g_signal_connect(dialog, "response",
+                             G_CALLBACK(on_close_validation_dialog_response), data);
+            adw_dialog_present(ADW_DIALOG(dialog), GTK_WIDGET(data->window));
+            return;
+        }
+    }
+
+    gtk_widget_set_visible(GTK_WIDGET(data->window), FALSE);
+}
+
+static gboolean on_repos_close_request(GtkWindow *window, gpointer user_data)
+{
+    (void)window;
+    do_close_with_validation((WindowReposData *)user_data);
+    return TRUE; // Siempre interceptamos; do_close_with_validation oculta la ventana
+}
+
+// ---------------------------------------------------------------------------
 // Visibilidad inicial
 // ---------------------------------------------------------------------------
 
@@ -134,10 +194,10 @@ static void update_manual_visibility(WindowReposData *data)
 {
     gboolean is_manual = gtk_toggle_button_get_active(data->manual_button);
 
-    if (data->repos_manual_row)
-        gtk_widget_set_visible(GTK_WIDGET(data->repos_manual_row), is_manual);
-    if (data->repos_textview_row)
-        gtk_widget_set_visible(GTK_WIDGET(data->repos_textview_row), is_manual);
+    if (data->mirrorlist_expander) {
+        adw_expander_row_set_enable_expansion(data->mirrorlist_expander, is_manual);
+        adw_expander_row_set_expanded(data->mirrorlist_expander, is_manual);
+    }
     if (data->mirrorlist_textview)
         gtk_text_view_set_editable(data->mirrorlist_textview, is_manual);
 }
@@ -194,6 +254,9 @@ void window_repos_init(WindowReposData *data)
 
     if (data->close_button)
         g_signal_connect(data->close_button, "clicked", G_CALLBACK(on_repos_close_button_clicked), data);
+
+    if (data->window)
+        g_signal_connect(data->window, "close-request", G_CALLBACK(on_repos_close_request), data);
 
     if (data->save_button)
         g_signal_connect(data->save_button, "clicked", G_CALLBACK(on_repos_save_button_clicked), data);
@@ -297,9 +360,7 @@ void window_repos_init_defaults(void)
 void on_repos_close_button_clicked(GtkButton *button, gpointer user_data)
 {
     (void)button;
-    WindowReposData *data = (WindowReposData *)user_data;
-    if (data && data->window)
-        gtk_widget_set_visible(GTK_WIDGET(data->window), FALSE);
+    do_close_with_validation((WindowReposData *)user_data);
 }
 
 void on_repos_save_button_clicked(GtkButton *button, gpointer user_data)
@@ -332,9 +393,9 @@ void on_repos_save_button_clicked(GtkButton *button, gpointer user_data)
 
     if (!validate_mirrorlist(raw_text)) {
         show_error_dialog(data,
-            "Mirrorlist inválida",
-            "El contenido no es válido. Debe contener al menos una entrada "
-            "con \"$repo/os/$arch\" (formato estándar de Arch Linux).");
+            i18n_t("Mirrorlist inválida"),
+            i18n_t("El contenido no es válido. Debe contener al menos una entrada "
+                   "con \"$repo/os/$arch\" (formato estándar de Arch Linux)."));
         g_free(raw_text);
         return;
     }
@@ -382,45 +443,35 @@ void window_repos_update_language(WindowReposData *data)
 
     if (data->close_button)
         gtk_button_set_label(data->close_button,
-            i18n_t("Cerrar", "Close", "Закрыть"));
+            i18n_t("Cerrar"));
     if (data->save_button)
         gtk_button_set_label(data->save_button,
-            i18n_t("Guardar", "Save", "Сохранить"));
+            i18n_t("Guardar"));
     if (data->window_title)
         adw_window_title_set_title(data->window_title,
-            i18n_t("Repositorios", "Repositories", "Репозитории"));
+            i18n_t("Repositorios"));
     if (data->chaotic_aur_switch)
         adw_action_row_set_subtitle(ADW_ACTION_ROW(data->chaotic_aur_switch),
-            i18n_t("AUR precompilado, uso general",
-                   "Precompiled AUR, general use",
-                   "Предкомпилированный AUR, общего назначения"));
+            i18n_t("AUR precompilado, uso general"));
     if (data->archlinuxcn_switch)
         adw_action_row_set_subtitle(ADW_ACTION_ROW(data->archlinuxcn_switch),
-            i18n_t("Paquetes populares precompilados",
-                   "Popular precompiled packages",
-                   "Популярные предкомпилированные пакеты"));
+            i18n_t("Paquetes populares precompilados"));
     if (data->cachyos_switch)
         adw_action_row_set_subtitle(ADW_ACTION_ROW(data->cachyos_switch),
-            i18n_t("Repositorios separados optimizados para diferentes CPU.",
-                   "Separate repositories optimized for different CPUs.",
-                   "Отдельные репозитории, оптимизированные для разных CPU."));
+            i18n_t("Repositorios separados optimizados para diferentes CPU."));
     if (data->mirrorlist_expander) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->mirrorlist_expander),
-            i18n_t("Mirrorlist Oficiales", "Official Mirrorlist", "Официальный Mirrorlist"));
+            i18n_t("Mirrorlist Oficiales"));
         adw_action_row_set_subtitle(ADW_ACTION_ROW(data->mirrorlist_expander),
-            i18n_t("Lista de espejos oficiales de Arch Linux",
-                   "Official Arch Linux mirror list",
-                   "Официальный список зеркал Arch Linux"));
+            i18n_t("Lista de espejos oficiales de Arch Linux"));
     }
     if (data->auto_button)
         gtk_button_set_label(GTK_BUTTON(data->auto_button),
-            i18n_t("Automático", "Automatic", "Авто"));
+            i18n_t("Automático"));
     if (data->manual_button)
         gtk_button_set_label(GTK_BUTTON(data->manual_button),
-            i18n_t("Manual", "Manual", "Вручную"));
+            i18n_t("Manual"));
     if (data->mirrorlist_link)
         gtk_button_set_label(GTK_BUTTON(data->mirrorlist_link),
-            i18n_t("Generar mirrorlist en archlinux.org/mirrorlist/",
-                   "Generate mirrorlist at archlinux.org/mirrorlist/",
-                   "Создать mirrorlist на archlinux.org/mirrorlist/"));
+            i18n_t("Generar mirrorlist en archlinux.org/mirrorlist/"));
 }

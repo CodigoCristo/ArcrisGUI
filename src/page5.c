@@ -1258,53 +1258,47 @@ void page5_update_language(void)
 
     if (g_page5_data->page5) {
         adw_status_page_set_title(g_page5_data->page5,
-            i18n_t("Entorno de Escritorio", "Desktop Environment", "Рабочий стол"));
+            i18n_t("Entorno de Escritorio"));
         adw_status_page_set_description(g_page5_data->page5,
-            i18n_t("Selecciona un escritorio o un gestor de ventanas o una terminal virtual",
-                   "Select a desktop, window manager, or virtual terminal",
-                   "Выберите рабочий стол, менеджер окон или виртуальный терминал"));
+            i18n_t("Selecciona un escritorio o un gestor de ventanas o una terminal virtual"));
     }
     if (g_page5_data->options_group)
         adw_preferences_group_set_title(g_page5_data->options_group,
-            i18n_t("Elige una opción", "Choose an option", "Выберите вариант"));
+            i18n_t("Elige una opción"));
     if (g_page5_data->terminal_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page5_data->terminal_row),
-            i18n_t("Terminal Virtual - TTY", "Virtual Terminal - TTY", "Виртуальный терминал - TTY"));
+            i18n_t("Terminal Virtual - TTY"));
         adw_action_row_set_subtitle(g_page5_data->terminal_row,
-            i18n_t("Sin gráficos", "No graphics", "Без графики"));
+            i18n_t("Sin gráficos"));
     }
     if (g_page5_data->desktop_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page5_data->desktop_row),
-            i18n_t("Entorno de Escritorio - DE", "Desktop Environment - DE", "Рабочий стол - DE"));
+            i18n_t("Entorno de Escritorio - DE"));
         adw_action_row_set_subtitle(g_page5_data->desktop_row,
-            i18n_t("Entorno gráfico completo", "Full graphical environment", "Полная графическая среда"));
+            i18n_t("Entorno gráfico completo"));
     }
     if (g_page5_data->wm_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page5_data->wm_row),
-            i18n_t("Gestor de ventanas - WM", "Window Manager - WM", "Менеджер окон - WM"));
+            i18n_t("Gestor de ventanas - WM"));
         adw_action_row_set_subtitle(g_page5_data->wm_row,
-            i18n_t("Entorno gráfico minimalista", "Minimal graphical environment", "Минималистичная среда"));
+            i18n_t("Entorno gráfico minimalista"));
     }
     if (g_page5_data->de_title_label)
         gtk_label_set_text(g_page5_data->de_title_label,
-            i18n_t("Selecciona tu DE", "Select your DE", "Выберите DE"));
+            i18n_t("Selecciona tu DE"));
     if (g_page5_data->wm_title_label)
         gtk_label_set_text(g_page5_data->wm_title_label,
-            i18n_t("Selecciona tu WM", "Select your WM", "Выберите WM"));
+            i18n_t("Selecciona tu WM"));
     if (g_page5_data->de_combo)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page5_data->de_combo),
-            i18n_t("Entorno de Escritorio", "Desktop Environment", "Рабочий стол"));
+            i18n_t("Entorno de Escritorio"));
     if (g_page5_data->wm_combo)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page5_data->wm_combo),
-            i18n_t("Gestor de Ventanas", "Window Manager", "Менеджер окон"));
+            i18n_t("Gestor de Ventanas"));
     if (g_page5_data->de_back_to_main_button)
         gtk_widget_set_tooltip_text(GTK_WIDGET(g_page5_data->de_back_to_main_button),
-            i18n_t("Regresar a Personalización",
-                   "Back to Customization",
-                   "Вернуться к настройке"));
+            i18n_t("Regresar a Personalización"));
     if (g_page5_data->wm_back_to_main_button)
         gtk_widget_set_tooltip_text(GTK_WIDGET(g_page5_data->wm_back_to_main_button),
-            i18n_t("Regresar a Personalización",
-                   "Back to Customization",
-                   "Вернуться к настройке"));
+            i18n_t("Regresar a Personalización"));
 }

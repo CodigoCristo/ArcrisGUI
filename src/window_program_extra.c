@@ -518,17 +518,17 @@ void window_program_extra_update_language(WindowProgramExtraData *data)
 
     if (data->close_button)
         gtk_button_set_label(data->close_button,
-            i18n_t("Cerrar", "Close", "Закрыть"));
+            i18n_t("Cerrar"));
     if (data->save_button)
         gtk_button_set_label(data->save_button,
-            i18n_t("Guardar", "Save", "Сохранить"));
+            i18n_t("Guardar"));
     if (data->window_title)
         adw_window_title_set_title(data->window_title,
-            i18n_t("Programas Extras", "Extra Programs", "Дополнительные программы"));
+            i18n_t("Programas Extras"));
     if (data->title_label)
         gtk_label_set_text(data->title_label,
-            i18n_t("Agrega tus programas aquí", "Add your programs here", "Добавьте ваши программы здесь"));
+            i18n_t("Agrega tus programas aquí"));
     if (data->subtitle_label)
         gtk_label_set_text(data->subtitle_label,
-            i18n_t("Sea en lista o con espacios:", "As a list or space-separated:", "Списком или через пробел:"));
+            i18n_t("Sea en lista o con espacios:"));
 }

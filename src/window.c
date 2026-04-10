@@ -1,5 +1,6 @@
 #include "window.h"
 #include "close.h"
+#include "i18n.h"
 
 // Función para interceptar el cierre de la ventana
 gboolean on_window_close_request(GtkWidget *window, gpointer user_data)
@@ -7,9 +8,9 @@ gboolean on_window_close_request(GtkWidget *window, gpointer user_data)
     GtkApplication *app = GTK_APPLICATION(user_data);
 
     // Crear el diálogo
-    AdwDialog *dialog = adw_alert_dialog_new(("¿Cerrar aplicación?"), NULL);
-    adw_alert_dialog_format_body(ADW_ALERT_DIALOG(dialog), ("¿Estás seguro de que quieres cerrar la aplicación?"));
-    adw_alert_dialog_add_responses(ADW_ALERT_DIALOG(dialog), "cancel", ("Cancelar"), "close", ("Cerrar"), NULL);
+    AdwDialog *dialog = adw_alert_dialog_new(i18n_t("¿Cerrar aplicación?"), NULL);
+    adw_alert_dialog_format_body(ADW_ALERT_DIALOG(dialog), "%s", i18n_t("¿Estás seguro de que quieres cerrar la aplicación?"));
+    adw_alert_dialog_add_responses(ADW_ALERT_DIALOG(dialog), "cancel", i18n_t("Cancelar"), "close", i18n_t("Cerrar"), NULL);
     adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "cancel");
     adw_alert_dialog_set_close_response(ADW_ALERT_DIALOG(dialog), "cancel");
     adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(dialog), "close", ADW_RESPONSE_DESTRUCTIVE);

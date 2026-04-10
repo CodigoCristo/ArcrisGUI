@@ -835,35 +835,33 @@ void partition_manager_update_language(PartitionManager *manager)
 
     if (manager->cancel_button)
         gtk_button_set_label(manager->cancel_button,
-            i18n_t("Cerrar", "Close", "Закрыть"));
+            i18n_t("Cerrar"));
     if (manager->save_button)
         gtk_button_set_label(manager->save_button,
-            i18n_t("Guardar", "Save", "Сохранить"));
+            i18n_t("Guardar"));
     if (manager->swap_group) {
         adw_preferences_group_set_title(manager->swap_group,
-            i18n_t("Partición SWAP", "SWAP Partition", "Раздел подкачки"));
+            i18n_t("Partición SWAP"));
         adw_preferences_group_set_description(manager->swap_group,
-            i18n_t("Una partición swap es un área del disco duro que se utiliza como memoria virtual. Recomendado para sistemas con menos de 8GB de RAM.",
-                   "A swap partition is a hard disk area used as virtual memory. Recommended for systems with less than 8GB of RAM.",
-                   "Раздел подкачки — область диска, используемая как виртуальная память. Рекомендуется для систем с менее 8 ГБ ОЗУ."));
+            i18n_t("Una partición swap es un área del disco duro que se utiliza como memoria virtual. Recomendado para sistemas con menos de 8GB de RAM."));
     }
     if (manager->swap_row)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(manager->swap_row),
-            i18n_t("Habilitar SWAP", "Enable SWAP", "Включить подкачку"));
+            i18n_t("Habilitar SWAP"));
     if (manager->config_group)
         adw_preferences_group_set_title(manager->config_group,
-            i18n_t("Configuración", "Configuration", "Настройка"));
+            i18n_t("Configuración"));
     if (manager->mount_point_combo)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(manager->mount_point_combo),
-            i18n_t("Punto de montaje", "Mount point", "Точка монтирования"));
+            i18n_t("Punto de montaje"));
     if (manager->format_combo)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(manager->format_combo),
-            i18n_t("Formatear en", "Format as", "Форматировать как"));
+            i18n_t("Formatear en"));
 
     if (manager->format_list) {
         guint selected = adw_combo_row_get_selected(manager->format_combo);
         const char *additions[] = {
-            i18n_t("Sin Formatear", "No Format", "Без форматирования"), NULL
+            i18n_t("Sin Formatear"), NULL
         };
         gtk_string_list_splice(manager->format_list, 0, 1, additions);
         adw_combo_row_set_selected(manager->format_combo, selected);

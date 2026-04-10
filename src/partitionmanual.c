@@ -936,7 +936,7 @@ void partitionmanual_add_partition_row(PartitionManualData *data, PartitionInfo 
     GtkButton *config_button = GTK_BUTTON(gtk_button_new_from_icon_name("list-add-symbolic"));
     gtk_widget_set_valign(GTK_WIDGET(config_button), GTK_ALIGN_CENTER);
     gtk_widget_set_tooltip_text(GTK_WIDGET(config_button),
-        i18n_t("Configurar partición", "Configure partition", "Настроить раздел"));
+        i18n_t("Configurar partición"));
 
     // Añadir clases CSS
     gtk_widget_add_css_class(GTK_WIDGET(config_button), "flat");

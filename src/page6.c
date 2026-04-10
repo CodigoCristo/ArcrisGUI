@@ -494,7 +494,7 @@ void page6_update_kernel_subtitle(const char* kernel_name)
 
     // Crear el nuevo subtítulo con el kernel seleccionado
     gchar *new_subtitle = g_strdup_printf("%s %s",
-        i18n_t("Kernel seleccionado:", "Selected kernel:", "Выбранное ядро:"), kernel_name);
+        i18n_t("Kernel seleccionado:"), kernel_name);
 
     // Actualizar el subtítulo del AdwActionRow del kernel
     adw_action_row_set_subtitle(g_page6_data->kernel_row, new_subtitle);
@@ -934,52 +934,42 @@ void page6_update_language(void)
 
     if (g_page6_data->status_page) {
         adw_status_page_set_title(g_page6_data->status_page,
-            i18n_t("Sistema", "System", "Система"));
+            i18n_t("Sistema"));
         adw_status_page_set_description(g_page6_data->status_page,
-            i18n_t("Elige que Kernel, Drivers y Aplicaciones deseas instalar.",
-                   "Choose the Kernel, Drivers and Applications to install.",
-                   "Выберите ядро, драйверы и приложения для установки."));
+            i18n_t("Elige que Kernel, Drivers y Aplicaciones deseas instalar."));
     }
     if (g_page6_data->kernel_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page6_data->kernel_row),
-            i18n_t("Kernel", "Kernel", "Ядро"));
+            i18n_t("Kernel"));
         page6_display_current_kernel();
     }
     if (g_page6_data->drivers_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page6_data->drivers_row),
-            i18n_t("Drivers", "Drivers", "Драйверы"));
+            i18n_t("Drivers"));
         adw_action_row_set_subtitle(g_page6_data->drivers_row,
-            i18n_t("Módulos de video, sonido, wifi, Bluetooth",
-                   "Video, audio, wifi, Bluetooth modules",
-                   "Модули видео, аудио, wifi, Bluetooth"));
+            i18n_t("Módulos de video, sonido, wifi, Bluetooth"));
     }
     if (g_page6_data->repos_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page6_data->repos_row),
-            i18n_t("Repositorios", "Repositories", "Репозитории"));
+            i18n_t("Repositorios"));
         adw_action_row_set_subtitle(g_page6_data->repos_row,
-            i18n_t("Official y Unofficial Repositorios de usuarios",
-                   "Official and unofficial user repositories",
-                   "Официальные и неофициальные репозитории"));
+            i18n_t("Official y Unofficial Repositorios de usuarios"));
     }
     if (g_page6_data->essential_apps_switch) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page6_data->essential_apps_switch),
-            i18n_t("Aplicaciones base", "Base Applications", "Базовые приложения"));
+            i18n_t("Aplicaciones base"));
         adw_action_row_set_subtitle(ADW_ACTION_ROW(g_page6_data->essential_apps_switch),
-            i18n_t("Sistemas de archivos, shell, códecs, etc",
-                   "Filesystems, shell, codecs, etc",
-                   "Файловые системы, shell, кодеки и т.д."));
+            i18n_t("Sistemas de archivos, shell, códecs, etc"));
     }
     if (g_page6_data->utilities_switch) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page6_data->utilities_switch),
-            i18n_t("Utilidades", "Utilities", "Утилиты"));
+            i18n_t("Utilidades"));
         adw_action_row_set_subtitle(ADW_ACTION_ROW(g_page6_data->utilities_switch),
-            i18n_t("Como navegadores, IDEs, Office, Vlc, Gamming, etc",
-                   "Browsers, IDEs, Office, VLC, Gaming, etc",
-                   "Браузеры, IDE, офис, VLC, игры и т.д."));
+            i18n_t("Como navegadores, IDEs, Office, Vlc, Gamming, etc"));
     }
     if (g_page6_data->program_extra_button)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page6_data->program_extra_button),
-            i18n_t("Agrega Programas Extras", "Add Extra Programs", "Добавить дополнительные программы"));
+            i18n_t("Agrega Programas Extras"));
 
     WindowKernelData *kernel_window = window_kernel_get_instance();
     if (kernel_window)

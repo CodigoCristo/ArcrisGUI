@@ -688,20 +688,14 @@ void page8_update_language(void)
 
     if (g_page8_data->terminal_button)
         gtk_widget_set_tooltip_text(GTK_WIDGET(g_page8_data->terminal_button),
-            i18n_t("Mostrar/Ocultar Terminal",
-                   "Show/Hide Terminal",
-                   "Показать/Скрыть терминал"));
+            i18n_t("Mostrar/Ocultar Terminal"));
     if (g_page8_data->install_title)
         gtk_label_set_text(g_page8_data->install_title,
-            i18n_t("Instalando Arch Linux", "Installing Arch Linux", "Установка Arch Linux"));
+            i18n_t("Instalando Arch Linux"));
     if (g_page8_data->carousel_info)
         gtk_label_set_text(g_page8_data->carousel_info,
-            i18n_t("Esto puede demorar varios minutos, dependiendo de su conexión a Internet, por favor, espere...",
-                   "This may take several minutes depending on your internet connection, please wait...",
-                   "Это может занять несколько минут в зависимости от вашего интернет-соединения, пожалуйста, подождите..."));
+            i18n_t("Esto puede demorar varios minutos, dependiendo de su conexión a Internet, por favor, espere..."));
     if (g_page8_data->terminal_info)
         gtk_label_set_text(g_page8_data->terminal_info,
-            i18n_t("Aquí se muestra la salida detallada del proceso de instalación",
-                   "This shows the detailed output of the installation process",
-                   "Здесь отображается подробный вывод процесса установки"));
+            i18n_t("Aquí se muestra la salida detallada del proceso de instalación"));
 }

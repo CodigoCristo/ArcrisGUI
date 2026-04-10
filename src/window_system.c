@@ -528,40 +528,32 @@ void window_system_update_language(WindowSystemData *data)
 
     if (data->close_button)
         gtk_button_set_label(data->close_button,
-            i18n_t("Cerrar", "Close", "Закрыть"));
+            i18n_t("Cerrar"));
     if (data->save_button)
         gtk_button_set_label(data->save_button,
-            i18n_t("Guardar", "Save", "Сохранить"));
+            i18n_t("Guardar"));
     if (data->window_title)
         adw_window_title_set_title(data->window_title,
-            i18n_t("Aplicaciones Base", "Base Applications", "Базовые приложения"));
+            i18n_t("Aplicaciones Base"));
     if (data->shell_combo)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->shell_combo),
-            i18n_t("Shell del sistema", "System Shell", "Системная оболочка"));
+            i18n_t("Shell del sistema"));
     if (data->filesystems_switch) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->filesystems_switch),
-            i18n_t("Sistemas de archivos", "File Systems", "Файловые системы"));
+            i18n_t("Sistemas de archivos"));
         adw_action_row_set_subtitle(ADW_ACTION_ROW(data->filesystems_switch),
-            i18n_t("Lectura y formateo de todo tipo de discos                Android, Btrfs, VFAT, ReiserFS, exFat, etc",
-                   "Read and format all types of disks — Android, Btrfs, VFAT, ReiserFS, exFat, etc",
-                   "Чтение и форматирование всех типов дисков — Android, Btrfs, VFAT, ReiserFS, exFat и др."));
+            i18n_t("Lectura y formateo de todo tipo de discos                Android, Btrfs, VFAT, ReiserFS, exFat, etc"));
     }
     if (data->compression_switch) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->compression_switch),
-            i18n_t("Compresión y Descompresión de archivos",
-                   "File Compression and Decompression",
-                   "Сжатие и распаковка файлов"));
+            i18n_t("Compresión y Descompresión de archivos"));
         adw_action_row_set_subtitle(ADW_ACTION_ROW(data->compression_switch),
-            i18n_t("7zip, tar, unrar, zip, unarchiver",
-                   "7zip, tar, unrar, zip, unarchiver",
-                   "7zip, tar, unrar, zip, unarchiver"));
+            i18n_t("7zip, tar, unrar, zip, unarchiver"));
     }
     if (data->video_codecs_switch) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->video_codecs_switch),
-            i18n_t("Códecs de video", "Video Codecs", "Видеокодеки"));
+            i18n_t("Códecs de video"));
         adw_action_row_set_subtitle(ADW_ACTION_ROW(data->video_codecs_switch),
-            i18n_t("Lectura de todos los formatos de vídeo",
-                   "Read all video formats",
-                   "Воспроизведение всех видеоформатов"));
+            i18n_t("Lectura de todos los formatos de vídeo"));
     }
 }

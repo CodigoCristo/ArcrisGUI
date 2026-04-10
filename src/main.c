@@ -43,7 +43,7 @@ static GMenuModel *build_app_menu(void)
     // Sección: Actualizar
     GMenu *section_update = g_menu_new();
     g_menu_append(section_update,
-        i18n_t("Arcris Update", "Arcris Update", "Arcris Update"),
+        i18n_t("Arcris Update"),
         "app.check_updates");
     g_menu_append_section(menu, NULL, G_MENU_MODEL(section_update));
     g_object_unref(section_update);
@@ -67,7 +67,7 @@ static GMenuModel *build_app_menu(void)
     // Sección: Acerca de
     GMenu *section_about = g_menu_new();
     g_menu_append(section_about,
-        i18n_t("Arcris About", "Arcris About", "Arcris About"),
+        i18n_t("Arcris About"),
         "app.about");
     g_menu_append_section(menu, NULL, G_MENU_MODEL(section_about));
     g_object_unref(section_about);
@@ -75,7 +75,7 @@ static GMenuModel *build_app_menu(void)
     // Sección: Salir
     GMenu *section_quit = g_menu_new();
     g_menu_append(section_quit,
-        i18n_t("Salir", "Exit", "Выход"),
+        i18n_t("Salir"),
         "app.quit");
     g_menu_append_section(menu, NULL, G_MENU_MODEL(section_quit));
     g_object_unref(section_quit);

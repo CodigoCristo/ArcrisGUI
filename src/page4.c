@@ -239,7 +239,7 @@ void page4_check_password_match(Page4Data *data)
             if (!data->passwords_match) {
                 // Mostrar error cuando no coinciden
                 gtk_label_set_text(data->password_error_label,
-                    i18n_t("Las contraseñas no coinciden", "Passwords do not match", "Пароли не совпадают"));
+                    i18n_t("Las contraseñas no coinciden"));
                 gtk_widget_set_visible(GTK_WIDGET(data->password_error_label), TRUE);
                 gtk_widget_add_css_class(GTK_WIDGET(data->password_confirm_entry), "error");
                 gtk_widget_remove_css_class(GTK_WIDGET(data->password_confirm_entry), "success");
@@ -988,34 +988,30 @@ void page4_update_language(void)
 
     if (g_page4_data->status_page) {
         adw_status_page_set_title(g_page4_data->status_page,
-            i18n_t("Crear usuario", "Create User", "Создать пользователя"));
+            i18n_t("Crear usuario"));
         adw_status_page_set_description(g_page4_data->status_page,
-            i18n_t("Configure su nueva cuenta de usuario",
-                   "Configure your new user account",
-                   "Настройте новую учётную запись пользователя"));
+            i18n_t("Configure su nueva cuenta de usuario"));
     }
     if (g_page4_data->username_entry)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page4_data->username_entry),
-            i18n_t("Elija un nombre de usuario", "Choose a username", "Введите имя пользователя"));
+            i18n_t("Elija un nombre de usuario"));
     if (g_page4_data->password_entry)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page4_data->password_entry),
-            i18n_t("Elija una contraseña", "Choose a password", "Введите пароль"));
+            i18n_t("Elija una contraseña"));
     if (g_page4_data->password_confirm_entry)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page4_data->password_confirm_entry),
-            i18n_t("Confirme su contraseña", "Confirm your password", "Подтвердите пароль"));
+            i18n_t("Confirme su contraseña"));
     if (g_page4_data->password_error_label &&
         gtk_widget_get_visible(GTK_WIDGET(g_page4_data->password_error_label)))
         gtk_label_set_text(g_page4_data->password_error_label,
-            i18n_t("Las contraseñas no coinciden", "Passwords do not match", "Пароли не совпадают"));
+            i18n_t("Las contraseñas no coinciden"));
     if (g_page4_data->hostname_entry)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page4_data->hostname_entry),
-            i18n_t("El nombre del equipo", "Computer name", "Имя компьютера"));
+            i18n_t("El nombre del equipo"));
     if (g_page4_data->hostname_title_label)
         gtk_label_set_text(g_page4_data->hostname_title_label,
-            i18n_t("Hostname", "Hostname", "Имя хоста"));
+            i18n_t("Hostname"));
     if (g_page4_data->hostname_desc_label)
         gtk_label_set_text(g_page4_data->hostname_desc_label,
-            i18n_t("El nombre que utiliza al comunicarse con otros equipos.",
-                   "The name used to communicate with other computers.",
-                   "Имя компьютера в сети."));
+            i18n_t("El nombre que utiliza al comunicarse con otros equipos."));
 }

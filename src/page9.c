@@ -288,18 +288,14 @@ void on_restart_button_clicked(GtkButton *button, gpointer user_data)
     
     // Mostrar diálogo de confirmación usando AdwAlertDialog
     AdwAlertDialog *dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new(
-        i18n_t("¿Está seguro que desea reiniciar el sistema ahora?",
-               "Are you sure you want to restart the system now?",
-               "Вы уверены, что хотите перезагрузить систему?"),
-        i18n_t("El sistema se reiniciará inmediatamente. Asegúrese de haber guardado todo su trabajo.",
-               "The system will restart immediately. Make sure you have saved all your work.",
-               "Система перезагрузится немедленно. Убедитесь, что вы сохранили всю работу.")
+        i18n_t("¿Está seguro que desea reiniciar el sistema ahora?"),
+        i18n_t("El sistema se reiniciará inmediatamente. Asegúrese de haber guardado todo su trabajo.")
     ));
 
     adw_alert_dialog_add_response(dialog, "cancel",
-        i18n_t("Cancelar", "Cancel", "Отмена"));
+        i18n_t("Cancelar"));
     adw_alert_dialog_add_response(dialog, "restart",
-        i18n_t("Reiniciar", "Restart", "Перезагрузить"));
+        i18n_t("Reiniciar"));
     adw_alert_dialog_set_response_appearance(dialog, "restart", ADW_RESPONSE_DESTRUCTIVE);
     
     // Obtener la ventana principal para mostrar el diálogo
@@ -325,18 +321,14 @@ void on_exit_button_clicked(GtkButton *button, gpointer user_data)
     
     // Mostrar diálogo de confirmación usando AdwAlertDialog
     AdwAlertDialog *dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new(
-        i18n_t("¿Está seguro que desea salir del instalador?",
-               "Are you sure you want to exit the installer?",
-               "Вы уверены, что хотите выйти из установщика?"),
-        i18n_t("Podrá reiniciar el sistema manualmente más tarde para usar Arch Linux.",
-               "You can restart the system manually later to use Arch Linux.",
-               "Вы сможете перезагрузить систему вручную позже, чтобы использовать Arch Linux.")
+        i18n_t("¿Está seguro que desea salir del instalador?"),
+        i18n_t("Podrá reiniciar el sistema manualmente más tarde para usar Arch Linux.")
     ));
 
     adw_alert_dialog_add_response(dialog, "cancel",
-        i18n_t("Cancelar", "Cancel", "Отмена"));
+        i18n_t("Cancelar"));
     adw_alert_dialog_add_response(dialog, "exit",
-        i18n_t("Salir", "Exit", "Выйти"));
+        i18n_t("Salir"));
     adw_alert_dialog_set_response_appearance(dialog, "exit", ADW_RESPONSE_SUGGESTED);
     
     // Obtener la ventana principal para mostrar el diálogo
@@ -362,18 +354,14 @@ void on_shutdown_button_clicked(GtkButton *button, gpointer user_data)
     
     // Mostrar diálogo de confirmación usando AdwAlertDialog
     AdwAlertDialog *dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new(
-        i18n_t("¿Está seguro que desea apagar el sistema ahora?",
-               "Are you sure you want to shut down the system now?",
-               "Вы уверены, что хотите выключить систему?"),
-        i18n_t("El sistema se apagará completamente. Asegúrese de haber guardado todo su trabajo.",
-               "The system will shut down completely. Make sure you have saved all your work.",
-               "Система выключится полностью. Убедитесь, что вы сохранили всю работу.")
+        i18n_t("¿Está seguro que desea apagar el sistema ahora?"),
+        i18n_t("El sistema se apagará completamente. Asegúrese de haber guardado todo su trabajo.")
     ));
 
     adw_alert_dialog_add_response(dialog, "cancel",
-        i18n_t("Cancelar", "Cancel", "Отмена"));
+        i18n_t("Cancelar"));
     adw_alert_dialog_add_response(dialog, "shutdown",
-        i18n_t("Apagar", "Shutdown", "Выключить"));
+        i18n_t("Apagar"));
     adw_alert_dialog_set_response_appearance(dialog, "shutdown", ADW_RESPONSE_DESTRUCTIVE);
     
     // Obtener la ventana principal para mostrar el diálogo
@@ -853,41 +841,29 @@ void page9_update_language(void)
 
     if (g_page9_data->completion_message)
         gtk_label_set_text(g_page9_data->completion_message,
-            i18n_t("¡Bienvenido a Arch Linux!",
-                   "Welcome to Arch Linux!",
-                   "Добро пожаловать в Arch Linux!"));
+            i18n_t("¡Bienvenido a Arch Linux!"));
     if (g_page9_data->secondary_message)
         gtk_label_set_text(g_page9_data->secondary_message,
-            i18n_t("El sistema se ha instalado correctamente y está listo para usar",
-                   "The system has been successfully installed and is ready to use",
-                   "Система успешно установлена и готова к использованию"));
+            i18n_t("El sistema se ha instalado correctamente y está listo para usar"));
     if (g_page9_data->shutdown_button) {
         gtk_button_set_label(g_page9_data->shutdown_button,
-            i18n_t("Apagar", "Shutdown", "Выключить"));
+            i18n_t("Apagar"));
         gtk_widget_set_tooltip_text(GTK_WIDGET(g_page9_data->shutdown_button),
-            i18n_t("Apagar el sistema ahora",
-                   "Shut down the system now",
-                   "Выключить систему сейчас"));
+            i18n_t("Apagar el sistema ahora"));
     }
     if (g_page9_data->restart_button) {
         gtk_button_set_label(g_page9_data->restart_button,
-            i18n_t("Reiniciar", "Restart", "Перезагрузить"));
+            i18n_t("Reiniciar"));
         gtk_widget_set_tooltip_text(GTK_WIDGET(g_page9_data->restart_button),
-            i18n_t("Reiniciar el sistema ahora",
-                   "Restart the system now",
-                   "Перезагрузить систему сейчас"));
+            i18n_t("Reiniciar el sistema ahora"));
     }
     if (g_page9_data->exit_button) {
         gtk_button_set_label(g_page9_data->exit_button,
-            i18n_t("Salir", "Exit", "Выйти"));
+            i18n_t("Salir"));
         gtk_widget_set_tooltip_text(GTK_WIDGET(g_page9_data->exit_button),
-            i18n_t("Salir del instalador",
-                   "Exit the installer",
-                   "Выйти из установщика"));
+            i18n_t("Salir del instalador"));
     }
     if (g_page9_data->info_label)
         gtk_label_set_text(g_page9_data->info_label,
-            i18n_t("Apagar: Cierra el sistema completamente • Reiniciar: Reinicia el sistema • Salir: Cierra el instalador",
-                   "Shutdown: Closes the system completely • Restart: Restarts the system • Exit: Closes the installer",
-                   "Выключить: полностью выключить систему • Перезагрузить: перезагрузить систему • Выйти: закрыть установщик"));
+            i18n_t("Apagar: Cierra el sistema completamente • Reiniciar: Reinicia el sistema • Salir: Cierra el instalador"));
 }

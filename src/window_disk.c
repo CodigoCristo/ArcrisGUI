@@ -619,20 +619,13 @@ static void disk_window_defocus_and_close(WindowDiskData *data)
 static void show_encryption_close_dialog(WindowDiskData *data)
 {
     AdwAlertDialog *dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new(
-        i18n_t("Cifrado sin contraseña válida",
-               "Encryption without valid password",
-               "Шифрование без корректного пароля"),
-        i18n_t("El cifrado está activo pero la contraseña está vacía o no coincide. "
-               "Si cierra, el cifrado se desactivará automáticamente.",
-               "Encryption is active but the password is empty or does not match. "
-               "If you close, encryption will be disabled automatically.",
-               "Шифрование активно, но пароль пуст или не совпадает. "
-               "При закрытии шифрование будет отключено автоматически.")
+        i18n_t("Cifrado sin contraseña válida"),
+        i18n_t("El cifrado está activo pero la contraseña está vacía o no coincide. Si cierra, el cifrado se desactivará automáticamente.")
     ));
     adw_alert_dialog_add_response(dialog, "cancel",
-        i18n_t("Cancelar", "Cancel", "Отмена"));
+        i18n_t("Cancelar"));
     adw_alert_dialog_add_response(dialog, "close",
-        i18n_t("Cerrar de todas formas", "Close anyway", "Закрыть всё равно"));
+        i18n_t("Cerrar de todas formas"));
     adw_alert_dialog_set_default_response(dialog, "cancel");
     adw_alert_dialog_set_response_appearance(dialog, "close", ADW_RESPONSE_DESTRUCTIVE);
     g_signal_connect(dialog, "response",
@@ -680,19 +673,13 @@ void on_disk_save_button_clicked(GtkButton *button, gpointer user_data)
         gboolean empty = (strlen(pass) == 0);
 
         AdwAlertDialog *dialog = ADW_ALERT_DIALOG(adw_alert_dialog_new(
-            i18n_t("Contraseña inválida",
-                   "Invalid password",
-                   "Неверный пароль"),
+            i18n_t("Contraseña inválida"),
             empty
-                ? i18n_t("El campo de contraseña está vacío. Ingresa una contraseña de 3 a 15 caracteres.",
-                          "The password field is empty. Enter a password between 3 and 15 characters.",
-                          "Поле пароля пусто. Введите пароль от 3 до 15 символов.")
-                : i18n_t("Las contraseñas no coinciden. Asegúrate de escribir la misma contraseña en ambos campos.",
-                          "The passwords do not match. Make sure you type the same password in both fields.",
-                          "Пароли не совпадают. Убедитесь, что оба поля содержат одинаковый пароль.")
+                ? i18n_t("El campo de contraseña está vacío. Ingresa una contraseña de 3 a 15 caracteres.")
+                : i18n_t("Las contraseñas no coinciden. Asegúrate de escribir la misma contraseña en ambos campos.")
         ));
         adw_alert_dialog_add_response(dialog, "ok",
-            i18n_t("Aceptar", "OK", "ОК"));
+            i18n_t("Aceptar"));
         adw_alert_dialog_set_default_response(dialog, "ok");
         adw_dialog_present(ADW_DIALOG(dialog), GTK_WIDGET(data->window));
         return;
@@ -790,13 +777,9 @@ static void update_encryption_sensitivity(WindowDiskData *data)
     if (data->encryption_error_row) {
         const gchar *msg = NULL;
         if (too_short || too_long) {
-            msg = i18n_t("La contraseña debe tener entre 3 y 15 caracteres",
-                         "Password must be between 3 and 15 characters",
-                         "Пароль должен содержать от 3 до 15 символов");
+            msg = i18n_t("La contraseña debe tener entre 3 y 15 caracteres");
         } else if (mismatch) {
-            msg = i18n_t("Las contraseñas no coinciden",
-                         "Passwords do not match",
-                         "Пароли не совпадают");
+            msg = i18n_t("Las contraseñas no coinciden");
         }
         if (msg) {
             adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->encryption_error_row), msg);
@@ -893,153 +876,115 @@ void window_disk_update_language(WindowDiskData *data)
 
     if (data->title_widget)
         adw_window_title_set_title(data->title_widget,
-            i18n_t("Disco", "Disk", "Диск"));
+            i18n_t("Disco"));
     if (data->window)
         gtk_window_set_title(data->window,
-            i18n_t("Disco", "Disk", "Диск"));
+            i18n_t("Disco"));
     if (data->close_button)
         gtk_button_set_label(data->close_button,
-            i18n_t("Cerrar", "Close", "Закрыть"));
+            i18n_t("Cerrar"));
     if (data->save_button)
         gtk_button_set_label(data->save_button,
-            i18n_t("Guardar", "Save", "Сохранить"));
+            i18n_t("Guardar"));
 
     /* Grupo: Sistema de Archivos */
     if (data->filesystem_group) {
         adw_preferences_group_set_title(data->filesystem_group,
-            i18n_t("Sistema de Archivos", "File System", "Файловая система"));
+            i18n_t("Sistema de Archivos"));
         adw_preferences_group_set_description(data->filesystem_group,
-            i18n_t("Formatear el almacenamiento como:",
-                   "Format storage as:",
-                   "Форматировать хранилище как:"));
+            i18n_t("Formatear el almacenamiento como:"));
     }
 
     /* Grupo: Directorio Personal */
     if (data->home_group) {
         adw_preferences_group_set_title(data->home_group,
-            i18n_t("Separación del Directorio Personal",
-                   "Home Directory Separation",
-                   "Разделение домашнего каталога"));
+            i18n_t("Separación del Directorio Personal"));
         adw_preferences_group_set_description(data->home_group,
-            i18n_t("¿Desea crear una partición separada para '/home'?",
-                   "Do you want to create a separate partition for '/home'?",
-                   "Хотите создать отдельный раздел для '/home'?"));
+            i18n_t("¿Desea crear una partición separada para '/home'?"));
     }
     if (data->home_subvolume_row)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->home_subvolume_row),
-            i18n_t("Sí, como un subvolumen", "Yes, as a subvolume", "Да, как субтом"));
+            i18n_t("Sí, como un subvolumen"));
     if (data->home_partition_row)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->home_partition_row),
-            i18n_t("Sí, como una partición", "Yes, as a partition", "Да, как раздел"));
+            i18n_t("Sí, como una partición"));
 
     /* Expander: tamaño de partición raíz */
     if (data->root_size_expander) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->root_size_expander),
-            i18n_t("Tamaño de la partición raíz",
-                   "Root partition size",
-                   "Размер корневого раздела"));
+            i18n_t("Tamaño de la partición raíz"));
         adw_expander_row_set_subtitle(data->root_size_expander,
-            i18n_t("Ajustar el espacio para '/' y '/home'",
-                   "Adjust space for '/' and '/home'",
-                   "Настройте пространство для '/' и '/home'"));
+            i18n_t("Ajustar el espacio para '/' y '/home'"));
     }
     if (data->slider_row)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->slider_row),
-            i18n_t("Raíz ('/')", "Root ('/')", "Корень ('/')"));
+            i18n_t("Raíz ('/')"));
     if (data->root_label_row)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->root_label_row),
-            i18n_t("Tamaño partición raíz ('/')",
-                   "Root partition size ('/')",
-                   "Размер корневого раздела ('/')"));
+            i18n_t("Tamaño partición raíz ('/')"));
     if (data->home_label_row)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->home_label_row),
-            i18n_t("Tamaño partición '/home'",
-                   "Home partition size ('/home')",
-                   "Размер раздела '/home'"));
+            i18n_t("Tamaño partición '/home'"));
 
     /* Grupo: Swap */
     if (data->swap_group) {
         adw_preferences_group_set_title(data->swap_group,
-            i18n_t("Memoria de Intercambio", "Swap Memory", "Память подкачки"));
+            i18n_t("Memoria de Intercambio"));
         adw_preferences_group_set_description(data->swap_group,
-            i18n_t("Selecciona el método de memoria virtual: Zram comprime datos en RAM, Swap usa una partición en disco y permite hibernación",
-                   "Select virtual memory method: Zram compresses data in RAM, Swap uses a disk partition and enables hibernation",
-                   "Выберите метод виртуальной памяти: Zram сжимает данные в ОЗУ, Swap использует раздел диска и поддерживает гибернацию"));
+            i18n_t("Selecciona el método de memoria virtual: Zram comprime datos en RAM, Swap usa una partición en disco y permite hibernación"));
     }
     if (data->swap_none_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->swap_none_row),
-            i18n_t("Zram (compresión en RAM)", "Zram (RAM compression)", "Zram (сжатие в ОЗУ)"));
+            i18n_t("Zram (compresión en RAM)"));
         adw_action_row_set_subtitle(data->swap_none_row,
-            i18n_t("Recomendado — no usa espacio en disco",
-                   "Recommended — no disk space used",
-                   "Рекомендуется — не использует место на диске"));
+            i18n_t("Recomendado — no usa espacio en disco"));
     }
     if (data->swap_half_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->swap_half_row),
-            i18n_t("Swap: mitad de la RAM del sistema",
-                   "Swap: half system RAM",
-                   "Подкачка: половина ОЗУ системы"));
+            i18n_t("Swap: mitad de la RAM del sistema"));
         adw_action_row_set_subtitle(data->swap_half_row,
-            i18n_t("Zram activo + partición swap de la mitad de la RAM",
-                   "Zram active + swap partition of half the RAM",
-                   "Zram активен + раздел подкачки половины ОЗУ"));
+            i18n_t("Zram activo + partición swap de la mitad de la RAM"));
     }
     if (data->swap_equal_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->swap_equal_row),
-            i18n_t("Swap: igual a la RAM del sistema",
-                   "Swap: equal to system RAM",
-                   "Подкачка: равна ОЗУ системы"));
+            i18n_t("Swap: igual a la RAM del sistema"));
         adw_action_row_set_subtitle(data->swap_equal_row,
-            i18n_t("Zram activo + partición swap igual a la RAM",
-                   "Zram active + swap partition equal to RAM",
-                   "Zram активен + раздел подкачки равный ОЗУ"));
+            i18n_t("Zram activo + partición swap igual a la RAM"));
     }
     if (data->swap_custom_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->swap_custom_row),
-            i18n_t("Swap: tamaño personalizado",
-                   "Swap: custom size",
-                   "Подкачка: пользовательский размер"));
+            i18n_t("Swap: tamaño personalizado"));
         adw_action_row_set_subtitle(data->swap_custom_row,
-            i18n_t("Zram activo + partición swap de tamaño definido manualmente",
-                   "Zram active + swap partition of manually defined size",
-                   "Zram активен + раздел подкачки заданного вручную размера"));
+            i18n_t("Zram activo + partición swap de tamaño definido manualmente"));
     }
     if (data->swap_disabled_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->swap_disabled_row),
-            i18n_t("No", "No", "Нет"));
+            i18n_t("No"));
         adw_action_row_set_subtitle(data->swap_disabled_row,
-            i18n_t("Sin Zram ni Swap - no recomendado en sistemas con poca RAM",
-                   "No Zram or Swap - not recommended on low-RAM systems",
-                   "Без Zram и Swap - не рекомендуется на системах с малым объёмом ОЗУ"));
+            i18n_t("Sin Zram ni Swap - no recomendado en sistemas con poca RAM"));
     }
 
     /* Grupo: Cifrado */
     if (data->encryption_group) {
         adw_preferences_group_set_title(data->encryption_group,
-            i18n_t("Disco Cifrado", "Encrypted Disk", "Шифрование диска"));
+            i18n_t("Disco Cifrado"));
         adw_preferences_group_set_description(data->encryption_group,
-            i18n_t("Protege tus datos con LUKS y LVM\nSe pedirá una clave al arrancar el sistema",
-                   "Protect your data with LUKS and LVM\nA passphrase will be required at boot",
-                   "Защитите данные с LUKS и LVM\nПри загрузке потребуется ввести пароль"));
+            i18n_t("Protege tus datos con LUKS y LVM\nSe pedirá una clave al arrancar el sistema"));
     }
     if (data->encryption_toggle_row)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->encryption_toggle_row),
-            i18n_t("Cifrar el disco", "Encrypt the disk", "Зашифровать диск"));
+            i18n_t("Cifrar el disco"));
     if (data->encryption_expander) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->encryption_expander),
-            i18n_t("Elija una clave para su disco",
-                   "Choose a passphrase for your disk",
-                   "Выберите ключ для диска"));
+            i18n_t("Elija una clave para su disco"));
         adw_expander_row_set_subtitle(data->encryption_expander,
-            i18n_t("El cifrado del disco protege sus archivos en caso de extravío del equipo",
-                   "Disk encryption protects your files if the device is lost or stolen",
-                   "Шифрование диска защищает файлы в случае утери или кражи устройства"));
+            i18n_t("El cifrado del disco protege sus archivos en caso de extravío del equipo"));
     }
     if (data->encryption_password_entry)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->encryption_password_entry),
-            i18n_t("Elija una contraseña", "Choose a password", "Введите пароль"));
+            i18n_t("Elija una contraseña"));
     if (data->encryption_confirm_entry)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(data->encryption_confirm_entry),
-            i18n_t("Confirme su contraseña", "Confirm your password", "Подтвердите пароль"));
+            i18n_t("Confirme su contraseña"));
 }
 

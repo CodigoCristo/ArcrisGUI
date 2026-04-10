@@ -572,46 +572,32 @@ void window_kernel_update_language(WindowKernelData *data)
 
     if (data->close_button)
         gtk_button_set_label(data->close_button,
-            i18n_t("Cerrar", "Close", "Закрыть"));
+            i18n_t("Cerrar"));
     if (data->save_button)
         gtk_button_set_label(data->save_button,
-            i18n_t("Guardar", "Save", "Сохранить"));
+            i18n_t("Guardar"));
     if (data->kernel_window_title)
         adw_window_title_set_title(data->kernel_window_title,
-            i18n_t("Lista de Kernels", "Kernel List", "Список ядер"));
+            i18n_t("Lista de Kernels"));
     if (data->kernel_group) {
         adw_preferences_group_set_title(data->kernel_group,
-            i18n_t("Kernels oficialmente soportados",
-                   "Officially supported kernels",
-                   "Официально поддерживаемые ядра"));
+            i18n_t("Kernels oficialmente soportados"));
         adw_preferences_group_set_description(data->kernel_group,
-            i18n_t("Existen varios kernels de Linux alternativos para Arch Linux, además del kernel estable más reciente.",
-                   "There are several alternative Linux kernels for Arch Linux, in addition to the latest stable kernel.",
-                   "Существует несколько альтернативных ядер Linux для Arch Linux, помимо последнего стабильного."));
+            i18n_t("Existen varios kernels de Linux alternativos para Arch Linux, además del kernel estable más reciente."));
     }
     if (data->row_linux)
         adw_action_row_set_subtitle(data->row_linux,
-            i18n_t("Versión principal y más reciente del kernel de Linux",
-                   "Main and most recent version of the Linux kernel",
-                   "Основная и последняя версия ядра Linux"));
+            i18n_t("Versión principal y más reciente del kernel de Linux"));
     if (data->row_hardened)
         adw_action_row_set_subtitle(data->row_hardened,
-            i18n_t("Linux con parches de seguridad adicionales para reforzar la protección contra exploits. Ideal para sistemas enfocados en seguridad.",
-                   "Linux with additional security patches to strengthen protection against exploits. Ideal for security-focused systems.",
-                   "Linux с дополнительными патчами безопасности. Идеально для систем, ориентированных на безопасность."));
+            i18n_t("Linux con parches de seguridad adicionales para reforzar la protección contra exploits. Ideal para sistemas enfocados en seguridad."));
     if (data->row_lts)
         adw_action_row_set_subtitle(data->row_lts,
-            i18n_t("soporte a largo plazo, enfocada en estabilidad y seguridad con menos cambios frecuentes. Ideal para sistemas en producción.",
-                   "Long-term support, focused on stability and security with fewer frequent changes. Ideal for production systems.",
-                   "Долгосрочная поддержка, ориентированная на стабильность. Идеально для производственных систем."));
+            i18n_t("soporte a largo plazo, enfocada en estabilidad y seguridad con menos cambios frecuentes. Ideal para sistemas en producción."));
     if (data->row_rt_lts)
         adw_action_row_set_subtitle(data->row_rt_lts,
-            i18n_t("optimizado para minimizar la latencia y garantizar tiempos de respuesta predecibles en tiempo real. Ideal para audio, robótica e industria.",
-                   "Optimized to minimize latency and ensure predictable real-time response. Ideal for audio, robotics and industry.",
-                   "Оптимизировано для минимальной задержки в реальном времени. Идеально для аудио, робототехники и промышленности."));
+            i18n_t("optimizado para minimizar la latencia y garantizar tiempos de respuesta predecibles en tiempo real. Ideal para audio, robótica e industria."));
     if (data->row_zen)
         adw_action_row_set_subtitle(data->row_zen,
-            i18n_t("Linux optimizado para el rendimiento y la experiencia del usuario, con parches que mejoran la interactividad, velocidad y respuesta del sistema.",
-                   "Linux optimized for performance and user experience, with patches that improve interactivity, speed and system responsiveness.",
-                   "Linux, оптимизированный для производительности и пользовательского опыта."));
+            i18n_t("Linux optimizado para el rendimiento y la experiencia del usuario, con parches que mejoran la interactividad, velocidad y respuesta del sistema."));
 }

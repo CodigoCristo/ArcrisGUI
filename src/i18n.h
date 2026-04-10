@@ -16,9 +16,13 @@ void     i18n_set_lang(AppLang lang);
 AppLang  i18n_get_lang(void);
 
 /* Return the string for the current language.
- * Always returns a non-NULL pointer (falls back to es).
- * For PT/FR/DE, looks up the translation table using the ES string as key.
- * Falls back to EN if the key is not found in the table. */
-const char* i18n_t(const char *es, const char *en, const char *ru);
+ * Looks up the ES string as key in the translation table.
+ * Falls back to ES if the key is not found.
+ *
+ * Accepts 1, 2, or 3 arguments — extra args are ignored during migration:
+ *   i18n_t("es")              — new single-arg form
+ *   i18n_t("es", "en", "ru") — old form, en/ru ignored (already in table) */
+const char* i18n_lookup(const char *es);
+#define i18n_t(es, ...) i18n_lookup(es)
 
 #endif /* I18N_H */

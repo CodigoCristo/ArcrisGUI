@@ -786,7 +786,7 @@ void page3_update_manual_partitions_info(Page3Data *data)
 
     // Actualizar etiquetas de disco
     gchar *disk_text = g_strdup_printf("%s %s",
-        i18n_t("Disco", "Disk", "Диск"), selected_disk);
+        i18n_t("Disco"), selected_disk);
     gtk_label_set_text(data->disk_label_page4, disk_text);
     LOG_INFO("Label de disco actualizado: %s", disk_text);
     g_free(disk_text);
@@ -1149,7 +1149,7 @@ void page3_add_partition_row(Page3Data *data, Page3PartitionInfo *partition)
     GtkButton *config_button = GTK_BUTTON(gtk_button_new_from_icon_name("list-add-symbolic"));
     gtk_widget_set_valign(GTK_WIDGET(config_button), GTK_ALIGN_CENTER);
     gtk_widget_set_tooltip_text(GTK_WIDGET(config_button),
-        i18n_t("Configurar partición", "Configure partition", "Настроить раздел"));
+        i18n_t("Configurar partición"));
 
     // Añadir clases CSS
     gtk_widget_add_css_class(GTK_WIDGET(config_button), "flat");
@@ -1972,84 +1972,70 @@ void page3_update_language(void)
     // Página principal: status page
     if (g_page3_data->status_page) {
         adw_status_page_set_title(g_page3_data->status_page,
-            i18n_t("Seleccionar Disco", "Select Disk", "Выбор диска"));
+            i18n_t("Seleccionar Disco"));
         adw_status_page_set_description(g_page3_data->status_page,
-            i18n_t("Selecciona un disco de la lista de dispositivos disponibles",
-                   "Select a disk from the list of available devices",
-                   "Выберите диск из списка доступных устройств"));
+            i18n_t("Selecciona un disco de la lista de dispositivos disponibles"));
     }
 
     // Grupo lista de discos
     if (g_page3_data->group_disco_lista)
         adw_preferences_group_set_title(g_page3_data->group_disco_lista,
-            i18n_t("Lista de Discos:", "Disk List:", "Список дисков:"));
+            i18n_t("Lista de Discos:"));
 
     // Combo de dispositivos
     if (g_page3_data->disk_combo)
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->disk_combo),
-            i18n_t("Dispositivo", "Device", "Устройство"));
+            i18n_t("Dispositivo"));
 
     // Grupo opciones de particionado
     if (g_page3_data->group_opciones)
         adw_preferences_group_set_title(g_page3_data->group_opciones,
-            i18n_t("Elige una opción", "Choose an option", "Выберите вариант"));
+            i18n_t("Elige una opción"));
 
     // Fila: borrar e instalar
     if (g_page3_data->auto_partition_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->auto_partition_row),
-            i18n_t("Borra el disco e Instala Arch Linux",
-                   "Erase disk and Install Arch Linux",
-                   "Очистить диск и установить Arch Linux"));
+            i18n_t("Borra el disco e Instala Arch Linux"));
         adw_action_row_set_subtitle(g_page3_data->auto_partition_row,
-            i18n_t("Eliminará todos los datos del disco seleccionado",
-                   "Will erase all data on the selected disk",
-                   "Удалит все данные на выбранном диске"));
+            i18n_t("Eliminará todos los datos del disco seleccionado"));
     }
 
     // Fila: particionado manual
     if (g_page3_data->manual_partition_row) {
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(g_page3_data->manual_partition_row),
-            i18n_t("Particionado Manual", "Manual Partitioning", "Ручное разбиение"));
+            i18n_t("Particionado Manual"));
         adw_action_row_set_subtitle(g_page3_data->manual_partition_row,
-            i18n_t("Puede crear y asignar montajes para instalar Arch Linux",
-                   "You can create and assign mount points to install Arch Linux",
-                   "Можно создать и назначить точки монтирования для установки Arch Linux"));
+            i18n_t("Puede crear y asignar montajes para instalar Arch Linux"));
     }
 
     // Grupo de particiones del disco (página manual)
     if (g_page3_data->partitions_group) {
         adw_preferences_group_set_title(g_page3_data->partitions_group,
-            i18n_t("Particiones del disco", "Disk Partitions", "Разделы диска"));
+            i18n_t("Particiones del disco"));
         adw_preferences_group_set_description(g_page3_data->partitions_group,
-            i18n_t("Presiona + para seleccionar los puntos de montaje",
-                   "Press + to select the mount points",
-                   "Нажмите + для выбора точек монтирования"));
+            i18n_t("Presiona + para seleccionar los puntos de montaje"));
     }
 
     // Página manual de particiones
     if (g_page3_data->manual_status_page) {
         adw_status_page_set_title(g_page3_data->manual_status_page,
-            i18n_t("Partición Manual", "Manual Partition", "Ручное разбиение"));
+            i18n_t("Partición Manual"));
         adw_status_page_set_description(g_page3_data->manual_status_page,
-            i18n_t("Configura las particiones usando Gparted en el disco seleccionado",
-                   "Configure partitions using Gparted on the selected disk",
-                   "Настройте разделы с помощью Gparted на выбранном диске"));
+            i18n_t("Configura las particiones usando Gparted en el disco seleccionado"));
     }
 
     // Botón Gparted
     if (g_page3_data->gparted_button)
         gtk_widget_set_tooltip_text(GTK_WIDGET(g_page3_data->gparted_button),
-            i18n_t("Abrir Gparted para edición avanzada",
-                   "Open Gparted for advanced editing",
-                   "Открыть Gparted для расширенного редактирования"));
+            i18n_t("Abrir Gparted para edición avanzada"));
     if (g_page3_data->gparted_label)
         gtk_label_set_text(g_page3_data->gparted_label,
-            i18n_t(" Abrir Gparted", " Open Gparted", " Открыть Gparted"));
+            i18n_t(" Abrir Gparted"));
 
     // Tooltip botón actualizar particiones
     if (g_page3_data->refresh_partitions_button)
         gtk_widget_set_tooltip_text(GTK_WIDGET(g_page3_data->refresh_partitions_button),
-            i18n_t("Actualizar lista", "Refresh list", "Обновить список"));
+            i18n_t("Actualizar lista"));
 
     // Diálogo de configuración de partición
     if (g_page3_data->partition_manager)

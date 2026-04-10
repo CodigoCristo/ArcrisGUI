@@ -11,15 +11,21 @@ SELECTED_DISK="/dev/sda"
 FILESYSTEM_TYPE="ext4"
 HOME_PARTITION="no"
 ROOT_SIZE="15"
-SWAP_TYPE="none"
+SWAP_TYPE="zram"
 SWAP_CUSTOM_SIZE="1"
 ENCRYPTION="false"
 ENCRYPTION_KEY=""
 
 PARTITION_MODE="auto"
 
-INSTALLATION_TYPE="TERMINAL"
+# Variables de configuración del usuario
+export USER="qwe"
+export PASSWORD_USER="123"
+export HOSTNAME="arcris"
+# La contraseña del usuario también será la contraseña de root
+export PASSWORD_ROOT="123"
 
+INSTALLATION_TYPE="TERMINAL"
 
 # Kernel seleccionado
 SELECTED_KERNEL="linux"
@@ -42,8 +48,18 @@ REPOS_ARCHLINUXCN="false"
 REPOS_CACHYOS="false"
 REPOS_MIRROR_MODE="auto"
 
-REPOS_MIRROR_CUSTOM=""
-
 ESSENTIAL_APPS_ENABLED="true"
 
-UTILITIES_ENABLED="false"
+UTILITIES_ENABLED="true"
+
+# Configuración de repositorios
+
+# Configuración de repositorios
+
+# Configuración de repositorios
+
+# Configuración de repositorios
+
+# Configuración de repositorios
+
+# Configuración de repositorios

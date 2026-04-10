@@ -293,24 +293,18 @@ void page1_update_language(void)
 
     if (g_page1_data->status_page)
         adw_status_page_set_description(g_page1_data->status_page,
-            i18n_t("Instalación fácil de ArchLinux",
-                   "Easy Arch Linux Installation",
-                   "Простая установка Arch Linux"));
+            i18n_t("Instalación fácil de ArchLinux"));
 
     gtk_button_set_label(GTK_BUTTON(g_page1_data->start_button),
-        i18n_t("Iniciar", "Start", "Начать"));
+        i18n_t("Iniciar"));
 
     if (gtk_widget_get_visible(g_page1_data->internet_label))
         gtk_label_set_text(GTK_LABEL(g_page1_data->internet_label),
-            i18n_t("Probando Conexión a Internet...",
-                   "Testing Internet Connection...",
-                   "Проверка подключения к интернету..."));
+            i18n_t("Probando Conexión a Internet..."));
 
     if (gtk_widget_get_visible(g_page1_data->no_internet_label))
         gtk_label_set_text(GTK_LABEL(g_page1_data->no_internet_label),
-            i18n_t("¡Conéctese primero a Internet!",
-                   "Connect to Internet first!",
-                   "Сначала подключитесь к интернету!"));
+            i18n_t("¡Conéctese primero a Internet!"));
 }
 
 // ── Actualización ──────────────────────────────────────────────────────────
@@ -345,9 +339,7 @@ static void on_update_install_done(GObject *source, GAsyncResult *result,
             gtk_widget_set_visible(g_page1_data->spinner, FALSE);
         if (g_page1_data->update_check_label) {
             gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
-                i18n_t("Error durante la actualización. Revisa la conexión.",
-                       "Error during update. Check your connection.",
-                       "Ошибка при обновлении. Проверьте подключение."));
+                i18n_t("Error durante la actualización. Revisa la conexión."));
             gtk_widget_remove_css_class(g_page1_data->update_check_label, "dim-label");
             gtk_widget_add_css_class(g_page1_data->update_check_label, "error");
             gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
@@ -365,9 +357,7 @@ static void page1_start_update_install(void)
     // UI: spinner + mensaje de progreso
     if (g_page1_data->update_check_label) {
         gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
-            i18n_t("Arcris se está actualizando...",
-                   "Arcris is updating...",
-                   "Arcris обновляется..."));
+            i18n_t("Arcris se está actualizando..."));
         gtk_widget_remove_css_class(g_page1_data->update_check_label, "warning");
         gtk_widget_remove_css_class(g_page1_data->update_check_label, "error");
         gtk_widget_remove_css_class(g_page1_data->update_check_label, "success");
@@ -391,9 +381,7 @@ static void page1_start_update_install(void)
             gtk_widget_set_visible(g_page1_data->spinner, FALSE);
         if (g_page1_data->update_check_label) {
             gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
-                i18n_t("Error: update-arcris no encontrado en el sistema",
-                       "Error: update-arcris not found on the system",
-                       "Ошибка: update-arcris не найден в системе"));
+                i18n_t("Error: update-arcris no encontrado en el sistema"));
             gtk_widget_remove_css_class(g_page1_data->update_check_label, "dim-label");
             gtk_widget_add_css_class(g_page1_data->update_check_label, "error");
         }
@@ -449,9 +437,7 @@ static void on_update_check_done(GObject *source, GAsyncResult *result,
         // No se pudo conectar o git no disponible
         if (g_page1_data->update_check_label) {
             gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
-                i18n_t("Error al verificar actualizaciones. ¿Hay internet?",
-                       "Error checking for updates. Is there internet?",
-                       "Ошибка при проверке обновлений. Есть ли интернет?"));
+                i18n_t("Error al verificar actualizaciones. ¿Hay internet?"));
             gtk_widget_remove_css_class(g_page1_data->update_check_label, "dim-label");
             gtk_widget_add_css_class(g_page1_data->update_check_label, "error");
             gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
@@ -490,9 +476,7 @@ static void on_update_check_done(GObject *source, GAsyncResult *result,
         g_page1_data->update_check_done = TRUE;
         if (g_page1_data->update_check_label) {
             gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
-                i18n_t("¡Hay una actualización disponible!",
-                       "An update is available!",
-                       "Доступно обновление!"));
+                i18n_t("¡Hay una actualización disponible!"));
             gtk_widget_remove_css_class(g_page1_data->update_check_label, "dim-label");
             gtk_widget_add_css_class(g_page1_data->update_check_label, "warning");
             gtk_widget_set_visible(g_page1_data->update_check_label, TRUE);
@@ -501,15 +485,11 @@ static void on_update_check_done(GObject *source, GAsyncResult *result,
         if (root && GTK_IS_WINDOW(root)) {
             AdwAlertDialog *dlg = ADW_ALERT_DIALOG(
                 adw_alert_dialog_new(
-                    i18n_t("Actualización Disponible",
-                           "Update Available",
-                           "Доступно обновление"),
-                    i18n_t("Se encontraron nuevas actualizaciones de Arcris.\n¿Desea actualizar ahora?",
-                           "New updates for Arcris were found.\nDo you want to update now?",
-                           "Найдены новые обновления Arcris.\nХотите обновить сейчас?")));
+                    i18n_t("Actualización Disponible"),
+                    i18n_t("Se encontraron nuevas actualizaciones de Arcris.\n¿Desea actualizar ahora?")));
             adw_alert_dialog_add_responses(dlg,
-                "cancel", i18n_t("Cancelar", "Cancel", "Отмена"),
-                "update", i18n_t("Actualizar", "Update", "Обновить"),
+                "cancel", i18n_t("Cancelar"),
+                "update", i18n_t("Actualizar"),
                 NULL);
             adw_alert_dialog_set_response_appearance(dlg, "update",
                                                      ADW_RESPONSE_SUGGESTED);
@@ -552,9 +532,7 @@ void page1_start_update_check(void)
         gtk_widget_set_visible(g_page1_data->start_button, FALSE);
     if (g_page1_data->update_check_label) {
         gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
-            i18n_t("Buscando actualizaciones desde repositorio del proyecto...",
-                   "Searching for updates from the project repository...",
-                   "Поиск обновлений из репозитория проекта..."));
+            i18n_t("Buscando actualizaciones desde repositorio del proyecto..."));
         gtk_widget_remove_css_class(g_page1_data->update_check_label, "error");
         gtk_widget_remove_css_class(g_page1_data->update_check_label, "warning");
         gtk_widget_remove_css_class(g_page1_data->update_check_label, "success");
@@ -580,9 +558,7 @@ void page1_start_update_check(void)
             gtk_widget_set_visible(g_page1_data->spinner, FALSE);
         if (g_page1_data->update_check_label) {
             gtk_label_set_text(GTK_LABEL(g_page1_data->update_check_label),
-                i18n_t("Error: git no encontrado en el sistema",
-                       "Error: git not found on the system",
-                       "Ошибка: git не найден в системе"));
+                i18n_t("Error: git no encontrado en el sistema"));
             gtk_widget_remove_css_class(g_page1_data->update_check_label, "dim-label");
             gtk_widget_add_css_class(g_page1_data->update_check_label, "error");
         }
