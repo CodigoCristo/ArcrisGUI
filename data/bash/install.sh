@@ -1243,36 +1243,147 @@ clear
 configurar_teclado
 clear
 
-# Instalación de programas adicionales según configuración
+# Instalación de programas adicionales según lista de programas
 if [ "$UTILITIES_ENABLED" = "true" ] && [ ${#UTILITIES_APPS[@]} -gt 0 ]; then
     echo ""
     echo -e "${GREEN}| Instalando programas de utilidades seleccionados |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
-
     for app in "${UTILITIES_APPS[@]}"; do
+
+        # Caso especial: stremio requiere dependencias Qt5 precompiladas
+        if [ "$app" = "stremio" ]; then
+            echo -e "${YELLOW}⚠ Detectado stremio: instalando dependencias Qt5 precompiladas...${NC}"
+
+            install_pacman_url_with_retry \
+                "https://archive.archlinux.org/packages/q/qt5-webengine/qt5-webengine-5.15.19-4-x86_64.pkg.tar.zst"
+
+            install_pacman_url_with_retry \
+                "https://archive.archlinux.org/packages/q/qt5-webchannel/qt5-webchannel-5.15.18+kde+r3-1-x86_64.pkg.tar.zst"
+
+            install_pacman_url_with_retry \
+                "https://archive.archlinux.org/packages/q/qt5-websockets/qt5-websockets-5.15.18+kde+r2-1-x86_64.pkg.tar.zst"
+
+            install_pacman_url_with_retry \
+                "https://archive.archlinux.org/packages/q/qt5-location/qt5-location-5.15.18+kde+r7-2-x86_64.pkg.tar.zst"
+
+            echo -e "${GREEN}✓ Dependencias Qt5 instaladas${NC}"
+        fi
+
         echo -e "${CYAN}Instalando: $app${NC}"
         install_yay_chroot_with_retry "$app" "--overwrite '*'"
         sleep 2
     done
-
     echo -e "${GREEN}✓ Instalación de programas de utilidades completada${NC}"
     echo ""
     sleep 2
 fi
 
+
+# URLs de dependencias precompiladas
+declare -A PREBUILT_URLS=(
+    ["gtk2"]="https://archive.archlinux.org/packages/g/gtk2/gtk2-2.24.33-5-x86_64.pkg.tar.zst"
+    ["libpng12"]="https://archive.archlinux.org/packages/l/libpng12/libpng12-1.2.59-2-x86_64.pkg.tar.zst"
+    ["qt5-webengine"]="https://archive.archlinux.org/packages/q/qt5-webengine/qt5-webengine-5.15.19-4-x86_64.pkg.tar.zst"
+    ["qt5-websockets"]="https://archive.archlinux.org/packages/q/qt5-websockets/qt5-websockets-5.15.18+kde+r2-1-x86_64.pkg.tar.zst"
+    ["qt5-webchannel"]="https://archive.archlinux.org/packages/q/qt5-webchannel/qt5-webchannel-5.15.18+kde+r3-1-x86_64.pkg.tar.zst"
+    ["qt5-location"]="https://archive.archlinux.org/packages/q/qt5-location/qt5-location-5.15.18+kde+r7-2-x86_64.pkg.tar.zst"
+)
+
+QT5_WEBENGINE_COMPANIONS=("qt5-websockets" "qt5-webchannel" "qt5-location")
+
+# Verifica si un paquete ya está instalado dentro del chroot
+is_installed_in_chroot() {
+    local pkg="$1"
+    chroot /mnt pacman -Qq "$pkg" &>/dev/null
+}
+
+# Obtiene dependencias via AUR RPC API con fallback a yay -Si
+get_pkg_deps() {
+    local app="$1"
+    local deps=""
+
+    # Primero AUR RPC API (más confiable para paquetes AUR)
+    deps=$(curl -s "https://aur.archlinux.org/rpc/v5/info?arg[]=$app" \
+        | grep -oP '"(Depends|MakeDepends|CheckDepends)":\[.*?\]' \
+        | grep -oP '"[^"]*"' \
+        | tr -d '"' \
+        | grep -v 'Depends\|MakeDepends\|CheckDepends')
+
+    # Fallback a yay -Si dentro del chroot (repos oficiales)
+    if [ -z "$deps" ]; then
+        deps=$(chroot /mnt /bin/bash -c "yay -Si $app 2>/dev/null \
+            | grep -E '^(Depends On|Make Deps)\s*:' \
+            | sed 's/.*: //'")
+    fi
+
+    echo "$deps"
+}
+
+# Detecta e instala dependencias precompiladas necesarias antes de instalar un paquete
+install_prebuilt_deps_if_needed() {
+    local app="$1"
+    local deps_to_install=()
+
+    echo -e "${CYAN}  Verificando dependencias precompiladas para: $app${NC}"
+
+    local all_deps
+    all_deps=$(get_pkg_deps "$app")
+
+    if [ -z "$all_deps" ]; then
+        echo -e "${YELLOW}  ⚠ No se pudieron obtener dependencias de $app, continuando...${NC}"
+        return
+    fi
+
+    for dep in "${!PREBUILT_URLS[@]}"; do
+        # Los companions de qt5-webengine se manejan aparte
+        if [[ " ${QT5_WEBENGINE_COMPANIONS[*]} " == *" $dep "* ]]; then
+            continue
+        fi
+
+        if echo "$all_deps" | grep -qw "$dep"; then
+            if ! is_installed_in_chroot "$dep"; then
+                deps_to_install+=("$dep")
+            else
+                echo -e "${GREEN}  ✓ $dep ya instalado${NC}"
+            fi
+
+            # qt5-webengine arrastra sus companions automáticamente
+            if [ "$dep" = "qt5-webengine" ]; then
+                for companion in "${QT5_WEBENGINE_COMPANIONS[@]}"; do
+                    if ! is_installed_in_chroot "$companion"; then
+                        deps_to_install+=("$companion")
+                    else
+                        echo -e "${GREEN}  ✓ $companion ya instalado${NC}"
+                    fi
+                done
+            fi
+        fi
+    done
+
+    if [ ${#deps_to_install[@]} -gt 0 ]; then
+        echo -e "${YELLOW}  ⚠ Dependencias precompiladas necesarias: ${deps_to_install[*]}${NC}"
+        for dep in "${deps_to_install[@]}"; do
+            install_pacman_url_with_retry "${PREBUILT_URLS[$dep]}"
+        done
+        echo -e "${GREEN}  ✓ Dependencias precompiladas listas${NC}"
+    else
+        echo -e "${GREEN}  ✓ Sin dependencias precompiladas necesarias${NC}"
+    fi
+}
+
+# Instalación de programas extra seleccionados
 if [ "$PROGRAM_EXTRA" = "true" ] && [ ${#EXTRA_PROGRAMS[@]} -gt 0 ]; then
     echo ""
     echo -e "${GREEN}| Instalando programas extra seleccionados |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
-
     for program in "${EXTRA_PROGRAMS[@]}"; do
+        install_prebuilt_deps_if_needed "$program"
         echo -e "${CYAN}Instalando: $program${NC}"
         install_yay_chroot_with_retry "$program" "--overwrite '*'"
         sleep 2
     done
-
     echo -e "${GREEN}✓ Instalación de programas extra completada${NC}"
     echo ""
     sleep 2
@@ -1471,40 +1582,6 @@ fi
 cleanup_chroot_mounts
 sleep 1
 clear
-
-# Colores
-AZUL="\e[1;34m"
-GRIS_NEGRITA="\e[1;37m"
-RESET="\e[0m"
-
-echo -e "${AZUL}
-        ,                       _     _ _
-       /#\\        __ _ _ __ ___| |__ | (_)_ __  _   ___  __
-      /###\\      / _\` | '__/ __| '_ \\| | | '_ \\| | | \\ \\/ /
-     /#####\\    | (_| | | | (__| | | | | | | | | |_| |>  <
-    /##,-,##\\    \\__,_|_|  \\___|_| |_|_|_|_| |_|\\__,_/_/\\_\\
-   /##(   )##\\
-  /#.--   --.#\\ ${RESET}  ${GRIS_NEGRITA}A simple, elegant GNU/Linux distribution.${RESET}
-${AZUL} /\`           \`\\
-${RESET}"
-
-echo ""
-echo -e "${YELLOW}IMPORTANTE:${NC}"
-echo -e "${CYAN}• Reinicia el sistema y retira el medio de instalación${NC}"
-echo -e "${CYAN}• El sistema iniciará con GRUB${NC}"
-if [ "$ENCRYPTION" = "true" ]; then
-    echo -e "${CYAN}• Se solicitará la contraseña de cifrado al iniciar${NC}"
-fi
-echo -e "${CYAN}• Puedes iniciar sesión con:${NC}"
-echo -e "  Usuario: ${GREEN}$USER${NC}"
-echo ""
-sleep 5
-clear
-# Barra de progreso final
-titulo_progreso="| Finalizando instalación de ARCRIS LINUX |"
-barra_progreso
-echo -e "${GREEN}✓ Instalación de ARCRIS LINUX completada exitosamente!${NC}"
-clear
 # Mostrar información importante para sistemas cifrados
 if [ "$ENCRYPTION" = "true" ]; then
     clear
@@ -1540,3 +1617,36 @@ if [ "$ENCRYPTION" = "true" ]; then
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════════════${NC}"
     echo ""
 fi
+echo ""
+echo -e "${YELLOW}IMPORTANTE:${NC}"
+echo -e "${CYAN}• Reinicia el sistema y retira el medio de instalación${NC}"
+echo -e "${CYAN}• El sistema iniciará con GRUB${NC}"
+if [ "$ENCRYPTION" = "true" ]; then
+    echo -e "${CYAN}• Se solicitará la contraseña de cifrado al iniciar${NC}"
+fi
+echo -e "${CYAN}• Puedes iniciar sesión con:${NC}"
+echo -e "  Usuario: ${GREEN}$USER${NC}"
+echo ""
+sleep 5
+clear
+# Barra de progreso final
+titulo_progreso="| Finalizando instalación de ARCRIS LINUX |"
+# Colores
+AZUL="\e[1;34m"
+GRIS_NEGRITA="\e[1;37m"
+RESET="\e[0m"
+
+echo -e "${AZUL}
+        ,                       _     _ _
+       /#\\        __ _ _ __ ___| |__ | (_)_ __  _   ___  __
+      /###\\      / _\` | '__/ __| '_ \\| | | '_ \\| | | \\ \\/ /
+     /#####\\    | (_| | | | (__| | | | | | | | | |_| |>  <
+    /##,-,##\\    \\__,_|_|  \\___|_| |_|_|_|_| |_|\\__,_/_/\\_\\
+   /##(   )##\\
+  /#.--   --.#\\ ${RESET}  ${GRIS_NEGRITA}A simple, elegant GNU/Linux distribution.${RESET}
+${AZUL} /\`           \`\\
+${RESET}"
+barra_progreso
+echo -e "${GREEN}✓ Instalación de ARCRIS LINUX completada exitosamente!${NC}"
+sleep 2
+clear

@@ -258,6 +258,8 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "polkit-kde-agent"      # Autenticación
                 install_pacman_chroot_with_retry "kwallet"               # Gestor de contraseñas
                 install_pacman_chroot_with_retry "kwalletmanager"        # GUI para kwallet
+                install_pacman_chroot_with_retry "kvantum"                # SVG-based theme engine for Qt6
+                # kwin-effects-glass-git
 
                 # Portales XDG
                 install_pacman_chroot_with_retry "xdg-desktop-portal-kde"  # Portal KDE

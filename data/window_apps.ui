@@ -1766,7 +1766,7 @@
                                 <!-- DuckStation -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">duckstation</property>
+                                    <property name="title">duckstation-preview-latest-bin</property>
                                     <property name="subtitle">Emulador de PlayStation 1 con precisión y mejoras gráficas</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="duckstation_check">
@@ -1786,7 +1786,7 @@
                                 <!-- PCSX2 -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">pcsx2</property>
+                                    <property name="title">pcsx2-latest-bin</property>
                                     <property name="subtitle">Emulador de PlayStation 2 de código abierto</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="pcsx2_check">
@@ -1806,7 +1806,7 @@
                                 <!-- RPCS3 -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">rpcs3</property>
+                                    <property name="title">rpcs3-bin</property>
                                     <property name="subtitle">Emulador experimental de PlayStation 3 de código abierto</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="rpcs3_check">
@@ -1826,7 +1826,7 @@
                                 <!-- shadPS4 -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">shadps4</property>
+                                    <property name="title">shadps4-qtlauncher-bin</property>
                                     <property name="subtitle">Emulador experimental de PlayStation 4 en desarrollo</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="shadps4_check">
@@ -1886,7 +1886,7 @@
                                 <!-- citron -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">citron</property>
+                                    <property name="title">eden-bin</property>
                                     <property name="subtitle">Emulador de Nintendo Switch basado en yuzu</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="citron_check">
@@ -1986,7 +1986,7 @@
                                 <!-- bsnes-qt5 -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">bsnes-qt5</property>
+                                    <property name="title">ares-emu</property>
                                     <property name="subtitle">Emulador de Super Nintendo con alta precisión</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="bsnes_qt5_check">
@@ -2026,7 +2026,7 @@
                                 <!-- SkyEmu -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">skyemu-git</property>
+                                    <property name="title">skyemu-bin</property>
                                     <property name="subtitle">Emulador de Game Boy Advance con funciones avanzadas</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="skyemu_check">
@@ -2046,7 +2046,7 @@
                                 <!-- Azahar -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">azahar</property>
+                                    <property name="title">azahar-appimage</property>
                                     <property name="subtitle">Emulador de Nintendo DS desarrollado en Rust</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="azahar_check">
@@ -2066,7 +2066,7 @@
                                 <!-- melonDS -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">melonds</property>
+                                    <property name="title">melonds-bin</property>
                                     <property name="subtitle">Emulador de Nintendo DS con alta precisión</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="melonds_check">
@@ -2116,7 +2116,7 @@
                                 <child>
                                   <object class="AdwActionRow">
                                     <property name="title">octopi</property>
-                                    <property name="subtitle">Frontend gráfico para pacman con notificaciones</property>
+                                    <property name="subtitle">Frontend gráfico para pacman con notificaciones (Compilará)</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="octopi_check">
                                         <property name="active">false</property>
@@ -2136,7 +2136,7 @@
                                 <child>
                                   <object class="AdwActionRow">
                                     <property name="title">pamac-aur</property>
-                                    <property name="subtitle">Gestor de paquetes gráfico para Arch Linux con soporte AUR</property>
+                                    <property name="subtitle">Gestor de paquetes gráfico para Arch Linux con soporte AUR (Compilará)</property>
                                     <child type="prefix">
                                       <object class="GtkCheckButton" id="pamac_check">
                                         <property name="active">false</property>

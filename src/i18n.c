@@ -1488,13 +1488,13 @@ static const TransEntry g_trans[] = {
       "Emulator für Arcade-Automaten und Vintage-Computersysteme" },
 
     /* Others */
-    { "Frontend gráfico para pacman con notificaciones",
+    { "Frontend gráfico para pacman con notificaciones (Compilará)",
       "Graphical frontend for pacman with notifications",
       "Графический интерфейс для pacman с уведомлениями",
       "Frontend gráfico para pacman com notificações",
       "Interface graphique pour pacman avec notifications",
       "Grafische Oberfläche für pacman mit Benachrichtigungen" },
-    { "Gestor de paquetes gráfico para Arch Linux con soporte AUR",
+    { "Gestor de paquetes gráfico para Arch Linux con soporte AUR (Compilará)",
       "Graphical package manager for Arch Linux with AUR support",
       "Графический менеджер пакетов для Arch Linux с поддержкой AUR",
       "Gerenciador de pacotes gráfico para Arch Linux com suporte AUR",

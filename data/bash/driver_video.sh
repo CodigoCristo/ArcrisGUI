@@ -350,6 +350,7 @@ case "$DRIVER_VIDEO" in
             install_pacman_chroot_with_retry "vdpauinfo"
             install_pacman_chroot_with_retry "libva-utils"
             install_pacman_chroot_with_retry "vulkan-tools"
+            install_pacman_chroot_with_retry "vulkan-virtio"
             install_pacman_chroot_with_retry "vulkan-mesa-layers"
 
             install_pacman_chroot_with_retry "spice-vdagent"

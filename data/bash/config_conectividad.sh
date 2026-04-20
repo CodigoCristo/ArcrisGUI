@@ -340,3 +340,25 @@ run_command_with_retry() {
 }
 
 # ================================================================================================
+
+
+# Función para instalar un paquete con pacman -U con reintentos ante fallo de red
+install_pacman_url_with_retry() {
+    local url="$1"
+    local pkg_name
+    pkg_name=$(basename "$url")
+
+    while true; do
+        # Verificar conectividad antes del intento
+        wait_for_internet
+        echo -e "${CYAN}  → Instalando $pkg_name${NC}"
+
+        if pacman -U --noconfirm "$url"; then
+            echo -e "${GREEN}  ✓ $pkg_name instalado correctamente${NC}"
+            return 0
+        else
+            echo -e "${RED}  ✗ Falló la instalación de $pkg_name, verificando red...${NC}"
+            sleep 5
+        fi
+    done
+}
