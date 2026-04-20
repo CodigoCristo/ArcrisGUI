@@ -1243,33 +1243,13 @@ clear
 configurar_teclado
 clear
 
-# Instalación de programas adicionales según lista de programas
+# Instalación de programas adicionales según configuración
 if [ "$UTILITIES_ENABLED" = "true" ] && [ ${#UTILITIES_APPS[@]} -gt 0 ]; then
     echo ""
     echo -e "${GREEN}| Instalando programas de utilidades seleccionados |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
     for app in "${UTILITIES_APPS[@]}"; do
-
-        # Caso especial: stremio requiere dependencias Qt5 precompiladas
-        if [ "$app" = "stremio" ]; then
-            echo -e "${YELLOW}⚠ Detectado stremio: instalando dependencias Qt5 precompiladas...${NC}"
-
-            install_pacman_url_with_retry \
-                "https://archive.archlinux.org/packages/q/qt5-webengine/qt5-webengine-5.15.19-4-x86_64.pkg.tar.zst"
-
-            install_pacman_url_with_retry \
-                "https://archive.archlinux.org/packages/q/qt5-webchannel/qt5-webchannel-5.15.18+kde+r3-1-x86_64.pkg.tar.zst"
-
-            install_pacman_url_with_retry \
-                "https://archive.archlinux.org/packages/q/qt5-websockets/qt5-websockets-5.15.18+kde+r2-1-x86_64.pkg.tar.zst"
-
-            install_pacman_url_with_retry \
-                "https://archive.archlinux.org/packages/q/qt5-location/qt5-location-5.15.18+kde+r7-2-x86_64.pkg.tar.zst"
-
-            echo -e "${GREEN}✓ Dependencias Qt5 instaladas${NC}"
-        fi
-
         echo -e "${CYAN}Instalando: $app${NC}"
         install_yay_chroot_with_retry "$app" "--overwrite '*'"
         sleep 2
@@ -1279,115 +1259,23 @@ if [ "$UTILITIES_ENABLED" = "true" ] && [ ${#UTILITIES_APPS[@]} -gt 0 ]; then
     sleep 2
 fi
 
-
-# URLs de dependencias precompiladas
-declare -A PREBUILT_URLS=(
-    ["gtk2"]="https://archive.archlinux.org/packages/g/gtk2/gtk2-2.24.33-5-x86_64.pkg.tar.zst"
-    ["libpng12"]="https://archive.archlinux.org/packages/l/libpng12/libpng12-1.2.59-2-x86_64.pkg.tar.zst"
-    ["qt5-webengine"]="https://archive.archlinux.org/packages/q/qt5-webengine/qt5-webengine-5.15.19-4-x86_64.pkg.tar.zst"
-    ["qt5-websockets"]="https://archive.archlinux.org/packages/q/qt5-websockets/qt5-websockets-5.15.18+kde+r2-1-x86_64.pkg.tar.zst"
-    ["qt5-webchannel"]="https://archive.archlinux.org/packages/q/qt5-webchannel/qt5-webchannel-5.15.18+kde+r3-1-x86_64.pkg.tar.zst"
-    ["qt5-location"]="https://archive.archlinux.org/packages/q/qt5-location/qt5-location-5.15.18+kde+r7-2-x86_64.pkg.tar.zst"
-)
-
-QT5_WEBENGINE_COMPANIONS=("qt5-websockets" "qt5-webchannel" "qt5-location")
-
-# Verifica si un paquete ya está instalado dentro del chroot
-is_installed_in_chroot() {
-    local pkg="$1"
-    chroot /mnt pacman -Qq "$pkg" &>/dev/null
-}
-
-# Obtiene dependencias via AUR RPC API con fallback a yay -Si
-get_pkg_deps() {
-    local app="$1"
-    local deps=""
-
-    # Primero AUR RPC API (más confiable para paquetes AUR)
-    deps=$(curl -s "https://aur.archlinux.org/rpc/v5/info?arg[]=$app" \
-        | grep -oP '"(Depends|MakeDepends|CheckDepends)":\[.*?\]' \
-        | grep -oP '"[^"]*"' \
-        | tr -d '"' \
-        | grep -v 'Depends\|MakeDepends\|CheckDepends')
-
-    # Fallback a yay -Si dentro del chroot (repos oficiales)
-    if [ -z "$deps" ]; then
-        deps=$(chroot /mnt /bin/bash -c "yay -Si $app 2>/dev/null \
-            | grep -E '^(Depends On|Make Deps)\s*:' \
-            | sed 's/.*: //'")
-    fi
-
-    echo "$deps"
-}
-
-# Detecta e instala dependencias precompiladas necesarias antes de instalar un paquete
-install_prebuilt_deps_if_needed() {
-    local app="$1"
-    local deps_to_install=()
-
-    echo -e "${CYAN}  Verificando dependencias precompiladas para: $app${NC}"
-
-    local all_deps
-    all_deps=$(get_pkg_deps "$app")
-
-    if [ -z "$all_deps" ]; then
-        echo -e "${YELLOW}  ⚠ No se pudieron obtener dependencias de $app, continuando...${NC}"
-        return
-    fi
-
-    for dep in gtk2 libpng12; do
-        if echo "$all_deps" | grep -qw "$dep"; then
-            if ! is_installed_in_chroot "$dep"; then
-                deps_to_install+=("$dep")
-            else
-                echo -e "${GREEN}  ✓ $dep ya instalado${NC}"
-            fi
-        fi
-    done
-
-    # Si el paquete necesita qt5-webengine, instalar companions primero y luego webengine
-    if echo "$all_deps" | grep -qw "qt5-webengine"; then
-        for companion in qt5-websockets qt5-webchannel qt5-location; do
-            if ! is_installed_in_chroot "$companion"; then
-                deps_to_install+=("$companion")
-            else
-                echo -e "${GREEN}  ✓ $companion ya instalado${NC}"
-            fi
-        done
-        if ! is_installed_in_chroot "qt5-webengine"; then
-            deps_to_install+=("qt5-webengine")
-        else
-            echo -e "${GREEN}  ✓ qt5-webengine ya instalado${NC}"
-        fi
-    fi
-
-    if [ ${#deps_to_install[@]} -gt 0 ]; then
-        echo -e "${YELLOW}  ⚠ Instalando dependencias precompiladas: ${deps_to_install[*]}${NC}"
-        for dep in "${deps_to_install[@]}"; do
-            install_pacman_url_with_retry "${PREBUILT_URLS[$dep]}"
-        done
-        echo -e "${GREEN}  ✓ Dependencias precompiladas listas${NC}"
-    else
-        echo -e "${GREEN}  ✓ Sin dependencias precompiladas necesarias${NC}"
-    fi
-}
-
-# Instalación de programas extra seleccionados
 if [ "$PROGRAM_EXTRA" = "true" ] && [ ${#EXTRA_PROGRAMS[@]} -gt 0 ]; then
     echo ""
     echo -e "${GREEN}| Instalando programas extra seleccionados |${NC}"
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' _
     echo ""
+
     for program in "${EXTRA_PROGRAMS[@]}"; do
-        install_prebuilt_deps_if_needed "$program"
         echo -e "${CYAN}Instalando: $program${NC}"
         install_yay_chroot_with_retry "$program" "--overwrite '*'"
         sleep 2
     done
+
     echo -e "${GREEN}✓ Instalación de programas extra completada${NC}"
     echo ""
     sleep 2
 fi
+
 
 
 

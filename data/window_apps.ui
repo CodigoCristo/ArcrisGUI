@@ -2372,21 +2372,21 @@
                                   </object>
                                 </child>
 
-                                <!-- Stremio -->
+                                <!-- Kodi -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">stremio</property>
-                                    <property name="subtitle">Centro multimedia moderno para video streaming</property>
+                                    <property name="title">kodi</property>
+                                    <property name="subtitle">Centro multimedia libre y de código abierto para entretenimiento</property>
                                     <child type="prefix">
-                                      <object class="GtkCheckButton" id="stremio_check">
+                                      <object class="GtkCheckButton" id="kodi_check">
                                         <property name="active">false</property>
                                       </object>
                                     </child>
                                     <child type="suffix">
-                                      <object class="GtkButton" id="stremio_info">
+                                      <object class="GtkButton" id="kodi_info">
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
-                                        <property name="tooltip-text">https://www.stremio.com/</property>
+                                        <property name="tooltip-text">https://kodi.tv/</property>
                                       </object>
                                     </child>
                                   </object>

@@ -259,6 +259,8 @@ case "$INSTALLATION_TYPE" in
                 install_pacman_chroot_with_retry "kwallet"               # Gestor de contraseñas
                 install_pacman_chroot_with_retry "kwalletmanager"        # GUI para kwallet
                 install_pacman_chroot_with_retry "kvantum"                # SVG-based theme engine for Qt6
+                install_pacman_chroot_with_retry "qt5-wayland"
+                install_pacman_chroot_with_retry "qt6-wayland"
                 # kwin-effects-glass-git
 
                 # Portales XDG
