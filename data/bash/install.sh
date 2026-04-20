@@ -1335,34 +1335,34 @@ install_prebuilt_deps_if_needed() {
         return
     fi
 
-    for dep in "${!PREBUILT_URLS[@]}"; do
-        # Los companions de qt5-webengine se manejan aparte
-        if [[ " ${QT5_WEBENGINE_COMPANIONS[*]} " == *" $dep "* ]]; then
-            continue
-        fi
-
+    for dep in gtk2 libpng12; do
         if echo "$all_deps" | grep -qw "$dep"; then
             if ! is_installed_in_chroot "$dep"; then
                 deps_to_install+=("$dep")
             else
                 echo -e "${GREEN}  ✓ $dep ya instalado${NC}"
             fi
-
-            # qt5-webengine arrastra sus companions automáticamente
-            if [ "$dep" = "qt5-webengine" ]; then
-                for companion in "${QT5_WEBENGINE_COMPANIONS[@]}"; do
-                    if ! is_installed_in_chroot "$companion"; then
-                        deps_to_install+=("$companion")
-                    else
-                        echo -e "${GREEN}  ✓ $companion ya instalado${NC}"
-                    fi
-                done
-            fi
         fi
     done
 
+    # Si el paquete necesita qt5-webengine, instalar companions primero y luego webengine
+    if echo "$all_deps" | grep -qw "qt5-webengine"; then
+        for companion in qt5-websockets qt5-webchannel qt5-location; do
+            if ! is_installed_in_chroot "$companion"; then
+                deps_to_install+=("$companion")
+            else
+                echo -e "${GREEN}  ✓ $companion ya instalado${NC}"
+            fi
+        done
+        if ! is_installed_in_chroot "qt5-webengine"; then
+            deps_to_install+=("qt5-webengine")
+        else
+            echo -e "${GREEN}  ✓ qt5-webengine ya instalado${NC}"
+        fi
+    fi
+
     if [ ${#deps_to_install[@]} -gt 0 ]; then
-        echo -e "${YELLOW}  ⚠ Dependencias precompiladas necesarias: ${deps_to_install[*]}${NC}"
+        echo -e "${YELLOW}  ⚠ Instalando dependencias precompiladas: ${deps_to_install[*]}${NC}"
         for dep in "${deps_to_install[@]}"; do
             install_pacman_url_with_retry "${PREBUILT_URLS[$dep]}"
         done
