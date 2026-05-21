@@ -338,7 +338,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"supertux_info", "https://www.supertux.org/"},
 
         // Others
-        {"octopi_info", "https://tintaescura.com/projects/octopi/"},
+        {"shelly_info", "https://github.com/ignis-fos/shelly"},
         {"pamac_info", "https://gitlab.manjaro.org/applications/pamac"},
         {"gnome_boxes_info", "https://wiki.gnome.org/Apps/Boxes"},
         {"virt_manager_info", "https://www.qemu.org/"},
@@ -351,7 +351,7 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"transmission_info", "https://transmissionbt.com/"},
         {"filezilla_info", "https://filezilla-project.org/"},
         {"putty_info", "https://www.putty.org/"},
-        {"kodi_info", "https://kodi.tv/"},
+        {"ghostty_info", "https://mitchellh.com/ghostty"},
         {"mission_center_info", "https://missioncenter.io/"},
         {"resources_info", "https://apps.gnome.org/Resources/"},
         {"htop_info", "https://htop.dev/"},
@@ -514,7 +514,7 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"supertux_check", "supertux", "juego supertux plataformas", "gamming_expander"},
 
         // Others
-        {"octopi_check", "octopi", "gestor paquetes octopi pacman", "other_expander"},
+        {"shelly_check", "shelly-bin", "terminal shelly hermoso fácil", "other_expander"},
         {"pamac_check", "pamac-aur", "gestor paquetes pamac aur", "other_expander"},
         {"gnome_boxes_check", "gnome-boxes", "virtualización boxes gnome", "other_expander"},
         {"virt_manager_check", "qemu-full", "virtualización virt manager qemu", "other_expander"},
@@ -525,7 +525,7 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"transmission_check", "transmission-gtk", "torrent transmission", "other_expander"},
         {"filezilla_check", "filezilla", "ftp filezilla cliente", "other_expander"},
         {"putty_check", "putty", "ssh putty cliente", "other_expander"},
-        {"kodi_check", "kodi", "multimedia entretenimiento kodi", "other_expander"},
+        {"ghostty_check", "ghostty", "multimedia terminal ghostty gpu", "other_expander"},
         {"mission_center_check", "mission-center", "monitor sistema mission center", "other_expander"},
         {"resources_check", "resources", "monitor sistema resources gnome simple", "other_expander"},
         {"htop_check", "htop", "monitor procesos htop", "other_expander"},
@@ -990,7 +990,7 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"supertux_check", "supertux"},
 
         // Others
-        {"octopi_check", "octopi"},
+        {"shelly_check", "shelly-bin"},
         {"pamac_check", "pamac-aur"},
         {"gnome_boxes_check", "gnome-boxes"},
         {"virt_manager_check", "qemu-full"},
@@ -1003,7 +1003,7 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"transmission_check", "transmission-gtk"},
         {"filezilla_check", "filezilla"},
         {"putty_check", "putty"},
-        {"kodi_check", "kodi"},
+        {"ghostty_check", "ghostty"},
         {"mission_center_check", "mission-center"},
         {"resources_check", "resources"},
         {"htop_check", "htop"},
@@ -1162,7 +1162,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"supertux_check", "supertux"},
 
         // Others
-        {"octopi_check", "octopi"},
+        {"shelly_check", "shelly-bin"},
         {"pamac_check", "pamac-aur"},
         {"gnome_boxes_check", "gnome-boxes"},
         {"virt_manager_check", "qemu-full"},
@@ -1175,7 +1175,7 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"transmission_check", "transmission-gtk"},
         {"filezilla_check", "filezilla"},
         {"putty_check", "putty"},
-        {"kodi_check", "kodi"},
+        {"ghostty_check", "ghostty"},
         {"mission_center_check", "mission-center"},
         {"resources_check", "resources"},
         {"htop_check", "htop"},
@@ -1712,10 +1712,10 @@ void window_apps_update_language(WindowAppsData *data)
         "Эмулятор аркадных автоматов и ретро-компьютеров");
 
     // Others
-    set_row_subtitle(data, "octopi_check",
-        "Frontend gráfico para pacman con notificaciones (Compilará)",
-        "Graphical frontend for pacman with notifications",
-        "Графический интерфейс для pacman с уведомлениями");
+    set_row_subtitle(data, "shelly_check",
+        "Terminal Shelly - un terminal hermoso y fácil de usar",
+        "Shelly Terminal - a beautiful and easy to use terminal emulator",
+        "Shelly Terminal — красивый и простой в использовании эмулятор терминала");
     set_row_subtitle(data, "pamac_check",
         "Gestor de paquetes gráfico para Arch Linux con soporte AUR (Compilará)",
         "Graphical package manager for Arch Linux with AUR support",
@@ -1764,10 +1764,10 @@ void window_apps_update_language(WindowAppsData *data)
         "Cliente SSH, Telnet y rlogin",
         "SSH, Telnet and rlogin client",
         "Клиент SSH, Telnet и rlogin");
-    set_row_subtitle(data, "kodi_check",
-        "Centro multimedia libre y de código abierto para entretenimiento",
-        "Free and open source media center for entertainment",
-        "Свободный медиацентр с открытым исходным кодом");
+    set_row_subtitle(data, "ghostty_check",
+        "Emulador de terminal multiplataforma acelerado por GPU",
+        "Cross-platform, GPU-accelerated terminal emulator",
+        "Кроссплатформенный эмулятор терминала с ускорением GPU");
     set_row_subtitle(data, "mission_center_check",
         "Monitor del sistema nativo para GNOME",
         "Native system monitor for GNOME",

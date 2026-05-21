@@ -2112,21 +2112,21 @@
                                 <property name="subtitle">Aplicaciones diversas</property>
                                 <property name="icon-name">preferences-other-symbolic</property>
 
-                                <!-- Octopi -->
+                                <!-- Shelly -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">octopi</property>
-                                    <property name="subtitle">Frontend gráfico para pacman con notificaciones (Compilará)</property>
+                                    <property name="title">shelly-bin</property>
+                                    <property name="subtitle">Terminal Shelly - un terminal hermoso y fácil de usar</property>
                                     <child type="prefix">
-                                      <object class="GtkCheckButton" id="octopi_check">
+                                      <object class="GtkCheckButton" id="shelly_check">
                                         <property name="active">false</property>
                                       </object>
                                     </child>
                                     <child type="suffix">
-                                      <object class="GtkButton" id="octopi_info">
+                                      <object class="GtkButton" id="shelly_info">
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
-                                        <property name="tooltip-text">https://tintaescura.com/projects/octopi/</property>
+                                        <property name="tooltip-text">https://github.com/ignis-fos/shelly</property>
                                       </object>
                                     </child>
                                   </object>
@@ -2372,21 +2372,21 @@
                                   </object>
                                 </child>
 
-                                <!-- Kodi -->
+                                <!-- Ghostty -->
                                 <child>
                                   <object class="AdwActionRow">
-                                    <property name="title">kodi</property>
-                                    <property name="subtitle">Centro multimedia libre y de código abierto para entretenimiento</property>
+                                    <property name="title">ghostty</property>
+                                    <property name="subtitle">Emulador de terminal multiplataforma acelerado por GPU</property>
                                     <child type="prefix">
-                                      <object class="GtkCheckButton" id="kodi_check">
+                                      <object class="GtkCheckButton" id="ghostty_check">
                                         <property name="active">false</property>
                                       </object>
                                     </child>
                                     <child type="suffix">
-                                      <object class="GtkButton" id="kodi_info">
+                                      <object class="GtkButton" id="ghostty_info">
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
-                                        <property name="tooltip-text">https://kodi.tv/</property>
+                                        <property name="tooltip-text">https://mitchellh.com/ghostty</property>
                                       </object>
                                     </child>
                                   </object>
