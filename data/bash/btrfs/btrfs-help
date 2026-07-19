@@ -41,6 +41,30 @@ show_tip() {
     echo -e "${BLUE}${BOLD}💡 TIP:${NC} ${BLUE}$1${NC}"
 }
 
+# Detecta automáticamente qué configuraciones de snapper existen (root siempre,
+# home solo si /home es un subvolumen independiente con su propia config)
+# Define: SNAPPER_CONFIGS (array) y HAS_HOME (yes/no)
+detect_snapper_configs() {
+    local raw
+    raw=$(sudo snapper list-configs 2>/dev/null | tail -n +3 | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); if ($1!="") print $1}')
+
+    SNAPPER_CONFIGS=()
+    HAS_HOME="no"
+
+    if [ -z "$raw" ]; then
+        # Fallback si no se pudo leer list-configs: asume solo root
+        SNAPPER_CONFIGS=("root")
+        return
+    fi
+
+    while IFS= read -r cfg; do
+        SNAPPER_CONFIGS+=("$cfg")
+        if [ "$cfg" = "home" ]; then
+            HAS_HOME="yes"
+        fi
+    done <<< "$raw"
+}
+
 # Función principal del menú
 show_menu() {
     clear
@@ -81,22 +105,56 @@ show_snapshots() {
             clear
             show_header "CONFIGURACIÓN ACTUAL DE SNAPSHOTS AUTOMÁTICOS"
 
-            show_section "📋 Política de Retención Configurada"
-            echo -e "${WHITE}${BOLD}✓ ROOT (/):${NC} Sistema operativo protegido automáticamente"
-            echo -e "${CYAN}  • Cada hora: mantiene 5 snapshots${NC}"
-            echo -e "${CYAN}  • Diarios: mantiene 7 snapshots${NC}"
-            echo -e "${CYAN}  • Semanales: mantiene 4 snapshots${NC}"
-            echo -e "${CYAN}  • Mensuales: mantiene 6 snapshots${NC}"
-            echo -e "${CYAN}  • Anuales: mantiene 2 snapshots${NC}"
+            detect_snapper_configs
 
-            echo -e "\n${WHITE}${BOLD}✓ HOME (/home):${NC} Datos de usuario protegidos automáticamente"
-            echo -e "${CYAN}  • Cada hora: mantiene 3 snapshots${NC}"
-            echo -e "${CYAN}  • Diarios: mantiene 7 snapshots${NC}"
-            echo -e "${CYAN}  • Semanales: mantiene 4 snapshots${NC}"
-            echo -e "${CYAN}  • Mensuales: mantiene 12 snapshots (más para datos importantes)${NC}"
-            echo -e "${CYAN}  • Anuales: mantiene 5 snapshots${NC}"
+            if [ "$HAS_HOME" = "yes" ]; then
+                show_note "Se detectaron 2 configuraciones: ROOT (/) y HOME (/home) como subvolumen independiente."
+            else
+                show_note "Solo se detectó la configuración ROOT (/). No existe una configuración 'home' separada en snapper."
+            fi
 
-            echo -e "\n${WHITE}${BOLD}📍 Ubicación:${NC} /.snapshots y /home/.snapshots"
+            show_section "📋 Política de Retención Configurada (en vivo desde snapper)"
+
+            for cfg in "${SNAPPER_CONFIGS[@]}"; do
+                if [ "$cfg" = "root" ]; then
+                    echo -e "${WHITE}${BOLD}✓ ROOT (/):${NC} Sistema operativo"
+                elif [ "$cfg" = "home" ]; then
+                    echo -e "\n${WHITE}${BOLD}✓ HOME (/home):${NC} Datos de usuario"
+                else
+                    echo -e "\n${WHITE}${BOLD}✓ ${cfg}:${NC} Configuración adicional"
+                fi
+
+                CFG_OUTPUT=$(sudo snapper -c "$cfg" get-config 2>/dev/null)
+
+                if [ -z "$CFG_OUTPUT" ]; then
+                    echo -e "${RED}  ✗ No se pudo leer la configuración de '$cfg'${NC}"
+                    continue
+                fi
+
+                TC=$(echo "$CFG_OUTPUT" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); gsub(/^[ \t]+|[ \t]+$/,"",$2); if ($1=="TIMELINE_CREATE") print $2}')
+                H=$(echo "$CFG_OUTPUT" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); gsub(/^[ \t]+|[ \t]+$/,"",$2); if ($1=="TIMELINE_LIMIT_HOURLY") print $2}')
+                D=$(echo "$CFG_OUTPUT" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); gsub(/^[ \t]+|[ \t]+$/,"",$2); if ($1=="TIMELINE_LIMIT_DAILY") print $2}')
+                W=$(echo "$CFG_OUTPUT" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); gsub(/^[ \t]+|[ \t]+$/,"",$2); if ($1=="TIMELINE_LIMIT_WEEKLY") print $2}')
+                M=$(echo "$CFG_OUTPUT" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); gsub(/^[ \t]+|[ \t]+$/,"",$2); if ($1=="TIMELINE_LIMIT_MONTHLY") print $2}')
+                Y=$(echo "$CFG_OUTPUT" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); gsub(/^[ \t]+|[ \t]+$/,"",$2); if ($1=="TIMELINE_LIMIT_YEARLY") print $2}')
+
+                if [ "$TC" = "yes" ]; then
+                    echo -e "${GREEN}  Snapshots automáticos (timeline): activados${NC}"
+                else
+                    echo -e "${YELLOW}  Snapshots automáticos (timeline): desactivados${NC}"
+                fi
+                echo -e "${CYAN}  • Cada hora: mantiene ${H:-0} snapshots${NC}"
+                echo -e "${CYAN}  • Diarios: mantiene ${D:-0} snapshots${NC}"
+                echo -e "${CYAN}  • Semanales: mantiene ${W:-0} snapshots${NC}"
+                echo -e "${CYAN}  • Mensuales: mantiene ${M:-0} snapshots${NC}"
+                echo -e "${CYAN}  • Anuales: mantiene ${Y:-0} snapshots${NC}"
+            done
+
+            if [ "$HAS_HOME" = "yes" ]; then
+                echo -e "\n${WHITE}${BOLD}📍 Ubicación:${NC} /.snapshots y /home/.snapshots"
+            else
+                echo -e "\n${WHITE}${BOLD}📍 Ubicación:${NC} /.snapshots"
+            fi
 
             show_section "⏰ Frecuencia Actual de Creación"
             echo -e "${WHITE}Programación del temporizador snapper-timeline.timer:${NC}"
@@ -167,86 +225,83 @@ show_snapshots() {
 # Función para cambiar la frecuencia de creación de snapshots automáticos
 show_snapshot_frequency() {
     clear
-    show_header "FRECUENCIA DE SNAPSHOTS AUTOMÁTICOS"
+    show_header "FRECUENCIA Y RETENCIÓN DE SNAPSHOTS AUTOMÁTICOS"
 
-    show_note "Esto cambia cada cuánto se CREAN snapshots (snapper-timeline.timer). Aplica a todas las configuraciones (ROOT y HOME)."
+    detect_snapper_configs
 
-    echo -e "\n${WHITE}Frecuencia actual:${NC}"
+    if [ "$HAS_HOME" = "yes" ]; then
+        show_note "Se detectaron ROOT (/) y HOME (/home). Los cambios se aplicarán a ambas configuraciones."
+    else
+        show_note "Solo se detectó ROOT (/). No hay una configuración 'home' independiente, así que solo se modificará ROOT."
+    fi
+
+    echo -e "\n${WHITE}Frecuencia actual del timer:${NC}"
     sudo systemctl list-timers snapper-timeline.timer --no-pager 2>/dev/null || echo -e "${YELLOW}No se pudo consultar el temporizador${NC}"
 
-    echo -e "\n${WHITE}Selecciona la nueva frecuencia:${NC}\n"
+    echo -e "\n${WHITE}Valores de retención actuales:${NC}"
+    for cfg in "${SNAPPER_CONFIGS[@]}"; do
+        CFG_OUTPUT=$(sudo snapper -c "$cfg" get-config 2>/dev/null)
+        [ -z "$CFG_OUTPUT" ] && continue
+        CUR_H=$(echo "$CFG_OUTPUT" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); gsub(/^[ \t]+|[ \t]+$/,"",$2); if ($1=="TIMELINE_LIMIT_HOURLY") print $2}')
+        CUR_D=$(echo "$CFG_OUTPUT" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); gsub(/^[ \t]+|[ \t]+$/,"",$2); if ($1=="TIMELINE_LIMIT_DAILY") print $2}')
+        CUR_W=$(echo "$CFG_OUTPUT" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); gsub(/^[ \t]+|[ \t]+$/,"",$2); if ($1=="TIMELINE_LIMIT_WEEKLY") print $2}')
+        CUR_M=$(echo "$CFG_OUTPUT" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); gsub(/^[ \t]+|[ \t]+$/,"",$2); if ($1=="TIMELINE_LIMIT_MONTHLY") print $2}')
+        CUR_Y=$(echo "$CFG_OUTPUT" | awk -F'│' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); gsub(/^[ \t]+|[ \t]+$/,"",$2); if ($1=="TIMELINE_LIMIT_YEARLY") print $2}')
+        echo -e "${CYAN}  [$cfg] hora:${CUR_H:-0}  diario:${CUR_D:-0}  semanal:${CUR_W:-0}  mensual:${CUR_M:-0}  anual:${CUR_Y:-0}${NC}"
+    done
+
+    echo -e "\n${WHITE}${BOLD}── Formulario de retención (cuántos snapshots CONSERVAR) ──${NC}"
+    show_note "Enter en blanco = deja el valor actual sin cambios."
+
+    echo -e "\n${WHITE}• Cada hora: mantiene X snapshots${NC}"
+    read -r RET_HOURLY
+    echo -e "${WHITE}• Diarios: mantiene X snapshots${NC}"
+    read -r RET_DAILY
+    echo -e "${WHITE}• Semanales: mantiene X snapshots${NC}"
+    read -r RET_WEEKLY
+    echo -e "${WHITE}• Mensuales: mantiene X snapshots${NC}"
+    read -r RET_MONTHLY
+    echo -e "${WHITE}• Anuales: mantiene X snapshots${NC}"
+    read -r RET_YEARLY
+
+    echo -e "\n${WHITE}${BOLD}── ¿Cada cuánto se intenta CREAR un snapshot? ──${NC}"
+    echo -e "${YELLOW}(esto es snapper-timeline.timer; no confundir con la retención de arriba)${NC}\n"
     echo -e "${CYAN}1)${NC} Cada hora (valor por defecto)"
     echo -e "${CYAN}2)${NC} Una vez al día"
     echo -e "${CYAN}3)${NC} Una vez a la semana"
     echo -e "${CYAN}4)${NC} Una vez al mes"
-    echo -e "${CYAN}5)${NC} Varias veces por semana (elige cuántas)"
-    echo -e "${CYAN}6)${NC} Varias veces al mes (elige cuántas)"
-    echo -e "${CYAN}0)${NC} ✗  Cancelar / Volver"
+    echo -e "${CYAN}0)${NC} ✗  No cambiar el timer, solo aplicar retención"
 
     echo -e "\n${YELLOW}Ingresa tu opción: ${NC}"
     read -r freq_option
 
     ON_CALENDAR=""
     DESCRIPCION=""
+    CHANGE_TIMER="no"
 
     case $freq_option in
         1)
             ON_CALENDAR="hourly"
             DESCRIPCION="cada hora"
+            CHANGE_TIMER="yes"
             ;;
         2)
             ON_CALENDAR="daily"
             DESCRIPCION="una vez al día (03:00)"
+            CHANGE_TIMER="yes"
             ;;
         3)
             ON_CALENDAR="weekly"
             DESCRIPCION="una vez a la semana (lunes 03:00)"
+            CHANGE_TIMER="yes"
             ;;
         4)
             ON_CALENDAR="monthly"
             DESCRIPCION="una vez al mes (día 1, 03:00)"
-            ;;
-        5)
-            echo -e "\n${WHITE}¿Cuántas veces por semana? (1-7):${NC}"
-            read -r n_semana
-            case $n_semana in
-                1) DIAS="Mon" ;;
-                2) DIAS="Mon,Thu" ;;
-                3) DIAS="Mon,Wed,Fri" ;;
-                4) DIAS="Mon,Tue,Thu,Fri" ;;
-                5) DIAS="Mon,Tue,Wed,Thu,Fri" ;;
-                6) DIAS="Mon,Tue,Wed,Thu,Fri,Sat" ;;
-                7) DIAS="*" ;;
-                *)
-                    echo -e "${RED}✗ Valor inválido${NC}"
-                    sleep 1
-                    show_snapshot_frequency
-                    return
-                    ;;
-            esac
-            ON_CALENDAR="$DIAS *-*-* 03:00:00"
-            DESCRIPCION="$n_semana vez(es) por semana ($DIAS, 03:00)"
-            ;;
-        6)
-            echo -e "\n${WHITE}¿Cuántas veces al mes? (1-4):${NC}"
-            read -r n_mes
-            case $n_mes in
-                1) DIAS_MES="01" ;;
-                2) DIAS_MES="01,15" ;;
-                3) DIAS_MES="01,10,20" ;;
-                4) DIAS_MES="01,08,15,22" ;;
-                *)
-                    echo -e "${RED}✗ Valor inválido${NC}"
-                    sleep 1
-                    show_snapshot_frequency
-                    return
-                    ;;
-            esac
-            ON_CALENDAR="*-*-$DIAS_MES 03:00:00"
-            DESCRIPCION="$n_mes vez(es) al mes (días $DIAS_MES, 03:00)"
+            CHANGE_TIMER="yes"
             ;;
         0)
-            return
+            CHANGE_TIMER="no"
             ;;
         *)
             echo -e "${RED}Opción inválida${NC}"
@@ -256,26 +311,61 @@ show_snapshot_frequency() {
             ;;
     esac
 
-    echo -e "\n${WHITE}Se configurará la creación de snapshots: ${GREEN}$DESCRIPCION${NC}"
-    echo -e "${WHITE}¿Continuar? (s/N):${NC}"
+    echo -e "\n${WHITE}${BOLD}── Resumen ──${NC}"
+    [ -n "$RET_HOURLY" ]  && echo -e "  Retención cada hora  → ${GREEN}${RET_HOURLY}${NC}"
+    [ -n "$RET_DAILY" ]   && echo -e "  Retención diaria     → ${GREEN}${RET_DAILY}${NC}"
+    [ -n "$RET_WEEKLY" ]  && echo -e "  Retención semanal    → ${GREEN}${RET_WEEKLY}${NC}"
+    [ -n "$RET_MONTHLY" ] && echo -e "  Retención mensual    → ${GREEN}${RET_MONTHLY}${NC}"
+    [ -n "$RET_YEARLY" ]  && echo -e "  Retención anual      → ${GREEN}${RET_YEARLY}${NC}"
+    if [ "$CHANGE_TIMER" = "yes" ]; then
+        echo -e "  Timer (creación)     → ${GREEN}${DESCRIPCION}${NC}"
+    else
+        echo -e "  Timer (creación)     → ${YELLOW}sin cambios${NC}"
+    fi
+
+    echo -e "\n${WHITE}¿Aplicar estos cambios? (s/N):${NC}"
     read -r confirm
 
     if [[ "$confirm" =~ ^[sS]$ ]]; then
-        echo -e "\n${CYAN}Aplicando nueva frecuencia...${NC}"
-        sudo mkdir -p /etc/systemd/system/snapper-timeline.timer.d
-        {
-            echo "[Timer]"
-            echo "OnCalendar="
-            echo "OnCalendar=$ON_CALENDAR"
-        } | sudo tee /etc/systemd/system/snapper-timeline.timer.d/override.conf >/dev/null
+        # Construir lista de argumentos set-config solo con los campos que el usuario llenó
+        SET_ARGS=()
+        [[ -n "$RET_HOURLY"  && "$RET_HOURLY"  =~ ^[0-9]+$ ]] && SET_ARGS+=("TIMELINE_LIMIT_HOURLY=$RET_HOURLY")
+        [[ -n "$RET_DAILY"   && "$RET_DAILY"   =~ ^[0-9]+$ ]] && SET_ARGS+=("TIMELINE_LIMIT_DAILY=$RET_DAILY")
+        [[ -n "$RET_WEEKLY"  && "$RET_WEEKLY"  =~ ^[0-9]+$ ]] && SET_ARGS+=("TIMELINE_LIMIT_WEEKLY=$RET_WEEKLY")
+        [[ -n "$RET_MONTHLY" && "$RET_MONTHLY" =~ ^[0-9]+$ ]] && SET_ARGS+=("TIMELINE_LIMIT_MONTHLY=$RET_MONTHLY")
+        [[ -n "$RET_YEARLY"  && "$RET_YEARLY"  =~ ^[0-9]+$ ]] && SET_ARGS+=("TIMELINE_LIMIT_YEARLY=$RET_YEARLY")
 
-        if sudo systemctl daemon-reload && sudo systemctl restart snapper-timeline.timer; then
-            echo -e "${GREEN}✓ Frecuencia actualizada: $DESCRIPCION${NC}"
-            echo -e "\n${WHITE}Próxima ejecución:${NC}"
-            sudo systemctl list-timers snapper-timeline.timer --no-pager 2>/dev/null
+        if [ ${#SET_ARGS[@]} -gt 0 ]; then
+            echo -e "\n${CYAN}Aplicando retención en: ${SNAPPER_CONFIGS[*]}...${NC}"
+            for cfg in "${SNAPPER_CONFIGS[@]}"; do
+                if sudo snapper -c "$cfg" set-config "${SET_ARGS[@]}"; then
+                    echo -e "${GREEN}✓ Retención actualizada en '$cfg'${NC}"
+                else
+                    echo -e "${RED}✗ Error al aplicar retención en '$cfg'${NC}"
+                fi
+            done
         else
-            echo -e "${RED}✗ Error al aplicar la nueva frecuencia${NC}"
+            echo -e "${YELLOW}No se ingresó ningún valor de retención nuevo, se deja igual.${NC}"
         fi
+
+        if [ "$CHANGE_TIMER" = "yes" ]; then
+            echo -e "\n${CYAN}Aplicando frecuencia del timer...${NC}"
+            sudo mkdir -p /etc/systemd/system/snapper-timeline.timer.d
+            {
+                echo "[Timer]"
+                echo "OnCalendar="
+                echo "OnCalendar=$ON_CALENDAR"
+            } | sudo tee /etc/systemd/system/snapper-timeline.timer.d/override.conf >/dev/null
+
+            if sudo systemctl daemon-reload && sudo systemctl restart snapper-timeline.timer; then
+                echo -e "${GREEN}✓ Frecuencia del timer actualizada: $DESCRIPCION${NC}"
+            else
+                echo -e "${RED}✗ Error al aplicar la nueva frecuencia del timer${NC}"
+            fi
+        fi
+
+        echo -e "\n${WHITE}Próxima ejecución del timer:${NC}"
+        sudo systemctl list-timers snapper-timeline.timer --no-pager 2>/dev/null
     else
         echo -e "${YELLOW}Operación cancelada${NC}"
     fi
