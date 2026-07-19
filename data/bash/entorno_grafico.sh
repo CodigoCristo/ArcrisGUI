@@ -759,19 +759,18 @@ EOF
                 install_pacman_chroot_with_retry "adwaita-icon-theme"
                 install_pacman_chroot_with_retry "adwaita-icon-theme-legacy"
                 install_pacman_chroot_with_retry "alsa-utils"
+                install_pacman_chroot_with_retry "jq"
+                install_pacman_chroot_with_retry "pipewire-pulse"
                 install_yay_chroot_with_retry "ttf-noto-emoji-monochrome"
                 # Crear configuración
                 mkdir -p /mnt/home/$USER/.config/mango
                 # Crear configuración de Mango
                 echo "Copiando configuracion de MANGO..."
                 cp /usr/share/arcrisgui/data/bash/mango/mango.zip /mnt/home/$USER/.config/
-                unzip /mnt/home/$USER/.config/mango.zip -d /mnt/home/$USER/.config/
-                # sudo cp -rT /mnt/home/$USER/.config/mango/ /mnt/home/$USER/.config/
-                # rm /mnt/home/$USER/.config/mango.zip
-                rm -rf /mnt/home/$USER/.config/mango
+                unzip -o /mnt/home/$USER/.config/mango.zip -d /mnt/home/$USER/
+                rm /mnt/home/$USER/.config/mango.zip
                 chroot /mnt /bin/bash -c "chmod +x /home/$USER/.config/mango/*.sh"
                 chroot /mnt /bin/bash -c "chmod +x /home/$USER/.config/waybar/scripts/*.sh"
-                chroot /mnt /bin/bash -c "chmod +x /home/$USER/.config/waybar/scripts/scripts/*.sh"
                 chroot /mnt /bin/bash -c "echo xkb_rules_layout=$KEYBOARD_LAYOUT >> /home/$USER/.config/mango/config.conf"
                 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
