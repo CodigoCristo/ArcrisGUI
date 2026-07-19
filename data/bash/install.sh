@@ -1497,7 +1497,7 @@ clear
 update_system_chroot
 chroot /mnt /bin/bash -c "sudo -u $user yay -Scc --noconfirm"
 clear
-chroot /mnt /bin/bash -c "pacman -Syyu --noconfirm"
+chroot /mnt /bin/bash -c "pacman -Syyy --noconfirm"
 sleep 3
 clear
 
@@ -1557,6 +1557,7 @@ fi
 #echo "%wheel ALL=(ALL) ALL"
 #echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
 
+echo "Defaults pwfeedback" >> /mnt/etc/sudoers
 
 
 # Limpiar montajes antes del final

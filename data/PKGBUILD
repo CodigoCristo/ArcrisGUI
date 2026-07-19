@@ -32,6 +32,7 @@ package() {
   install -dm755 "${pkgdir}/usr/share/${pkgname}/data/bash/xmonad"
   install -dm755 "${pkgdir}/usr/share/${pkgname}/data/bash/btrfs"
   install -dm755 "${pkgdir}/usr/share/${pkgname}/data/bash/i3"
+  install -dm755 "${pkgdir}/usr/share/${pkgname}/data/bash/mango"
   install -dm755 "${pkgdir}/usr/share/${pkgname}/data/bash/rofi"
   install -dm755 "${pkgdir}/usr/bin"
 

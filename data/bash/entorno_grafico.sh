@@ -724,7 +724,7 @@ EOF
                 install_pacman_chroot_with_retry "wayland"                      # Protocolo de servidor de display moderno (reemplazo de X11)
                 install_pacman_chroot_with_retry "wlr-randr"                    # Gestor de pantallas para Wayland
                 install_pacman_chroot_with_retry "xorg-xwayland"                # Compatibilidad con apps X11
-                install_pacman_chroot_with_retry "mangowm"                     # Compositor Wayland dinámico con animaciones y efectos
+                install_yay_chroot_with_retry "mangowm"                     # Compositor Wayland dinámico con animaciones y efectos
                 install_pacman_chroot_with_retry "hyprpaper"                    # Gestor de wallpapers para Hyprland
                 install_pacman_chroot_with_retry "hypridle"                     # Gestor de inactividad/idle para Hyprland
                 install_pacman_chroot_with_retry "swaybg"
@@ -735,7 +735,7 @@ EOF
                 install_pacman_chroot_with_retry "wofi"
                 install_pacman_chroot_with_retry "fuzzel"
                 install_pacman_chroot_with_retry "mako"                         # Notificaciones para Wayland
-                install_pacman_chroot_with_retry "wlogout"
+                install_yay_chroot_with_retry "wlogout"
                 install_pacman_chroot_with_retry "nsxiv"                        # Visualizador de imágenes para Wayland
                 install_pacman_chroot_with_retry "nwg-displays"
                 install_pacman_chroot_with_retry "udiskie"                      # Gestor de discos para Wayland
@@ -766,8 +766,8 @@ EOF
                 echo "Copiando configuracion de MANGO..."
                 cp /usr/share/arcrisgui/data/bash/mango/mango.zip /mnt/home/$USER/.config/
                 unzip /mnt/home/$USER/.config/mango.zip -d /mnt/home/$USER/.config/
-                sudo cp -rT /mnt/home/$USER/.config/mango/ /mnt/home/$USER/.config/
-                rm /mnt/home/$USER/.config/mango.zip
+                # sudo cp -rT /mnt/home/$USER/.config/mango/ /mnt/home/$USER/.config/
+                # rm /mnt/home/$USER/.config/mango.zip
                 rm -rf /mnt/home/$USER/.config/mango
                 chroot /mnt /bin/bash -c "chmod +x /home/$USER/.config/mango/*.sh"
                 chroot /mnt /bin/bash -c "chmod +x /home/$USER/.config/waybar/scripts/*.sh"
