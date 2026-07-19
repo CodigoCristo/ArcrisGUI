@@ -64,7 +64,7 @@ package() {
   install -m644 data/bash/xmonad/xmonad.hs "${pkgdir}/usr/share/${pkgname}/data/bash/xmonad/"
 
   # Install btrfs configuration files
-  install -m644 data/bash/btrfs/btrfs-guide "${pkgdir}/usr/share/${pkgname}/data/bash/btrfs/"
+  install -m644 data/bash/btrfs/btrfs-help "${pkgdir}/usr/share/${pkgname}/data/bash/btrfs/"
   install -m644 data/bash/btrfs/btrfs-maintenance "${pkgdir}/usr/share/${pkgname}/data/bash/btrfs/"
   install -m644 data/bash/btrfs/btrfs-maintenance.service "${pkgdir}/usr/share/${pkgname}/data/bash/btrfs/"
   install -m644 data/bash/btrfs/btrfs-maintenance.timer "${pkgdir}/usr/share/${pkgname}/data/bash/btrfs/"

@@ -69,6 +69,7 @@ if [ "${FILESYSTEMS_ENABLED:-false}" = "true" ]; then
     install_pacman_chroot_with_retry "dosfstools"
     install_pacman_chroot_with_retry "f2fs-tools"
     install_pacman_chroot_with_retry "ntfs-3g"
+    install_pacman_chroot_with_retry "ntfsprogs"
     install_pacman_chroot_with_retry "udftools"
     install_pacman_chroot_with_retry "nilfs-utils"
     install_pacman_chroot_with_retry "polkit"

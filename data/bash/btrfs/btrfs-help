@@ -46,8 +46,7 @@ show_menu() {
     clear
     echo -e "${PURPLE}${BOLD}"
     echo "╔════════════════════════════════════════════════════════════════╗"
-    echo "║                    GUÍA BTRFS & SNAPPER                        ║"
-    echo "║                   Sistema de Archivos BTRFS                    ║"
+    echo "║              HERRAMIENTA PARA GESTIONAR BTRFS                  ║"
     echo "╚════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
 
@@ -56,15 +55,8 @@ show_menu() {
     echo -e "${CYAN}2)${NC}  ♻️  Restaurar Puntos de Restauración"
     echo -e "${CYAN}3)${NC}  🗑️  Eliminar Puntos de Restauración"
     echo -e "${CYAN}4)${NC}  ⚠️  Recuperación de Emergencia (GRUB)"
-    echo -e "${CYAN}5)${NC}  💻  Ver Estado Actual del Sistema"
+    echo -e "${CYAN}5)${NC}  💻  Ver Estado Actual de Snaps"
     echo -e "${CYAN}6)${NC}  🗂️  Gestión de Snapshots con Snapper"
-    echo -e "${CYAN}7)${NC}  🛠️  Mantenimiento de BTRFS"
-    echo -e "${CYAN}8)${NC}  📈  Monitoreo y Estado del Sistema"
-    echo -e "${CYAN}9)${NC}  ⚙️  Configuración de Subvolúmenes"
-    echo -e "${CYAN}10)${NC} 🖥️  Comandos Avanzados de BTRFS"
-    echo -e "${CYAN}11)${NC} 👁️  Explorar Snapshots (Solo Ver - Sin Aplicar)"
-    echo -e "${CYAN}12)${NC} ❓  Solución de Problemas"
-    echo -e "${CYAN}13)${NC} ❓  Solución Rápida Errores Rollback"
     echo -e "${CYAN}0)${NC}  ✗  Salir"
 
     echo -e "\n${YELLOW}Ingresa tu opción: ${NC}"
@@ -75,410 +67,291 @@ show_snapshots() {
     clear
     show_header "GESTIÓN DE SNAPSHOTS CON SNAPPER"
 
-    show_section "📋 Configuración Automática Actual"
-    echo -e "${WHITE}${BOLD}✓ ROOT (/):${NC} Sistema operativo protegido automáticamente"
-    echo -e "${CYAN}  • Cada hora: mantiene 5 snapshots${NC}"
-    echo -e "${CYAN}  • Diarios: mantiene 7 snapshots${NC}"
-    echo -e "${CYAN}  • Semanales: mantiene 4 snapshots${NC}"
-    echo -e "${CYAN}  • Mensuales: mantiene 6 snapshots${NC}"
-    echo -e "${CYAN}  • Anuales: mantiene 2 snapshots${NC}"
+    echo -e "${WHITE}Selecciona una opción:${NC}\n"
+    echo -e "${CYAN}1)${NC} 📋  Ver configuración actual de snapshots automáticos"
+    echo -e "${CYAN}2)${NC} ⏰  Cambiar frecuencia de snapshots automáticos"
+    echo -e "${CYAN}3)${NC} 📖  Ver comandos básicos de snapper"
+    echo -e "${CYAN}0)${NC} ✗  Volver al menú principal"
 
-    echo -e "\n${WHITE}${BOLD}✓ HOME (/home):${NC} Datos de usuario protegidos automáticamente"
-    echo -e "${CYAN}  • Cada hora: mantiene 3 snapshots${NC}"
-    echo -e "${CYAN}  • Diarios: mantiene 7 snapshots${NC}"
-    echo -e "${CYAN}  • Semanales: mantiene 4 snapshots${NC}"
-    echo -e "${CYAN}  • Mensuales: mantiene 12 snapshots (más para datos importantes)${NC}"
-    echo -e "${CYAN}  • Anuales: mantiene 5 snapshots${NC}"
+    echo -e "\n${YELLOW}Ingresa tu opción: ${NC}"
+    read -r option
 
-    echo -e "\n${WHITE}${BOLD}📍 Ubicación:${NC} /.snapshots y /home/.snapshots"
+    case $option in
+        1)
+            clear
+            show_header "CONFIGURACIÓN ACTUAL DE SNAPSHOTS AUTOMÁTICOS"
 
-    show_section "⏰ Horarios de Snapshots Automáticos"
-    echo -e "${WHITE}Los snapshots se crean automáticamente:${NC}"
-    echo -e "${CYAN}  • snapper-timeline.timer ejecuta cada hora${NC}"
-    echo -e "${CYAN}  • snapper-cleanup.timer limpia diariamente${NC}"
-    echo -e "${CYAN}  • No requiere intervención del usuario${NC}"
-    echo -e "${YELLOW}  • Verifica: sudo systemctl list-timers snapper-*${NC}"
+            show_section "📋 Política de Retención Configurada"
+            echo -e "${WHITE}${BOLD}✓ ROOT (/):${NC} Sistema operativo protegido automáticamente"
+            echo -e "${CYAN}  • Cada hora: mantiene 5 snapshots${NC}"
+            echo -e "${CYAN}  • Diarios: mantiene 7 snapshots${NC}"
+            echo -e "${CYAN}  • Semanales: mantiene 4 snapshots${NC}"
+            echo -e "${CYAN}  • Mensuales: mantiene 6 snapshots${NC}"
+            echo -e "${CYAN}  • Anuales: mantiene 2 snapshots${NC}"
 
-    show_section "⚠️ BOOT DESDE SNAPSHOTS (GRUB-BTRFS)"
-    echo -e "${WHITE}${BOLD}✓ Configurado para arrancar desde snapshots:${NC}"
-    echo -e "${CYAN}  • En GRUB verás 'Arch Linux snapshots' como opción${NC}"
-    echo -e "${CYAN}  • Permite arrancar desde cualquier snapshot cuando el sistema falla${NC}"
-    echo -e "${CYAN}  • Última opción de recuperación si no puedes acceder al sistema${NC}"
+            echo -e "\n${WHITE}${BOLD}✓ HOME (/home):${NC} Datos de usuario protegidos automáticamente"
+            echo -e "${CYAN}  • Cada hora: mantiene 3 snapshots${NC}"
+            echo -e "${CYAN}  • Diarios: mantiene 7 snapshots${NC}"
+            echo -e "${CYAN}  • Semanales: mantiene 4 snapshots${NC}"
+            echo -e "${CYAN}  • Mensuales: mantiene 12 snapshots (más para datos importantes)${NC}"
+            echo -e "${CYAN}  • Anuales: mantiene 5 snapshots${NC}"
 
-    echo -e "\n${WHITE}${BOLD}Cómo usar boot desde snapshots:${NC}"
-    echo -e "1. ${CYAN}Reiniciar el sistema${NC}"
-    echo -e "2. ${CYAN}En GRUB, seleccionar 'Arch Linux snapshots'${NC}"
-    echo -e "3. ${CYAN}Elegir el snapshot deseado por fecha${NC}"
-    echo -e "4. ${CYAN}Arrancar normalmente${NC}"
-    echo -e "5. ${CYAN}Una vez dentro, hacer rollback permanente si es necesario${NC}"
+            echo -e "\n${WHITE}${BOLD}📍 Ubicación:${NC} /.snapshots y /home/.snapshots"
 
-    show_note "grub-btrfs se actualiza automáticamente cuando se crean nuevos snapshots"
+            show_section "⏰ Frecuencia Actual de Creación"
+            echo -e "${WHITE}Programación del temporizador snapper-timeline.timer:${NC}"
+            sudo systemctl list-timers snapper-timeline.timer --no-pager 2>/dev/null || echo -e "${YELLOW}No se pudo consultar el temporizador${NC}"
+            echo -e "\n${CYAN}  • snapper-cleanup.timer limpia diariamente${NC}"
+            echo -e "${YELLOW}  • Para cambiar cada cuánto se crean snapshots, usa la opción 2 del menú anterior${NC}"
 
-    show_section "📋 Comandos Básicos"
-    echo -e "${WHITE}Ver snapshots:${NC}"
-    show_command "sudo snapper -c root list                    # Ver snapshots de ROOT"
-    show_command "sudo snapper -c home list                    # Ver snapshots de HOME"
-    show_command "sudo snapper list-configs                    # Ver configuraciones"
+            show_section "⚠️ BOOT DESDE SNAPSHOTS (GRUB-BTRFS)"
+            echo -e "${WHITE}${BOLD}✓ Configurado para arrancar desde snapshots:${NC}"
+            echo -e "${CYAN}  • En GRUB verás 'Arch Linux snapshots' como opción${NC}"
+            echo -e "${CYAN}  • Permite arrancar desde cualquier snapshot cuando el sistema falla${NC}"
+            echo -e "${CYAN}  • Última opción de recuperación si no puedes acceder al sistema${NC}"
 
-    echo -e "\n${WHITE}Comparar snapshots:${NC}"
-    show_command "sudo snapper -c root status 1..5             # Comparar snapshots de ROOT"
-    show_command "sudo snapper -c home diff 3..7               # Ver diferencias de HOME"
+            show_note "grub-btrfs se actualiza automáticamente cuando se crean nuevos snapshots"
 
-    show_section "⚠️ Limpieza de Snapshots"
-    show_command "sudo snapper -c root cleanup timeline        # Limpieza automática ROOT"
-    show_command "sudo snapper -c home cleanup timeline        # Limpieza automática HOME"
-    show_command "sudo snapper -c root delete 5 6 7            # Eliminar snapshots específicos"
+            show_section "⚠️ Información Importante ⚠️"
+            echo -e "• ${GREEN}Los snapshots automáticos funcionan sin intervención${NC}"
+            echo -e "• ${GREEN}La limpieza automática evita que se llene el disco${NC}"
+            echo -e "• ${GREEN}Los snapshots ocupan espacio solo para los cambios (CoW)${NC}"
+            echo -e "• ${YELLOW}Para snapshots con descripción personal, usa opciones 1 y 2 del menú principal${NC}"
 
-    show_section "⚙️ Estado de Servicios"
-    show_command "sudo systemctl status snapper-timeline.timer # Estado snapshots automáticos"
-    show_command "sudo systemctl status snapper-cleanup.timer  # Estado limpieza automática"
-    show_command "sudo systemctl list-timers snapper-*         # Ver próximas ejecuciones"
+            echo -e "\n${YELLOW}Presiona ENTER para volver...${NC}"
+            read
+            show_snapshots
+            ;;
+        2)
+            show_snapshot_frequency
+            show_snapshots
+            ;;
+        3)
+            clear
+            show_header "COMANDOS BÁSICOS DE SNAPPER"
 
-    show_section "⚠️ Información Importante ⚠️"
-    echo -e "• ${GREEN}Los snapshots automáticos funcionan 24/7 sin intervención${NC}"
-    echo -e "• ${GREEN}La limpieza automática evita que se llene el disco${NC}"
-    echo -e "• ${GREEN}Los snapshots ocupan espacio solo para los cambios (CoW)${NC}"
-    echo -e "• ${CYAN}Timeline snapshots se identifican por fecha/hora en GRUB${NC}"
-    echo -e "• ${YELLOW}Para snapshots con descripción personal, usa opciones 2 y 3 del menú${NC}"
+            show_section "📋 Ver Snapshots"
+            show_command "sudo snapper -c root list                    # Ver snapshots de ROOT"
+            show_command "sudo snapper -c home list                    # Ver snapshots de HOME"
+            show_command "sudo snapper list-configs                    # Ver configuraciones"
 
-    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
-    read
+            echo -e "\n${WHITE}Comparar snapshots:${NC}"
+            show_command "sudo snapper -c root status 1..5             # Comparar snapshots de ROOT"
+            show_command "sudo snapper -c home diff 3..7               # Ver diferencias de HOME"
+
+            show_section "⚠️ Limpieza de Snapshots"
+            show_command "sudo snapper -c root cleanup timeline        # Limpieza automática ROOT"
+            show_command "sudo snapper -c home cleanup timeline        # Limpieza automática HOME"
+            show_command "sudo snapper -c root delete 5 6 7            # Eliminar snapshots específicos"
+
+            show_section "⚙️ Estado de Servicios"
+            show_command "sudo systemctl status snapper-timeline.timer # Estado snapshots automáticos"
+            show_command "sudo systemctl status snapper-cleanup.timer  # Estado limpieza automática"
+            show_command "sudo systemctl list-timers snapper-*         # Ver próximas ejecuciones"
+
+            echo -e "\n${YELLOW}Presiona ENTER para volver...${NC}"
+            read
+            show_snapshots
+            ;;
+        0)
+            return
+            ;;
+        *)
+            echo -e "${RED}Opción inválida${NC}"
+            sleep 1
+            show_snapshots
+            ;;
+    esac
 }
 
-# Función para mantenimiento
-show_maintenance() {
+# Función para cambiar la frecuencia de creación de snapshots automáticos
+show_snapshot_frequency() {
     clear
-    show_header "MANTENIMIENTO DE BTRFS"
+    show_header "FRECUENCIA DE SNAPSHOTS AUTOMÁTICOS"
 
-    show_section "⚠️ Balance de BTRFS ⚠️"
-    echo -e "${WHITE}Ver estado del filesystem antes del balance:${NC}"
-    show_command "sudo btrfs filesystem usage /"
-    show_command "sudo btrfs filesystem show"
+    show_note "Esto cambia cada cuánto se CREAN snapshots (snapper-timeline.timer). Aplica a todas las configuraciones (ROOT y HOME)."
 
-    echo -e "\n${WHITE}Comandos de balance:${NC}"
-    show_command "sudo btrfs balance start -dusage=50 -musage=50 /    # Balance inteligente (recomendado)"
-    show_command "sudo btrfs balance start /                         # Balance completo (lento)"
-    show_command "sudo btrfs balance status /                        # Ver progreso del balance"
+    echo -e "\n${WHITE}Frecuencia actual:${NC}"
+    sudo systemctl list-timers snapper-timeline.timer --no-pager 2>/dev/null || echo -e "${YELLOW}No se pudo consultar el temporizador${NC}"
 
-    show_note "El balance reorganiza datos para optimizar espacio y rendimiento"
-    show_tip "Ejecuta balance cuando veas fragmentación o problemas de espacio"
+    echo -e "\n${WHITE}Selecciona la nueva frecuencia:${NC}\n"
+    echo -e "${CYAN}1)${NC} Cada hora (valor por defecto)"
+    echo -e "${CYAN}2)${NC} Una vez al día"
+    echo -e "${CYAN}3)${NC} Una vez a la semana"
+    echo -e "${CYAN}4)${NC} Una vez al mes"
+    echo -e "${CYAN}5)${NC} Varias veces por semana (elige cuántas)"
+    echo -e "${CYAN}6)${NC} Varias veces al mes (elige cuántas)"
+    echo -e "${CYAN}0)${NC} ✗  Cancelar / Volver"
 
-    show_section "🔍 Scrub - Verificación de Integridad"
-    show_command "sudo btrfs scrub start /          # Iniciar verificación"
-    show_command "sudo btrfs scrub status /         # Ver progreso"
-    show_command "sudo btrfs scrub status -d /      # Ver historial detallado"
+    echo -e "\n${YELLOW}Ingresa tu opción: ${NC}"
+    read -r freq_option
 
-    show_note "Scrub verifica y repara automáticamente la integridad de los datos"
-    show_tip "Ejecuta scrub mensualmente para detectar problemas temprano"
+    ON_CALENDAR=""
+    DESCRIPCION=""
 
-    show_section "⚠️ Desfragmentación ⚠️"
-    show_command "sudo btrfs filesystem defragment /path/to/file              # Archivo específico"
-    show_command "sudo btrfs filesystem defragment -czstd /path/to/file       # Con compresión"
-    show_command "sudo btrfs filesystem defragment -r /home/usuario/Videos    # Directorio recursivo"
+    case $freq_option in
+        1)
+            ON_CALENDAR="hourly"
+            DESCRIPCION="cada hora"
+            ;;
+        2)
+            ON_CALENDAR="daily"
+            DESCRIPCION="una vez al día (03:00)"
+            ;;
+        3)
+            ON_CALENDAR="weekly"
+            DESCRIPCION="una vez a la semana (lunes 03:00)"
+            ;;
+        4)
+            ON_CALENDAR="monthly"
+            DESCRIPCION="una vez al mes (día 1, 03:00)"
+            ;;
+        5)
+            echo -e "\n${WHITE}¿Cuántas veces por semana? (1-7):${NC}"
+            read -r n_semana
+            case $n_semana in
+                1) DIAS="Mon" ;;
+                2) DIAS="Mon,Thu" ;;
+                3) DIAS="Mon,Wed,Fri" ;;
+                4) DIAS="Mon,Tue,Thu,Fri" ;;
+                5) DIAS="Mon,Tue,Wed,Thu,Fri" ;;
+                6) DIAS="Mon,Tue,Wed,Thu,Fri,Sat" ;;
+                7) DIAS="*" ;;
+                *)
+                    echo -e "${RED}✗ Valor inválido${NC}"
+                    sleep 1
+                    show_snapshot_frequency
+                    return
+                    ;;
+            esac
+            ON_CALENDAR="$DIAS *-*-* 03:00:00"
+            DESCRIPCION="$n_semana vez(es) por semana ($DIAS, 03:00)"
+            ;;
+        6)
+            echo -e "\n${WHITE}¿Cuántas veces al mes? (1-4):${NC}"
+            read -r n_mes
+            case $n_mes in
+                1) DIAS_MES="01" ;;
+                2) DIAS_MES="01,15" ;;
+                3) DIAS_MES="01,10,20" ;;
+                4) DIAS_MES="01,08,15,22" ;;
+                *)
+                    echo -e "${RED}✗ Valor inválido${NC}"
+                    sleep 1
+                    show_snapshot_frequency
+                    return
+                    ;;
+            esac
+            ON_CALENDAR="*-*-$DIAS_MES 03:00:00"
+            DESCRIPCION="$n_mes vez(es) al mes (días $DIAS_MES, 03:00)"
+            ;;
+        0)
+            return
+            ;;
+        *)
+            echo -e "${RED}Opción inválida${NC}"
+            sleep 1
+            show_snapshot_frequency
+            return
+            ;;
+    esac
 
-    echo -e "\n${WHITE}Encontrar archivos fragmentados:${NC}"
-    show_command "sudo btrfs filesystem defragment -v /path/to/file           # Ver fragmentación"
-    show_command "find /home -size +100M -type f -exec btrfs filesystem defragment {} \\;    # Auto-desfragmentar archivos grandes"
+    echo -e "\n${WHITE}Se configurará la creación de snapshots: ${GREEN}$DESCRIPCION${NC}"
+    echo -e "${WHITE}¿Continuar? (s/N):${NC}"
+    read -r confirm
 
-    show_section "📊 Script de Mantenimiento Automático"
-    echo -e "${WHITE}El sistema incluye un script automático que ejecuta:${NC}"
-    echo -e "• ${CYAN}Balance mensual (día 1)${NC}"
-    echo -e "• ${CYAN}Scrub semanal (domingos)${NC}"
-    echo -e "• ${CYAN}Desfragmentación de archivos >100MB${NC}"
+    if [[ "$confirm" =~ ^[sS]$ ]]; then
+        echo -e "\n${CYAN}Aplicando nueva frecuencia...${NC}"
+        sudo mkdir -p /etc/systemd/system/snapper-timeline.timer.d
+        {
+            echo "[Timer]"
+            echo "OnCalendar="
+            echo "OnCalendar=$ON_CALENDAR"
+        } | sudo tee /etc/systemd/system/snapper-timeline.timer.d/override.conf >/dev/null
 
-    echo -e "\n${WHITE}Control del mantenimiento automático:${NC}"
-    show_command "sudo systemctl status btrfs-maintenance.timer      # Ver estado"
-    show_command "sudo systemctl enable btrfs-maintenance.timer      # Habilitar"
-    show_command "sudo systemctl disable btrfs-maintenance.timer     # Deshabilitar"
-    show_command "sudo /usr/local/bin/btrfs-maintenance              # Ejecutar manualmente"
+        if sudo systemctl daemon-reload && sudo systemctl restart snapper-timeline.timer; then
+            echo -e "${GREEN}✓ Frecuencia actualizada: $DESCRIPCION${NC}"
+            echo -e "\n${WHITE}Próxima ejecución:${NC}"
+            sudo systemctl list-timers snapper-timeline.timer --no-pager 2>/dev/null
+        else
+            echo -e "${RED}✗ Error al aplicar la nueva frecuencia${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Operación cancelada${NC}"
+    fi
 
-    show_section "⚠️ Consideraciones Importantes ⚠️"
-    echo -e "• ${YELLOW}Balance:${NC} Puede tardar horas, usar con equipo conectado a corriente"
-    echo -e "• ${YELLOW}Scrub:${NC} Seguro ejecutar con sistema en uso, genera actividad de disco"
-    echo -e "• ${YELLOW}Desfragmentación:${NC} Puede romper compresión existente, usar con moderación"
-
-    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
-    read
-}
-
-# Función para monitoreo
-show_monitoring() {
-    clear
-    show_header "MONITOREO Y ESTADO DEL SISTEMA"
-
-    show_section "📊 Información del Sistema de Archivos"
-    show_command "sudo btrfs filesystem show                    # Ver todos los filesystems BTRFS"
-    show_command "sudo btrfs filesystem usage /                # Uso detallado del espacio"
-    show_command "sudo btrfs filesystem df /                   # Resumen de espacio usado"
-    show_command "sudo btrfs subvolume list /                  # Listar subvolúmenes"
-
-    show_section "🔍 Estado de Operaciones"
-    show_command "sudo btrfs scrub status /                    # Estado del scrub"
-    show_command "sudo btrfs balance status /                  # Estado del balance"
-    show_command "sudo btrfs device stats /                    # Estadísticas del dispositivo"
-
-    echo -e "\n${WHITE}Estado de Snapshots Automáticos:${NC}"
-    show_command "sudo snapper list -t timeline                # Ver snapshots automáticos"
-    show_command "sudo systemctl list-timers snapper-*         # Ver programación de snapshots"
-
-    show_section "📋 Logs y Servicios"
-    show_command "sudo journalctl -u btrfs-maintenance.service         # Logs de mantenimiento"
-    show_command "sudo systemctl list-timers btrfs-maintenance.timer   # Próxima ejecución"
-    show_command "sudo journalctl -f                                   # Ver logs en tiempo real"
-    show_command "dmesg | grep -i btrfs                               # Mensajes del kernel BTRFS"
-
-    show_section "⚡ Monitoreo de Rendimiento"
-    show_command "sudo iotop -a                                       # Monitor de I/O"
-    show_command "sudo btrfs filesystem usage / | grep 'Device size'   # Tamaño total"
-    show_command "sudo compsize /                                      # Ratio de compresión (si está instalado)"
-
-    show_section "🔔 Alertas y Notificaciones"
-    echo -e "${WHITE}Para configurar alertas automáticas:${NC}"
-    show_command "# Agregar a crontab para verificaciones periódicas"
-    show_command "0 6 * * 1 /usr/local/bin/btrfs-maintenance > /var/log/btrfs-maintenance.log 2>&1"
-
-    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
-    read
-}
-
-# Función para solución de problemas
-show_troubleshooting() {
-    clear
-    show_header "SOLUCIÓN DE PROBLEMAS BTRFS"
-
-    show_section "⚠️ Problemas Comunes y Soluciones ⚠️"
-
-    echo -e "${RED}${BOLD}PROBLEMA: Error al restaurar snapshots - \"No se puede detectar el ámbito\"${NC}"
-    echo -e "${WHITE}Causa: snapper rollback no puede detectar el subvolumen por defecto${NC}"
-    echo -e "${WHITE}Solución para ROOT:${NC}"
-    show_command "sudo snapper -c root list                  # Ver snapshot actual (0)"
-    show_command "sudo snapper -c root undochange 15..0      # Usar undochange en lugar de rollback"
-    show_command "sudo reboot                                # Reiniciar para aplicar cambios"
-    show_note "undochange funciona mejor que rollback en configuraciones complejas"
-
-    echo -e "\n${RED}${BOLD}PROBLEMA: \"rollback no puede usarse en subvolumen no raíz /home\"${NC}"
-    echo -e "${WHITE}Causa: /home es un subvolumen separado, rollback solo funciona en subvolumen raíz${NC}"
-    echo -e "${WHITE}Solución para HOME:${NC}"
-    show_command "sudo snapper -c home list                  # Ver snapshots de HOME"
-    show_command "sudo snapper -c home undochange 8..0       # SIEMPRE usar undochange para HOME"
-    show_command "# Alternativa manual si falla:"
-    show_command "sudo cp -r /home/.snapshots/8/snapshot/* /home/"
-    show_note "NUNCA uses rollback para /home, solo undochange"
-
-    echo -e "\n${RED}${BOLD}PROBLEMA: \"No space left on device\" con espacio aparente disponible${NC}"
-    echo -e "${WHITE}Causa: Chunks fragmentados o metadatos llenos${NC}"
-    echo -e "${WHITE}Solución:${NC}"
-    show_command "sudo btrfs filesystem usage /              # Verificar uso real"
-    show_command "sudo btrfs balance start -musage=5 /       # Balance de metadatos"
-    show_command "sudo btrfs balance start -dusage=10 /      # Balance de datos"
-
-    echo -e "\n${RED}${BOLD}PROBLEMA: Filesystem de solo lectura${NC}"
-    echo -e "${WHITE}Causa: Errores detectados por BTRFS${NC}"
-    echo -e "${WHITE}Solución:${NC}"
-    show_command "sudo dmesg | tail -50                      # Ver errores recientes"
-    show_command "sudo btrfs scrub start /                   # Verificar y reparar"
-    show_command "sudo mount -o remount,rw /                 # Intentar remount RW"
-
-    echo -e "\n${RED}${BOLD}PROBLEMA: Rendimiento lento${NC}"
-    echo -e "${WHITE}Posibles causas y soluciones:${NC}"
-    show_command "sudo btrfs filesystem defragment -r /      # Desfragmentar (CUIDADO: puede tardar mucho)"
-    show_command "sudo mount -o remount,autodefrag /         # Habilitar autodefrag temporal"
-    show_command "sudo btrfs filesystem usage /             # Verificar fragmentación"
-
-    show_section "🔧 Comandos de Reparación"
-    show_command "sudo btrfs check /dev/sdXY                 # Verificar filesystem (SOLO en modo RO)"
-    show_command "sudo btrfs rescue chunk-recover /dev/sdXY  # Recuperar chunks dañados"
-    show_command "sudo btrfs rescue super-recover /dev/sdXY  # Recuperar superbloque"
-
-    show_note "NUNCA ejecutes 'btrfs check --repair' sin hacer backup completo primero"
-
-    show_section "⚠️ Backup y Recuperación ⚠️"
-    echo -e "${WHITE}Backup de subvolúmenes:${NC}"
-    show_command "sudo btrfs send /path/to/snapshot | sudo btrfs receive /backup/location/"
-    show_command "sudo btrfs subvolume snapshot -r / /snapshots/emergency-backup"
-
-    echo -e "\n${WHITE}Clonar filesystem completo:${NC}"
-    show_command "sudo dd if=/dev/source of=/dev/destination bs=64K conv=noerror,sync"
-    show_command "sudo btrfs-clone /dev/source /dev/destination    # Si está disponible"
-
-    show_section "⚠️ Solución Rápida para Errores de Rollback ⚠️"
-    echo -e "${WHITE}Si ves estos errores específicos:${NC}"
-    echo -e "• ${YELLOW}\"No se puede detectar el ámbito\"${NC} → Usa undochange en lugar de rollback"
-    echo -e "• ${YELLOW}\"rollback no puede usarse en subvolumen no raíz\"${NC} → Usar undochange para /home"
-    echo -e "• ${YELLOW}\"Se recomienda reiniciar después de la restauración\"${NC} → Reinicia solo para ROOT"
-
-    echo -e "\n${WHITE}Comandos seguros que siempre funcionan:${NC}"
-    show_command "sudo snapper -c root undochange NUMERO..0     # Para ROOT (siempre funciona)"
-    show_command "sudo snapper -c home undochange NUMERO..0     # Para HOME (siempre funciona)"
-    show_command "sudo btrfs subvolume snapshot /.snapshots/NUM/snapshot /new-root  # Método manual ROOT"
-
-    show_section "⚠️ Cuándo Buscar Ayuda ⚠️"
-    echo -e "• ${RED}Filesystem corrupto que no se puede montar${NC}"
-    echo -e "• ${RED}Errores de I/O persistentes en logs${NC}"
-    echo -e "• ${RED}Pérdida de datos importante${NC}"
-    echo -e "• ${RED}Comandos de reparación fallan repetidamente${NC}"
-    echo -e "• ${RED}undochange también falla con errores de permisos${NC}"
-
-    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
-    read
-}
-
-# Función para comandos avanzados
-show_advanced() {
-    clear
-    show_header "COMANDOS AVANZADOS DE BTRFS"
-
-    show_section "⚠️ Gestión de Subvolúmenes ⚠️"
-    show_command "sudo btrfs subvolume create /mnt/nombre          # Crear subvolumen"
-    show_command "sudo btrfs subvolume delete /mnt/nombre          # Eliminar subvolumen"
-    show_command "sudo btrfs subvolume snapshot / /snapshots/name  # Crear snapshot"
-    show_command "sudo btrfs subvolume snapshot -r / /snapshots/ro # Snapshot solo lectura"
-    show_command "sudo btrfs subvolume list /                      # Listar subvolúmenes"
-    show_command "sudo btrfs subvolume show /                      # Info del subvolumen actual"
-
-    show_section "💾 Send/Receive (Backup Incremental)"
-    echo -e "${WHITE}Backup inicial:${NC}"
-    show_command "sudo btrfs subvolume snapshot -r /home /snapshots/home-backup"
-    show_command "sudo btrfs send /snapshots/home-backup | sudo btrfs receive /backup/"
-
-    echo -e "\n${WHITE}Backup incremental:${NC}"
-    show_command "sudo btrfs subvolume snapshot -r /home /snapshots/home-backup-new"
-    show_command "sudo btrfs send -p /snapshots/home-backup /snapshots/home-backup-new | sudo btrfs receive /backup/"
-
-    show_section "🗜️ Compresión"
-    show_command "sudo mount -o remount,compress=zstd:9 /           # Compresión máxima"
-    show_command "sudo mount -o remount,compress=lzo /              # Compresión rápida"
-    show_command "sudo btrfs filesystem defragment -czstd /file     # Recomprimir archivo"
-    show_command "sudo compsize /                                   # Ver ratio compresión"
-
-    show_section "🏷️ Quotas y Límites"
-    show_command "sudo btrfs quota enable /                        # Habilitar quotas"
-    show_command "sudo btrfs qgroup limit 10G /home                # Limitar a 10GB"
-    show_command "sudo btrfs qgroup show /                         # Ver uso de quotas"
-    show_command "sudo btrfs quota disable /                       # Deshabilitar quotas"
-
-    show_section "🔍 Información Detallada"
-    show_command "sudo btrfs filesystem show --all-devices          # Todos los dispositivos"
-    show_command "sudo btrfs device scan                           # Escanear dispositivos"
-    show_command "sudo btrfs property list /                       # Propiedades del filesystem"
-    show_command "sudo btrfs inspect-internal dump-tree /dev/sdXY  # Dump del árbol de metadatos"
-
-    show_section "⚙️ Opciones de Montaje Útiles"
-    echo -e "${WHITE}En /etc/fstab:${NC}"
-    echo -e "${CYAN}subvol=@,compress=zstd:3,space_cache=v2,autodefrag,noatime${NC}"
-
-    echo -e "\n${WHITE}Explicación de opciones:${NC}"
-    echo -e "• ${YELLOW}compress=zstd:3${NC} - Compresión balanceada"
-    echo -e "• ${YELLOW}space_cache=v2${NC} - Cache de espacio mejorado"
-    echo -e "• ${YELLOW}autodefrag${NC} - Desfragmentación automática"
-    echo -e "• ${YELLOW}noatime${NC} - No actualizar tiempo de acceso"
-    echo -e "• ${YELLOW}ssd${NC} - Optimizaciones para SSD"
-    echo -e "• ${YELLOW}discard=async${NC} - TRIM asíncrono"
-
-    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
-    read
-}
-
-# Función para configuración de subvolúmenes
-show_subvolumes() {
-    clear
-    show_header "CONFIGURACIÓN DE SUBVOLÚMENES"
-
-    show_section "📋 Subvolúmenes Actuales del Sistema"
-    echo -e "${WHITE}Estructura configurada:${NC}"
-    echo -e "• ${CYAN}@${NC} - Raíz del sistema (/)"
-    echo -e "• ${CYAN}@home${NC} - Directorios de usuarios (/home)"
-    echo -e "• ${CYAN}@var_log${NC} - Logs del sistema (/var/log)"
-    echo -e "• ${CYAN}/.snapshots${NC} - Snapshots raíz (creado automáticamente por Snapper)"
-    echo -e "• ${CYAN}/home/.snapshots${NC} - Snapshots de home (creado automáticamente por Snapper)"
-
-    show_section "🔍 Verificar Configuración Actual"
-    show_command "sudo btrfs subvolume list /                      # Listar todos los subvolúmenes"
-    show_command "sudo findmnt -t btrfs                           # Ver montajes BTRFS"
-    show_command "cat /etc/fstab | grep btrfs                     # Ver configuración fstab"
-
-    show_section "➕ Crear Nuevos Subvolúmenes"
-    echo -e "${WHITE}Para agregar más subvolúmenes (ej: @var_cache):${NC}"
-    show_command "sudo btrfs subvolume create /.snapshots/@var_cache    # Crear subvolumen"
-    show_command "sudo mkdir -p /mnt/var-cache-backup                   # Crear punto de montaje temporal"
-    show_command "sudo rsync -avxHAX /var/cache/ /mnt/var-cache-backup/ # Copiar contenido"
-    show_command "# Agregar entrada en /etc/fstab"
-    show_command "# UUID=xxx /var/cache btrfs subvol=@var_cache,compress=zstd:3,space_cache=v2,noatime 0 0"
-
-    show_section "⚠️ Reorganizar Subvolúmenes"
-    echo -e "${WHITE}Pasos para reorganización segura:${NC}"
-    echo -e "1. ${CYAN}Crear snapshot del sistema actual${NC}"
-    echo -e "2. ${CYAN}Crear nuevos subvolúmenes${NC}"
-    echo -e "3. ${CYAN}Migrar datos con rsync${NC}"
-    echo -e "4. ${CYAN}Actualizar /etc/fstab${NC}"
-    echo -e "5. ${CYAN}Probar montaje: sudo mount -a --fake${NC}"
-    echo -e "6. ${CYAN}Reiniciar y verificar${NC}"
-
-    show_section "⚠️ Mejores Prácticas"
-    echo -e "• ${GREEN}Siempre crear snapshots antes de cambios importantes${NC}"
-    echo -e "• ${GREEN}Usar nombres descriptivos para subvolúmenes${NC}"
-    echo -e "• ${GREEN}No anidar subvolúmenes innecesariamente${NC}"
-    echo -e "• ${GREEN}Mantener estructura simple y lógica${NC}"
-
-    show_section "⚠️ Configuración Recomendada"
-    echo -e "${WHITE}Para un sistema completo, considera:${NC}"
-    echo -e "• ${CYAN}@${NC} - Sistema base"
-    echo -e "• ${CYAN}@home${NC} - Datos de usuario"
-    echo -e "• ${CYAN}@var_log${NC} - Logs del sistema"
-    echo -e "• ${CYAN}/.snapshots${NC} - Snapshots raíz (automático por Snapper)"
-    echo -e "• ${CYAN}/home/.snapshots${NC} - Snapshots de home (automático por Snapper)"
-    echo -e "• ${CYAN}@srv${NC} - Datos de servicios (opcional)"
-
-    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
+    echo -e "\n${YELLOW}Presiona ENTER para volver...${NC}"
     read
 }
 
 # Función para ver estado actual
 show_current_status() {
     clear
-    show_header "ESTADO ACTUAL DEL SISTEMA BTRFS"
+    show_header "ESTADO ACTUAL DE SNAPS"
 
-    echo -e "${CYAN}${BOLD}📊 Información del Filesystem:${NC}"
-    sudo btrfs filesystem show 2>/dev/null || echo -e "${RED}Error: No se pudo obtener información del filesystem${NC}"
+    echo -e "${WHITE}Selecciona qué snapshots deseas ver:${NC}\n"
+    echo -e "${CYAN}1)${NC} 🖥️  Ver snapshot de ROOT (/)"
+    echo -e "${CYAN}2)${NC} 🏠  Ver snapshot de HOME (/home)"
+    echo -e "${CYAN}3)${NC} 📦  Ver AMBOS (ROOT + HOME) con misma descripción"
+    echo -e "${CYAN}4)${NC} 📋  Ver comandos manuales"
+    echo -e "${CYAN}0)${NC} ✗  Volver al menú principal"
 
-    echo -e "\n${CYAN}${BOLD}💾 Uso del Espacio:${NC}"
-    sudo btrfs filesystem usage / 2>/dev/null || echo -e "${RED}Error: No se pudo obtener uso del espacio${NC}"
+    echo -e "\n${YELLOW}Ingresa tu opción: ${NC}"
+    read -r option
 
-    echo -e "\n${CYAN}${BOLD}📁 Subvolúmenes Montados:${NC}"
-    findmnt -t btrfs 2>/dev/null || echo -e "${RED}Error: No se encontraron montajes BTRFS${NC}"
+    case $option in
+        1)
+            clear
+            show_header "SNAPSHOTS DE ROOT (/)"
+            sudo snapper -c root list
 
-    echo -e "\n${CYAN}${BOLD}🔧 Estado de Servicios:${NC}"
-    echo -e "${WHITE}Mantenimiento BTRFS:${NC} $(systemctl is-active btrfs-maintenance.timer 2>/dev/null || echo -e "${YELLOW}inactivo${NC}")"
-    if command -v snapper >/dev/null 2>&1; then
-        echo -e "${WHITE}Snapshots automáticos:${NC} $(systemctl is-active snapper-timeline.timer 2>/dev/null || echo -e "${YELLOW}inactivo${NC}")"
-        echo -e "${WHITE}Limpieza automática:${NC} $(systemctl is-active snapper-cleanup.timer 2>/dev/null || echo -e "${YELLOW}inactivo${NC}")"
+            echo -e "\n${YELLOW}Presiona ENTER para continuar...${NC}"
+            read
+            show_current_status
+            ;;
+        2)
+            clear
+            show_header "SNAPSHOTS DE HOME (/home)"
+            sudo snapper -c home list
 
-        echo -e "\n${CYAN}${BOLD}📊 Estadísticas de Snapshots:${NC}"
-        if sudo snapper list >/dev/null 2>&1; then
-            TOTAL_SNAPSHOTS=$(sudo snapper list 2>/dev/null | wc -l)
-            TIMELINE_SNAPSHOTS=$(sudo snapper list -t timeline 2>/dev/null | wc -l)
-            echo -e "${WHITE}Total de snapshots: ${CYAN}$((TOTAL_SNAPSHOTS-2))${NC}"  # -2 para quitar header
-            echo -e "${WHITE}Snapshots automáticos: ${CYAN}$((TIMELINE_SNAPSHOTS-2))${NC}"
-        else
-            echo -e "${YELLOW}No se pudieron obtener estadísticas de snapshots${NC}"
-        fi
-    else
-        echo -e "${YELLOW}Snapper no está instalado${NC}"
-    fi
+            echo -e "\n${YELLOW}Presiona ENTER para continuar...${NC}"
+            read
+            show_current_status
+            ;;
+        3)
+            clear
+            show_header "SNAPSHOTS DE ROOT + HOME"
+            echo -e "${WHITE}${BOLD}ROOT (/):${NC}"
+            sudo snapper -c root list
+            echo -e "\n${WHITE}${BOLD}HOME (/home):${NC}"
+            sudo snapper -c home list
 
-    echo -e "\n${CYAN}${BOLD}⚡ Próximas Tareas Programadas:${NC}"
-    systemctl list-timers "*btrfs*" "*snapper*" --no-pager 2>/dev/null || echo -e "${YELLOW}No hay tareas BTRFS programadas${NC}"
+            echo -e "\n${YELLOW}Presiona ENTER para continuar...${NC}"
+            read
+            show_current_status
+            ;;
+        4)
+            clear
+            show_header "COMANDOS MANUALES PARA VER SNAPSHOTS"
 
-    echo -e "\n${CYAN}${BOLD}📸 Snapshots Disponibles:${NC}"
-    echo -e "${WHITE}ROOT (/):${NC}"
-    sudo snapper -c root list
-    echo -e "\n${WHITE}HOME (/home):${NC}"
-    sudo snapper -c home list
-    echo -e "\n${WHITE}Configuraciones:${NC}"
-    sudo snapper list-configs
+            show_section "📋 Comandos Básicos"
+            show_command "sudo snapper -c root list                    # Ver snapshots de ROOT"
+            show_command "sudo snapper -c home list                    # Ver snapshots de HOME"
+            show_command "sudo snapper list-configs                    # Ver configuraciones"
 
-    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
-    read
+            echo -e "\n${YELLOW}Presiona ENTER para volver...${NC}"
+            read
+            show_current_status
+            ;;
+        0)
+            return
+            ;;
+        *)
+            echo -e "${RED}Opción inválida${NC}"
+            sleep 1
+            show_current_status
+            ;;
+    esac
 }
 
 # Función para crear puntos de restauración interactivamente
@@ -661,6 +534,100 @@ show_create_restore_points() {
 }
 
 # Función para restaurar puntos de restauración interactivamente
+# Función para verificar y reparar el kernel/paquetes tras una restauración
+# Recibe como argumento el kernel que estaba corriendo ANTES de restaurar (uname -r)
+fix_kernel_after_restore() {
+    local prev_kernel="$1"
+
+    echo -e "\n${CYAN}▶ Verificando consistencia kernel/paquetes tras la restauración...${NC}"
+
+    # Paquetes de kernel que pacman cree tener instalados SEGÚN LA BD YA RESTAURADA
+    local kpkgs
+    kpkgs=$(pacman -Qq 2>/dev/null | grep -E '^linux(-(zen|lts|hardened|rt|rt-lts))?$')
+
+    if [ -z "$kpkgs" ]; then
+        echo -e "${RED}✗ No se pudo determinar el paquete de kernel vía pacman -Q${NC}"
+        echo -e "${YELLOW}Se regenerará initramfs/GRUB sin reinstalar el kernel${NC}"
+        sudo mkinitcpio -P && sudo grub-mkconfig -o /boot/grub/grub.cfg
+        return 1
+    fi
+
+    local broken=false
+    for pkg in $kpkgs; do
+        local ver
+        ver=$(pacman -Q "$pkg" | awk '{print $2}')
+        echo -e "${WHITE}  Paquete según pacman: ${GREEN}$pkg $ver${NC}"
+    done
+
+    # Chequeo concreto: ¿siguen existiendo los módulos del kernel que estaba corriendo?
+    if [ -n "$prev_kernel" ] && [ ! -d "/usr/lib/modules/$prev_kernel" ]; then
+        broken=true
+        echo -e "${YELLOW}⚠️  Los módulos del kernel en ejecución (${prev_kernel}) ya no existen tras la restauración${NC}"
+        echo -e "${YELLOW}    Esto suele pasar cuando el snapshot restaurado es anterior a una actualización de kernel${NC}"
+    fi
+
+    if [ "$broken" = true ]; then
+        echo -e "\n${RED}${BOLD}La base de datos de pacman ya no coincide con los archivos reales del kernel en /boot y /usr/lib/modules${NC}"
+        echo -e "${CYAN}Reinstalando automáticamente el kernel EXACTO que marca pacman (caché local → archive.archlinux.org)...${NC}"
+
+        local any_failed=false
+        for pkg in $kpkgs; do
+            local ver cached letter url
+            ver=$(pacman -Q "$pkg" | awk '{print $2}')
+            cached=$(ls /var/cache/pacman/pkg/${pkg}-${ver}-x86_64.pkg.tar.* 2>/dev/null | head -1)
+
+            if [ -n "$cached" ]; then
+                echo -e "${CYAN}Reinstalando ${pkg} ${ver} desde caché local (${cached})...${NC}"
+                if sudo pacman -U "$cached" --noconfirm; then
+                    echo -e "${GREEN}✓ ${pkg} ${ver} reinstalado desde caché${NC}"
+                else
+                    any_failed=true
+                    echo -e "${RED}✗ Falló la reinstalación desde caché de ${pkg} ${ver}${NC}"
+                fi
+            else
+                letter="${pkg:0:1}"
+                url="https://archive.archlinux.org/packages/${letter}/${pkg}/${pkg}-${ver}-x86_64.pkg.tar.zst"
+                echo -e "${CYAN}No está en caché. Descargando desde archive.archlinux.org:${NC}"
+                echo -e "${BLUE}$url${NC}"
+                if sudo pacman -U "$url" --noconfirm; then
+                    echo -e "${GREEN}✓ ${pkg} ${ver} reinstalado correctamente${NC}"
+                else
+                    any_failed=true
+                    echo -e "${RED}✗ No se encontró esa versión exacta en el archive (¿pkgrel distinto o paquete purgado?)${NC}"
+                    echo -e "${YELLOW}  Prueba manualmente: https://archive.archlinux.org/packages/${letter}/${pkg}/${NC}"
+                fi
+            fi
+        done
+
+        if [ "$any_failed" = true ]; then
+            echo -e "\n${YELLOW}No se pudo reinstalar la versión exacta de al menos un paquete de kernel.${NC}"
+            echo -e "${WHITE}¿Cómo quieres continuar?${NC}"
+            echo -e "${CYAN}2)${NC} Actualizar todo el sistema a lo último disponible (sudo pacman -Syu)"
+            echo -e "${CYAN}0)${NC} Omitir (¡el arranque puede fallar!)"
+            echo -e "${YELLOW}Elige una opción: ${NC}"
+            read -r kfix
+            case "$kfix" in
+                2)
+                    echo -e "${CYAN}Actualizando el sistema completo...${NC}"
+                    sudo pacman -Syu --noconfirm
+                    ;;
+                *)
+                    echo -e "${YELLOW}Reparación omitida. Corrígelo manualmente antes de reiniciar (opción 13 del menú tiene la guía).${NC}"
+                    ;;
+            esac
+        fi
+    else
+        echo -e "${GREEN}✓ Los módulos del kernel en ejecución siguen presentes, no hace falta reinstalar el paquete${NC}"
+    fi
+
+    echo -e "${CYAN}Regenerando initramfs y configuración de GRUB...${NC}"
+    if sudo mkinitcpio -P && sudo grub-mkconfig -o /boot/grub/grub.cfg; then
+        echo -e "${GREEN}✓ initramfs y GRUB actualizados correctamente${NC}"
+    else
+        echo -e "${RED}✗ mkinitcpio o grub-mkconfig fallaron — revisa la salida de arriba antes de reiniciar${NC}"
+    fi
+}
+
 show_restore_points() {
     clear
     show_header "RESTAURAR PUNTOS DE RESTAURACIÓN"
@@ -697,6 +664,11 @@ show_restore_points() {
                 read -r confirm
 
                 if [[ "$confirm" =~ ^[sS]$ ]]; then
+                    # Guardar kernel actual antes de restaurar
+                    CURRENT_KERNEL=$(uname -r)
+                    echo "kernel-pre-restauracion: $CURRENT_KERNEL  fecha: $(date)" | sudo tee -a /var/log/btrfs-restore.log > /dev/null
+                    echo -e "${CYAN}Kernel actual guardado en /var/log/btrfs-restore.log: ${GREEN}$CURRENT_KERNEL${NC}"
+
                     echo -e "\n${CYAN}Restaurando ROOT (snapshot $snapshot_num)...${NC}"
                     echo -e "${YELLOW}No se puede detectar el ámbito porque no se conoce el subvolumen por defecto.${NC}"
                     echo -e "${YELLOW}Esto puede suceder si el sistema no ha configurado el subvolumen apropiadamente.${NC}"
@@ -707,6 +679,10 @@ show_restore_points() {
                     CURRENT_ROOT="0"
                     if sudo snapper -c root undochange "$snapshot_num..$CURRENT_ROOT" 2>/dev/null; then
                         echo -e "${GREEN}✓ Restauración de ROOT completada usando método alternativo${NC}"
+
+                        # Verificar consistencia real del kernel/paquetes y reparar si hace falta
+                        fix_kernel_after_restore "$CURRENT_KERNEL"
+
                         echo -e "${YELLOW}Se recomienda reiniciar el sistema ahora${NC}"
                         echo -e "${WHITE}¿Reiniciar ahora? (s/N):${NC}"
                         read -r reboot_confirm
@@ -780,51 +756,55 @@ show_restore_points() {
 
             echo -e "${CYAN}Buscando snapshots con descripciones coincidentes...${NC}\n"
 
-            # Función para extraer SOLO la descripción real (último campo después de │)
-            extract_description() {
+            # Extraer descripción: último campo de la línea separado por │ o |
+            extract_snap_desc() {
                 local line="$1"
-                # Usar awk para extraer solo el último campo después del último │
-                echo "$line" | awk '{
-                    # Encontrar la última posición de │
-                    n = split($0, arr, "│")
-                    if (n >= 7) {
-                        # La descripción está en el 7mo campo
-                        gsub(/^[ \t]+|[ \t]+$/, "", arr[7])
-                        print arr[7]
-                    }
-                }'
+                local desc
+                desc=$(echo "$line" | awk -F'│' '{
+                    gsub(/^[ \t]+|[ \t]+$/, "", $NF)
+                    print $NF
+                }')
+                if [ -z "$desc" ] || echo "$desc" | grep -qE '^[0-9]'; then
+                    desc=$(echo "$line" | awk -F'|' '{
+                        gsub(/^[ \t]+|[ \t]+$/, "", $NF)
+                        print $NF
+                    }')
+                fi
+                echo "$desc"
+            }
+
+            extract_snap_num() {
+                echo "$1" | grep -oE '^[[:space:]]*[0-9]+' | tr -d ' '
             }
 
             # Crear archivo temporal para almacenar snapshots coincidentes
             TEMP_FILE=$(mktemp)
 
-            # Obtener snapshots de ROOT
-            while IFS= read -r line; do
-                SNAPSHOT_NUM=$(echo "$line" | awk '{print $1}')
-                # Usar función para extraer descripción
-                DESCRIPTION=$(extract_description "$line")
-
-
-
-                if [ -n "$DESCRIPTION" ] && [ "$DESCRIPTION" != "current" ]; then
-                    # Buscar en HOME la misma descripción
-                    HOME_NUM=""
-                    while IFS= read -r home_line; do
-                        HOME_SNAP_NUM=$(echo "$home_line" | awk '{print $1}')
-                        HOME_DESC=$(extract_description "$home_line")
-
-
-
-                        # Comparación exacta de cadenas usando [[ ]] para mejor manejo de caracteres especiales
-                        if [[ "$HOME_DESC" == "$DESCRIPTION" ]]; then
-                            HOME_NUM="$HOME_SNAP_NUM"
-                            break
-                        fi
-                    done < <(sudo snapper -c home list | grep -E "^[[:space:]]*[0-9]+")
-
-                    if [ -n "$HOME_NUM" ]; then
-                        echo "$SNAPSHOT_NUM|$HOME_NUM|$DESCRIPTION" >> "$TEMP_FILE"
+            # Cargar snapshots de HOME en memoria (descripción → número)
+            declare -A HOME_DESC_MAP
+            while IFS= read -r home_line; do
+                H_NUM=$(extract_snap_num "$home_line")
+                H_DESC=$(extract_snap_desc "$home_line")
+                if [ -n "$H_NUM" ] && [ "$H_NUM" -gt 0 ] && [ -n "$H_DESC" ]; then
+                    if [ -z "${HOME_DESC_MAP[$H_DESC]}" ] || [ "$H_NUM" -gt "${HOME_DESC_MAP[$H_DESC]}" ]; then
+                        HOME_DESC_MAP["$H_DESC"]="$H_NUM"
                     fi
+                fi
+            done < <(sudo snapper -c home list | grep -E "^[[:space:]]*[0-9]+")
+
+            # Obtener snapshots de ROOT y emparejar con HOME
+            while IFS= read -r line; do
+                SNAPSHOT_NUM=$(extract_snap_num "$line")
+                DESCRIPTION=$(extract_snap_desc "$line")
+
+                # Saltar snapshot 0 (estado actual) y descripciones vacías
+                if [ -z "$SNAPSHOT_NUM" ] || [ "$SNAPSHOT_NUM" -eq 0 ] || [ -z "$DESCRIPTION" ]; then
+                    continue
+                fi
+
+                if [ -n "${HOME_DESC_MAP[$DESCRIPTION]}" ]; then
+                    HOME_NUM="${HOME_DESC_MAP[$DESCRIPTION]}"
+                    echo "$SNAPSHOT_NUM|$HOME_NUM|$DESCRIPTION" >> "$TEMP_FILE"
                 fi
             done < <(sudo snapper -c root list | grep -E "^[[:space:]]*[0-9]+")
 
@@ -858,6 +838,11 @@ show_restore_points() {
                     read -r confirm
 
                     if [[ "$confirm" =~ ^[sS]$ ]]; then
+                        # Guardar kernel actual antes de restaurar
+                        CURRENT_KERNEL=$(uname -r)
+                        echo "kernel-pre-restauracion: $CURRENT_KERNEL  fecha: $(date)" | sudo tee -a /var/log/btrfs-restore.log > /dev/null
+                        echo -e "${CYAN}Kernel actual guardado en /var/log/btrfs-restore.log: ${GREEN}$CURRENT_KERNEL${NC}"
+
                         echo -e "\n${CYAN}Restaurando ROOT (snapshot $ROOT_NUM)...${NC}"
                         ROOT_SUCCESS=false
                         # Método alternativo para ROOT - usar snapshot 0 como actual
@@ -886,6 +871,10 @@ show_restore_points() {
                         echo -e "${CYAN}Descripción: $DESC${NC}"
                         if [ "$ROOT_SUCCESS" = true ] && [ "$HOME_SUCCESS" = true ]; then
                             echo -e "${GREEN}✓ Ambos sistemas restaurados exitosamente${NC}"
+
+                            # Verificar consistencia real del kernel/paquetes y reparar si hace falta
+                            fix_kernel_after_restore "$CURRENT_KERNEL"
+
                             echo -e "${YELLOW}Se recomienda reiniciar el sistema ahora${NC}"
                             echo -e "\n${WHITE}¿Reiniciar ahora? (s/N):${NC}"
                             read -r reboot_confirm
@@ -1075,167 +1064,6 @@ show_emergency_recovery() {
     read
 }
 
-# Función para explorar snapshots sin aplicar cambios
-show_explore_snapshots() {
-    clear
-    show_header "EXPLORAR SNAPSHOTS (SOLO VER - SIN APLICAR)"
-
-    show_section "🔍 VER QUÉ ARCHIVOS CAMBIARON ENTRE SNAPSHOTS"
-    echo -e "${WHITE}Comparar cambios sin aplicar nada:${NC}"
-    show_command "sudo snapper -c root status 1..5             # Ver qué cambió entre snapshot 1 y 5"
-    show_command "sudo snapper -c home status 2..4             # Ver cambios en HOME entre 2 y 4"
-    show_command "sudo snapper -c root status 1..0             # Ver cambios entre snapshot 1 y actual"
-    show_command "sudo snapper -c home status 3..0             # Ver cambios HOME desde snapshot 3"
-
-    show_section "⚠ VER DIFERENCIAS ESPECÍFICAS EN ARCHIVOS"
-    echo -e "${WHITE}Ver contenido exacto de las diferencias:${NC}"
-    show_command "sudo snapper -c root diff 1..5               # Ver todas las diferencias"
-    show_command "sudo snapper -c root diff 1..5 /etc/fstab    # Solo diferencias en fstab"
-    show_command "sudo snapper -c home diff 2..4 /home/usuario/.bashrc  # Diferencias en bashrc"
-    show_command "sudo snapper -c root diff 1..0 /etc/pacman.conf       # Comparar con actual"
-
-    show_section "⚠ EXPLORAR CONTENIDO COMPLETO DE SNAPSHOTS"
-    echo -e "${WHITE}Navegar dentro de snapshots como directorios normales:${NC}"
-    show_command "ls /.snapshots/                             # Ver snapshots de ROOT disponibles"
-    show_command "ls /.snapshots/1/snapshot/                  # Explorar contenido snapshot 1"
-    show_command "ls /home/.snapshots/                        # Ver snapshots de HOME disponibles"
-    show_command "ls /home/.snapshots/2/snapshot/             # Explorar contenido HOME snapshot 2"
-
-    echo -e "\n${WHITE}Navegar y explorar archivos específicos:${NC}"
-    show_command "cd /.snapshots/1/snapshot/                  # Entrar al snapshot 1 de ROOT"
-    show_command "cat etc/fstab                               # Ver fstab del snapshot"
-    show_command "ls -la home/                                # Ver usuarios que existían"
-    show_command "cd /home/.snapshots/2/snapshot/usuario/     # Entrar al snapshot de usuario"
-
-    show_section "✅ COMPARAR ARCHIVOS MANUALMENTE"
-    echo -e "${WHITE}Usar diff para comparaciones detalladas:${NC}"
-    show_command "diff /etc/fstab /.snapshots/1/snapshot/etc/fstab              # Comparar fstab"
-    show_command "diff ~/.bashrc /home/.snapshots/2/snapshot/usuario/.bashrc    # Comparar bashrc"
-    show_command "diff /etc/pacman.conf /.snapshots/3/snapshot/etc/pacman.conf  # Comparar pacman.conf"
-
-    show_section "💾 RECUPERAR ARCHIVOS ESPECÍFICOS"
-    echo -e "${WHITE}Copiar archivos individuales sin restaurar todo:${NC}"
-    show_command "sudo cp /.snapshots/1/snapshot/etc/fstab /etc/fstab.recovered"
-    show_command "cp /home/.snapshots/2/snapshot/usuario/.bashrc ~/bashrc.recovered"
-    show_command "sudo cp /.snapshots/3/snapshot/etc/hosts /etc/hosts.backup"
-
-    show_section "🔧 COMANDOS AVANZADOS DE EXPLORACIÓN"
-    echo -e "${WHITE}Herramientas adicionales para análisis:${NC}"
-    show_command "sudo snapper -c root mount 1                # Montar snapshot temporalmente"
-    show_command "sudo snapper -c root umount 1               # Desmontar cuando termines"
-    show_command "find /.snapshots/1/snapshot/ -name '*.conf' # Buscar archivos .conf"
-    show_command "tree /.snapshots/1/snapshot/etc/            # Ver estructura de /etc"
-
-    show_section "📋 EJEMPLOS PRÁCTICOS"
-    echo -e "${WHITE}${BOLD}Caso 1: Revisar qué cambió después de una actualización${NC}"
-    show_command "sudo snapper -c root status 5..0            # Ver archivos que cambiaron"
-    show_command "sudo snapper -c root diff 5..0 /etc/        # Ver diferencias en /etc"
-
-    echo -e "\n${WHITE}${BOLD}Caso 2: Buscar una configuración que funcionaba${NC}"
-    show_command "ls /.snapshots/                            # Ver snapshots disponibles"
-    show_command "cat /.snapshots/3/snapshot/etc/fstab       # Ver fstab del snapshot 3"
-    show_command "diff /etc/fstab /.snapshots/3/snapshot/etc/fstab  # Comparar diferencias"
-
-    echo -e "\n${WHITE}${BOLD}Caso 3: Recuperar un archivo borrado accidentalmente${NC}"
-    show_command "ls /home/.snapshots/2/snapshot/usuario/Documentos/  # Ver si existe"
-    show_command "cp /home/.snapshots/2/snapshot/usuario/Documentos/archivo.txt ~/  # Recuperar"
-
-    show_section "✅ VENTAJAS DE ESTOS MÉTODOS"
-    echo -e "• ${GREEN}Completamente seguro - solo lectura${NC}"
-    echo -e "• ${GREEN}Sin reinicio necesario${NC}"
-    echo -e "• ${GREEN}Puedes explorar todo el contenido${NC}"
-    echo -e "• ${GREEN}Ver diferencias exactas${NC}"
-    echo -e "• ${GREEN}Recuperar archivos específicos sin restaurar todo${NC}"
-    echo -e "• ${CYAN}Perfecto para investigar problemas${NC}"
-    echo -e "• ${CYAN}Ideal para encontrar configuraciones que funcionaban${NC}"
-
-    show_section "⚠ CONSEJOS ÚTILES ⚠"
-    echo -e "• ${YELLOW}Los snapshots están en /.snapshots/NUMERO/snapshot/${NC}"
-    echo -e "• ${YELLOW}HOME snapshots están en /home/.snapshots/NUMERO/snapshot/${NC}"
-    echo -e "• ${YELLOW}Usa 'tree' o 'ls -R' para ver estructura completa${NC}"
-    echo -e "• ${YELLOW}Siempre verifica permisos antes de copiar archivos${NC}"
-    echo -e "• ${GREEN}Puedes usar cualquier editor para ver archivos del snapshot${NC}"
-
-    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
-    read
-}
-
-# Función para solución rápida de errores de rollback
-show_rollback_fix() {
-    clear
-    show_header "SOLUCIÓN RÁPIDA - ERRORES DE ROLLBACK"
-
-    show_section "⚠ ERRORES IDENTIFICADOS EN TU SISTEMA"
-    echo -e "${RED}${BOLD}Error 1: \"No se puede detectar el ámbito porque no se conoce el subvolumen por defecto\"${NC}"
-    echo -e "${WHITE}Causa:${NC} snapper rollback no puede identificar el subvolumen raíz apropiadamente"
-    echo -e "${GREEN}Solución:${NC} Usar undochange en lugar de rollback"
-
-    echo -e "\n${RED}${BOLD}Error 2: \"El comando 'rollback' no puede usarse en un subvolumen no raíz /home\"${NC}"
-    echo -e "${WHITE}Causa:${NC} /home es un subvolumen separado, rollback solo funciona en subvolumen raíz"
-    echo -e "${GREEN}Solución:${NC} SIEMPRE usar undochange para /home"
-
-    show_section "✅ COMANDOS CORRECTOS PARA TU SISTEMA"
-    echo -e "${WHITE}${BOLD}Para restaurar ROOT:${NC}"
-    show_command "sudo snapper -c root list                     # Ver snapshots de ROOT"
-    show_command "sudo snapper -c root undochange 1..0          # Restaurar snapshot 1 (cambiar número)"
-    show_command "sudo reboot                                   # Reiniciar después de ROOT"
-
-    echo -e "\n${WHITE}${BOLD}Para restaurar HOME:${NC}"
-    show_command "sudo snapper -c home list                     # Ver snapshots de HOME"
-    show_command "sudo snapper -c home undochange 1..0          # Restaurar snapshot 1 (cambiar número)"
-    show_command "# No es necesario reiniciar para HOME"
-
-    echo -e "\n${WHITE}${BOLD}Para restaurar AMBOS sistemas:${NC}"
-    show_command "# Paso 1: Restaurar ROOT"
-    show_command "sudo snapper -c root undochange NUMERO..0"
-    show_command "# Paso 2: Restaurar HOME"
-    show_command "sudo snapper -c home undochange NUMERO..0"
-    show_command "# Paso 3: Reiniciar solo una vez"
-    show_command "sudo reboot"
-
-    show_section "🔍 VERIFICAR QUE TIENES SNAPSHOTS DISPONIBLES"
-    echo -e "${WHITE}Ejecuta estos comandos para ver tus snapshots:${NC}"
-    show_command "sudo snapper -c root list | head -10"
-    show_command "sudo snapper -c home list | head -10"
-
-    show_section "📋 EJEMPLO PRÁCTICO"
-    echo -e "${WHITE}Si quieres restaurar ROOT snapshot 1 y HOME snapshot 1:${NC}"
-    echo -e "${CYAN}1. sudo snapper -c root undochange 1..0${NC}"
-    echo -e "${CYAN}2. sudo snapper -c home undochange 1..0${NC}"
-    echo -e "${CYAN}3. sudo reboot${NC}"
-
-    echo -e "\n${WHITE}Si quieres restaurar solo HOME snapshot 2:${NC}"
-    echo -e "${CYAN}1. sudo snapper -c home undochange 2..0${NC}"
-    echo -e "${CYAN}2. No reiniciar (HOME no lo requiere)${NC}"
-
-    show_section "⚠️ ALTERNATIVA MANUAL SI UNDOCHANGE FALLA"
-    echo -e "${WHITE}Para ROOT (método manual):${NC}"
-    show_command "sudo btrfs subvolume snapshot /.snapshots/1/snapshot /new-root"
-    show_command "# Luego hacer switch manual del subvolumen"
-
-    echo -e "\n${WHITE}Para HOME (método manual):${NC}"
-    show_command "sudo cp -r /home/.snapshots/1/snapshot/* /home/"
-    show_command "# O crear backup y restaurar manualmente"
-
-    show_section "💡 CONSEJOS IMPORTANTES"
-    echo -e "• ${GREEN}undochange SIEMPRE funciona mejor que rollback${NC}"
-    echo -e "• ${GREEN}El formato es: undochange SNAPSHOT_ORIGEN..SNAPSHOT_DESTINO${NC}"
-    echo -e "• ${GREEN}..0 significa \"hasta el estado actual\"${NC}"
-    echo -e "• ${YELLOW}Solo ROOT requiere reinicio, HOME no${NC}"
-    echo -e "• ${YELLOW}Siempre verifica los números de snapshot antes de ejecutar${NC}"
-    echo -e "• ${RED}NUNCA uses rollback para /home${NC}"
-
-    show_section "✅ RESUMEN DE LA SOLUCIÓN"
-    echo -e "${WHITE}${BOLD}TUS ERRORES SE SOLUCIONAN ASÍ:${NC}"
-    echo -e "1. ${CYAN}Cambiar todos los 'rollback' por 'undochange NUMERO..0'${NC}"
-    echo -e "2. ${CYAN}Para ROOT: undochange + reinicio${NC}"
-    echo -e "3. ${CYAN}Para HOME: undochange (sin reinicio)${NC}"
-    echo -e "4. ${CYAN}Para AMBOS: undochange ROOT, undochange HOME, reiniciar${NC}"
-
-    echo -e "\n${YELLOW}Presiona ENTER para volver al menú principal...${NC}"
-    read
-}
-
 # Función para eliminar puntos de restauración
 show_delete_restore_points() {
     clear
@@ -1337,38 +1165,62 @@ show_delete_restore_points() {
 
             echo -e "${CYAN}Buscando snapshots con descripciones coincidentes...${NC}\n"
 
-            extract_description() {
+            # Extraer descripción usando el formato real de snapper:
+            # Las columnas son: número │ tipo │ fecha │ usuario │ espacio_usado │ limpieza │ descripción
+            # Se usa awk con separador │ o | y se toma el ULTIMO campo no vacío
+            extract_snap_desc() {
                 local line="$1"
-                echo "$line" | awk '{
-                    n = split($0, arr, "│")
-                    if (n >= 7) {
-                        gsub(/^[ \t]+|[ \t]+$/, "", arr[7])
-                        print arr[7]
-                    }
-                }'
+                # Primero intentar con │ unicode, luego con | ASCII
+                local desc
+                desc=$(echo "$line" | awk -F'│' '{
+                    gsub(/^[ \t]+|[ \t]+$/, "", $NF)
+                    print $NF
+                }')
+                # Si no funcionó con │, intentar con |
+                if [ -z "$desc" ] || echo "$desc" | grep -qE '^[0-9]'; then
+                    desc=$(echo "$line" | awk -F'|' '{
+                        gsub(/^[ \t]+|[ \t]+$/, "", $NF)
+                        print $NF
+                    }')
+                fi
+                echo "$desc"
+            }
+
+            # Extraer número de snapshot (primer número de la línea)
+            extract_snap_num() {
+                echo "$1" | grep -oE '^[[:space:]]*[0-9]+' | tr -d ' '
             }
 
             TEMP_FILE=$(mktemp)
 
-            while IFS= read -r line; do
-                SNAPSHOT_NUM=$(echo "$line" | awk '{print $1}')
-                DESCRIPTION=$(extract_description "$line")
-
-                if [ -n "$DESCRIPTION" ] && [ "$DESCRIPTION" != "current" ]; then
-                    HOME_NUM=""
-                    while IFS= read -r home_line; do
-                        HOME_SNAP_NUM=$(echo "$home_line" | awk '{print $1}')
-                        HOME_DESC=$(extract_description "$home_line")
-
-                        if [[ "$HOME_DESC" == "$DESCRIPTION" ]]; then
-                            HOME_NUM="$HOME_SNAP_NUM"
-                            break
-                        fi
-                    done < <(sudo snapper -c home list | grep -E "^[[:space:]]*[0-9]+")
-
-                    if [ -n "$HOME_NUM" ]; then
-                        echo "$SNAPSHOT_NUM|$HOME_NUM|$DESCRIPTION" >> "$TEMP_FILE"
+            # Cargar snapshots de HOME en memoria para comparación eficiente
+            declare -A HOME_DESC_MAP  # descripción → número de snapshot HOME
+            while IFS= read -r home_line; do
+                H_NUM=$(extract_snap_num "$home_line")
+                H_DESC=$(extract_snap_desc "$home_line")
+                # Solo incluir snapshots válidos: número > 0 y descripción no vacía
+                if [ -n "$H_NUM" ] && [ "$H_NUM" -gt 0 ] && [ -n "$H_DESC" ]; then
+                    # Si hay duplicados de descripción, guardar el más reciente (mayor número)
+                    if [ -z "${HOME_DESC_MAP[$H_DESC]}" ] || [ "$H_NUM" -gt "${HOME_DESC_MAP[$H_DESC]}" ]; then
+                        HOME_DESC_MAP["$H_DESC"]="$H_NUM"
                     fi
+                fi
+            done < <(sudo snapper -c home list | grep -E "^[[:space:]]*[0-9]+")
+
+            # Recorrer snapshots de ROOT y buscar coincidencias en HOME
+            while IFS= read -r line; do
+                R_NUM=$(extract_snap_num "$line")
+                R_DESC=$(extract_snap_desc "$line")
+
+                # Saltar snapshot 0 (estado actual) y descripciones vacías o del sistema
+                if [ -z "$R_NUM" ] || [ "$R_NUM" -eq 0 ] || [ -z "$R_DESC" ]; then
+                    continue
+                fi
+
+                # Buscar si HOME tiene un snapshot con la misma descripción
+                if [ -n "${HOME_DESC_MAP[$R_DESC]}" ]; then
+                    H_NUM="${HOME_DESC_MAP[$R_DESC]}"
+                    echo "$R_NUM|$H_NUM|$R_DESC" >> "$TEMP_FILE"
                 fi
             done < <(sudo snapper -c root list | grep -E "^[[:space:]]*[0-9]+")
 
@@ -1526,13 +1378,6 @@ while true; do
         4) show_emergency_recovery ;;
         5) show_current_status ;;
         6) show_snapshots ;;
-        7) show_maintenance ;;
-        8) show_monitoring ;;
-        9) show_subvolumes ;;
-        10) show_advanced ;;
-        11) show_explore_snapshots ;;
-        12) show_troubleshooting ;;
-        13) show_rollback_fix ;;
         0) echo -e "${GREEN}¡Gracias por usar la guía BTRFS!${NC}"; exit 0 ;;
         *) echo -e "${RED}Opción inválida. Presiona ENTER para continuar...${NC}"; read ;;
     esac

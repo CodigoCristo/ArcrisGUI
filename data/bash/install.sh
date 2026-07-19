@@ -174,7 +174,7 @@ configurar_btrfs() {
 
         # Intentar crear configuración con --no-dbus para LiveCD
         if chroot /mnt /bin/bash -c "snapper --no-dbus -c root create-config /" 2>/dev/null; then
-            chroot /mnt /bin/bash -c "snapper --no-dbus -c root set-config TIMELINE_LIMIT_HOURLY=0 TIMELINE_LIMIT_DAILY=3 TIMELINE_LIMIT_WEEKLY=0 TIMELINE_LIMIT_MONTHLY=0 TIMELINE_LIMIT_YEARLY=0" 2>/dev/null
+            chroot /mnt /bin/bash -c "snapper --no-dbus -c root set-config TIMELINE_LIMIT_HOURLY=0 TIMELINE_LIMIT_DAILY=0 TIMELINE_LIMIT_WEEKLY=1 TIMELINE_LIMIT_MONTHLY=0 TIMELINE_LIMIT_YEARLY=0" 2>/dev/null
             echo -e "${GREEN}✓ Configuración de snapper para raíz creada exitosamente${NC}"
         else
             # Crear configuración manualmente si falla
@@ -193,7 +193,7 @@ configurar_btrfs() {
 
             # Intentar crear configuración para /home con --no-dbus para LiveCD
             if chroot /mnt /bin/bash -c "snapper --no-dbus -c home create-config /home" 2>/dev/null; then
-                chroot /mnt /bin/bash -c "snapper --no-dbus -c home set-config TIMELINE_LIMIT_HOURLY=0 TIMELINE_LIMIT_DAILY=3 TIMELINE_LIMIT_WEEKLY=0 TIMELINE_LIMIT_MONTHLY=0 TIMELINE_LIMIT_YEARLY=0" 2>/dev/null
+                chroot /mnt /bin/bash -c "snapper --no-dbus -c home set-config TIMELINE_LIMIT_HOURLY=0 TIMELINE_LIMIT_DAILY=0 TIMELINE_LIMIT_WEEKLY=1 TIMELINE_LIMIT_MONTHLY=0 TIMELINE_LIMIT_YEARLY=0" 2>/dev/null
                 echo -e "${GREEN}✓ Configuración de snapper para /home creada exitosamente${NC}"
             else
                 # Crear configuración manualmente si falla
@@ -301,19 +301,19 @@ configurar_btrfs() {
 
     # Crear script de documentación interactiva BTRFS y Snapper
     echo -e "${CYAN}Creando guía interactiva BTRFS y Snapper...${NC}"
-    cp /usr/share/arcrisgui/data/bash/btrfs/btrfs-guide /mnt/usr/local/bin/btrfs-guide
-    if [ -f /mnt/usr/local/bin/btrfs-guide ]; then
-        echo -e "${GREEN}✓ btrfs-guide instalado en: /usr/local/bin/btrfs-guide${NC}"
-        ls -lh /mnt/usr/local/bin/btrfs-guide
+    cp /usr/share/arcrisgui/data/bash/btrfs/btrfs-help /mnt/usr/local/bin/btrfs-help
+    if [ -f /mnt/usr/local/bin/btrfs-help ]; then
+        echo -e "${GREEN}✓ btrfs-help instalado en: /usr/local/bin/btrfs-help${NC}"
+        ls -lh /mnt/usr/local/bin/btrfs-help
     else
-        echo -e "${RED}ERROR: btrfs-guide no se encontró en /mnt/usr/local/bin/${NC}"
+        echo -e "${RED}ERROR: btrfs-help no se encontró en /mnt/usr/local/bin/${NC}"
     fi
 
     # Hacer el script ejecutable
-    chmod +x /mnt/usr/local/bin/btrfs-guide
+    chmod +x /mnt/usr/local/bin/btrfs-help
 
-    echo -e "${GREEN}✓ Guía interactiva BTRFS creada en /usr/local/bin/btrfs-guide${NC}"
-    echo -e "${CYAN}  Ejecuta 'btrfs-guide' después del reinicio para acceder a la documentación${NC}"
+    echo -e "${GREEN}✓ Guía interactiva BTRFS creada en /usr/local/bin/btrfs-help${NC}"
+    echo -e "${CYAN}  Ejecuta 'btrfs-help' después del reinicio para acceder a la documentación${NC}"
 
     echo -e "${GREEN}✓ Configuración BTRFS completada${NC}"
     sleep 2
@@ -1125,16 +1125,95 @@ source "$(dirname "$0")/config_grub.sh"
 # -------------------------------------------------
 
 # Crear script helper para actualizar GRUB después de snapshots manuales
-cat > /mnt/usr/local/bin/update-grub << 'UPDATEGRUB'
+cat > /mnt/usr/local/bin/grub-update << 'UPDATEGRUB'
 #!/bin/bash
 # Script para actualizar GRUB
 echo "Actualizando GRUB..."
 grub-mkconfig -o /boot/grub/grub.cfg
 echo "✓ GRUB actualizado"
 UPDATEGRUB
-chmod +x /mnt/usr/local/bin/update-grub
-echo -e "${GREEN}✓ Script helper creado: /usr/local/bin/update-grub${NC}"
+chmod +x /mnt/usr/local/bin/grub-update
+echo -e "${GREEN}✓ Script helper creado: /usr/local/bin/grub-update${NC}"
+# -------------------------------------------------
 
+# Crear script para limpiar sistema
+cat > /mnt/usr/local/bin/clear-arch << 'CLEARARCH'
+#!/usr/bin/env bash
+#
+# clear-arch — Limpieza de sistema para Arch Linux
+# Uso: sudo ./clear-arch
+#
+set -euo pipefail
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+log()  { echo -e "${GREEN}==>${NC} $1"; }
+warn() { echo -e "${YELLOW}!!${NC} $1"; }
+
+# Muestra el comando antes de ejecutarlo y luego lo ejecuta
+run() {
+    echo -e "${CYAN}\$ $*${NC}"
+    "$@"
+}
+
+if [[ $EUID -ne 0 ]]; then
+   echo "Este script debe ejecutarse con sudo." >&2
+   exit 1
+fi
+
+REAL_USER="${SUDO_USER:-$(logname)}"
+REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+
+echo "=========================================="
+echo " clear-arch - Limpieza de sistema"
+echo " Usuario objetivo: $REAL_USER"
+echo "=========================================="
+
+# 1. Instalar pacman-contrib si falta (necesario para paccache)
+if ! command -v paccache &>/dev/null; then
+    log "Instalando pacman-contrib (necesario para paccache)..."
+    run pacman -S --noconfirm pacman-contrib
+fi
+
+# 2. Vaciar POR COMPLETO el caché de paquetes (no deja ninguna versión)
+log "Eliminando TODO el contenido de /var/cache/pacman/pkg/ ..."
+run rm -rf /var/cache/pacman/pkg/*
+
+# 3. Eliminar paquetes huérfanos (dependencias que ya nadie usa)
+ORPHANS=$(pacman -Qtdq 2>/dev/null || true)
+if [[ -n "$ORPHANS" ]]; then
+    log "Eliminando paquetes huérfanos..."
+    run pacman -Rns $ORPHANS --noconfirm
+else
+    log "No hay paquetes huérfanos."
+fi
+
+# 4. Limpiar TODA la carpeta de caché del usuario (~/.cache)
+log "Eliminando TODO el contenido de $REAL_HOME/.cache ..."
+run rm -rf "${REAL_HOME:?}/.cache/"*
+
+# 5. Limpiar logs de systemd journal (por tamaño 200M...)
+log "Reduciendo logs de journalctl por tamaño 200M..."
+run journalctl --vacuum-size=200M
+
+# 6. Limpiar /tmp de archivos con más de 5 días
+log "Eliminando archivos de /tmp con más de 5 días..."
+run find /tmp -mindepth 1 -mtime +5 -delete
+
+echo "=========================================="
+log "Limpieza completada."
+echo "Espacio en disco actual:"
+run df -h /
+echo "=========================================="
+CLEARARCH
+chmod +x /mnt/usr/local/bin/clear-arch
+echo -e "${GREEN}✓ Script helper creado: /usr/local/bin/clear-arch${NC}"
+
+
+# -------------------------------------------------
 sleep 3
 clear
 # -------------------------------------------------

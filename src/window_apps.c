@@ -229,6 +229,8 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"chromium_info", "https://www.chromium.org/"},
         {"firefox_info", "https://www.mozilla.org/firefox/"},
         {"opera_info", "https://www.opera.com/"},
+        {"vivaldi_info", "https://vivaldi.com/"},
+        {"zen_browser_info", "https://zen-browser.app/"},
 
         // Graphics
         {"gimp_info", "https://www.gimp.org/"},
@@ -308,6 +310,9 @@ void window_apps_connect_info_buttons(WindowAppsData *data)
         {"heroic_info", "https://heroicgameslauncher.com/"},
         {"bottles_info", "https://usebottles.com/"},
         {"proton_ge_info", "https://github.com/GloriousEggroll/proton-ge-custom"},
+        {"protonplus_info", "https://github.com/Vysp3r/ProtonPlus"},
+        {"protonup_qt_info", "https://davidotek.github.io/protonup-qt"},
+        {"faugus_launcher_info", "https://github.com/Faugus/faugus-launcher"},
         {"winetricks_info", "https://github.com/Winetricks/winetricks"},
         {"gamemode_info", "https://github.com/FeralInteractive/gamemode"},
         {"mangohud_info", "https://github.com/flightlessmango/MangoHud"},
@@ -406,6 +411,8 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"chromium_check", "chromium", "navegador chromium", "browsers_expander"},
         {"firefox_check", "firefox", "navegador firefox mozilla", "browsers_expander"},
         {"opera_check", "opera", "navegador opera", "browsers_expander"},
+        {"vivaldi_check", "vivaldi", "navegador vivaldi personalizable", "browsers_expander"},
+        {"zen_browser_check", "zen-browser-bin", "navegador zen browser firefox privacidad", "browsers_expander"},
 
         // Graphics
         {"gimp_check", "gimp", "editor de imágenes gimp gnu", "graphics_expander"},
@@ -485,6 +492,9 @@ void window_apps_filter_apps(WindowAppsData *data, const gchar *search_text)
         {"heroic_check", "heroic-games-launcher-bin", "launcher heroic epic gog", "gamming_expander"},
         {"bottles_check", "bottles", "wine bottles gestor", "gamming_expander"},
         {"proton_ge_check", "proton-ge-custom-bin", "proton ge custom compatibilidad", "gamming_expander"},
+        {"protonplus_check", "protonplus", "gestor herramientas compatibilidad proton wine", "gamming_expander"},
+        {"protonup_qt_check", "protonup-qt", "gestor proton ge wine ge interfaz qt", "gamming_expander"},
+        {"faugus_launcher_check", "faugus-launcher", "launcher juegos windows umu", "gamming_expander"},
         {"winetricks_check", "winetricks", "wine bibliotecas helper", "gamming_expander"},
         {"gamemode_check", "gamemode", "optimización rendimiento juegos", "gamming_expander"},
         {"mangohud_check", "mangohud", "overlay información sistema juegos", "gamming_expander"},
@@ -882,6 +892,8 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"chromium_check", "chromium"},
         {"firefox_check", "firefox"},
         {"opera_check", "opera"},
+        {"vivaldi_check", "vivaldi"},
+        {"zen_browser_check", "zen-browser-bin"},
 
         // Graphics
         {"gimp_check", "gimp"},
@@ -961,6 +973,9 @@ void window_apps_collect_selected_apps_from_checkboxes(WindowAppsData *data)
         {"heroic_check", "heroic-games-launcher-bin"},
         {"bottles_check", "bottles"},
         {"proton_ge_check", "proton-ge-custom-bin"},
+        {"protonplus_check", "protonplus"},
+        {"protonup_qt_check", "protonup-qt"},
+        {"faugus_launcher_check", "faugus-launcher"},
         {"winetricks_check", "winetricks"},
         {"gamemode_check", "gamemode"},
         {"mangohud_check", "mangohud"},
@@ -1054,6 +1069,8 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"chromium_check", "chromium"},
         {"firefox_check", "firefox"},
         {"opera_check", "opera"},
+        {"vivaldi_check", "vivaldi"},
+        {"zen_browser_check", "zen-browser-bin"},
 
         // Graphics
         {"gimp_check", "gimp"},
@@ -1133,6 +1150,9 @@ void window_apps_apply_selections_to_checkboxes(WindowAppsData *data)
         {"heroic_check", "heroic-games-launcher-bin"},
         {"bottles_check", "bottles"},
         {"proton_ge_check", "proton-ge-custom-bin"},
+        {"protonplus_check", "protonplus"},
+        {"protonup_qt_check", "protonup-qt"},
+        {"faugus_launcher_check", "faugus-launcher"},
         {"winetricks_check", "winetricks"},
         {"gamemode_check", "gamemode"},
         {"mangohud_check", "mangohud"},
@@ -1328,6 +1348,14 @@ void window_apps_update_language(WindowAppsData *data)
         "Navegador web con VPN gratuita, bloqueador de anuncios y herramientas de productividad",
         "Web browser with free VPN, ad blocker and productivity tools",
         "Браузер с бесплатным VPN, блокировщиком рекламы и инструментами продуктивности");
+    set_row_subtitle(data, "vivaldi_check",
+        "Navegador web altamente personalizable con herramientas integradas de productividad",
+        "Highly customizable web browser with built-in productivity tools",
+        "Высоко настраиваемый браузер со встроенными инструментами продуктивности");
+    set_row_subtitle(data, "zen_browser_check",
+        "Navegador web basado en Firefox enfocado en privacidad y productividad",
+        "Firefox-based web browser focused on privacy and productivity",
+        "Браузер на основе Firefox, ориентированный на приватность и продуктивность");
 
     // Graphics
     set_row_subtitle(data, "gimp_check",
@@ -1618,6 +1646,18 @@ void window_apps_update_language(WindowAppsData *data)
         "Versión personalizada de Proton con parches adicionales para mejor compatibilidad",
         "Custom Proton version with additional patches for better compatibility",
         "Кастомная версия Proton с дополнительными патчами для совместимости");
+    set_row_subtitle(data, "protonplus_check",
+        "Gestor moderno de herramientas de compatibilidad Proton, Wine, DXVK y VKD3D",
+        "Modern manager for Proton, Wine, DXVK and VKD3D compatibility tools",
+        "Современный менеджер инструментов совместимости Proton, Wine, DXVK и VKD3D");
+    set_row_subtitle(data, "protonup_qt_check",
+        "Interfaz gráfica para instalar y gestionar GE-Proton y Wine-GE",
+        "Graphical interface to install and manage GE-Proton and Wine-GE",
+        "Графический интерфейс для установки и управления GE-Proton и Wine-GE");
+    set_row_subtitle(data, "faugus_launcher_check",
+        "Aplicación simple y ligera para ejecutar juegos de Windows usando UMU-Launcher",
+        "Simple and lightweight app for running Windows games using UMU-Launcher",
+        "Простое и лёгкое приложение для запуска Windows-игр с помощью UMU-Launcher");
     set_row_subtitle(data, "winetricks_check",
         "Script helper para instalar bibliotecas necesarias en Wine",
         "Helper script to install libraries needed in Wine",

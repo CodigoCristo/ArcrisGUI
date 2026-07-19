@@ -179,6 +179,46 @@
                                     </child>
                                   </object>
                                 </child>
+
+                                <!-- Vivaldi -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">vivaldi</property>
+                                    <property name="subtitle">Navegador web altamente personalizable con herramientas integradas de productividad</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="vivaldi_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="vivaldi_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://vivaldi.com/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Zen Browser -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">zen-browser-bin</property>
+                                    <property name="subtitle">Navegador web basado en Firefox enfocado en privacidad y productividad</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="zen_browser_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="zen_browser_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://zen-browser.app/</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
                               </object>
                             </child>
 
@@ -1632,6 +1672,66 @@
                                         <property name="icon-name">dialog-information-symbolic</property>
                                         <property name="has-frame">false</property>
                                         <property name="tooltip-text">https://github.com/GloriousEggroll/proton-ge-custom</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- ProtonPlus -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">protonplus</property>
+                                    <property name="subtitle">Gestor moderno de herramientas de compatibilidad Proton, Wine, DXVK y VKD3D</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="protonplus_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="protonplus_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/Vysp3r/ProtonPlus</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- ProtonUp-Qt -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">protonup-qt</property>
+                                    <property name="subtitle">Interfaz gráfica para instalar y gestionar GE-Proton y Wine-GE</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="protonup_qt_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="protonup_qt_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://davidotek.github.io/protonup-qt</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <!-- Faugus Launcher -->
+                                <child>
+                                  <object class="AdwActionRow">
+                                    <property name="title">faugus-launcher</property>
+                                    <property name="subtitle">Aplicación simple y ligera para ejecutar juegos de Windows usando UMU-Launcher</property>
+                                    <child type="prefix">
+                                      <object class="GtkCheckButton" id="faugus_launcher_check">
+                                        <property name="active">false</property>
+                                      </object>
+                                    </child>
+                                    <child type="suffix">
+                                      <object class="GtkButton" id="faugus_launcher_info">
+                                        <property name="icon-name">dialog-information-symbolic</property>
+                                        <property name="has-frame">false</property>
+                                        <property name="tooltip-text">https://github.com/Faugus/faugus-launcher</property>
                                       </object>
                                     </child>
                                   </object>
