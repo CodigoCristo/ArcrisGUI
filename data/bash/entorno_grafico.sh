@@ -719,6 +719,62 @@ EOF
                 chroot /mnt /bin/bash -c "sudo -u $USER hyprctl keyword input:kb_layout $KEYBOARD_LAYOUT"
                 chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
                 ;;
+            "MANGO")
+                echo -e "${CYAN}Instalando MANGO Window Manager...${NC}"
+                install_pacman_chroot_with_retry "wayland"                      # Protocolo de servidor de display moderno (reemplazo de X11)
+                install_pacman_chroot_with_retry "wlr-randr"                    # Gestor de pantallas para Wayland
+                install_pacman_chroot_with_retry "xorg-xwayland"                # Compatibilidad con apps X11
+                install_pacman_chroot_with_retry "mangowm"                     # Compositor Wayland dinámico con animaciones y efectos
+                install_pacman_chroot_with_retry "hyprpaper"                    # Gestor de wallpapers para Hyprland
+                install_pacman_chroot_with_retry "hypridle"                     # Gestor de inactividad/idle para Hyprland
+                install_pacman_chroot_with_retry "swaybg"
+                install_pacman_chroot_with_retry "swaync"
+                install_pacman_chroot_with_retry "swaylock"                     # Gestor de bloqueo de pantalla para Wayland
+                install_pacman_chroot_with_retry "hyprsunset"                   # Filtro de luz azul/ajuste de temperatura de color
+                install_pacman_chroot_with_retry "waybar"                       # Barra de estado personalizable para Wayland
+                install_pacman_chroot_with_retry "wofi"
+                install_pacman_chroot_with_retry "fuzzel"
+                install_pacman_chroot_with_retry "mako"                         # Notificaciones para Wayland
+                install_pacman_chroot_with_retry "wlogout"
+                install_pacman_chroot_with_retry "nsxiv"                        # Visualizador de imágenes para Wayland
+                install_pacman_chroot_with_retry "nwg-displays"
+                install_pacman_chroot_with_retry "udiskie"                      # Gestor de discos para Wayland
+                install_pacman_chroot_with_retry "nwg-look"                     # Configurador gráfico de pantallas para Wayland
+                install_pacman_chroot_with_retry "xdg-desktop-portal-wlr"  # Portal XDG específico para Hyprland (compartir pantalla, etc.)
+                install_pacman_chroot_with_retry "xdg-desktop-portal-gtk"       # Portal XDG con backend GTK (diálogos de archivos, etc.)
+                install_pacman_chroot_with_retry "wl-clipboard"                 # Utilidades de portapapeles para Wayland
+                install_pacman_chroot_with_retry "grim"                         # Captura de pantalla para Wayland
+                install_pacman_chroot_with_retry "slurp"                        # Selector de región de pantalla (usado con grim)
+                install_pacman_chroot_with_retry "qt5-wayland"                  # Soporte de Wayland para aplicaciones Qt5
+                install_pacman_chroot_with_retry "qt6-wayland"                  # Soporte de Wayland para aplicaciones Qt6
+                install_pacman_chroot_with_retry "kitty"                        # Emulador de terminal acelerado por GPU
+                install_pacman_chroot_with_retry "starship"                        # Demonio de notificaciones ligero y personalizable
+                install_pacman_chroot_with_retry "xdg-utils"                    # Herramientas para integración de escritorio (abrir archivos, URLs)
+                install_pacman_chroot_with_retry "brightnessctl"                # Control de brillo de pantalla desde terminal
+                install_pacman_chroot_with_retry "thunar"                        # Explorador de archivos para Wayland
+                install_pacman_chroot_with_retry "pavucontrol"                   # Control de audio para Wayland
+                install_pacman_chroot_with_retry "kitty"
+                install_pacman_chroot_with_retry "gnome-themes-extra"
+                install_pacman_chroot_with_retry "adw-gtk-theme"
+                install_pacman_chroot_with_retry "adwaita-icon-theme"
+                install_pacman_chroot_with_retry "adwaita-icon-theme-legacy"
+                install_pacman_chroot_with_retry "alsa-utils"
+                install_yay_chroot_with_retry "ttf-noto-emoji-monochrome"
+                # Crear configuración
+                mkdir -p /mnt/home/$USER/.config/mango
+                # Crear configuración de Mango
+                echo "Copiando configuracion de MANGO..."
+                cp /usr/share/arcrisgui/data/bash/mango/mango.zip /mnt/home/$USER/.config/
+                unzip /mnt/home/$USER/.config/mango.zip -d /mnt/home/$USER/.config/
+                sudo cp -rT /mnt/home/$USER/.config/mango/ /mnt/home/$USER/.config/
+                rm /mnt/home/$USER/.config/mango.zip
+                rm -rf /mnt/home/$USER/.config/mango
+                chroot /mnt /bin/bash -c "chmod +x /home/$USER/.config/mango/*.sh"
+                chroot /mnt /bin/bash -c "chmod +x /home/$USER/.config/waybar/scripts/*.sh"
+                chroot /mnt /bin/bash -c "chmod +x /home/$USER/.config/waybar/scripts/scripts/*.sh"
+                chroot /mnt /bin/bash -c "echo xkb_rules_layout=$KEYBOARD_LAYOUT >> /home/$USER/.config/mango/config.conf"
+                chroot /mnt /bin/bash -c "chown -R $USER:$USER /home/$USER/.config"
+                ;;
             "NIRI")
                 echo -e "${CYAN}Instalando Niri Window Manager...${NC}"
                 install_pacman_chroot_with_retry "wayland"                      # Protocolo de servidor de display moderno (reemplazo de X11)

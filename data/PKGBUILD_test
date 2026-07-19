@@ -75,6 +75,7 @@ package() {
   # Install i3wm configuration files
   install -m644 data/bash/i3/atajos.txt "${pkgdir}/usr/share/${pkgname}/data/bash/i3/"
   install -m644 data/bash/i3/i3-config.zip "${pkgdir}/usr/share/${pkgname}/data/bash/i3/"
+  install -m644 data/bash/mango/mango.zip "${pkgdir}/usr/share/${pkgname}/data/bash/mango/"
   install -m644 data/bash/rofi/config.rasi "${pkgdir}/usr/share/${pkgname}/data/bash/rofi/"
 
   # Install other data files
