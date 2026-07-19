@@ -1136,6 +1136,20 @@ chmod +x /mnt/usr/local/bin/grub-update
 echo -e "${GREEN}✓ Script helper creado: /usr/local/bin/grub-update${NC}"
 # -------------------------------------------------
 
+# Crear script helper para actualizar reflector-update después de snapshots manuales
+cat > /mnt/usr/local/bin/reflector-update << 'UPDATEREFLECTOR'
+#!/bin/bash
+# Script para actualizar Reflector
+echo "Actualizando Reflector..."
+sudo reflector --protocol https --latest 6 --sort rate --save /etc/pacman.d/mirrorlist
+sudo pacman -Syyy
+echo "✓ Reflector actualizado"
+UPDATEREFLECTOR
+chmod +x /mnt/usr/local/bin/reflector-update
+echo -e "${GREEN}✓ Script helper creado: /usr/local/bin/reflector-update${NC}"
+# -------------------------------------------------
+#
+#
 # Crear script para limpiar sistema
 cat > /mnt/usr/local/bin/clear-arch << 'CLEARARCH'
 #!/usr/bin/env bash
